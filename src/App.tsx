@@ -34,12 +34,10 @@ function App() {
   return (
     <ErrorBoundary>
       <div className="h-full w-full bg-mars-bg noise-bg overflow-hidden">
-        {/* Focus Mode takes over entire screen */}
         {isFocusMode ? (
           <FocusMode />
         ) : (
           <>
-            {/* Main Views */}
             {currentView === 'hub' && <HubV2 />}
             {currentView === 'tasks' && <TasksPage />}
             {currentView === 'calendar' && <CalendarPage />}
@@ -49,7 +47,6 @@ function App() {
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'ai' && <AIAssistant />}
 
-            {/* Global Components */}
             <KeyboardShortcuts />
             <CommandPalette />
             <ToastContainer />
