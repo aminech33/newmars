@@ -1,13 +1,11 @@
 import { useState, useMemo } from 'react'
-import { ArrowLeft, Plus, Search, LayoutList, LayoutGrid, Zap, TrendingUp, FolderKanban, X } from 'lucide-react'
+import { ArrowLeft, Plus, Search, LayoutList, LayoutGrid, Zap, TrendingUp } from 'lucide-react'
 import { useStore, Task, TaskCategory } from '../../store/useStore'
 import { SmartSuggestion } from './SmartSuggestion'
 import { KanbanBoard } from './KanbanBoard'
 import { TaskDetails } from './TaskDetails'
 import { TaskFilters, TaskFilterState } from './TaskFilters'
-import { ProjectModal } from '../projects/ProjectModal'
 import { analyzeProductivityPatterns, autoCategorizeTasks, estimateTaskDuration, detectPriority } from '../../utils/taskIntelligence'
-import { calculateProjectStats } from '../../utils/projectUtils'
 
 type ViewMode = 'list' | 'kanban' | 'focus'
 
@@ -21,16 +19,13 @@ const categories: { key: TaskCategory | 'all'; label: string; color: string }[] 
 ]
 
 export function TasksPage() {
-  const { tasks, addTask, setView, projects } = useStore()
+  const { tasks, addTask, setView } = useStore()
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | 'all'>('all')
-  const [selectedProjectId, setSelectedProjectId] = useState<string | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [newTaskTitle, setNewTaskTitle] = useState('')
-  const [newTaskProjectId, setNewTaskProjectId] = useState<string | undefined>(undefined)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
-  const [showProjectModal, setShowProjectModal] = useState(false)
   const [advancedFilters, setAdvancedFilters] = useState<TaskFilterState>({
     categories: [],
     priorities: [],
@@ -47,19 +42,9 @@ export function TasksPage() {
     return t.completed && t.createdAt >= today
   }).length
   
-  // Project stats
-  const projectStats = useMemo(() => {
-    return projects.map(p => calculateProjectStats(p, tasks))
-  }, [projects, tasks])
-  
-  const activeProjects = projects.filter(p => p.status === 'active')
-  
   // Filter tasks with advanced filters
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      // Project filter
-      if (selectedProjectId !== 'all' && task.projectId !== selectedProjectId) return false
-      
       // Basic category filter
       if (selectedCategory !== 'all' && task.category !== selectedCategory) return false
       
@@ -76,16 +61,13 @@ export function TasksPage() {
       
       return true
     })
-  }, [tasks, selectedCategory, selectedProjectId, searchQuery, advancedFilters])
+  }, [tasks, selectedCategory, searchQuery, advancedFilters])
   
   const handleQuickAdd = () => {
     if (newTaskTitle.trim()) {
       const category = autoCategorizeTasks(newTaskTitle)
       const estimatedTime = estimateTaskDuration(newTaskTitle)
       const priority = detectPriority(newTaskTitle)
-      
-      // Utiliser le projet sélectionné ou celui du filtre actif
-      const projectId = newTaskProjectId || (selectedProjectId !== 'all' ? selectedProjectId : undefined)
       
       addTask({
         title: newTaskTitle,
@@ -94,12 +76,10 @@ export function TasksPage() {
         status: 'todo',
         priority,
         estimatedTime,
-        focusScore: 0,
-        projectId
+        focusScore: 0
       })
       
       setNewTaskTitle('')
-      setNewTaskProjectId(undefined)
       setShowQuickAdd(false)
     }
   }
@@ -152,40 +132,6 @@ export function TasksPage() {
                 autoFocus
               />
               
-              {/* Project selector */}
-              <div className="flex items-center gap-2 mt-3 flex-wrap">
-                <span className="text-xs text-zinc-600">Projet:</span>
-                <button
-                  onClick={() => setNewTaskProjectId(undefined)}
-                  className={`px-2 py-1 rounded-lg text-xs transition-all ${
-                    !newTaskProjectId && selectedProjectId === 'all'
-                      ? 'bg-zinc-700 text-zinc-300'
-                      : 'text-zinc-600 hover:text-zinc-400'
-                  }`}
-                >
-                  Aucun
-                </button>
-                {projects.filter(p => p.status === 'active').map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => setNewTaskProjectId(project.id)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all ${
-                      newTaskProjectId === project.id || (selectedProjectId === project.id && !newTaskProjectId)
-                        ? 'text-white'
-                        : 'text-zinc-600 hover:text-zinc-400'
-                    }`}
-                    style={
-                      newTaskProjectId === project.id || (selectedProjectId === project.id && !newTaskProjectId)
-                        ? { backgroundColor: `${project.color}30`, color: project.color }
-                        : {}
-                    }
-                  >
-                    <span>{project.icon || '📁'}</span>
-                    <span>{project.name}</span>
-                  </button>
-                ))}
-              </div>
-              
               <div className="flex items-center gap-2 mt-3">
                 <button
                   onClick={handleQuickAdd}
@@ -194,10 +140,7 @@ export function TasksPage() {
                   Créer
                 </button>
                 <button
-                  onClick={() => {
-                    setShowQuickAdd(false)
-                    setNewTaskProjectId(undefined)
-                  }}
+                  onClick={() => setShowQuickAdd(false)}
                   className="px-3 py-1.5 text-zinc-500 rounded-xl text-xs hover:bg-zinc-800/50 transition-colors"
                 >
                   Annuler
@@ -271,103 +214,6 @@ export function TasksPage() {
             </div>
           </div>
         </div>
-        
-        {/* Projects Bar */}
-        {activeProjects.length > 0 && (
-          <div className="mb-6 p-4 bg-zinc-900/30 backdrop-blur-xl rounded-2xl"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <FolderKanban className="w-4 h-4 text-indigo-400" />
-                <h3 className="text-sm font-medium text-zinc-400">Projets</h3>
-              </div>
-              <button
-                onClick={() => setShowProjectModal(true)}
-                className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                + Nouveau projet
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setSelectedProjectId('all')}
-                className={`
-                  px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300
-                  ${selectedProjectId === 'all'
-                    ? 'bg-indigo-500/20 text-indigo-400 shadow-[0_2px_8px_rgba(91,127,255,0.2)]'
-                    : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/30'
-                  }
-                `}
-                style={selectedProjectId === 'all' ? { border: '1px solid rgba(91,127,255,0.2)' } : {}}
-              >
-                Tous les projets
-              </button>
-              
-              {activeProjects.map((project) => {
-                const stats = projectStats.find(s => s.id === project.id)
-                return (
-                  <button
-                    key={project.id}
-                    onClick={() => setSelectedProjectId(project.id)}
-                    className={`
-                      flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300
-                      ${selectedProjectId === project.id
-                        ? 'bg-zinc-800/50 shadow-[0_2px_8px_rgba(0,0,0,0.2)]'
-                        : 'hover:bg-zinc-800/30'
-                      }
-                    `}
-                    style={{
-                      border: selectedProjectId === project.id ? '1px solid rgba(255,255,255,0.08)' : 'none',
-                      color: selectedProjectId === project.id ? project.color : '#71717a'
-                    }}
-                  >
-                    <span>{project.icon || '📁'}</span>
-                    <span>{project.name}</span>
-                    {stats && (
-                      <span className="text-zinc-600">({stats.tasksCount})</span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-            
-            {selectedProjectId !== 'all' && (
-              <div className="mt-3 pt-3 border-t border-zinc-800/50">
-                {(() => {
-                  const project = projects.find(p => p.id === selectedProjectId)
-                  const stats = projectStats.find(s => s.id === selectedProjectId)
-                  if (!project || !stats) return null
-                  
-                  return (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="text-xs text-zinc-600">
-                          Progression: <span className="text-zinc-400 font-medium">{stats.progress}%</span>
-                        </div>
-                        <div className="text-xs text-zinc-600">
-                          Tâches: <span className="text-zinc-400 font-medium">{stats.completedTasksCount}/{stats.tasksCount}</span>
-                        </div>
-                        {project.deadline && (
-                          <div className="text-xs text-zinc-600">
-                            Deadline: <span className="text-zinc-400 font-medium">{new Date(project.deadline).toLocaleDateString('fr-FR')}</span>
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setSelectedProjectId('all')}
-                        className="p-1 text-zinc-600 hover:text-zinc-400 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )
-                })()}
-              </div>
-            )}
-          </div>
-        )}
         
         {/* Filters & View Modes */}
         <div className="flex items-center justify-between mb-6">
@@ -507,11 +353,6 @@ export function TasksPage() {
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
         />
-      )}
-      
-      {/* Project Modal */}
-      {showProjectModal && (
-        <ProjectModal onClose={() => setShowProjectModal(false)} />
       )}
     </div>
   )

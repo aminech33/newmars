@@ -4,7 +4,6 @@ import { Widget, WidgetLayout, Habit, QuickNote, QuickLink } from '../types/widg
 import { Event } from '../types/calendar'
 import { WeightEntry, MealEntry, HealthGoal, UserProfile } from '../types/health'
 import { JournalEntry } from '../types/journal'
-import { Project } from '../types/project'
 import { TaskRelation } from '../types/taskRelation'
 
 export type TaskCategory = 'dev' | 'design' | 'personal' | 'work' | 'urgent'
@@ -32,7 +31,6 @@ export interface Task {
   subtasks?: SubTask[]
   description?: string
   focusScore?: number
-  projectId?: string // Link to project
   linkedEventId?: string // Link to calendar event
 }
 
@@ -73,7 +71,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'projects'
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
@@ -205,13 +203,6 @@ interface AppState {
   deleteJournalEntry: (id: string) => void
   toggleJournalFavorite: (id: string) => void
   
-  // Projects
-  projects: Project[]
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
-  updateProject: (id: string, updates: Partial<Project>) => void
-  deleteProject: (id: string) => void
-  toggleProjectFavorite: (id: string) => void
-  
   // Task Relations
   taskRelations: TaskRelation[]
   addTaskRelation: (relation: Omit<TaskRelation, 'id' | 'createdAt'>) => void
@@ -314,13 +305,13 @@ export const useStore = create<AppState>()(
       
       // Tasks
       tasks: [
-        { id: '1', title: 'Finaliser le composant Dashboard', completed: false, category: 'dev', createdAt: Date.now() - 86400000, status: 'in-progress', priority: 'high', estimatedTime: 60, projectId: 'proj-1' },
-        { id: '2', title: 'Revoir les maquettes UI', completed: false, category: 'design', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 45, projectId: 'proj-1' },
+        { id: '1', title: 'Finaliser le composant Dashboard', completed: false, category: 'dev', createdAt: Date.now() - 86400000, status: 'in-progress', priority: 'high', estimatedTime: 60 },
+        { id: '2', title: 'Revoir les maquettes UI', completed: false, category: 'design', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 45 },
         { id: '3', title: 'Appel avec l\'équipe produit', completed: true, category: 'work', createdAt: Date.now() - 259200000, status: 'done', priority: 'medium', estimatedTime: 30 },
-        { id: '4', title: 'Implémenter la recherche globale', completed: false, category: 'dev', createdAt: Date.now() - 43200000, status: 'todo', priority: 'high', estimatedTime: 90, projectId: 'proj-1' },
+        { id: '4', title: 'Implémenter la recherche globale', completed: false, category: 'dev', createdAt: Date.now() - 43200000, status: 'todo', priority: 'high', estimatedTime: 90 },
         { id: '5', title: 'Préparer la présentation client', completed: false, category: 'urgent', createdAt: Date.now() - 21600000, status: 'in-progress', priority: 'urgent', estimatedTime: 120, dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0] },
-        { id: '6', title: 'Rechercher des idées', completed: true, category: 'personal', createdAt: Date.now() - 345600000, status: 'done', priority: 'low', estimatedTime: 30, projectId: 'proj-2' },
-        { id: '7', title: 'Créer le prototype', completed: false, category: 'dev', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 120, projectId: 'proj-2' },
+        { id: '6', title: 'Rechercher des idées', completed: true, category: 'personal', createdAt: Date.now() - 345600000, status: 'done', priority: 'low', estimatedTime: 30 },
+        { id: '7', title: 'Créer le prototype', completed: false, category: 'dev', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 120 },
       ],
       addTask: (task) => {
         const newTask = { ...task, id: generateId(), createdAt: Date.now() }
@@ -874,60 +865,6 @@ export const useStore = create<AppState>()(
         }))
       },
       
-      // Projects
-      projects: [
-        {
-          id: 'proj-1',
-          name: 'NewMars App',
-          description: 'Application de productivité personnelle',
-          color: '#6366f1',
-          icon: '🚀',
-          status: 'active' as const,
-          goal: 'Créer la meilleure app de productivité',
-          createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-          updatedAt: Date.now(),
-          isFavorite: true
-        },
-        {
-          id: 'proj-2',
-          name: 'Side Project',
-          description: 'Projet personnel en cours',
-          color: '#10b981',
-          icon: '💡',
-          status: 'active' as const,
-          createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
-          updatedAt: Date.now()
-        }
-      ],
-      addProject: (project) => {
-        const now = Date.now()
-        const newProject = { ...project, id: generateId(), createdAt: now, updatedAt: now }
-        set((state) => ({ projects: [...state.projects, newProject] }))
-        get().addToast('Projet créé', 'success')
-      },
-      updateProject: (id, updates) => {
-        set((state) => ({
-          projects: state.projects.map((p) => 
-            p.id === id ? { ...p, ...updates, updatedAt: Date.now() } : p
-          )
-        }))
-        get().addToast('Projet mis à jour', 'success')
-      },
-      deleteProject: (id) => {
-        set((state) => ({
-          projects: state.projects.filter((p) => p.id !== id),
-          tasks: state.tasks.map((t) => t.projectId === id ? { ...t, projectId: undefined } : t)
-        }))
-        get().addToast('Projet supprimé', 'info')
-      },
-      toggleProjectFavorite: (id) => {
-        set((state) => ({
-          projects: state.projects.map((p) => 
-            p.id === id ? { ...p, isFavorite: !p.isFavorite } : p
-          )
-        }))
-      },
-      
       // Task Relations
       taskRelations: [],
       addTaskRelation: (relation) => {
@@ -964,7 +901,6 @@ export const useStore = create<AppState>()(
         mealEntries: state.mealEntries,
         healthGoals: state.healthGoals,
         journalEntries: state.journalEntries,
-        projects: state.projects,
         taskRelations: state.taskRelations,
       })
     }

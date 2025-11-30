@@ -9,7 +9,6 @@ const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({
 const CalendarPage = lazy(() => import('./components/calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
 const HealthPage = lazy(() => import('./components/health/HealthPage').then(m => ({ default: m.HealthPage })))
 const JournalPage = lazy(() => import('./components/journal/JournalPage').then(m => ({ default: m.JournalPage })))
-const ProjectsPage = lazy(() => import('./components/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })))
 const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
@@ -74,7 +73,6 @@ function AppContent() {
             {currentView === 'calendar' && <CalendarPage />}
             {currentView === 'health' && <HealthPage />}
             {currentView === 'journal' && <JournalPage />}
-            {currentView === 'projects' && <ProjectsPage />}
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'ai' && <AIAssistant />}
           </>

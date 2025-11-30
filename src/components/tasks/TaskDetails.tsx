@@ -1,4 +1,4 @@
-import { X, Calendar, Clock, Tag, CheckSquare, Plus, Trash2, Flag, Link as LinkIcon, FolderKanban } from 'lucide-react'
+import { X, Calendar, Clock, Tag, CheckSquare, Plus, Trash2, Flag, Link as LinkIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Task, TaskPriority, TaskCategory, useStore } from '../../store/useStore'
 
@@ -23,13 +23,10 @@ const categories: { value: TaskCategory; label: string; color: string }[] = [
 ]
 
 export function TaskDetails({ task, onClose }: TaskDetailsProps) {
-  const { updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, addEvent, events, projects } = useStore()
+  const { updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, addEvent, events } = useStore()
   const [newSubtask, setNewSubtask] = useState('')
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [description, setDescription] = useState(task.description || '')
-  
-  const activeProjects = projects.filter(p => p.status === 'active')
-  const taskProject = projects.find(p => p.id === task.projectId)
   
   const handleAddSubtask = () => {
     if (newSubtask.trim()) {
@@ -145,45 +142,6 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
               </select>
             </div>
           </div>
-          
-          {/* Project */}
-          {activeProjects.length > 0 && (
-            <div>
-              <label className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
-                <FolderKanban className="w-3.5 h-3.5" />
-                Projet
-              </label>
-              <select
-                value={task.projectId || ''}
-                onChange={(e) => updateTask(task.id, { projectId: e.target.value || undefined })}
-                className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:bg-zinc-900 transition-colors"
-                style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-              >
-                <option value="">Aucun projet</option>
-                {activeProjects.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.icon || '📁'} {p.name}
-                  </option>
-                ))}
-              </select>
-              {taskProject && (
-                <div className="mt-2 p-2 bg-zinc-900/30 rounded-lg">
-                  <div className="flex items-center gap-2 text-xs">
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: taskProject.color }}
-                    />
-                    <span className="text-zinc-400">{taskProject.name}</span>
-                    {taskProject.deadline && (
-                      <span className="text-zinc-600">
-                        · Deadline: {new Date(taskProject.deadline).toLocaleDateString('fr-FR')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
           
           {/* Due Date & Estimated Time */}
           <div className="grid grid-cols-2 gap-4">
