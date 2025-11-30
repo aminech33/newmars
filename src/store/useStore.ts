@@ -208,17 +208,66 @@ const defaultWidgets: Widget[] = [
   },
   {
     id: '2',
-    type: 'stats',
-    size: 'small',
-    dimensions: { width: 1, height: 1 },
+    type: 'calendar',
+    size: 'medium',
+    dimensions: { width: 2, height: 1 },
     position: { x: 2, y: 0 }
   },
   {
     id: '3',
-    type: 'ai',
+    type: 'stats',
+    size: 'small',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 4, y: 0 }
+  },
+  {
+    id: '4',
+    type: 'habits',
+    size: 'medium',
+    dimensions: { width: 1, height: 2 },
+    position: { x: 0, y: 2 }
+  },
+  {
+    id: '5',
+    type: 'pomodoro',
+    size: 'small',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 1, y: 2 }
+  },
+  {
+    id: '6',
+    type: 'quick-actions',
     size: 'small',
     dimensions: { width: 1, height: 1 },
     position: { x: 2, y: 1 }
+  },
+  {
+    id: '7',
+    type: 'notes',
+    size: 'medium',
+    dimensions: { width: 2, height: 1 },
+    position: { x: 3, y: 1 }
+  },
+  {
+    id: '8',
+    type: 'quote',
+    size: 'small',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 5, y: 0 }
+  },
+  {
+    id: '9',
+    type: 'health',
+    size: 'small',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 1, y: 3 }
+  },
+  {
+    id: '10',
+    type: 'journal',
+    size: 'small',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 2, y: 2 }
   }
 ]
 
