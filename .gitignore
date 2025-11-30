@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cursor workspaces (IMPORTANT!)
+.cursor/
+.cursor/worktrees/*
+
+# Backups
+*-backup/
+*.backup
+backups/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

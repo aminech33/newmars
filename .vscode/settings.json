@@ -1,0 +1,34 @@
+{
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.git/**": true,
+    "**/.cursor/**": true
+  },
+  "files.autoSave": "onFocusChange",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "git.confirmSync": true,
+  "git.autofetch": true,
+  "git.enableSmartCommit": false,
+  "git.confirmEmptyCommits": true,
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.git": true,
+    "**/.cursor": true,
+    "**/backups": true
+  },
+  "files.exclude": {
+    "**/.git": false,
+    "**/.cursor": true,
+    "**/node_modules": false,
+    "**/dist": false
+  }
+}
+
+
