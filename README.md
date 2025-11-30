@@ -2,7 +2,7 @@
 
 > Application de productivité personnelle moderne avec Dashboard, Tâches, Calendrier, Journal et Habitudes.
 
-## 📊 Audit Qualité - Note Globale : 8.7/10
+## 📊 Audit Qualité - Note Globale : 8.9/10
 
 *Dernière mise à jour : 30 Novembre 2024*
 
@@ -13,11 +13,11 @@
 | Section | Note | Statut |
 |---------|------|--------|
 | **Dashboard** | 9.0/10 | ✅ Optimisé |
+| **Widgets** | 9.0/10 | ✅ Optimisé |
 | **Calendrier** | 8.8/10 | ✅ Optimisé |
 | **Tâches** | 8.4/10 | ✅ Optimisé |
 | **Journal** | ~7.5/10 | ⏳ À auditer |
 | **Habitudes** | ~7.0/10 | ⏳ À auditer |
-| **Hub** | ~8.0/10 | ⏳ À auditer |
 
 ---
 
@@ -154,6 +154,65 @@ src/hooks/
 
 ---
 
+## 🧩 Widgets Hub (9.0/10)
+
+### ✅ Points Forts
+- Widget Registry pattern (supprime switch case)
+- Lazy loading de tous les widgets
+- React.memo sur les 11 widgets
+- ErrorBoundary par widget avec retry/suppression
+- WidgetPicker avec recherche et catégories
+- Confirmation avant suppression
+- Undo après suppression (5s)
+- FAB mobile pour ajouter widgets
+- Drag & drop accessible au clavier
+
+### 🏗️ Architecture (Refactorisé)
+```
+src/components/widgets/
+├── WidgetGrid.tsx (grille + drag & drop)
+├── WidgetContainer.tsx (container glassmorphism)
+├── WidgetErrorBoundary.tsx (error handling)
+├── WidgetSkeleton.tsx (loading state)
+├── WidgetFAB.tsx (FAB mobile)
+├── TasksWidget.tsx
+├── StatsWidget.tsx
+├── CalendarWidget.tsx
+├── HabitsWidget.tsx
+├── NotesWidget.tsx
+├── PomodoroWidget.tsx
+├── LinksWidget.tsx
+├── AIWidget.tsx
+├── QuickActionsWidget.tsx
+├── HealthWidget.tsx
+└── JournalWidget.tsx
+
+src/config/
+└── widgetRegistry.tsx (registry + catégories)
+```
+
+### 🎯 Catégories
+| Catégorie | Widgets |
+|-----------|---------|
+| 🎯 Productivité | Tasks, Calendar, Pomodoro |
+| 📊 Suivi | Stats, Habits |
+| 🛠️ Outils | Notes, Links, AI, Quick Actions |
+| 💚 Bien-être | Health, Journal |
+
+### ♿ Accessibilité
+- Drag & drop clavier (flèches)
+- Screen reader announcements
+- `role="grid"`, `role="gridcell"`
+- Focus visible
+- `tabIndex` conditionnel
+
+### 📱 Mobile
+- FAB flottant expandable
+- WidgetPicker responsive
+- Grille responsive (2→6 cols)
+
+---
+
 ## 🧩 Composants UI Réutilisables
 
 ```
@@ -162,6 +221,7 @@ src/components/ui/
 ├── Collapsible.tsx (sections pliables)
 ├── ConfirmDialog.tsx (modale confirmation)
 ├── UndoToast.tsx (toast annulation)
+├── Toast.tsx (toasts + ToastProvider)
 ├── DashboardCard.tsx (carte dashboard)
 ├── Sparkline.tsx (mini graphique)
 └── ScrollToTop.tsx (FAB retour haut)
@@ -253,6 +313,7 @@ src/
 
 ### ✅ Terminé
 - [x] Dashboard interactif (9.0/10)
+- [x] Widgets Hub refactorisé (9.0/10)
 - [x] Calendrier refactorisé (8.8/10)
 - [x] Tâches optimisées (8.4/10)
 - [x] Composants UI réutilisables
@@ -270,6 +331,16 @@ src/
 ---
 
 ## 📝 Changelog
+
+### v2.1.0 (30 Nov 2024)
+- ✨ **Widgets Hub refactorisé** (7.8 → 9.0/10)
+  - Widget Registry pattern
+  - Lazy loading + React.memo
+  - ErrorBoundary par widget
+  - WidgetPicker avec recherche/catégories
+  - Confirmation + Undo suppression
+  - FAB mobile
+  - Drag & drop accessible clavier
 
 ### v2.0.0 (30 Nov 2024)
 - ✨ Dashboard interactif avec métriques cliquables
