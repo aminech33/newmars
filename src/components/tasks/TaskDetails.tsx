@@ -1,6 +1,6 @@
 import { X, Calendar, Clock, Tag, CheckSquare, Plus, Trash2, Flag, Link as LinkIcon, FolderKanban } from 'lucide-react'
 import { useState } from 'react'
-import { Task, TaskPriority, TaskCategory, useStore, PROJECTS } from '../../store/useStore'
+import { Task, TaskPriority, TaskCategory, useStore } from '../../store/useStore'
 
 interface TaskDetailsProps {
   task: Task
@@ -23,7 +23,7 @@ const categories: { value: TaskCategory; label: string; color: string }[] = [
 ]
 
 export function TaskDetails({ task, onClose }: TaskDetailsProps) {
-  const { updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, addEvent, events } = useStore()
+  const { updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, addEvent, events, projects } = useStore()
   const [newSubtask, setNewSubtask] = useState('')
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [description, setDescription] = useState(task.description || '')
@@ -114,26 +114,26 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
             </label>
             <div className="flex items-center gap-2 flex-wrap">
               <button
-                onClick={() => updateTask(task.id, { project: undefined })}
+                onClick={() => updateTask(task.id, { projectId: undefined })}
                 className={`px-3 py-1.5 rounded-xl text-xs transition-all ${
-                  !task.project
+                  !task.projectId
                     ? 'bg-zinc-700 text-zinc-300'
                     : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'
                 }`}
               >
                 Aucun
               </button>
-              {PROJECTS.map((project) => (
+              {projects.map((project) => (
                 <button
-                  key={project.name}
-                  onClick={() => updateTask(task.id, { project: project.name })}
+                  key={project.id}
+                  onClick={() => updateTask(task.id, { projectId: project.id })}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all ${
-                    task.project === project.name
+                    task.projectId === project.id
                       ? 'text-white'
                       : 'text-zinc-600 hover:text-zinc-400'
                   }`}
                   style={
-                    task.project === project.name
+                    task.projectId === project.id
                       ? { backgroundColor: `${project.color}30`, color: project.color }
                       : {}
                   }
