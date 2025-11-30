@@ -152,7 +152,21 @@ button:active:not(:disabled) {
 }
 
 /* Shine effect on hover */
-/* Hover effects removed - keeping it minimal */
+/* Premium hover effect - subtle glow & elevation */
+.glass-widget {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-widget:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(var(--accent-rgb), 0.2),
+    0 0 30px rgba(var(--accent-rgb), 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(24px) saturate(200%);
+}
 
 /* Click pulse effect */
 @keyframes glassPulse {

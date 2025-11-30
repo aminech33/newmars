@@ -62,8 +62,7 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
       className={`
         h-full w-full rounded-3xl p-5 
         glass-widget glass-widget-${accentTheme}
-        hover:-translate-y-1 
-        transition-all duration-300 group
+        group
         ${isClicked ? 'clicked' : ''}
         ${!isEditMode && onClick ? 'cursor-pointer' : ''}
       `}
