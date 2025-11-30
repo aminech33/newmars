@@ -9,7 +9,10 @@ import { StatCard } from './StatCard'
 import { StatDetailModal } from './StatDetailModal'
 import { TaskFAB } from './TaskFAB'
 import { UndoToast } from '../ui/UndoToast'
+import { Tooltip } from '../ui/Tooltip'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useUndo } from '../../hooks/useUndo'
+import { useDebounce } from '../../hooks/useDebounce'
 import { analyzeProductivityPatterns, autoCategorizeTasks, estimateTaskDuration, detectPriority } from '../../utils/taskIntelligence'
 
 type ViewMode = 'list' | 'kanban' | 'focus'
@@ -49,7 +52,11 @@ export function TasksPage() {
   })
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
   const [selectedStat, setSelectedStat] = useState<'total' | 'today' | 'completed' | 'productivity' | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<{ task: Task } | null>(null)
   const { addAction, undo, showToast, currentAction, canUndo } = useUndo()
+  
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
   // Raccourcis clavier
   useEffect(() => {
@@ -76,6 +83,12 @@ export function TasksPage() {
 
   // Handle delete with undo
   const handleDeleteWithUndo = (task: Task) => {
+    setConfirmDelete({ task })
+  }
+
+  const confirmDeleteTask = () => {
+    if (!confirmDelete) return
+    const task = confirmDelete.task
     const taskCopy = { ...task }
     deleteTask(task.id)
     addAction({
@@ -84,6 +97,7 @@ export function TasksPage() {
       undo: () => addTask(taskCopy),
       label: `Tâche "${task.title}" supprimée`
     })
+    setConfirmDelete(null)
   }
   
   // Analytics
@@ -154,8 +168,8 @@ export function TasksPage() {
       // Basic category filter
       if (selectedCategory !== 'all' && task.category !== selectedCategory) return false
       
-      // Search filter
-      if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false
+      // Search filter (debounced)
+      if (debouncedSearchQuery && !task.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) return false
       
       // Advanced filters
       if (advancedFilters.categories.length > 0 && !advancedFilters.categories.includes(task.category)) return false
@@ -167,14 +181,14 @@ export function TasksPage() {
       
       return true
     })
-  }, [tasks, selectedCategory, selectedProjectId, searchQuery, advancedFilters, quickFilter])
+  }, [tasks, selectedCategory, selectedProjectId, debouncedSearchQuery, advancedFilters, quickFilter])
 
   // Compteur de filtres actifs
   const activeFiltersCount = useMemo(() => {
     let count = 0
     if (selectedCategory !== 'all') count++
     if (selectedProjectId !== 'all') count++
-    if (searchQuery) count++
+    if (debouncedSearchQuery) count++
     if (quickFilter !== 'all') count++
     if (advancedFilters.categories.length > 0) count++
     if (advancedFilters.priorities.length > 0) count++
@@ -255,13 +269,15 @@ export function TasksPage() {
               </div>
             </div>
             
-            <button
-              onClick={() => setShowQuickAdd(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/30 shadow-[0_4px_16px_rgba(91,127,255,0.2)] transition-all duration-300"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm font-medium">Nouvelle tâche</span>
-            </button>
+            <Tooltip content="Ctrl+N" side="bottom">
+              <button
+                onClick={() => setShowQuickAdd(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/30 shadow-[0_4px_16px_rgba(91,127,255,0.2)] transition-all duration-300"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-sm font-medium">Nouvelle tâche</span>
+              </button>
+            </Tooltip>
           </div>
           
           {/* Quick Add */}
@@ -796,6 +812,18 @@ export function TasksPage() {
         message={currentAction?.label || ''}
         onUndo={undo}
         isVisible={showToast}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={confirmDeleteTask}
+        title="Supprimer la tâche ?"
+        message={`Êtes-vous sûr de vouloir supprimer "${confirmDelete?.task.title}" ? Cette action peut être annulée pendant 5 secondes.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        variant="danger"
       />
 
       {/* Stat Detail Modals */}
