@@ -187,3 +187,44 @@ export function isProjectAtRisk(project: Project, tasks: Task[]): boolean {
   return false
 }
 
+export interface GlobalProjectStats {
+  totalProjects: number
+  activeCount: number
+  completedCount: number
+  totalTasks: number
+  completedTasks: number
+  averageProgress: number
+  atRiskCount: number
+}
+
+export function calculateGlobalProjectStats(projects: Project[], tasks: Task[]): GlobalProjectStats {
+  const activeProjects = projects.filter(p => p.status === 'active')
+  const completedProjects = projects.filter(p => p.status === 'completed')
+  
+  let totalTasks = 0
+  let completedTasks = 0
+  let totalProgress = 0
+  let atRiskCount = 0
+  
+  projects.forEach(project => {
+    const stats = calculateProjectStats(project, tasks)
+    totalTasks += stats.totalTasks
+    completedTasks += stats.completedTasks
+    totalProgress += stats.progress
+    
+    if (isProjectAtRisk(project, tasks)) {
+      atRiskCount++
+    }
+  })
+  
+  return {
+    totalProjects: projects.length,
+    activeCount: activeProjects.length,
+    completedCount: completedProjects.length,
+    totalTasks,
+    completedTasks,
+    averageProgress: projects.length > 0 ? Math.round(totalProgress / projects.length) : 0,
+    atRiskCount
+  }
+}
+

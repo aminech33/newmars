@@ -56,6 +56,23 @@ export interface HistoryAction {
   previousState?: any
 }
 
+export interface PomodoroSession {
+  id: string
+  taskId?: string
+  taskTitle?: string
+  duration: number // en minutes (25 par défaut)
+  completedAt: number // timestamp
+  date: string // YYYY-MM-DD
+  type: 'focus' | 'break'
+}
+
+export interface DailyStats {
+  date: string
+  tasksCompleted: number
+  focusMinutes: number
+  pomodoroSessions: number
+}
+
 type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'projects'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
@@ -90,11 +107,17 @@ interface AppState {
   updateNote: (id: string, title: string, content: string) => void
   deleteNote: (id: string) => void
   
-  // Stats
+  // Stats & Pomodoro
   focusMinutes: number
   addFocusMinutes: (minutes: number) => void
   dailyGoal: number
   setDailyGoal: (goal: number) => void
+  pomodoroSessions: PomodoroSession[]
+  dailyStats: DailyStats[]
+  addPomodoroSession: (session: Omit<PomodoroSession, 'id' | 'completedAt' | 'date'>) => void
+  getTodayStats: () => DailyStats
+  getWeekStats: () => DailyStats[]
+  getCurrentStreak: () => number
   
   // History (for undo/redo)
   history: HistoryAction[]
@@ -392,13 +415,132 @@ export const useStore = create<AppState>()(
         notes: state.notes.filter((n) => n.id !== id)
       })),
       
-      // Stats
+      // Stats & Pomodoro
       focusMinutes: 247,
       addFocusMinutes: (minutes) => set((state) => ({
         focusMinutes: state.focusMinutes + minutes
       })),
       dailyGoal: 5,
       setDailyGoal: (goal) => set({ dailyGoal: goal }),
+      pomodoroSessions: [],
+      dailyStats: [],
+      addPomodoroSession: (session) => {
+        const today = new Date().toISOString().split('T')[0]
+        const newSession: PomodoroSession = {
+          ...session,
+          id: generateId(),
+          completedAt: Date.now(),
+          date: today
+        }
+        set((state) => {
+          // Update daily stats
+          const existingStatIndex = state.dailyStats.findIndex(s => s.date === today)
+          let newDailyStats = [...state.dailyStats]
+          
+          if (existingStatIndex >= 0) {
+            newDailyStats[existingStatIndex] = {
+              ...newDailyStats[existingStatIndex],
+              focusMinutes: newDailyStats[existingStatIndex].focusMinutes + session.duration,
+              pomodoroSessions: newDailyStats[existingStatIndex].pomodoroSessions + 1
+            }
+          } else {
+            newDailyStats.push({
+              date: today,
+              tasksCompleted: 0,
+              focusMinutes: session.duration,
+              pomodoroSessions: 1
+            })
+          }
+          
+          return {
+            pomodoroSessions: [...state.pomodoroSessions, newSession],
+            dailyStats: newDailyStats,
+            focusMinutes: state.focusMinutes + session.duration
+          }
+        })
+        get().addToast(`🍅 Pomodoro terminé ! +${session.duration} min`, 'success')
+      },
+      getTodayStats: () => {
+        const today = new Date().toISOString().split('T')[0]
+        const state = get()
+        const existing = state.dailyStats.find(s => s.date === today)
+        if (existing) return existing
+        
+        // Calculate from tasks completed today
+        const todayTasks = state.tasks.filter(t => 
+          t.completed && 
+          new Date(t.createdAt).toISOString().split('T')[0] === today
+        ).length
+        
+        return {
+          date: today,
+          tasksCompleted: todayTasks,
+          focusMinutes: 0,
+          pomodoroSessions: 0
+        }
+      },
+      getWeekStats: () => {
+        const stats: DailyStats[] = []
+        const state = get()
+        
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date()
+          date.setDate(date.getDate() - i)
+          const dateStr = date.toISOString().split('T')[0]
+          
+          const existing = state.dailyStats.find(s => s.date === dateStr)
+          if (existing) {
+            stats.push(existing)
+          } else {
+            // Count tasks completed on this day
+            const dayTasks = state.tasks.filter(t => {
+              if (!t.completed) return false
+              const taskDate = new Date(t.createdAt).toISOString().split('T')[0]
+              return taskDate === dateStr
+            }).length
+            
+            stats.push({
+              date: dateStr,
+              tasksCompleted: dayTasks,
+              focusMinutes: 0,
+              pomodoroSessions: 0
+            })
+          }
+        }
+        return stats
+      },
+      getCurrentStreak: () => {
+        const state = get()
+        let streak = 0
+        const today = new Date()
+        
+        for (let i = 0; i < 365; i++) {
+          const date = new Date(today)
+          date.setDate(date.getDate() - i)
+          const dateStr = date.toISOString().split('T')[0]
+          
+          const dayStats = state.dailyStats.find(s => s.date === dateStr)
+          const hasActivity = dayStats && (dayStats.tasksCompleted > 0 || dayStats.pomodoroSessions > 0)
+          
+          // For today, also check if there are incomplete tasks being worked on
+          if (i === 0) {
+            const todayTasks = state.tasks.filter(t => 
+              new Date(t.createdAt).toISOString().split('T')[0] === dateStr
+            )
+            if (todayTasks.length > 0 || hasActivity) {
+              streak++
+              continue
+            }
+          }
+          
+          if (hasActivity) {
+            streak++
+          } else if (i > 0) {
+            break
+          }
+        }
+        return streak
+      },
       
       // History
       history: [],

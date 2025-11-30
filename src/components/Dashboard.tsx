@@ -1,30 +1,41 @@
 import { useStore } from '../store/useStore'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, Target, Flame, Clock, CheckCircle2 } from 'lucide-react'
+import { useMemo } from 'react'
 
 export function Dashboard() {
-  const { tasks, focusMinutes, setView } = useStore()
+  const { tasks, setView, getWeekStats, getCurrentStreak, dailyGoal, pomodoroSessions } = useStore()
+
+  const weekStats = useMemo(() => getWeekStats(), [getWeekStats])
+  const streak = useMemo(() => getCurrentStreak(), [getCurrentStreak])
 
   const completedTasks = tasks.filter(t => t.completed).length
   const totalTasks = tasks.length
   const pendingTasks = totalTasks - completedTasks
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
-  // Mock weekly data for sparkline
-  const weekData = [4, 7, 5, 8, 6, 3, 5]
-  const maxWeek = Math.max(...weekData)
-  const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+  // Calcul du temps de focus total
+  const totalFocusMinutes = weekStats.reduce((acc, day) => acc + day.focusMinutes, 0)
+  const totalFocusHours = Math.floor(totalFocusMinutes / 60)
+  const totalPomodoros = weekStats.reduce((acc, day) => acc + day.pomodoroSessions, 0)
 
-  // Generate sparkline path
-  const generateSparkline = (data: number[], width: number, height: number) => {
-    const max = Math.max(...data)
-    const points = data.map((val, i) => {
-      const x = (i / (data.length - 1)) * width
-      const y = height - (val / max) * height
-      return `${x},${y}`
-    })
-    return `M ${points.join(' L ')}`
-  }
+  // Calcul des tâches complétées cette semaine
+  const weekTasksCompleted = weekStats.reduce((acc, day) => acc + day.tasksCompleted, 0)
 
+  // Tendance (comparaison avec la semaine précédente - simulé pour l'instant)
+  const previousWeekTasks = Math.max(1, weekTasksCompleted - Math.floor(Math.random() * 5) + 2)
+  const tasksTrend = weekTasksCompleted - previousWeekTasks
+  const trendPercent = Math.round((tasksTrend / previousWeekTasks) * 100)
+
+  // Jours de la semaine
+  const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+  const today = new Date().getDay()
+  const todayIndex = today === 0 ? 6 : today - 1
+
+  // Max pour les graphiques
+  const maxTasks = Math.max(...weekStats.map(d => d.tasksCompleted), 1)
+  const maxFocus = Math.max(...weekStats.map(d => d.focusMinutes), 1)
+
+  // Catégories
   const tasksByCategory = tasks.reduce((acc, task) => {
     if (!task.completed) {
       acc[task.category] = (acc[task.category] || 0) + 1
@@ -32,142 +43,248 @@ export function Dashboard() {
     return acc
   }, {} as Record<string, number>)
 
+  // Priorités
+  const tasksByPriority = tasks.reduce((acc, task) => {
+    if (!task.completed) {
+      acc[task.priority] = (acc[task.priority] || 0) + 1
+    }
+    return acc
+  }, {} as Record<string, number>)
+
+  // Objectif quotidien
+  const todayStats = weekStats[weekStats.length - 1] || { tasksCompleted: 0, focusMinutes: 0, pomodoroSessions: 0 }
+  const dailyProgress = Math.min(100, Math.round((todayStats.tasksCompleted / dailyGoal) * 100))
+
   return (
     <div className="h-full w-full flex flex-col view-transition">
-      {/* Minimal Header */}
+      {/* Header */}
       <header className="flex-shrink-0 px-6 py-5">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
+        <div className="max-w-6xl mx-auto flex items-center gap-4">
           <button
             onClick={() => setView('hub')}
             className="p-2 -ml-2 text-zinc-600 hover:text-zinc-400 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-medium tracking-tight text-zinc-200">Dashboard</h1>
+          <div>
+            <h1 className="text-xl font-medium tracking-tight text-zinc-200">Dashboard</h1>
+            <p className="text-xs text-zinc-600">Vue d'ensemble de votre productivité</p>
+          </div>
         </div>
       </header>
 
       <div className="flex-1 overflow-auto px-6 pb-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           
-          {/* Giant Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-b border-zinc-900">
-            <div className="text-center animate-fade-in" style={{ animationDelay: '0ms' }}>
-              <p className="text-6xl md:text-7xl font-extralight tracking-tighter text-zinc-100 tabular-nums">
-                {completedTasks}
-              </p>
-              <p className="text-zinc-600 text-xs mt-2 uppercase tracking-wider">Terminées</p>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {/* Tâches terminées */}
+            <div className="bg-zinc-900/50 rounded-2xl p-5 border border-zinc-800/50">
+              <div className="flex items-center justify-between mb-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                {tasksTrend !== 0 && (
+                  <div className={`flex items-center gap-1 text-xs ${tasksTrend > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {tasksTrend > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    {Math.abs(trendPercent)}%
+                  </div>
+                )}
+              </div>
+              <p className="text-3xl font-light text-zinc-100 tabular-nums">{weekTasksCompleted}</p>
+              <p className="text-xs text-zinc-600 mt-1">Tâches cette semaine</p>
             </div>
-            <div className="text-center animate-fade-in" style={{ animationDelay: '50ms' }}>
-              <p className="text-6xl md:text-7xl font-extralight tracking-tighter text-zinc-100 tabular-nums">
-                {pendingTasks}
+
+            {/* Temps de focus */}
+            <div className="bg-zinc-900/50 rounded-2xl p-5 border border-zinc-800/50">
+              <div className="flex items-center justify-between mb-3">
+                <Clock className="w-5 h-5 text-indigo-500" />
+                <span className="text-xs text-zinc-600">{totalPomodoros} 🍅</span>
+              </div>
+              <p className="text-3xl font-light text-zinc-100 tabular-nums">
+                {totalFocusHours}<span className="text-lg text-zinc-600">h</span>
+                <span className="text-lg text-zinc-400 ml-1">{totalFocusMinutes % 60}</span>
+                <span className="text-sm text-zinc-600">m</span>
               </p>
-              <p className="text-zinc-600 text-xs mt-2 uppercase tracking-wider">En cours</p>
+              <p className="text-xs text-zinc-600 mt-1">Temps de focus</p>
             </div>
-            <div className="text-center animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <p className="text-6xl md:text-7xl font-extralight tracking-tighter text-zinc-100 tabular-nums">
-                {Math.floor(focusMinutes / 60)}<span className="text-3xl text-zinc-600">h</span>
-              </p>
-              <p className="text-zinc-600 text-xs mt-2 uppercase tracking-wider">Focus</p>
+
+            {/* Streak */}
+            <div className="bg-zinc-900/50 rounded-2xl p-5 border border-zinc-800/50">
+              <div className="flex items-center justify-between mb-3">
+                <Flame className="w-5 h-5 text-orange-500" />
+              </div>
+              <p className="text-3xl font-light text-zinc-100 tabular-nums">{streak}</p>
+              <p className="text-xs text-zinc-600 mt-1">Jours de streak</p>
             </div>
-            <div className="text-center animate-fade-in" style={{ animationDelay: '150ms' }}>
-              <p className="text-6xl md:text-7xl font-extralight tracking-tighter text-zinc-100 tabular-nums">
-                {completionRate}<span className="text-3xl text-zinc-600">%</span>
-              </p>
-              <p className="text-zinc-600 text-xs mt-2 uppercase tracking-wider">Complétion</p>
+
+            {/* Objectif */}
+            <div className="bg-zinc-900/50 rounded-2xl p-5 border border-zinc-800/50">
+              <div className="flex items-center justify-between mb-3">
+                <Target className="w-5 h-5 text-cyan-500" />
+                <span className="text-xs text-zinc-600">{todayStats.tasksCompleted}/{dailyGoal}</span>
+              </div>
+              <div className="relative h-2 bg-zinc-800 rounded-full overflow-hidden mb-2">
+                <div 
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: `${dailyProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-zinc-600">Objectif quotidien</p>
             </div>
           </div>
 
-          {/* Sparkline Section */}
-          <div className="py-12 border-b border-zinc-900 animate-fade-in" style={{ animationDelay: '200ms' }}>
-            <div className="flex items-end justify-between mb-6">
-              <div>
-                <h3 className="text-zinc-400 text-sm font-medium">Activité cette semaine</h3>
-                <p className="text-zinc-700 text-xs mt-1">Tâches complétées par jour</p>
-              </div>
-              <p className="text-2xl font-light text-zinc-300 tabular-nums">
-                {weekData.reduce((a, b) => a + b, 0)} <span className="text-sm text-zinc-600">total</span>
-              </p>
-            </div>
-            
-            {/* Sparkline Chart */}
-            <div className="relative h-24">
-              <svg className="w-full h-full" preserveAspectRatio="none">
-                {/* Grid lines */}
-                <line x1="0" y1="100%" x2="100%" y2="100%" stroke="#27272a" strokeWidth="1" />
-                
-                {/* Sparkline */}
-                <path
-                  d={generateSparkline(weekData, 100, 100)}
-                  fill="none"
-                  stroke="#52525b"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  vectorEffect="non-scaling-stroke"
-                  className="transition-all duration-500"
-                />
-                
-                {/* Data points */}
-                {weekData.map((val, i) => {
-                  const x = (i / (weekData.length - 1)) * 100
-                  const y = 100 - (val / maxWeek) * 100
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Weekly Tasks Chart */}
+            <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50">
+              <h3 className="text-sm font-medium text-zinc-400 mb-4">Tâches complétées</h3>
+              <div className="flex items-end justify-between h-32 gap-2">
+                {weekStats.map((day, i) => {
+                  const height = (day.tasksCompleted / maxTasks) * 100
+                  const isToday = i === todayIndex
                   return (
-                    <circle
-                      key={i}
-                      cx={`${x}%`}
-                      cy={`${y}%`}
-                      r="3"
-                      fill="#09090b"
-                      stroke="#71717a"
-                      strokeWidth="2"
-                      className="transition-all duration-300"
-                    />
+                    <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                      <div className="w-full flex items-end justify-center h-24">
+                        <div 
+                          className={`w-full max-w-8 rounded-t-lg transition-all duration-500 ${
+                            isToday 
+                              ? 'bg-gradient-to-t from-indigo-600 to-indigo-400' 
+                              : 'bg-zinc-700 hover:bg-zinc-600'
+                          }`}
+                          style={{ height: `${Math.max(4, height)}%` }}
+                        />
+                      </div>
+                      <span className={`text-[10px] ${isToday ? 'text-indigo-400 font-medium' : 'text-zinc-600'}`}>
+                        {weekDays[i]}
+                      </span>
+                    </div>
                   )
                 })}
-              </svg>
-              
-              {/* Day labels */}
-              <div className="absolute bottom-0 left-0 right-0 flex justify-between translate-y-6">
-                {weekDays.map((day, i) => (
-                  <span key={i} className="text-[10px] text-zinc-700">{day}</span>
+              </div>
+            </div>
+
+            {/* Focus Time Chart */}
+            <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50">
+              <h3 className="text-sm font-medium text-zinc-400 mb-4">Temps de focus (minutes)</h3>
+              <div className="flex items-end justify-between h-32 gap-2">
+                {weekStats.map((day, i) => {
+                  const height = (day.focusMinutes / maxFocus) * 100
+                  const isToday = i === todayIndex
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                      <div className="w-full flex items-end justify-center h-24">
+                        <div 
+                          className={`w-full max-w-8 rounded-t-lg transition-all duration-500 ${
+                            isToday 
+                              ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' 
+                              : 'bg-zinc-700 hover:bg-zinc-600'
+                          }`}
+                          style={{ height: `${Math.max(4, height)}%` }}
+                        />
+                      </div>
+                      <span className={`text-[10px] ${isToday ? 'text-emerald-400 font-medium' : 'text-zinc-600'}`}>
+                        {weekDays[i]}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Categories & Priorities */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Par catégorie */}
+            <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50">
+              <h3 className="text-sm font-medium text-zinc-400 mb-4">Par catégorie</h3>
+              <div className="space-y-3">
+                {[
+                  { key: 'dev', label: 'Développement', color: 'bg-indigo-500' },
+                  { key: 'design', label: 'Design', color: 'bg-cyan-500' },
+                  { key: 'work', label: 'Travail', color: 'bg-amber-500' },
+                  { key: 'personal', label: 'Personnel', color: 'bg-emerald-500' },
+                  { key: 'urgent', label: 'Urgent', color: 'bg-rose-500' },
+                ].map((cat) => {
+                  const count = tasksByCategory[cat.key] || 0
+                  const percent = pendingTasks > 0 ? (count / pendingTasks) * 100 : 0
+                  return (
+                    <div key={cat.key} className="flex items-center gap-3">
+                      <span className={`w-2 h-2 rounded-full ${cat.color}`} />
+                      <span className="text-xs text-zinc-500 w-24">{cat.label}</span>
+                      <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${cat.color} opacity-60 rounded-full transition-all duration-500`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-zinc-500 w-8 text-right tabular-nums">{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Par priorité */}
+            <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50">
+              <h3 className="text-sm font-medium text-zinc-400 mb-4">Par priorité</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { key: 'urgent', label: 'Urgent', color: 'text-rose-400', bg: 'bg-rose-500/10', icon: '🔥' },
+                  { key: 'high', label: 'Haute', color: 'text-orange-400', bg: 'bg-orange-500/10', icon: '⚡' },
+                  { key: 'medium', label: 'Moyenne', color: 'text-amber-400', bg: 'bg-amber-500/10', icon: '📌' },
+                  { key: 'low', label: 'Basse', color: 'text-zinc-400', bg: 'bg-zinc-500/10', icon: '📋' },
+                ].map((priority) => (
+                  <div 
+                    key={priority.key}
+                    className={`${priority.bg} rounded-xl p-4 border border-zinc-800/30`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span>{priority.icon}</span>
+                      <span className={`text-xs ${priority.color}`}>{priority.label}</span>
+                    </div>
+                    <p className={`text-2xl font-light ${priority.color} tabular-nums`}>
+                      {tasksByPriority[priority.key] || 0}
+                    </p>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Categories */}
-          <div className="py-12 animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <h3 className="text-zinc-400 text-sm font-medium mb-6">Par catégorie</h3>
-            
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {[
-                { key: 'dev', label: 'Dev', color: 'bg-indigo-500' },
-                { key: 'design', label: 'Design', color: 'bg-cyan-500' },
-                { key: 'work', label: 'Travail', color: 'bg-amber-500' },
-                { key: 'personal', label: 'Perso', color: 'bg-emerald-500' },
-                { key: 'urgent', label: 'Urgent', color: 'bg-rose-500' },
-              ].map((cat) => (
-                <div 
-                  key={cat.key}
-                  className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-900"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`w-2 h-2 rounded-full ${cat.color} opacity-60`} />
-                    <span className="text-xs text-zinc-600">{cat.label}</span>
+          {/* Recent Pomodoro Sessions */}
+          {pomodoroSessions.length > 0 && (
+            <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50">
+              <h3 className="text-sm font-medium text-zinc-400 mb-4">Sessions récentes</h3>
+              <div className="space-y-2">
+                {pomodoroSessions.slice(-5).reverse().map((session) => (
+                  <div key={session.id} className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{session.type === 'focus' ? '🍅' : '☕'}</span>
+                      <div>
+                        <p className="text-sm text-zinc-300">{session.taskTitle || 'Session libre'}</p>
+                        <p className="text-xs text-zinc-600">
+                          {new Date(session.completedAt).toLocaleString('fr-FR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            day: 'numeric',
+                            month: 'short'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-sm text-zinc-500">{session.duration} min</span>
                   </div>
-                  <p className="text-2xl font-light text-zinc-300 tabular-nums">
-                    {tasksByCategory[cat.key] || 0}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Streak indicator */}
-          <div className="flex items-center justify-center gap-2 py-8 text-zinc-700 animate-fade-in" style={{ animationDelay: '400ms' }}>
-            <span className="text-lg">🔥</span>
-            <span className="text-sm">7 jours de streak</span>
+          {/* Motivation */}
+          <div className="text-center py-8 text-zinc-700">
+            <p className="text-sm">
+              {streak >= 7 ? '🔥 Incroyable ! Tu es en feu !' : 
+               streak >= 3 ? '💪 Continue comme ça !' : 
+               '🚀 Chaque jour compte !'}
+            </p>
           </div>
         </div>
       </div>

@@ -18,15 +18,9 @@ export function WidgetGrid() {
   const { widgets, updateWidget, isEditMode, resetWidgets } = useStore()
   const [draggedWidget, setDraggedWidget] = useState<string | null>(null)
 
-  // Debug: afficher les widgets dans la console
-  console.log('📦 Widgets actuels:', widgets)
-
   // Vérifier et réparer les widgets corrompus
   const validWidgets = (widgets || []).filter(w => {
-    if (!w || !w.id || !w.type) {
-      console.log('❌ Widget invalide:', w)
-      return false
-    }
+    if (!w || !w.id || !w.type) return false
     return true
   }).map(w => ({
     ...w,
@@ -34,8 +28,6 @@ export function WidgetGrid() {
     dimensions: w.dimensions || { width: 1, height: 1 },
     position: w.position || { x: 0, y: 0 }
   }))
-
-  console.log('✅ Widgets valides:', validWidgets.length)
 
   const renderWidget = (widget: Widget) => {
     // Passer le widget complet à tous les composants
@@ -112,9 +104,6 @@ export function WidgetGrid() {
     if (a.position.y !== b.position.y) return a.position.y - b.position.y
     return a.position.x - b.position.x
   })
-
-  // Debug
-  console.log('🎨 Rendering WidgetGrid with', sortedWidgets.length, 'widgets')
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 auto-rows-min">
