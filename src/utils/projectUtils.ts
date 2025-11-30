@@ -2,8 +2,11 @@ import { Project, ProjectTemplate } from '../types/project'
 import { Task } from '../store/useStore'
 
 export interface ProjectStatsResult {
+  id?: string
   totalTasks: number
+  tasksCount: number // alias for totalTasks
   completedTasks: number
+  completedTasksCount: number // alias for completedTasks
   progress: number
   estimatedHours: number
   actualHours: number
@@ -132,18 +135,21 @@ export function formatProjectDate(date: string): string {
 
 export function calculateProjectStats(project: Project, tasks: Task[]): ProjectStatsResult {
   const projectTasks = tasks.filter(t => t.projectId === project.id)
-  const completedTasks = projectTasks.filter(t => t.completed)
+  const completedTasksList = projectTasks.filter(t => t.completed)
   
   const totalTasks = projectTasks.length
-  const completedCount = completedTasks.length
+  const completedCount = completedTasksList.length
   const progress = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
   
   const estimatedHours = projectTasks.reduce((acc, t) => acc + (t.estimatedTime || 0), 0) / 60
-  const actualHours = completedTasks.reduce((acc, t) => acc + (t.actualTime || t.estimatedTime || 0), 0) / 60
+  const actualHours = completedTasksList.reduce((acc, t) => acc + (t.actualTime || t.estimatedTime || 0), 0) / 60
   
   return {
+    id: project.id,
     totalTasks,
+    tasksCount: totalTasks,
     completedTasks: completedCount,
+    completedTasksCount: completedCount,
     progress,
     estimatedHours: Math.round(estimatedHours * 10) / 10,
     actualHours: Math.round(actualHours * 10) / 10

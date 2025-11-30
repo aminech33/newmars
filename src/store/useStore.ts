@@ -314,11 +314,13 @@ export const useStore = create<AppState>()(
       
       // Tasks
       tasks: [
-        { id: '1', title: 'Finaliser le composant Dashboard', completed: false, category: 'dev', createdAt: Date.now() - 86400000, status: 'in-progress', priority: 'high', estimatedTime: 60 },
-        { id: '2', title: 'Revoir les maquettes UI', completed: false, category: 'design', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 45 },
+        { id: '1', title: 'Finaliser le composant Dashboard', completed: false, category: 'dev', createdAt: Date.now() - 86400000, status: 'in-progress', priority: 'high', estimatedTime: 60, projectId: 'proj-1' },
+        { id: '2', title: 'Revoir les maquettes UI', completed: false, category: 'design', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 45, projectId: 'proj-1' },
         { id: '3', title: 'Appel avec l\'équipe produit', completed: true, category: 'work', createdAt: Date.now() - 259200000, status: 'done', priority: 'medium', estimatedTime: 30 },
-        { id: '4', title: 'Implémenter la recherche globale', completed: false, category: 'dev', createdAt: Date.now() - 43200000, status: 'todo', priority: 'high', estimatedTime: 90 },
+        { id: '4', title: 'Implémenter la recherche globale', completed: false, category: 'dev', createdAt: Date.now() - 43200000, status: 'todo', priority: 'high', estimatedTime: 90, projectId: 'proj-1' },
         { id: '5', title: 'Préparer la présentation client', completed: false, category: 'urgent', createdAt: Date.now() - 21600000, status: 'in-progress', priority: 'urgent', estimatedTime: 120, dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0] },
+        { id: '6', title: 'Rechercher des idées', completed: true, category: 'personal', createdAt: Date.now() - 345600000, status: 'done', priority: 'low', estimatedTime: 30, projectId: 'proj-2' },
+        { id: '7', title: 'Créer le prototype', completed: false, category: 'dev', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 120, projectId: 'proj-2' },
       ],
       addTask: (task) => {
         const newTask = { ...task, id: generateId(), createdAt: Date.now() }
@@ -873,7 +875,30 @@ export const useStore = create<AppState>()(
       },
       
       // Projects
-      projects: [],
+      projects: [
+        {
+          id: 'proj-1',
+          name: 'NewMars App',
+          description: 'Application de productivité personnelle',
+          color: '#6366f1',
+          icon: '🚀',
+          status: 'active' as const,
+          goal: 'Créer la meilleure app de productivité',
+          createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+          updatedAt: Date.now(),
+          isFavorite: true
+        },
+        {
+          id: 'proj-2',
+          name: 'Side Project',
+          description: 'Projet personnel en cours',
+          color: '#10b981',
+          icon: '💡',
+          status: 'active' as const,
+          createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
+          updatedAt: Date.now()
+        }
+      ],
       addProject: (project) => {
         const now = Date.now()
         const newProject = { ...project, id: generateId(), createdAt: now, updatedAt: now }
