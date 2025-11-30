@@ -15,6 +15,7 @@
 | **Dashboard** | 9.0/10 | ✅ Optimisé |
 | **Widgets** | 9.0/10 | ✅ Optimisé |
 | **Calendrier** | 8.8/10 | ✅ Optimisé |
+| **Santé & Nutrition** | 8.5/10 | ✅ Optimisé |
 | **Tâches** | 8.4/10 | ✅ Optimisé |
 | **Journal** | ~7.5/10 | ⏳ À auditer |
 | **Habitudes** | ~7.0/10 | ⏳ À auditer |
@@ -213,6 +214,62 @@ src/config/
 
 ---
 
+## 🏥 Santé & Nutrition (8.5/10)
+
+### ✅ Points Forts
+- Architecture modulaire (10 composants)
+- Hook `useHealthData` centralisé
+- Calculs memoized (BMI, TDEE, macros)
+- Suggestions IA intelligentes
+- Auto-détection calories par nom d'aliment
+- Auto-détection type repas par heure
+- ConfirmDialog + Undo pour suppression
+- Toast feedback après ajout
+- Validation inputs complète
+- Filtres par période + recherche
+
+### 🏗️ Architecture (Refactorisé)
+```
+src/components/health/
+├── HealthPage.tsx (280 lignes) ← Était 555 lignes
+├── HealthStats.tsx (stats cards)
+├── HealthSuggestions.tsx (suggestions IA)
+├── WeightChart.tsx (graphique poids)
+├── WeightList.tsx (historique poids)
+├── MealList.tsx (journal alimentaire)
+├── WeightModal.tsx (modal poids)
+├── MealModal.tsx (modal repas)
+├── HealthFilters.tsx (recherche + filtres)
+└── HealthFAB.tsx (FAB mobile)
+
+src/hooks/
+└── useHealthData.ts (logique métier)
+```
+
+### ⌨️ Raccourcis Clavier
+| Raccourci | Action |
+|-----------|--------|
+| `Ctrl+P` | Ajouter poids |
+| `Ctrl+M` | Ajouter repas |
+| `1` | Tab Vue d'ensemble |
+| `2` | Tab Poids |
+| `3` | Tab Nutrition |
+| `Escape` | Fermer modal |
+
+### ♿ Accessibilité
+- `htmlFor` sur tous les labels
+- Focus trap dans modales
+- `role="tablist"`, `role="tab"`, `role="tabpanel"`
+- `aria-describedby` sur inputs
+- Navigation clavier complète
+
+### 📱 Mobile
+- FAB flottant expandable
+- Tabs scrollables
+- Responsive grid
+
+---
+
 ## 🧩 Composants UI Réutilisables
 
 ```
@@ -315,6 +372,7 @@ src/
 - [x] Dashboard interactif (9.0/10)
 - [x] Widgets Hub refactorisé (9.0/10)
 - [x] Calendrier refactorisé (8.8/10)
+- [x] Santé & Nutrition refactorisé (8.5/10)
 - [x] Tâches optimisées (8.4/10)
 - [x] Composants UI réutilisables
 - [x] Hooks customs
@@ -331,6 +389,17 @@ src/
 ---
 
 ## 📝 Changelog
+
+### v2.2.0 (30 Nov 2024)
+- ✨ **Santé & Nutrition refactorisé** (6.5 → 8.5/10)
+  - Architecture modulaire (10 composants)
+  - Hook useHealthData centralisé
+  - ConfirmDialog + Undo suppression
+  - Toast feedback
+  - Validation inputs
+  - Filtres par période + recherche
+  - FAB mobile
+  - Raccourcis clavier (Ctrl+P, Ctrl+M)
 
 ### v2.1.0 (30 Nov 2024)
 - ✨ **Widgets Hub refactorisé** (7.8 → 9.0/10)
