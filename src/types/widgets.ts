@@ -11,6 +11,7 @@ export type WidgetType =
   | 'quick-actions'
   | 'health'
   | 'journal'
+  | 'learning'
 
 export type WidgetSize = 'small' | 'medium' | 'large'
 

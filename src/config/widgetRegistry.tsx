@@ -1,5 +1,5 @@
 import { lazy, ComponentType } from 'react'
-import { CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Zap, Heart, Book } from 'lucide-react'
+import { CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Zap, Heart, Book, GraduationCap } from 'lucide-react'
 import { Widget } from '../types/widgets'
 
 // Lazy load all widgets for better performance
@@ -14,6 +14,7 @@ const AIWidget = lazy(() => import('../components/widgets/AIWidget').then(m => (
 const QuickActionsWidget = lazy(() => import('../components/widgets/QuickActionsWidget').then(m => ({ default: m.QuickActionsWidget })))
 const HealthWidget = lazy(() => import('../components/widgets/HealthWidget').then(m => ({ default: m.HealthWidget })))
 const JournalWidget = lazy(() => import('../components/widgets/JournalWidget').then(m => ({ default: m.JournalWidget })))
+const LearningWidget = lazy(() => import('../components/widgets/LearningWidget').then(m => ({ default: m.LearningWidget })))
 
 export interface WidgetDefinition {
   type: string
@@ -124,6 +125,15 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     component: QuickActionsWidget,
     category: 'tools',
     defaultSize: 'small'
+  },
+  learning: {
+    type: 'learning',
+    label: 'Apprentissage',
+    description: 'Apprends avec un tuteur IA',
+    icon: GraduationCap,
+    component: LearningWidget,
+    category: 'productivity',
+    defaultSize: 'medium'
   }
 }
 
