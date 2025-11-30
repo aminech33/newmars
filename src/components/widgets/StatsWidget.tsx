@@ -1,15 +1,15 @@
+import { memo, useMemo } from 'react'
 import { TrendingUp, TrendingDown, Flame, Target } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
-import { useMemo } from 'react'
 import { calculateProductivityScore, formatDuration } from '../../utils/productivityUtils'
 
 interface StatsWidgetProps {
   widget: Widget
 }
 
-export function StatsWidget({ widget }: StatsWidgetProps) {
+export const StatsWidget = memo(function StatsWidget({ widget }: StatsWidgetProps) {
   const { id, size = 'small' } = widget
   const { tasks, focusMinutes, setView, getCurrentStreak, dailyGoal, getWeekStats } = useStore()
   
@@ -197,4 +197,4 @@ export function StatsWidget({ widget }: StatsWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

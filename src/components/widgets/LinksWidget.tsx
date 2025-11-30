@@ -1,5 +1,5 @@
+import { memo, useState } from 'react'
 import { ExternalLink, Plus, X } from 'lucide-react'
-import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -8,7 +8,7 @@ interface LinksWidgetProps {
   widget: Widget
 }
 
-export function LinksWidget({ widget }: LinksWidgetProps) {
+export const LinksWidget = memo(function LinksWidget({ widget }: LinksWidgetProps) {
   const { id, size = 'small' } = widget
   const { quickLinks, deleteQuickLink } = useStore()
   const [isAdding, setIsAdding] = useState(false)
@@ -69,4 +69,4 @@ export function LinksWidget({ widget }: LinksWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

@@ -1,15 +1,15 @@
-import { BookOpen, TrendingUp, Calendar, Star } from 'lucide-react'
+import { memo, useMemo } from 'react'
+import { BookOpen, TrendingUp, Star } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
 import { getTodayEntry, calculateJournalStats } from '../../utils/journalUtils'
-import { useMemo } from 'react'
 
 interface JournalWidgetProps {
   widget: Widget
 }
 
-export function JournalWidget({ widget }: JournalWidgetProps) {
+export const JournalWidget = memo(function JournalWidget({ widget }: JournalWidgetProps) {
   const { setView, journalEntries } = useStore()
   
   const todayEntry = getTodayEntry(journalEntries)
@@ -205,4 +205,4 @@ export function JournalWidget({ widget }: JournalWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

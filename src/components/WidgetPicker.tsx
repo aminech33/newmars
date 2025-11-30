@@ -1,36 +1,83 @@
-import { X, CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Zap, Heart, Book } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { X, Search, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { WidgetType } from '../types/widgets'
+import { widgetRegistry, widgetCategories, WidgetDefinition } from '../config/widgetRegistry'
 
 interface WidgetPickerProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const widgetDefinitions = [
-  { type: 'tasks' as WidgetType, label: 'Tâches', icon: CheckSquare, description: 'Liste de vos tâches' },
-  { type: 'stats' as WidgetType, label: 'Statistiques', icon: BarChart3, description: 'Vos stats de productivité' },
-  { type: 'calendar' as WidgetType, label: 'Calendrier', icon: Calendar, description: 'Échéances à venir' },
-  { type: 'health' as WidgetType, label: 'Santé', icon: Heart, description: 'Poids, nutrition & calories' },
-  { type: 'journal' as WidgetType, label: 'Journal', icon: Book, description: 'Réflexion quotidienne' },
-  { type: 'notes' as WidgetType, label: 'Notes', icon: BookOpen, description: 'Notes rapides' },
-  { type: 'habits' as WidgetType, label: 'Habitudes', icon: Flame, description: 'Suivi d\'habitudes' },
-  { type: 'pomodoro' as WidgetType, label: 'Pomodoro', icon: Timer, description: 'Timer de focus' },
-  { type: 'links' as WidgetType, label: 'Liens', icon: ExternalLink, description: 'Liens rapides' },
-  { type: 'ai' as WidgetType, label: 'Assistant IA', icon: Sparkles, description: 'Accès rapide à l\'IA' },
-  { type: 'quick-actions' as WidgetType, label: 'Actions Rapides', icon: Zap, description: 'Raccourcis essentiels' },
-]
-
 export function WidgetPicker({ isOpen, onClose }: WidgetPickerProps) {
   const { addWidget, widgets } = useStore()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all')
+  const [hoveredWidget, setHoveredWidget] = useState<string | null>(null)
+
+  // Reset state when opening
+  useEffect(() => {
+    if (isOpen) {
+      setSearchQuery('')
+      setSelectedCategory('all')
+    }
+  }, [isOpen])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isOpen) return
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  // Filter widgets
+  const filteredWidgets = useMemo(() => {
+    return Object.values(widgetRegistry).filter(widget => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        if (!widget.label.toLowerCase().includes(query) && 
+            !widget.description.toLowerCase().includes(query)) {
+          return false
+        }
+      }
+      
+      // Category filter
+      if (selectedCategory !== 'all' && widget.category !== selectedCategory) {
+        return false
+      }
+      
+      return true
+    })
+  }, [searchQuery, selectedCategory])
+
+  // Group by category
+  const groupedWidgets = useMemo(() => {
+    if (selectedCategory !== 'all') {
+      return { [selectedCategory]: filteredWidgets }
+    }
+    
+    return filteredWidgets.reduce((acc, widget) => {
+      if (!acc[widget.category]) acc[widget.category] = []
+      acc[widget.category].push(widget)
+      return acc
+    }, {} as Record<string, WidgetDefinition[]>)
+  }, [filteredWidgets, selectedCategory])
 
   const handleAddWidget = (type: WidgetType) => {
+    const definition = widgetRegistry[type]
+    
     // Find next available position
     const maxY = Math.max(0, ...widgets.map(w => w.position.y + w.dimensions.height))
     
     addWidget({
       type,
-      size: 'medium',
+      size: definition?.defaultSize || 'medium',
       dimensions: { width: 1, height: 1 },
       position: { x: 0, y: maxY }
     })
@@ -38,44 +85,188 @@ export function WidgetPicker({ isOpen, onClose }: WidgetPickerProps) {
     onClose()
   }
 
+  // Check if widget already exists
+  const isWidgetAdded = (type: string) => {
+    return widgets.some(w => w.type === type)
+  }
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-2xl bg-mars-surface rounded-3xl shadow-[0_16px_64px_rgba(0,0,0,0.5)] overflow-hidden animate-scale-in backdrop-blur-xl"
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="widget-picker-title"
+    >
+      <div 
+        className="w-full max-w-3xl bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
         style={{ border: '1px solid rgba(255,255,255,0.08)' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-900">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-800">
           <div>
-            <h2 className="text-lg font-medium text-zinc-200">Ajouter un widget</h2>
-            <p className="text-xs text-zinc-600 mt-1">Choisissez un widget à ajouter à votre hub</p>
+            <h2 id="widget-picker-title" className="text-lg font-semibold text-zinc-100">
+              Ajouter un widget
+            </h2>
+            <p className="text-sm text-zinc-500 mt-0.5">
+              {Object.keys(widgetRegistry).length} widgets disponibles
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-zinc-600 hover:text-zinc-400 transition-all duration-300 rounded-xl hover:bg-zinc-800/50"
+            className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-xl transition-colors"
+            aria-label="Fermer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Widget Grid */}
-        <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-auto">
-          {widgetDefinitions.map((widget) => {
-            const Icon = widget.icon
-            return (
+        {/* Search & Filters */}
+        <div className="px-6 py-4 border-b border-zinc-800/50 space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher un widget..."
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+              autoFocus
+            />
+          </div>
+          
+          {/* Category filters */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                selectedCategory === 'all'
+                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent'
+              }`}
+            >
+              Tous
+            </button>
+            {widgetCategories.map((cat) => (
               <button
-                key={widget.type}
-                onClick={() => handleAddWidget(widget.type)}
-                className="p-4 text-left bg-zinc-900/50 rounded-2xl hover:bg-zinc-900 shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-all duration-300 group"
-                style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent'
+                }`}
               >
-                <Icon className="w-6 h-6 text-zinc-600 group-hover:text-zinc-500 mb-3" />
-                <h3 className="text-sm font-medium text-zinc-300 mb-1">{widget.label}</h3>
-                <p className="text-xs text-zinc-600">{widget.description}</p>
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
               </button>
-            )
-          })}
+            ))}
+          </div>
+        </div>
+
+        {/* Widget Grid */}
+        <div className="p-6 max-h-[60vh] overflow-auto">
+          {filteredWidgets.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-3">🔍</div>
+              <p className="text-zinc-500">Aucun widget trouvé</p>
+              <p className="text-zinc-700 text-sm mt-1">Essayez une autre recherche</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(groupedWidgets).map(([category, categoryWidgets]) => {
+                const categoryInfo = widgetCategories.find(c => c.id === category)
+                
+                return (
+                  <div key={category}>
+                    {selectedCategory === 'all' && (
+                      <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <span>{categoryInfo?.icon}</span>
+                        <span>{categoryInfo?.label}</span>
+                      </h3>
+                    )}
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {categoryWidgets.map((widget) => {
+                        const Icon = widget.icon
+                        const alreadyAdded = isWidgetAdded(widget.type)
+                        
+                        return (
+                          <button
+                            key={widget.type}
+                            onClick={() => handleAddWidget(widget.type as WidgetType)}
+                            onMouseEnter={() => setHoveredWidget(widget.type)}
+                            onMouseLeave={() => setHoveredWidget(null)}
+                            disabled={alreadyAdded}
+                            className={`
+                              relative p-4 text-left rounded-2xl transition-all duration-200 group
+                              ${alreadyAdded 
+                                ? 'bg-zinc-800/30 opacity-50 cursor-not-allowed' 
+                                : 'bg-zinc-800/50 hover:bg-zinc-800 hover:shadow-lg hover:scale-[1.02]'
+                              }
+                            `}
+                            style={{ border: '1px solid rgba(255,255,255,0.05)' }}
+                          >
+                            {/* Icon */}
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors ${
+                              alreadyAdded ? 'bg-zinc-700/50' : 'bg-indigo-500/10 group-hover:bg-indigo-500/20'
+                            }`}>
+                              <Icon className={`w-5 h-5 ${alreadyAdded ? 'text-zinc-600' : 'text-indigo-400'}`} />
+                            </div>
+                            
+                            {/* Content */}
+                            <h4 className={`text-sm font-medium mb-1 ${alreadyAdded ? 'text-zinc-600' : 'text-zinc-200'}`}>
+                              {widget.label}
+                            </h4>
+                            <p className={`text-xs ${alreadyAdded ? 'text-zinc-700' : 'text-zinc-500'}`}>
+                              {widget.description}
+                            </p>
+                            
+                            {/* Add indicator */}
+                            {!alreadyAdded && (
+                              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="p-1.5 bg-indigo-500 rounded-lg">
+                                  <Plus className="w-3 h-3 text-white" />
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Already added badge */}
+                            {alreadyAdded && (
+                              <div className="absolute top-3 right-3">
+                                <span className="text-[10px] text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded-full">
+                                  Ajouté
+                                </span>
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/50">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-600">
+              {widgets.length} widget{widgets.length > 1 ? 's' : ''} actif{widgets.length > 1 ? 's' : ''}
+            </p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -7,7 +8,7 @@ interface CalendarWidgetProps {
   widget: Widget
 }
 
-export function CalendarWidget({ widget }: CalendarWidgetProps) {
+export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarWidgetProps) {
   const { id, size = 'small' } = widget
   const { tasks, events, setView } = useStore()
   
@@ -79,4 +80,4 @@ export function CalendarWidget({ widget }: CalendarWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

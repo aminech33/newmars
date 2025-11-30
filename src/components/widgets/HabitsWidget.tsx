@@ -1,5 +1,5 @@
+import { memo, useState } from 'react'
 import { Plus, Flame } from 'lucide-react'
-import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -8,7 +8,7 @@ interface HabitsWidgetProps {
   widget: Widget
 }
 
-export function HabitsWidget({ widget }: HabitsWidgetProps) {
+export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetProps) {
   const { id, size = 'small' } = widget
   const { habits, toggleHabitToday, addHabit } = useStore()
   const [isAdding, setIsAdding] = useState(false)
@@ -131,4 +131,4 @@ export function HabitsWidget({ widget }: HabitsWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Heart, TrendingDown, TrendingUp, Minus, Flame, Apple } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -8,7 +9,7 @@ interface HealthWidgetProps {
   widget: Widget
 }
 
-export function HealthWidget({ widget }: HealthWidgetProps) {
+export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetProps) {
   const { id, size = 'small' } = widget
   const { weightEntries, mealEntries, healthGoals, userProfile, setView } = useStore()
 
@@ -231,4 +232,4 @@ export function HealthWidget({ widget }: HealthWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

@@ -1,5 +1,5 @@
+import { memo, useState } from 'react'
 import { Plus, X } from 'lucide-react'
-import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -8,7 +8,7 @@ interface NotesWidgetProps {
   widget: Widget
 }
 
-export function NotesWidget({ widget }: NotesWidgetProps) {
+export const NotesWidget = memo(function NotesWidget({ widget }: NotesWidgetProps) {
   const { id, size = 'small' } = widget
   const { quickNotes, addQuickNote, deleteQuickNote } = useStore()
   const [isAdding, setIsAdding] = useState(false)
@@ -90,4 +90,4 @@ export function NotesWidget({ widget }: NotesWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

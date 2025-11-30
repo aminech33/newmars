@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore'
 import { WidgetGrid } from './WidgetGrid'
 import { WidgetPicker } from './WidgetPicker'
 import { ThemePicker } from './ThemePicker'
+import { WidgetFAB } from './widgets/WidgetFAB'
 
 export function HubV2() {
   const { tasks, isEditMode, setEditMode, saveLayout, addTask, setView, setFocusMode, widgets, resetWidgets } = useStore()
@@ -209,6 +210,9 @@ export function HubV2() {
 
       {/* Widget Picker Modal */}
       <WidgetPicker isOpen={showWidgetPicker} onClose={() => setShowWidgetPicker(false)} />
+
+      {/* Mobile FAB */}
+      <WidgetFAB onAddWidget={() => setShowWidgetPicker(true)} />
 
       {/* Save Layout Dialog */}
       {showSaveDialog && (

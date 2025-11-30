@@ -1,5 +1,5 @@
+import { memo, useState, useEffect } from 'react'
 import { Play, Pause } from 'lucide-react'
-import { useState, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -8,7 +8,7 @@ interface PomodoroWidgetProps {
   widget: Widget
 }
 
-export function PomodoroWidget({ widget }: PomodoroWidgetProps) {
+export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroWidgetProps) {
   const { id, size = 'small' } = widget
   const { tasks, setFocusMode } = useStore()
   const [timeLeft, setTimeLeft] = useState(25 * 60)
@@ -82,4 +82,4 @@ export function PomodoroWidget({ widget }: PomodoroWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

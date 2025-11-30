@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Sparkles, ArrowRight } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -7,7 +8,7 @@ interface AIWidgetProps {
   widget: Widget
 }
 
-export function AIWidget({ widget }: AIWidgetProps) {
+export const AIWidget = memo(function AIWidget({ widget }: AIWidgetProps) {
   const { id, size = 'small' } = widget
   const { setView } = useStore()
 
@@ -64,4 +65,4 @@ export function AIWidget({ widget }: AIWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

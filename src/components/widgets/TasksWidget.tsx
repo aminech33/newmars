@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -7,7 +8,7 @@ interface TasksWidgetProps {
   widget: Widget
 }
 
-export function TasksWidget({ widget }: TasksWidgetProps) {
+export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProps) {
   const { id, size = 'small' } = widget
   const { tasks, setView } = useStore()
   const pendingTasks = tasks.filter(t => !t.completed)
@@ -61,4 +62,4 @@ export function TasksWidget({ widget }: TasksWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})

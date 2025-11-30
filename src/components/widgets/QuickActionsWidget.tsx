@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { FileText, CheckSquare, Timer, Zap } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -7,7 +8,7 @@ interface QuickActionsWidgetProps {
   widget: Widget
 }
 
-export function QuickActionsWidget({ widget }: QuickActionsWidgetProps) {
+export const QuickActionsWidget = memo(function QuickActionsWidget({ widget }: QuickActionsWidgetProps) {
   const { id, size = 'small' } = widget
   const { setView, addQuickNote, tasks, setFocusMode } = useStore()
 
@@ -90,4 +91,4 @@ export function QuickActionsWidget({ widget }: QuickActionsWidgetProps) {
       </div>
     </WidgetContainer>
   )
-}
+})
