@@ -1,4 +1,13 @@
-import { ProjectTemplate } from '../types/project'
+import { Project, ProjectTemplate } from '../types/project'
+import { Task } from '../store/useStore'
+
+export interface ProjectStatsResult {
+  totalTasks: number
+  completedTasks: number
+  progress: number
+  estimatedHours: number
+  actualHours: number
+}
 
 export const projectTemplates: ProjectTemplate[] = [
   {
@@ -119,5 +128,62 @@ export function formatProjectDate(date: string): string {
     month: 'short',
     year: 'numeric'
   })
+}
+
+export function calculateProjectStats(project: Project, tasks: Task[]): ProjectStatsResult {
+  const projectTasks = tasks.filter(t => t.projectId === project.id)
+  const completedTasks = projectTasks.filter(t => t.completed)
+  
+  const totalTasks = projectTasks.length
+  const completedCount = completedTasks.length
+  const progress = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
+  
+  const estimatedHours = projectTasks.reduce((acc, t) => acc + (t.estimatedTime || 0), 0) / 60
+  const actualHours = completedTasks.reduce((acc, t) => acc + (t.actualTime || t.estimatedTime || 0), 0) / 60
+  
+  return {
+    totalTasks,
+    completedTasks: completedCount,
+    progress,
+    estimatedHours: Math.round(estimatedHours * 10) / 10,
+    actualHours: Math.round(actualHours * 10) / 10
+  }
+}
+
+export function getDaysUntilDeadline(deadline: string | undefined): number | null {
+  if (!deadline) return null
+  
+  const deadlineDate = new Date(deadline)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  deadlineDate.setHours(0, 0, 0, 0)
+  
+  const diffTime = deadlineDate.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  return diffDays
+}
+
+export function isProjectOverdue(deadline: string | undefined): boolean {
+  const days = getDaysUntilDeadline(deadline)
+  return days !== null && days < 0
+}
+
+export function isProjectAtRisk(project: Project, tasks: Task[]): boolean {
+  if (!project.deadline) return false
+  
+  const stats = calculateProjectStats(project, tasks)
+  const daysLeft = getDaysUntilDeadline(project.deadline)
+  
+  if (daysLeft === null) return false
+  if (daysLeft < 0) return true // Overdue
+  
+  // At risk if less than 7 days and less than 80% complete
+  if (daysLeft <= 7 && stats.progress < 80) return true
+  
+  // At risk if less than 3 days and less than 90% complete
+  if (daysLeft <= 3 && stats.progress < 90) return true
+  
+  return false
 }
 
