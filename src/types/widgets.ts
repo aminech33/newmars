@@ -4,7 +4,6 @@ export type WidgetType =
   | 'calendar' 
   | 'notes' 
   | 'habits' 
-  | 'quote'
   | 'pomodoro'
   | 'links'
   | 'weather'
@@ -12,7 +11,6 @@ export type WidgetType =
   | 'quick-actions'
   | 'health'
   | 'journal'
-  | 'projects'
 
 export type WidgetSize = 'small' | 'medium' | 'large'
 

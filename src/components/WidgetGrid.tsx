@@ -41,8 +41,6 @@ export function WidgetGrid() {
         return <HabitsWidget {...widgetProps} />
       case 'notes':
         return <NotesWidget {...widgetProps} />
-      case 'quote':
-        return <QuoteWidget {...widgetProps} />
       case 'calendar':
         return <CalendarWidget {...widgetProps} />
       case 'pomodoro':

@@ -1,4 +1,4 @@
-import { X, CheckSquare, BarChart3, Calendar, BookOpen, Flame, MessageSquare, Timer, ExternalLink, Sparkles, Zap, Heart, Book } from 'lucide-react'
+import { X, CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Zap, Heart, Book } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { WidgetType } from '../types/widgets'
 
@@ -15,7 +15,6 @@ const widgetDefinitions = [
   { type: 'journal' as WidgetType, label: 'Journal', icon: Book, description: 'Réflexion quotidienne' },
   { type: 'notes' as WidgetType, label: 'Notes', icon: BookOpen, description: 'Notes rapides' },
   { type: 'habits' as WidgetType, label: 'Habitudes', icon: Flame, description: 'Suivi d\'habitudes' },
-  { type: 'quote' as WidgetType, label: 'Citation', icon: MessageSquare, description: 'Citation inspirante' },
   { type: 'pomodoro' as WidgetType, label: 'Pomodoro', icon: Timer, description: 'Timer de focus' },
   { type: 'links' as WidgetType, label: 'Liens', icon: ExternalLink, description: 'Liens rapides' },
   { type: 'ai' as WidgetType, label: 'Assistant IA', icon: Sparkles, description: 'Accès rapide à l\'IA' },

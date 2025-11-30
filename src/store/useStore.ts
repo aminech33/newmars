@@ -295,20 +295,13 @@ const defaultWidgets: Widget[] = [
   },
   {
     id: '8',
-    type: 'quote',
-    size: 'small',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 5, y: 0 }
-  },
-  {
-    id: '9',
     type: 'health',
     size: 'small',
     dimensions: { width: 1, height: 1 },
     position: { x: 1, y: 3 }
   },
   {
-    id: '10',
+    id: '9',
     type: 'journal',
     size: 'small',
     dimensions: { width: 1, height: 1 },

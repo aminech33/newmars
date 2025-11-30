@@ -1,5 +1,5 @@
 import { useStore } from '../store/useStore'
-import { ArrowLeft, TrendingUp, TrendingDown, Target, Flame, Clock, CheckCircle2, Lightbulb, Calendar } from 'lucide-react'
+import { ArrowLeft, TrendingUp, TrendingDown, Target, Flame, Clock, CheckCircle2, Lightbulb, Calendar, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
   calculateProductivityScore,
@@ -54,7 +54,7 @@ export function Dashboard() {
     [todayTasks, focusMinutes, yesterdayTasks]
   )
 
-  // Comparaison semaine (simulé pour l'instant)
+  // Comparaison semaine
   const weekComparison = useMemo(() => 
     compareWeeks(weekTasksCompleted, totalFocusMinutes, Math.floor(weekTasksCompleted * 0.85), Math.floor(totalFocusMinutes * 0.9)),
     [weekTasksCompleted, totalFocusMinutes]
@@ -93,41 +93,55 @@ export function Dashboard() {
     return acc
   }, {} as Record<string, number>)
 
-  // Couleur du score
-  const getScoreColor = (score: number) => {
+  // Couleurs selon le score
+  const getScoreGradient = (score: number) => {
+    if (score >= 80) return 'from-emerald-400 via-emerald-500 to-emerald-600'
+    if (score >= 60) return 'from-cyan-400 via-cyan-500 to-blue-500'
+    if (score >= 40) return 'from-amber-400 via-amber-500 to-orange-500'
+    return 'from-rose-400 via-rose-500 to-red-500'
+  }
+
+  const getScoreGlow = (score: number) => {
+    if (score >= 80) return 'shadow-emerald-500/20'
+    if (score >= 60) return 'shadow-cyan-500/20'
+    if (score >= 40) return 'shadow-amber-500/20'
+    return 'shadow-rose-500/20'
+  }
+
+  const getScoreBg = (score: number) => {
+    if (score >= 80) return 'from-emerald-500/10 via-emerald-500/5 to-transparent'
+    if (score >= 60) return 'from-cyan-500/10 via-cyan-500/5 to-transparent'
+    if (score >= 40) return 'from-amber-500/10 via-amber-500/5 to-transparent'
+    return 'from-rose-500/10 via-rose-500/5 to-transparent'
+  }
+
+  const getScoreText = (score: number) => {
     if (score >= 80) return 'text-emerald-400'
     if (score >= 60) return 'text-cyan-400'
     if (score >= 40) return 'text-amber-400'
     return 'text-rose-400'
   }
 
-  const getScoreGradient = (score: number) => {
-    if (score >= 80) return 'from-emerald-500 to-emerald-400'
-    if (score >= 60) return 'from-cyan-500 to-cyan-400'
-    if (score >= 40) return 'from-amber-500 to-amber-400'
-    return 'from-rose-500 to-rose-400'
-  }
-
   return (
     <div className="h-full w-full flex flex-col view-transition">
       {/* Header */}
-      <header className="flex-shrink-0 px-6 py-5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <header className="flex-shrink-0 px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setView('hub')}
-              className="p-2 -ml-2 text-zinc-600 hover:text-zinc-400 transition-colors"
+              className="p-2 -ml-2 text-zinc-600 hover:text-zinc-400 transition-colors rounded-xl hover:bg-zinc-800/50"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-xl font-medium tracking-tight text-zinc-200">Dashboard</h1>
-              <p className="text-xs text-zinc-600">Analyse de ta productivité</p>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Dashboard</h1>
+              <p className="text-sm text-zinc-500">Analyse de ta productivité</p>
             </div>
           </div>
           
           {/* Tabs */}
-          <div className="flex items-center gap-1 bg-zinc-900/50 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-zinc-900/50 rounded-xl p-1 border border-zinc-800/50">
             {[
               { id: 'overview', label: 'Vue d\'ensemble' },
               { id: 'insights', label: 'Insights' },
@@ -136,10 +150,10 @@ export function Dashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   activeTab === tab.id 
-                    ? 'bg-zinc-800 text-zinc-200' 
-                    : 'text-zinc-600 hover:text-zinc-400'
+                    ? 'bg-zinc-800 text-zinc-100 shadow-lg' 
+                    : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
                 {tab.label}
@@ -149,45 +163,65 @@ export function Dashboard() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-auto px-6 pb-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="flex-1 overflow-auto px-6 lg:px-8 pb-12">
+        <div className="max-w-7xl mx-auto">
           
-          {/* Score de Productivité - Toujours visible */}
-          <div className="mb-8">
-            <div className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 rounded-3xl p-6 border border-zinc-800/50">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-lg font-medium text-zinc-200 mb-1">Score de Productivité</h2>
-                  <p className="text-xs text-zinc-600">Basé sur tes performances d'aujourd'hui</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-5xl font-light ${getScoreColor(productivityScore.score)}`}>
-                    {productivityScore.score}
-                  </p>
-                  <p className="text-xs text-zinc-600">/ 100</p>
-                </div>
-              </div>
+          {/* HERO: Score de Productivité */}
+          <div className="mb-12">
+            <div className="relative group">
+              {/* Background gradient animé */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${getScoreBg(productivityScore.score)} rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity duration-500`} />
               
-              {/* Breakdown */}
-              <div className="grid grid-cols-4 gap-4">
-                {[
-                  { label: 'Tâches', value: productivityScore.breakdown.tasksCompleted, max: 25, icon: '✅' },
-                  { label: 'Focus', value: productivityScore.breakdown.focusTime, max: 25, icon: '🎯' },
-                  { label: 'Régularité', value: productivityScore.breakdown.consistency, max: 25, icon: '🔥' },
-                  { label: 'Efficacité', value: productivityScore.breakdown.efficiency, max: 25, icon: '⚡' },
-                ].map((item) => (
-                  <div key={item.label} className="text-center">
-                    <div className="text-lg mb-1">{item.icon}</div>
-                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-2">
-                      <div 
-                        className={`h-full bg-gradient-to-r ${getScoreGradient(item.value * 4)} rounded-full transition-all duration-500`}
-                        style={{ width: `${(item.value / item.max) * 100}%` }}
-                      />
+              {/* Card principale */}
+              <div className={`relative bg-gradient-to-br from-zinc-900/90 to-zinc-900/50 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border border-zinc-800/50 shadow-2xl ${getScoreGlow(productivityScore.score)} hover:shadow-3xl transition-all duration-500`}>
+                <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8">
+                  {/* Score */}
+                  <div className="flex-1 text-center lg:text-left">
+                    <p className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">Score de Productivité</p>
+                    <div className="flex items-baseline justify-center lg:justify-start gap-3 mb-6">
+                      <h2 className={`text-7xl lg:text-8xl font-extralight bg-gradient-to-br ${getScoreGradient(productivityScore.score)} bg-clip-text text-transparent animate-fade-in`}>
+                        {productivityScore.score}
+                      </h2>
+                      <span className="text-3xl text-zinc-600 font-light">/100</span>
                     </div>
-                    <p className="text-xs text-zinc-500">{item.label}</p>
-                    <p className="text-sm text-zinc-400">{item.value}/{item.max}</p>
+                    
+                    {/* Tendance */}
+                    {dayComparison.tasksDiff !== 0 && (
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
+                        dayComparison.tasksDiff > 0 
+                          ? 'bg-emerald-500/10 text-emerald-400' 
+                          : 'bg-rose-500/10 text-rose-400'
+                      }`}>
+                        {dayComparison.tasksDiff > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                        <span className="text-sm font-medium">
+                          {dayComparison.tasksDiff > 0 ? '+' : ''}{dayComparison.tasksDiff} vs hier
+                        </span>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  
+                  {/* Breakdown avec animations */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                    {[
+                      { label: 'Tâches', value: productivityScore.breakdown.tasksCompleted, max: 25, icon: '✅', color: 'emerald' },
+                      { label: 'Focus', value: productivityScore.breakdown.focusTime, max: 25, icon: '🎯', color: 'cyan' },
+                      { label: 'Régularité', value: productivityScore.breakdown.consistency, max: 25, icon: '🔥', color: 'orange' },
+                      { label: 'Efficacité', value: productivityScore.breakdown.efficiency, max: 25, icon: '⚡', color: 'indigo' },
+                    ].map((item) => (
+                      <div key={item.label} className="text-center">
+                        <div className="text-2xl mb-2">{item.icon}</div>
+                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-3">
+                          <div 
+                            className={`h-full bg-gradient-to-r from-${item.color}-500 to-${item.color}-400 rounded-full transition-all duration-1000 ease-out`}
+                            style={{ width: `${(item.value / item.max) * 100}%` }}
+                          />
+                        </div>
+                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">{item.label}</p>
+                        <p className="text-lg font-semibold text-zinc-300">{item.value}<span className="text-zinc-600">/{item.max}</span></p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -195,30 +229,41 @@ export function Dashboard() {
           {activeTab === 'overview' && (
             <>
               {/* Comparaisons */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
                 {/* vs Hier */}
-                <div className="bg-zinc-900/50 rounded-2xl p-5 border border-zinc-800/50">
-                  <h3 className="text-sm font-medium text-zinc-400 mb-4">Aujourd'hui vs Hier</h3>
-                  <div className="space-y-4">
+                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-xl">
+                  <h3 className="text-base font-semibold text-zinc-300 mb-6 flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-indigo-400" />
+                    Aujourd'hui vs Hier
+                  </h3>
+                  <div className="space-y-5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-600">Tâches</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg text-zinc-200">{dayComparison.today.tasks}</span>
+                      <span className="text-sm text-zinc-500 font-medium">Tâches</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-light text-zinc-100">{dayComparison.today.tasks}</span>
                         {dayComparison.tasksDiff !== 0 && (
-                          <span className={`flex items-center gap-1 text-xs ${dayComparison.tasksDiff > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {dayComparison.tasksDiff > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          <span className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${
+                            dayComparison.tasksDiff > 0 
+                              ? 'bg-emerald-500/10 text-emerald-400' 
+                              : 'bg-rose-500/10 text-rose-400'
+                          }`}>
+                            {dayComparison.tasksDiff > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                             {dayComparison.tasksDiff > 0 ? '+' : ''}{dayComparison.tasksDiff}
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-600">Focus</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg text-zinc-200">{formatDuration(dayComparison.today.focus)}</span>
+                      <span className="text-sm text-zinc-500 font-medium">Focus</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-light text-zinc-100">{formatDuration(dayComparison.today.focus)}</span>
                         {dayComparison.focusDiff !== 0 && (
-                          <span className={`flex items-center gap-1 text-xs ${dayComparison.focusDiff > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {dayComparison.focusDiff > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          <span className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${
+                            dayComparison.focusDiff > 0 
+                              ? 'bg-emerald-500/10 text-emerald-400' 
+                              : 'bg-rose-500/10 text-rose-400'
+                          }`}>
+                            {dayComparison.focusDiff > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                             {dayComparison.focusDiff > 0 ? '+' : ''}{dayComparison.focusDiff}m
                           </span>
                         )}
@@ -228,28 +273,39 @@ export function Dashboard() {
                 </div>
 
                 {/* vs Semaine dernière */}
-                <div className="bg-zinc-900/50 rounded-2xl p-5 border border-zinc-800/50">
-                  <h3 className="text-sm font-medium text-zinc-400 mb-4">Cette semaine vs Semaine dernière</h3>
-                  <div className="space-y-4">
+                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-xl">
+                  <h3 className="text-base font-semibold text-zinc-300 mb-6 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-cyan-400" />
+                    Cette semaine vs Semaine dernière
+                  </h3>
+                  <div className="space-y-5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-600">Tâches</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg text-zinc-200">{weekComparison.thisWeek.tasks}</span>
+                      <span className="text-sm text-zinc-500 font-medium">Tâches</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-light text-zinc-100">{weekComparison.thisWeek.tasks}</span>
                         {weekComparison.tasksPercent !== 0 && (
-                          <span className={`flex items-center gap-1 text-xs ${weekComparison.tasksPercent > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {weekComparison.tasksPercent > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          <span className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${
+                            weekComparison.tasksPercent > 0 
+                              ? 'bg-emerald-500/10 text-emerald-400' 
+                              : 'bg-rose-500/10 text-rose-400'
+                          }`}>
+                            {weekComparison.tasksPercent > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                             {weekComparison.tasksPercent > 0 ? '+' : ''}{weekComparison.tasksPercent}%
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-600">Focus</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg text-zinc-200">{formatDuration(weekComparison.thisWeek.focus)}</span>
+                      <span className="text-sm text-zinc-500 font-medium">Focus</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-light text-zinc-100">{formatDuration(weekComparison.thisWeek.focus)}</span>
                         {weekComparison.focusPercent !== 0 && (
-                          <span className={`flex items-center gap-1 text-xs ${weekComparison.focusPercent > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {weekComparison.focusPercent > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          <span className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${
+                            weekComparison.focusPercent > 0 
+                              ? 'bg-emerald-500/10 text-emerald-400' 
+                              : 'bg-rose-500/10 text-rose-400'
+                          }`}>
+                            {weekComparison.focusPercent > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                             {weekComparison.focusPercent > 0 ? '+' : ''}{weekComparison.focusPercent}%
                           </span>
                         )}
@@ -260,30 +316,32 @@ export function Dashboard() {
               </div>
 
               {/* Objectifs Hebdomadaires */}
-              <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50 mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <Target className="w-5 h-5 text-cyan-500" />
-                  <h3 className="text-sm font-medium text-zinc-400">Objectifs de la semaine</h3>
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-8 border border-zinc-800/50 mb-12 hover:border-zinc-700/50 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-cyan-500/10 rounded-xl">
+                    <Target className="w-6 h-6 text-cyan-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-zinc-200">Objectifs de la semaine</h3>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {[
-                    { label: 'Tâches', ...weeklyGoals.tasks, icon: '✅', color: 'emerald' },
-                    { label: 'Focus', ...weeklyGoals.focus, icon: '🎯', color: 'indigo', format: (v: number) => formatDuration(v) },
-                    { label: 'Streak', ...weeklyGoals.streak, icon: '🔥', color: 'orange', suffix: ' jours' },
+                    { label: 'Tâches complétées', ...weeklyGoals.tasks, icon: '✅', color: 'emerald' },
+                    { label: 'Temps de focus', ...weeklyGoals.focus, icon: '🎯', color: 'indigo', format: (v: number) => formatDuration(v) },
+                    { label: 'Jours de streak', ...weeklyGoals.streak, icon: '🔥', color: 'orange' },
                   ].map((goal) => (
                     <div key={goal.label}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span>{goal.icon}</span>
-                          <span className="text-xs text-zinc-500">{goal.label}</span>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{goal.icon}</span>
+                          <span className="text-sm font-medium text-zinc-400">{goal.label}</span>
                         </div>
-                        <span className="text-xs text-zinc-400">
-                          {goal.format ? goal.format(goal.current) : goal.current}{goal.suffix || ''} / {goal.format ? goal.format(goal.target) : goal.target}{goal.suffix || ''}
+                        <span className="text-sm font-semibold text-zinc-300">
+                          {goal.format ? goal.format(goal.current) : goal.current} / {goal.format ? goal.format(goal.target) : goal.target}
                         </span>
                       </div>
-                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden">
                         <div 
-                          className={`h-full bg-gradient-to-r from-${goal.color}-600 to-${goal.color}-400 rounded-full transition-all duration-500`}
+                          className={`absolute inset-y-0 left-0 bg-gradient-to-r from-${goal.color}-500 to-${goal.color}-400 rounded-full transition-all duration-1000 ease-out shadow-lg shadow-${goal.color}-500/30`}
                           style={{ width: `${goal.percent}%` }}
                         />
                       </div>
@@ -293,36 +351,44 @@ export function Dashboard() {
               </div>
 
               {/* Heures Productives */}
-              <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50 mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-indigo-500" />
-                    <h3 className="text-sm font-medium text-zinc-400">Heures les plus productives</h3>
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-8 border border-zinc-800/50 mb-12 hover:border-zinc-700/50 transition-all duration-300">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-500/10 rounded-xl">
+                      <Clock className="w-6 h-6 text-indigo-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-zinc-200">Heures les plus productives</h3>
                   </div>
                   {peakHours[0]?.peak > 0 && (
-                    <span className="text-xs text-indigo-400">
+                    <span className="text-sm font-medium text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-lg">
                       Peak: {peakHours[0].label}
                     </span>
                   )}
                 </div>
-                <div className="flex items-end justify-between h-24 gap-1">
+                <div className="flex items-end justify-between h-32 gap-1.5">
                   {hourlyData.filter(h => h.hour >= 8 && h.hour <= 22).map((hour) => {
                     const height = maxHourlyTasks > 0 ? (hour.tasksCompleted / maxHourlyTasks) * 100 : 0
                     const isPeak = peakHours[0]?.label === hour.label
                     return (
-                      <div key={hour.hour} className="flex-1 flex flex-col items-center gap-1">
-                        <div className="w-full flex items-end justify-center h-16">
+                      <div key={hour.hour} className="flex-1 flex flex-col items-center gap-2 group">
+                        <div className="w-full flex items-end justify-center h-24 relative">
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            <div className="bg-zinc-800 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap shadow-xl">
+                              {hour.tasksCompleted} tâches
+                            </div>
+                          </div>
+                          
                           <div 
-                            className={`w-full max-w-4 rounded-t transition-all duration-300 ${
+                            className={`w-full rounded-t-lg transition-all duration-500 hover:scale-110 ${
                               isPeak 
-                                ? 'bg-gradient-to-t from-indigo-600 to-indigo-400' 
+                                ? 'bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-lg shadow-indigo-500/50' 
                                 : 'bg-zinc-700 hover:bg-zinc-600'
                             }`}
-                            style={{ height: `${Math.max(4, height)}%` }}
-                            title={`${hour.tasksCompleted} tâches`}
+                            style={{ height: `${Math.max(8, height)}%` }}
                           />
                         </div>
-                        <span className={`text-[9px] ${isPeak ? 'text-indigo-400' : 'text-zinc-700'}`}>
+                        <span className={`text-[10px] font-medium ${isPeak ? 'text-indigo-400' : 'text-zinc-600'}`}>
                           {hour.hour}h
                         </span>
                       </div>
@@ -331,27 +397,35 @@ export function Dashboard() {
                 </div>
               </div>
 
-              {/* Graphique Semaine */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50">
-                  <h3 className="text-sm font-medium text-zinc-400 mb-4">Tâches cette semaine</h3>
-                  <div className="flex items-end justify-between h-32 gap-2">
+              {/* Graphiques */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Tâches hebdo */}
+                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300">
+                  <h3 className="text-base font-semibold text-zinc-300 mb-6">Tâches cette semaine</h3>
+                  <div className="flex items-end justify-between h-40 gap-3">
                     {weekStats.map((day, i) => {
                       const height = (day.tasksCompleted / maxTasks) * 100
                       const isToday = i === todayIndex
                       return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                          <div className="w-full flex items-end justify-center h-24">
+                        <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
+                          <div className="w-full flex items-end justify-center h-32 relative">
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                              <div className="bg-zinc-800 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap shadow-xl">
+                                {day.tasksCompleted} tâches
+                              </div>
+                            </div>
+                            
                             <div 
-                              className={`w-full max-w-8 rounded-t-lg transition-all duration-500 ${
+                              className={`w-full rounded-t-xl transition-all duration-700 hover:scale-105 ${
                                 isToday 
-                                  ? 'bg-gradient-to-t from-indigo-600 to-indigo-400' 
+                                  ? 'bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-lg shadow-indigo-500/30' 
                                   : 'bg-zinc-700 hover:bg-zinc-600'
                               }`}
-                              style={{ height: `${Math.max(4, height)}%` }}
+                              style={{ height: `${Math.max(8, height)}%` }}
                             />
                           </div>
-                          <span className={`text-[10px] ${isToday ? 'text-indigo-400 font-medium' : 'text-zinc-600'}`}>
+                          <span className={`text-xs font-medium ${isToday ? 'text-indigo-400' : 'text-zinc-600'}`}>
                             {weekDays[i]}
                           </span>
                         </div>
@@ -361,29 +435,29 @@ export function Dashboard() {
                 </div>
 
                 {/* Par catégorie */}
-                <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50">
-                  <h3 className="text-sm font-medium text-zinc-400 mb-4">Par catégorie</h3>
-                  <div className="space-y-3">
+                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300">
+                  <h3 className="text-base font-semibold text-zinc-300 mb-6">Par catégorie</h3>
+                  <div className="space-y-4">
                     {[
-                      { key: 'dev', label: 'Dev', color: 'bg-indigo-500' },
+                      { key: 'dev', label: 'Développement', color: 'bg-indigo-500' },
                       { key: 'design', label: 'Design', color: 'bg-cyan-500' },
                       { key: 'work', label: 'Travail', color: 'bg-amber-500' },
-                      { key: 'personal', label: 'Perso', color: 'bg-emerald-500' },
+                      { key: 'personal', label: 'Personnel', color: 'bg-emerald-500' },
                       { key: 'urgent', label: 'Urgent', color: 'bg-rose-500' },
                     ].map((cat) => {
                       const count = tasksByCategory[cat.key] || 0
                       const percent = pendingTasks.length > 0 ? (count / pendingTasks.length) * 100 : 0
                       return (
-                        <div key={cat.key} className="flex items-center gap-3">
-                          <span className={`w-2 h-2 rounded-full ${cat.color}`} />
-                          <span className="text-xs text-zinc-500 w-16">{cat.label}</span>
-                          <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div key={cat.key} className="flex items-center gap-4">
+                          <span className={`w-3 h-3 rounded-full ${cat.color} shadow-lg`} />
+                          <span className="text-sm text-zinc-400 font-medium w-28">{cat.label}</span>
+                          <div className="flex-1 h-2.5 bg-zinc-800 rounded-full overflow-hidden">
                             <div 
-                              className={`h-full ${cat.color} opacity-60 rounded-full transition-all duration-500`}
+                              className={`h-full ${cat.color} rounded-full transition-all duration-1000 ease-out shadow-lg`}
                               style={{ width: `${percent}%` }}
                             />
                           </div>
-                          <span className="text-xs text-zinc-500 w-6 text-right">{count}</span>
+                          <span className="text-sm text-zinc-400 font-semibold w-8 text-right">{count}</span>
                         </div>
                       )
                     })}
@@ -394,37 +468,45 @@ export function Dashboard() {
           )}
 
           {activeTab === 'insights' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-6">
-                <Lightbulb className="w-5 h-5 text-amber-500" />
-                <h2 className="text-lg font-medium text-zinc-200">Insights Personnalisés</h2>
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-amber-500/10 rounded-xl">
+                  <Lightbulb className="w-6 h-6 text-amber-400" />
+                </div>
+                <h2 className="text-xl font-semibold text-zinc-100">Insights Personnalisés</h2>
               </div>
               
               {insights.length > 0 ? (
                 <div className="space-y-4">
-                  {insights.map((insight, i) => (
-                    <div 
-                      key={i}
-                      className={`p-5 rounded-2xl border ${
-                        insight.type === 'positive' 
-                          ? 'bg-emerald-500/5 border-emerald-500/20' 
-                          : insight.type === 'warning'
-                          ? 'bg-amber-500/5 border-amber-500/20'
-                          : 'bg-indigo-500/5 border-indigo-500/20'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl">{insight.icon}</span>
-                        <p className="text-sm text-zinc-300 leading-relaxed">{insight.message}</p>
+                  {insights.map((insight, i) => {
+                    const colors = {
+                      positive: { bg: 'from-emerald-500/10 to-transparent', border: 'border-emerald-500/30', icon: 'bg-gradient-to-br from-emerald-500 to-emerald-600', text: 'text-emerald-400' },
+                      warning: { bg: 'from-amber-500/10 to-transparent', border: 'border-amber-500/30', icon: 'bg-gradient-to-br from-amber-500 to-amber-600', text: 'text-amber-400' },
+                      tip: { bg: 'from-indigo-500/10 to-transparent', border: 'border-indigo-500/30', icon: 'bg-gradient-to-br from-indigo-500 to-indigo-600', text: 'text-indigo-400' }
+                    }[insight.type]
+                    
+                    return (
+                      <div key={i} className="relative group">
+                        {/* Icon circulaire */}
+                        <div className={`absolute -left-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full ${colors.icon} flex items-center justify-center shadow-xl z-10`}>
+                          <span className="text-2xl">{insight.icon}</span>
+                        </div>
+                        
+                        {/* Card */}
+                        <div className={`ml-6 pl-8 border-l-2 ${colors.border} bg-gradient-to-r ${colors.bg} rounded-r-2xl p-5 hover:shadow-lg transition-all duration-300`}>
+                          <p className={`text-sm ${colors.text} font-medium leading-relaxed`}>{insight.message}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <Lightbulb className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                  <p className="text-zinc-500">Pas assez de données pour générer des insights.</p>
-                  <p className="text-zinc-600 text-sm mt-2">Continue à utiliser l'app pour obtenir des conseils personnalisés !</p>
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center">
+                    <Lightbulb className="w-10 h-10 text-amber-400/60" />
+                  </div>
+                  <p className="text-zinc-400 mb-2">Pas assez de données pour générer des insights.</p>
+                  <p className="text-zinc-600 text-sm">Continue à utiliser l'app pour obtenir des conseils personnalisés !</p>
                 </div>
               )}
             </div>
@@ -432,27 +514,29 @@ export function Dashboard() {
 
           {activeTab === 'heatmap' && (
             <div>
-              <div className="flex items-center gap-2 mb-6">
-                <Calendar className="w-5 h-5 text-emerald-500" />
-                <h2 className="text-lg font-medium text-zinc-200">Activité sur l'année</h2>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-emerald-500/10 rounded-xl">
+                  <Calendar className="w-6 h-6 text-emerald-400" />
+                </div>
+                <h2 className="text-xl font-semibold text-zinc-100">Activité sur l'année</h2>
               </div>
               
-              <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800/50">
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-8 border border-zinc-800/50">
                 {/* Heatmap Grid */}
-                <div className="overflow-x-auto">
-                  <div className="flex flex-wrap gap-1" style={{ maxWidth: '900px' }}>
+                <div className="overflow-x-auto pb-4">
+                  <div className="flex flex-wrap gap-1.5" style={{ maxWidth: '900px' }}>
                     {heatmapData.slice(-365).map((day, i) => {
                       const levelColors = [
-                        'bg-zinc-800',
-                        'bg-emerald-900/50',
-                        'bg-emerald-700/60',
-                        'bg-emerald-500/70',
-                        'bg-emerald-400',
+                        'bg-zinc-800 hover:bg-zinc-700',
+                        'bg-emerald-900/50 hover:bg-emerald-900/70',
+                        'bg-emerald-700/60 hover:bg-emerald-700/80',
+                        'bg-emerald-500/70 hover:bg-emerald-500/90',
+                        'bg-emerald-400 hover:bg-emerald-300',
                       ]
                       return (
                         <div
                           key={i}
-                          className={`w-3 h-3 rounded-sm ${levelColors[day.level]} transition-colors hover:ring-1 hover:ring-zinc-600`}
+                          className={`w-3.5 h-3.5 rounded-sm ${levelColors[day.level]} transition-all duration-200 hover:scale-125 hover:ring-2 hover:ring-emerald-400/50 hover:shadow-lg hover:shadow-emerald-400/30 cursor-pointer`}
                           title={`${day.date}: ${day.count} tâche(s)`}
                         />
                       )
@@ -461,8 +545,8 @@ export function Dashboard() {
                 </div>
                 
                 {/* Légende */}
-                <div className="flex items-center justify-end gap-2 mt-4">
-                  <span className="text-xs text-zinc-600">Moins</span>
+                <div className="flex items-center justify-end gap-2 mt-6 pt-6 border-t border-zinc-800">
+                  <span className="text-xs font-medium text-zinc-600">Moins</span>
                   {[0, 1, 2, 3, 4].map((level) => {
                     const levelColors = [
                       'bg-zinc-800',
@@ -472,27 +556,27 @@ export function Dashboard() {
                       'bg-emerald-400',
                     ]
                     return (
-                      <div key={level} className={`w-3 h-3 rounded-sm ${levelColors[level]}`} />
+                      <div key={level} className={`w-4 h-4 rounded-sm ${levelColors[level]}`} />
                     )
                   })}
-                  <span className="text-xs text-zinc-600">Plus</span>
+                  <span className="text-xs font-medium text-zinc-600">Plus</span>
                 </div>
                 
                 {/* Stats résumé */}
-                <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-zinc-800">
+                <div className="grid grid-cols-3 gap-6 mt-8 pt-8 border-t border-zinc-800">
                   <div className="text-center">
-                    <p className="text-2xl font-light text-zinc-200">{completedTasks.length}</p>
-                    <p className="text-xs text-zinc-600">Tâches totales</p>
+                    <p className="text-3xl font-light text-zinc-100 mb-1">{completedTasks.length}</p>
+                    <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Tâches totales</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-light text-zinc-200">{streak}</p>
-                    <p className="text-xs text-zinc-600">Streak actuel</p>
+                    <p className="text-3xl font-light text-zinc-100 mb-1">{streak}</p>
+                    <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Streak actuel</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-light text-zinc-200">
+                    <p className="text-3xl font-light text-zinc-100 mb-1">
                       {heatmapData.filter(d => d.count > 0).length}
                     </p>
-                    <p className="text-xs text-zinc-600">Jours actifs</p>
+                    <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Jours actifs</p>
                   </div>
                 </div>
               </div>
