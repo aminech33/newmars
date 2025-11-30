@@ -5,6 +5,7 @@ import { DragDropContext, DropResult } from '@hello-pangea/dnd'
 interface KanbanBoardProps {
   tasks: Task[]
   onTaskClick: (task: Task) => void
+  onTaskDelete?: (task: Task) => void
 }
 
 const columns: { status: TaskStatus; title: string; icon: string }[] = [
@@ -14,7 +15,7 @@ const columns: { status: TaskStatus; title: string; icon: string }[] = [
   { status: 'done', title: 'Terminé', icon: '✅' }
 ]
 
-export function KanbanBoard({ tasks, onTaskClick }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onTaskClick, onTaskDelete }: KanbanBoardProps) {
   const { moveTask } = useStore()
   
   const handleDragEnd = (result: DropResult) => {
@@ -41,6 +42,7 @@ export function KanbanBoard({ tasks, onTaskClick }: KanbanBoardProps) {
             icon={column.icon}
             tasks={getTasksByStatus(column.status)}
             onTaskClick={onTaskClick}
+            onTaskDelete={onTaskDelete}
           />
         ))}
       </div>

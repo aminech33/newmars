@@ -10,6 +10,7 @@ interface KanbanColumnProps {
   tasks: Task[]
   onTaskClick: (task: Task) => void
   onAddTask?: () => void
+  onTaskDelete?: (task: Task) => void
 }
 
 const statusColors = {
@@ -26,7 +27,7 @@ const statusBorders = {
   done: 'rgba(16, 185, 129, 0.3)'
 }
 
-export function KanbanColumn({ status, title, icon, tasks, onTaskClick, onAddTask }: KanbanColumnProps) {
+export function KanbanColumn({ status, title, icon, tasks, onTaskClick, onAddTask, onTaskDelete }: KanbanColumnProps) {
   return (
     <div className="flex flex-col h-full min-w-[300px] max-w-[350px]">
       {/* Header */}
@@ -78,6 +79,7 @@ export function KanbanColumn({ status, title, icon, tasks, onTaskClick, onAddTas
                 task={task}
                 index={index}
                 onClick={() => onTaskClick(task)}
+                onDelete={onTaskDelete}
               />
             ))}
             {provided.placeholder}

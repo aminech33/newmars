@@ -8,6 +8,8 @@ import { TaskFilters, TaskFilterState } from './TaskFilters'
 import { StatCard } from './StatCard'
 import { StatDetailModal } from './StatDetailModal'
 import { TaskFAB } from './TaskFAB'
+import { UndoToast } from '../ui/UndoToast'
+import { useUndo } from '../../hooks/useUndo'
 import { analyzeProductivityPatterns, autoCategorizeTasks, estimateTaskDuration, detectPriority } from '../../utils/taskIntelligence'
 
 type ViewMode = 'list' | 'kanban' | 'focus'
@@ -24,7 +26,7 @@ const categories: { key: TaskCategory | 'all'; label: string; color: string }[] 
 type QuickFilter = 'all' | 'today' | 'week' | 'overdue'
 
 export function TasksPage() {
-  const { tasks, projects, addTask, addProject, deleteProject, setView } = useStore()
+  const { tasks, projects, addTask, addProject, deleteProject, deleteTask, setView } = useStore()
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | 'all'>('all')
   const [selectedProjectId, setSelectedProjectId] = useState<string | 'all'>('all')
@@ -47,6 +49,7 @@ export function TasksPage() {
   })
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
   const [selectedStat, setSelectedStat] = useState<'total' | 'today' | 'completed' | 'productivity' | null>(null)
+  const { addAction, undo, showToast, currentAction, canUndo } = useUndo()
 
   // Raccourcis clavier
   useEffect(() => {
@@ -61,10 +64,27 @@ export function TasksPage() {
         e.preventDefault()
         document.getElementById('task-search')?.focus()
       }
+      // Ctrl+Z pour undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && canUndo) {
+        e.preventDefault()
+        undo()
+      }
     }
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [])
+  }, [canUndo, undo])
+
+  // Handle delete with undo
+  const handleDeleteWithUndo = (task: Task) => {
+    const taskCopy = { ...task }
+    deleteTask(task.id)
+    addAction({
+      type: 'delete',
+      data: taskCopy,
+      undo: () => addTask(taskCopy),
+      label: `Tâche "${task.title}" supprimée`
+    })
+  }
   
   // Analytics
   const analytics = analyzeProductivityPatterns(tasks)
@@ -702,6 +722,7 @@ export function TasksPage() {
             <KanbanBoard
               tasks={filteredTasks}
               onTaskClick={setSelectedTask}
+              onTaskDelete={handleDeleteWithUndo}
             />
           )}
           
@@ -769,6 +790,13 @@ export function TasksPage() {
 
       {/* FAB Mobile */}
       <TaskFAB onClick={() => setShowQuickAdd(true)} />
+
+      {/* Undo Toast */}
+      <UndoToast
+        message={currentAction?.label || ''}
+        onUndo={undo}
+        isVisible={showToast}
+      />
 
       {/* Stat Detail Modals */}
       {selectedStat === 'total' && (

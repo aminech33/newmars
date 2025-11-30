@@ -1,11 +1,13 @@
-import { Clock, CheckSquare, MoreVertical, Calendar } from 'lucide-react'
+import { Clock, CheckSquare, MoreVertical, Calendar, Check, Pencil, Trash2 } from 'lucide-react'
 import { Task, useStore } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
+import { useState } from 'react'
 
 interface TaskCardProps {
   task: Task
   index: number
   onClick: () => void
+  onDelete?: (task: Task) => void
 }
 
 const priorityColors = {
@@ -23,14 +25,29 @@ const categoryColors = {
   urgent: 'text-rose-400'
 }
 
-export function TaskCard({ task, index, onClick }: TaskCardProps) {
-  const projects = useStore((state) => state.projects)
+export function TaskCard({ task, index, onClick, onDelete }: TaskCardProps) {
+  const { projects, toggleTask, deleteTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
+  const [showActions, setShowActions] = useState(false)
   
   const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
   const totalSubtasks = task.subtasks?.length || 0
   
   const isOverdue = task.dueDate && new Date(task.dueDate).getTime() < Date.now()
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    toggleTask(task.id)
+  }
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onDelete) {
+      onDelete(task)
+    } else {
+      deleteTask(task.id)
+    }
+  }
   
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -57,12 +74,46 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
         >
           {/* Header */}
           <div className="flex items-start justify-between mb-2">
-            <h3 className="text-sm font-medium text-zinc-200 line-clamp-2 flex-1 pr-2">
-              {task.title}
-            </h3>
-            <button className="opacity-0 group-hover:opacity-100 p-1 text-zinc-600 hover:text-zinc-400 transition-all rounded-lg hover:bg-zinc-800/50">
-              <MoreVertical className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-2 flex-1">
+              {/* Checkbox */}
+              <button
+                onClick={handleToggle}
+                className={`flex-shrink-0 w-5 h-5 rounded-md border-2 transition-all ${
+                  task.completed
+                    ? 'bg-emerald-500 border-emerald-500'
+                    : 'border-zinc-600 hover:border-emerald-500'
+                }`}
+              >
+                {task.completed && <Check className="w-4 h-4 text-white" />}
+              </button>
+              
+              <h3 className={`text-sm font-medium line-clamp-2 flex-1 transition-all ${
+                task.completed ? 'text-zinc-600 line-through' : 'text-zinc-200'
+              }`}>
+                {task.title}
+              </h3>
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClick()
+                }}
+                className="p-1 text-zinc-600 hover:text-indigo-400 transition-colors rounded-lg hover:bg-zinc-800/50"
+                title="Éditer"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={handleDelete}
+                className="p-1 text-zinc-600 hover:text-rose-400 transition-colors rounded-lg hover:bg-zinc-800/50"
+                title="Supprimer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
           
           {/* Project Badge */}
