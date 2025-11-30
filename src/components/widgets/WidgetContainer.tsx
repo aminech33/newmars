@@ -65,7 +65,7 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
         hover:-translate-y-1 
         transition-all duration-300 group
         ${isClicked ? 'clicked' : ''}
-        ${!isEditMode && onClick ? 'cursor-pointer glass-shimmer' : ''}
+        ${!isEditMode && onClick ? 'cursor-pointer' : ''}
       `}
     >
       {/* Header */}
