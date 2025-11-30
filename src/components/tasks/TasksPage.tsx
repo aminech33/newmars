@@ -1,10 +1,13 @@
-import { useState, useMemo } from 'react'
-import { ArrowLeft, Plus, Search, LayoutList, LayoutGrid, Zap, TrendingUp, FolderKanban, X, Settings } from 'lucide-react'
-import { useStore, Task, TaskCategory, Project, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
+import { useState, useMemo, useEffect } from 'react'
+import { ArrowLeft, Plus, Search, LayoutList, LayoutGrid, Zap, TrendingUp, FolderKanban, X } from 'lucide-react'
+import { useStore, Task, TaskCategory, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { SmartSuggestion } from './SmartSuggestion'
 import { KanbanBoard } from './KanbanBoard'
 import { TaskDetails } from './TaskDetails'
 import { TaskFilters, TaskFilterState } from './TaskFilters'
+import { StatCard } from './StatCard'
+import { StatDetailModal } from './StatDetailModal'
+import { TaskFAB } from './TaskFAB'
 import { analyzeProductivityPatterns, autoCategorizeTasks, estimateTaskDuration, detectPriority } from '../../utils/taskIntelligence'
 
 type ViewMode = 'list' | 'kanban' | 'focus'
@@ -17,6 +20,8 @@ const categories: { key: TaskCategory | 'all'; label: string; color: string }[] 
   { key: 'personal', label: 'Perso', color: 'text-emerald-400' },
   { key: 'urgent', label: 'Urgent', color: 'text-rose-400' },
 ]
+
+type QuickFilter = 'all' | 'today' | 'week' | 'overdue'
 
 export function TasksPage() {
   const { tasks, projects, addTask, addProject, deleteProject, setView } = useStore()
@@ -40,6 +45,26 @@ export function TasksPage() {
     hasSubtasks: null,
     hasDueDate: null,
   })
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
+  const [selectedStat, setSelectedStat] = useState<'total' | 'today' | 'completed' | 'productivity' | null>(null)
+
+  // Raccourcis clavier
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl+N pour nouvelle tâche
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault()
+        setShowQuickAdd(true)
+      }
+      // Ctrl+F pour recherche
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        document.getElementById('task-search')?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [])
   
   // Analytics
   const analytics = analyzeProductivityPatterns(tasks)
@@ -61,9 +86,48 @@ export function TasksPage() {
     return stats
   }, [tasks])
   
+  // Stats pour sparklines (7 derniers jours)
+  const last7DaysStats = useMemo(() => {
+    const stats = []
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      date.setHours(0, 0, 0, 0)
+      const nextDay = new Date(date)
+      nextDay.setDate(nextDay.getDate() + 1)
+      
+      const dayTasks = tasks.filter(t => {
+        const taskDate = new Date(t.createdAt)
+        return taskDate >= date && taskDate < nextDay
+      })
+      
+      stats.push({
+        total: dayTasks.length,
+        completed: dayTasks.filter(t => t.completed).length
+      })
+    }
+    return stats
+  }, [tasks])
+
   // Filter tasks
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
+      // Quick filters
+      if (quickFilter === 'today') {
+        const today = new Date().setHours(0, 0, 0, 0)
+        const taskDate = new Date(task.createdAt).setHours(0, 0, 0, 0)
+        if (taskDate !== today) return false
+      }
+      if (quickFilter === 'week') {
+        const weekAgo = new Date()
+        weekAgo.setDate(weekAgo.getDate() - 7)
+        if (new Date(task.createdAt) < weekAgo) return false
+      }
+      if (quickFilter === 'overdue') {
+        if (!task.dueDate || task.completed) return false
+        if (new Date(task.dueDate) >= new Date()) return false
+      }
+
       // Project filter
       if (selectedProjectId !== 'all' && task.projectId !== selectedProjectId) return false
       
@@ -83,7 +147,21 @@ export function TasksPage() {
       
       return true
     })
-  }, [tasks, selectedCategory, selectedProjectId, searchQuery, advancedFilters])
+  }, [tasks, selectedCategory, selectedProjectId, searchQuery, advancedFilters, quickFilter])
+
+  // Compteur de filtres actifs
+  const activeFiltersCount = useMemo(() => {
+    let count = 0
+    if (selectedCategory !== 'all') count++
+    if (selectedProjectId !== 'all') count++
+    if (searchQuery) count++
+    if (quickFilter !== 'all') count++
+    if (advancedFilters.categories.length > 0) count++
+    if (advancedFilters.priorities.length > 0) count++
+    if (advancedFilters.statuses.length > 0) count++
+    if (!advancedFilters.showCompleted) count++
+    return count
+  }, [selectedCategory, selectedProjectId, searchQuery, quickFilter, advancedFilters])
   
   const handleQuickAdd = () => {
     if (newTaskTitle.trim()) {
@@ -247,63 +325,61 @@ export function TasksPage() {
         {/* Smart Suggestion */}
         <SmartSuggestion tasks={tasks} />
         
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="p-4 bg-zinc-900/30 backdrop-blur-xl rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-500/20 rounded-xl">
-                <LayoutList className="w-5 h-5 text-indigo-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-zinc-200">{tasks.length}</p>
-                <p className="text-xs text-zinc-600">Total</p>
-              </div>
-            </div>
-          </div>
+        {/* Stats - Cliquables */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard
+            title="Total"
+            value={tasks.length}
+            icon={LayoutList}
+            iconColor="text-indigo-400"
+            iconBg="bg-indigo-500/20"
+            trend={{
+              data: last7DaysStats.map(d => d.total),
+              color: 'rgb(99, 102, 241)'
+            }}
+            comparison={{
+              value: last7DaysStats[6].total - last7DaysStats[5].total,
+              label: 'vs hier',
+              isPositive: last7DaysStats[6].total >= last7DaysStats[5].total
+            }}
+            onClick={() => setSelectedStat('total')}
+          />
           
-          <div className="p-4 bg-zinc-900/30 backdrop-blur-xl rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/20 rounded-xl">
-                <Zap className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-zinc-200">{completedToday}</p>
-                <p className="text-xs text-zinc-600">Aujourd'hui</p>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            title="Aujourd'hui"
+            value={completedToday}
+            icon={Zap}
+            iconColor="text-emerald-400"
+            iconBg="bg-emerald-500/20"
+            trend={{
+              data: last7DaysStats.map(d => d.completed),
+              color: 'rgb(16, 185, 129)'
+            }}
+            onClick={() => setSelectedStat('today')}
+          />
           
-          <div className="p-4 bg-zinc-900/30 backdrop-blur-xl rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-cyan-500/20 rounded-xl">
-                <TrendingUp className="w-5 h-5 text-cyan-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-zinc-200">{analytics.completionRate}%</p>
-                <p className="text-xs text-zinc-600">Taux</p>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            title="Taux"
+            value={`${analytics.completionRate}%`}
+            icon={TrendingUp}
+            iconColor="text-cyan-400"
+            iconBg="bg-cyan-500/20"
+            comparison={{
+              value: analytics.completionRate - 75,
+              label: 'objectif 75%',
+              isPositive: analytics.completionRate >= 75
+            }}
+            onClick={() => setSelectedStat('completed')}
+          />
           
-          <div className="p-4 bg-zinc-900/30 backdrop-blur-xl rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/20 rounded-xl">
-                <span className="text-xl">⚡</span>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-zinc-200">{analytics.tasksPerDay}</p>
-                <p className="text-xs text-zinc-600">Par jour</p>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            title="Productivité"
+            value={analytics.tasksPerDay}
+            icon={LayoutGrid}
+            iconColor="text-amber-400"
+            iconBg="bg-amber-500/20"
+            onClick={() => setSelectedStat('productivity')}
+          />
         </div>
         
         {/* Projects Bar */}
@@ -485,6 +561,57 @@ export function TasksPage() {
           )}
         </div>
         
+        {/* Quick Filters */}
+        <div className="flex items-center gap-2 mb-4">
+          {[
+            { key: 'all' as QuickFilter, label: 'Toutes', icon: '📋' },
+            { key: 'today' as QuickFilter, label: 'Aujourd\'hui', icon: '📅' },
+            { key: 'week' as QuickFilter, label: 'Cette semaine', icon: '📆' },
+            { key: 'overdue' as QuickFilter, label: 'En retard', icon: '⚠️' },
+          ].map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => setQuickFilter(filter.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                quickFilter === filter.key
+                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                  : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/30 border border-transparent'
+              }`}
+            >
+              <span>{filter.icon}</span>
+              <span>{filter.label}</span>
+            </button>
+          ))}
+          
+          {/* Badge filtres actifs */}
+          {activeFiltersCount > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 text-indigo-400 rounded-xl text-xs border border-indigo-500/30">
+              <span className="font-semibold">{activeFiltersCount}</span>
+              <span>filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}</span>
+              <button
+                onClick={() => {
+                  setSelectedCategory('all')
+                  setSelectedProjectId('all')
+                  setSearchQuery('')
+                  setQuickFilter('all')
+                  setAdvancedFilters({
+                    categories: [],
+                    priorities: [],
+                    statuses: [],
+                    showCompleted: true,
+                    hasSubtasks: null,
+                    hasDueDate: null,
+                  })
+                }}
+                className="ml-1 hover:text-indigo-300 transition-colors"
+                title="Réinitialiser tous les filtres"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Filters & View Modes */}
         <div className="flex items-center justify-between mb-6">
           {/* Search & Filters */}
@@ -492,10 +619,11 @@ export function TasksPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
               <input
+                id="task-search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher..."
+                placeholder="Rechercher... (Ctrl+F)"
                 className="pl-10 pr-4 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:bg-zinc-900 transition-colors w-64"
                 style={{ border: '1px solid rgba(255,255,255,0.08)' }}
               />
@@ -636,6 +764,51 @@ export function TasksPage() {
         <TaskDetails
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
+        />
+      )}
+
+      {/* FAB Mobile */}
+      <TaskFAB onClick={() => setShowQuickAdd(true)} />
+
+      {/* Stat Detail Modals */}
+      {selectedStat === 'total' && (
+        <StatDetailModal
+          isOpen={true}
+          onClose={() => setSelectedStat(null)}
+          title="Toutes les tâches"
+          tasks={tasks}
+          icon="📋"
+        />
+      )}
+      {selectedStat === 'today' && (
+        <StatDetailModal
+          isOpen={true}
+          onClose={() => setSelectedStat(null)}
+          title="Tâches d'aujourd'hui"
+          tasks={tasks.filter(t => {
+            const today = new Date().setHours(0, 0, 0, 0)
+            const taskDate = new Date(t.createdAt).setHours(0, 0, 0, 0)
+            return taskDate === today
+          })}
+          icon="📅"
+        />
+      )}
+      {selectedStat === 'completed' && (
+        <StatDetailModal
+          isOpen={true}
+          onClose={() => setSelectedStat(null)}
+          title="Tâches complétées"
+          tasks={tasks.filter(t => t.completed)}
+          icon="✅"
+        />
+      )}
+      {selectedStat === 'productivity' && (
+        <StatDetailModal
+          isOpen={true}
+          onClose={() => setSelectedStat(null)}
+          title="Tâches productives"
+          tasks={tasks.filter(t => (t.focusScore || 0) > 50)}
+          icon="⚡"
         />
       )}
     </div>
