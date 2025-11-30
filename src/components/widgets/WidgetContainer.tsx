@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { X, GripVertical, Maximize2, Minimize2 } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { Widget } from '../../types/widgets'
@@ -22,16 +22,15 @@ const widgetTitles: Record<string, string> = {
   'journal': 'Journal',
   'notes': 'Notes',
   'habits': 'Habitudes',
-  'quote': 'Citation',
   'pomodoro': 'Pomodoro',
   'links': 'Liens',
   'ai': 'Assistant IA',
   'quick-actions': 'Actions',
-  'projects': 'Projets',
 }
 
 export function WidgetContainer({ id, title, widget, children, actions, currentSize, onClick }: WidgetContainerProps) {
   const { isEditMode, removeWidget, updateWidget, accentTheme } = useStore()
+  const [isClicked, setIsClicked] = useState(false)
 
   // Support both old API (id, title) and new API (widget)
   const widgetId = widget?.id || id || ''
@@ -48,19 +47,11 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
     updateWidget(widgetId, { size: newConfig.size, dimensions: newConfig.dimensions })
   }
 
-  const gradientColors = {
-    indigo: { from: '#5b7fff', to: '#4d6ee6' },
-    cyan: { from: '#64d2ff', to: '#50b8e6' },
-    emerald: { from: '#30d158', to: '#28b84a' },
-    rose: { from: '#ff375f', to: '#e62e51' },
-    violet: { from: '#bf5af2', to: '#a64dd9' },
-    amber: { from: '#ff9f0a', to: '#e68d09' },
-  }
-
-  const gradient = gradientColors[accentTheme] || gradientColors.indigo
-
   const handleClick = () => {
     if (!isEditMode && onClick) {
+      // Trigger pulse animation
+      setIsClicked(true)
+      setTimeout(() => setIsClicked(false), 600)
       onClick()
     }
   }
@@ -69,28 +60,23 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
     <div 
       onClick={handleClick}
       className={`
-        h-full w-full backdrop-blur-xl bg-zinc-900/30 rounded-3xl p-5 
-        hover:bg-zinc-900/40 hover:-translate-y-1 
-        shadow-[0_8px_32px_rgba(0,0,0,0.3)] 
-        hover:shadow-[0_16px_48px_rgba(0,0,0,0.4)] 
-        transition-all duration-300 group breathe gradient-border
-        ${!isEditMode && onClick ? 'cursor-pointer' : ''}
+        h-full w-full rounded-3xl p-5 
+        glass-widget glass-widget-${accentTheme}
+        hover:-translate-y-1 
+        transition-all duration-300 group
+        ${isClicked ? 'clicked' : ''}
+        ${!isEditMode && onClick ? 'cursor-pointer glass-shimmer' : ''}
       `}
-      style={{
-        '--bg-color': 'rgb(28 28 30 / 0.3)',
-        '--gradient-from': gradient.from + '40',
-        '--gradient-to': gradient.to + '40',
-      } as React.CSSProperties}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {isEditMode && (
             <div className="cursor-move" title="Glisser pour déplacer">
-              <GripVertical className="w-4 h-4 text-zinc-700 hover:text-zinc-500 transition-colors" />
+              <GripVertical className="w-4 h-4 text-zinc-500 hover:text-zinc-300 transition-colors" />
             </div>
           )}
-          <h3 className="text-sm font-medium text-zinc-400 tracking-tight">{widgetTitle}</h3>
+          <h3 className="text-sm font-medium text-zinc-300 tracking-tight">{widgetTitle}</h3>
         </div>
         <div className="flex items-center gap-2">
           {actions}
@@ -98,7 +84,7 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); toggleSize(); }}
-                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-700 hover:text-zinc-500 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-zinc-300 transition-all"
                 title="Redimensionner"
               >
                 {size === 'large' ? (
@@ -109,7 +95,7 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); removeWidget(widgetId); }}
-                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-700 hover:text-rose-400 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-all"
                 title="Supprimer"
               >
                 <X className="w-3.5 h-3.5" />

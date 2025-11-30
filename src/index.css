@@ -133,3 +133,130 @@ button:active:not(:disabled) {
   0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
   100% { transform: translate(var(--velocity-x), var(--velocity-y)) rotate(720deg); opacity: 0; }
 }
+
+/* Glassmorphism & Shine Effects */
+.glass-widget {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Shine effect on hover */
+.glass-widget::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.glass-widget:hover::before {
+  transform: translateX(100%) translateY(100%) rotate(45deg);
+}
+
+/* Glow effect on hover */
+.glass-widget:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 12px 48px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(var(--accent-rgb), 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Click pulse effect */
+@keyframes glassPulse {
+  0% {
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      0 0 0 0 rgba(var(--accent-rgb), 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      0 0 0 10px rgba(var(--accent-rgb), 0),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+  100% {
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      0 0 0 0 rgba(var(--accent-rgb), 0),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+.glass-widget.clicked {
+  animation: glassPulse 0.6s ease-out;
+}
+
+/* Accent color glow */
+.glass-widget-indigo {
+  --accent-rgb: 91, 127, 255;
+}
+
+.glass-widget-cyan {
+  --accent-rgb: 100, 210, 255;
+}
+
+.glass-widget-emerald {
+  --accent-rgb: 48, 209, 88;
+}
+
+.glass-widget-rose {
+  --accent-rgb: 255, 55, 95;
+}
+
+.glass-widget-violet {
+  --accent-rgb: 191, 90, 242;
+}
+
+.glass-widget-amber {
+  --accent-rgb: 255, 159, 10;
+}
+
+/* Shimmer effect for interactive widgets */
+.glass-shimmer {
+  position: relative;
+}
+
+.glass-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  animation: shimmer 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
