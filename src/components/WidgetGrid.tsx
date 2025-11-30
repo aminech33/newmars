@@ -113,17 +113,15 @@ export function WidgetGrid() {
     return a.position.x - b.position.x
   })
 
+  // Debug
+  console.log('🎨 Rendering WidgetGrid with', sortedWidgets.length, 'widgets')
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 auto-rows-min">
-      {sortedWidgets.map((widget, index) => (
+      {sortedWidgets.map((widget) => (
         <div
           key={widget.id}
-          style={{
-            ...getGridStyle(widget),
-            animation: 'staggerFadeIn 0.4s ease-out forwards',
-            animationDelay: `${index * 50}ms`,
-            opacity: 0,
-          }}
+          style={getGridStyle(widget)}
           draggable={isEditMode}
           onDragStart={(e) => handleDragStart(e, widget.id)}
           onDragOver={handleDragOver}
@@ -140,6 +138,12 @@ export function WidgetGrid() {
         <div className="col-span-full text-center py-16">
           <p className="text-zinc-600 mb-4">Aucun widget</p>
           <p className="text-zinc-700 text-sm">Cliquez sur "Personnaliser" pour ajouter des widgets</p>
+          <button
+            onClick={() => resetWidgets()}
+            className="mt-4 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
+          >
+            Charger les widgets par défaut
+          </button>
         </div>
       )}
     </div>
