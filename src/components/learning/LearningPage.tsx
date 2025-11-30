@@ -7,8 +7,23 @@ import { CourseModal } from './CourseModal'
 import { EmptyState } from './EmptyState'
 import { LearningFAB } from './LearningFAB'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { Toast, useToast } from '../ui/Toast'
+import { Toast, ToastType } from '../ui/Toast'
 import { CreateCourseData, Course } from '../../types/learning'
+
+// Hook local pour les toasts (sans Provider)
+function useLocalToast() {
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null)
+  
+  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+    setToast({ message, type })
+  }, [])
+  
+  const hideToast = useCallback(() => {
+    setToast(null)
+  }, [])
+  
+  return { toast, showToast, hideToast }
+}
 
 // Simulated AI Response (à remplacer par une vraie API)
 const generateAIResponse = async (courseContext: string, userMessage: string): Promise<string> => {
@@ -90,7 +105,7 @@ export function LearningPage() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'course' | 'message'; id: string; courseId?: string } | null>(null)
   
-  const { toast, showToast, hideToast } = useToast()
+  const { toast, showToast, hideToast } = useLocalToast()
 
   // Keyboard shortcuts
   useEffect(() => {
