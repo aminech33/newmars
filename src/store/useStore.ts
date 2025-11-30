@@ -32,7 +32,18 @@ export interface Task {
   description?: string
   focusScore?: number
   linkedEventId?: string // Link to calendar event
+  project?: string // Nom du projet (ex: "NewMars", "Side Project")
 }
+
+// Liste des projets disponibles
+export const PROJECTS = [
+  { name: 'NewMars', color: '#6366f1', icon: '🚀' },
+  { name: 'Side Project', color: '#10b981', icon: '💡' },
+  { name: 'Perso', color: '#f59e0b', icon: '🏠' },
+  { name: 'Freelance', color: '#ec4899', icon: '💼' },
+] as const
+
+export type ProjectName = typeof PROJECTS[number]['name']
 
 export interface Note {
   id: string
@@ -305,13 +316,13 @@ export const useStore = create<AppState>()(
       
       // Tasks
       tasks: [
-        { id: '1', title: 'Finaliser le composant Dashboard', completed: false, category: 'dev', createdAt: Date.now() - 86400000, status: 'in-progress', priority: 'high', estimatedTime: 60 },
-        { id: '2', title: 'Revoir les maquettes UI', completed: false, category: 'design', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 45 },
-        { id: '3', title: 'Appel avec l\'équipe produit', completed: true, category: 'work', createdAt: Date.now() - 259200000, status: 'done', priority: 'medium', estimatedTime: 30 },
-        { id: '4', title: 'Implémenter la recherche globale', completed: false, category: 'dev', createdAt: Date.now() - 43200000, status: 'todo', priority: 'high', estimatedTime: 90 },
-        { id: '5', title: 'Préparer la présentation client', completed: false, category: 'urgent', createdAt: Date.now() - 21600000, status: 'in-progress', priority: 'urgent', estimatedTime: 120, dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0] },
-        { id: '6', title: 'Rechercher des idées', completed: true, category: 'personal', createdAt: Date.now() - 345600000, status: 'done', priority: 'low', estimatedTime: 30 },
-        { id: '7', title: 'Créer le prototype', completed: false, category: 'dev', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 120 },
+        { id: '1', title: 'Finaliser le composant Dashboard', completed: false, category: 'dev', createdAt: Date.now() - 86400000, status: 'in-progress', priority: 'high', estimatedTime: 60, project: 'NewMars' },
+        { id: '2', title: 'Revoir les maquettes UI', completed: false, category: 'design', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 45, project: 'NewMars' },
+        { id: '3', title: 'Appel avec l\'équipe produit', completed: true, category: 'work', createdAt: Date.now() - 259200000, status: 'done', priority: 'medium', estimatedTime: 30, project: 'Freelance' },
+        { id: '4', title: 'Implémenter la recherche globale', completed: false, category: 'dev', createdAt: Date.now() - 43200000, status: 'todo', priority: 'high', estimatedTime: 90, project: 'NewMars' },
+        { id: '5', title: 'Préparer la présentation client', completed: false, category: 'urgent', createdAt: Date.now() - 21600000, status: 'in-progress', priority: 'urgent', estimatedTime: 120, dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], project: 'Freelance' },
+        { id: '6', title: 'Rechercher des idées', completed: true, category: 'personal', createdAt: Date.now() - 345600000, status: 'done', priority: 'low', estimatedTime: 30, project: 'Side Project' },
+        { id: '7', title: 'Créer le prototype', completed: false, category: 'dev', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 120, project: 'Side Project' },
       ],
       addTask: (task) => {
         const newTask = { ...task, id: generateId(), createdAt: Date.now() }

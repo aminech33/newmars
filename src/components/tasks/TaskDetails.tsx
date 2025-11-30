@@ -1,6 +1,6 @@
-import { X, Calendar, Clock, Tag, CheckSquare, Plus, Trash2, Flag, Link as LinkIcon } from 'lucide-react'
+import { X, Calendar, Clock, Tag, CheckSquare, Plus, Trash2, Flag, Link as LinkIcon, FolderKanban } from 'lucide-react'
 import { useState } from 'react'
-import { Task, TaskPriority, TaskCategory, useStore } from '../../store/useStore'
+import { Task, TaskPriority, TaskCategory, useStore, PROJECTS } from '../../store/useStore'
 
 interface TaskDetailsProps {
   task: Task
@@ -106,6 +106,45 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
         </div>
         
         <div className="p-6 space-y-6">
+          {/* Project */}
+          <div>
+            <label className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
+              <FolderKanban className="w-3.5 h-3.5" />
+              Projet
+            </label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => updateTask(task.id, { project: undefined })}
+                className={`px-3 py-1.5 rounded-xl text-xs transition-all ${
+                  !task.project
+                    ? 'bg-zinc-700 text-zinc-300'
+                    : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'
+                }`}
+              >
+                Aucun
+              </button>
+              {PROJECTS.map((project) => (
+                <button
+                  key={project.name}
+                  onClick={() => updateTask(task.id, { project: project.name })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all ${
+                    task.project === project.name
+                      ? 'text-white'
+                      : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                  style={
+                    task.project === project.name
+                      ? { backgroundColor: `${project.color}30`, color: project.color }
+                      : {}
+                  }
+                >
+                  <span>{project.icon}</span>
+                  <span>{project.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          
           {/* Priority & Category */}
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -1,5 +1,5 @@
 import { Clock, CheckSquare, MoreVertical, Calendar } from 'lucide-react'
-import { Task } from '../../store/useStore'
+import { Task, PROJECTS } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
 
 interface TaskCardProps {
@@ -61,6 +61,20 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
               <MoreVertical className="w-3.5 h-3.5" />
             </button>
           </div>
+          
+          {/* Project Badge */}
+          {task.project && (
+            <div 
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg mb-2 text-xs w-fit"
+              style={{ 
+                backgroundColor: `${PROJECTS.find(p => p.name === task.project)?.color}20`,
+                color: PROJECTS.find(p => p.name === task.project)?.color 
+              }}
+            >
+              <span>{PROJECTS.find(p => p.name === task.project)?.icon}</span>
+              <span className="font-medium">{task.project}</span>
+            </div>
+          )}
           
           {/* Description */}
           {task.description && (
