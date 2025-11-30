@@ -1,5 +1,5 @@
-import { Clock, CheckSquare, MoreVertical, Calendar } from 'lucide-react'
-import { Task } from '../../store/useStore'
+import { Clock, CheckSquare, MoreVertical, Calendar, FolderKanban } from 'lucide-react'
+import { Task, useStore } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
 
 interface TaskCardProps {
@@ -24,6 +24,9 @@ const categoryColors = {
 }
 
 export function TaskCard({ task, index, onClick }: TaskCardProps) {
+  const projects = useStore((state) => state.projects)
+  const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
+  
   const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
   const totalSubtasks = task.subtasks?.length || 0
   
@@ -67,6 +70,17 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
             <p className="text-xs text-zinc-500 mb-3 line-clamp-2">
               {task.description}
             </p>
+          )}
+          
+          {/* Project Badge */}
+          {project && (
+            <div 
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg mb-2 text-xs"
+              style={{ backgroundColor: `${project.color}20`, color: project.color }}
+            >
+              <span>{project.icon || '📁'}</span>
+              <span className="font-medium">{project.name}</span>
+            </div>
           )}
           
           {/* Metadata */}

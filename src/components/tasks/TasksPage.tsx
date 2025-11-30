@@ -28,6 +28,7 @@ export function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskProjectId, setNewTaskProjectId] = useState<string | undefined>(undefined)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [advancedFilters, setAdvancedFilters] = useState<TaskFilterState>({
@@ -83,6 +84,9 @@ export function TasksPage() {
       const estimatedTime = estimateTaskDuration(newTaskTitle)
       const priority = detectPriority(newTaskTitle)
       
+      // Utiliser le projet sélectionné ou celui du filtre actif
+      const projectId = newTaskProjectId || (selectedProjectId !== 'all' ? selectedProjectId : undefined)
+      
       addTask({
         title: newTaskTitle,
         completed: false,
@@ -90,10 +94,12 @@ export function TasksPage() {
         status: 'todo',
         priority,
         estimatedTime,
-        focusScore: 0
+        focusScore: 0,
+        projectId
       })
       
       setNewTaskTitle('')
+      setNewTaskProjectId(undefined)
       setShowQuickAdd(false)
     }
   }
@@ -145,6 +151,41 @@ export function TasksPage() {
                 className="w-full bg-transparent text-zinc-300 placeholder:text-zinc-700 focus:outline-none text-sm"
                 autoFocus
               />
+              
+              {/* Project selector */}
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <span className="text-xs text-zinc-600">Projet:</span>
+                <button
+                  onClick={() => setNewTaskProjectId(undefined)}
+                  className={`px-2 py-1 rounded-lg text-xs transition-all ${
+                    !newTaskProjectId && selectedProjectId === 'all'
+                      ? 'bg-zinc-700 text-zinc-300'
+                      : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                >
+                  Aucun
+                </button>
+                {projects.filter(p => p.status === 'active').map((project) => (
+                  <button
+                    key={project.id}
+                    onClick={() => setNewTaskProjectId(project.id)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all ${
+                      newTaskProjectId === project.id || (selectedProjectId === project.id && !newTaskProjectId)
+                        ? 'text-white'
+                        : 'text-zinc-600 hover:text-zinc-400'
+                    }`}
+                    style={
+                      newTaskProjectId === project.id || (selectedProjectId === project.id && !newTaskProjectId)
+                        ? { backgroundColor: `${project.color}30`, color: project.color }
+                        : {}
+                    }
+                  >
+                    <span>{project.icon || '📁'}</span>
+                    <span>{project.name}</span>
+                  </button>
+                ))}
+              </div>
+              
               <div className="flex items-center gap-2 mt-3">
                 <button
                   onClick={handleQuickAdd}
@@ -153,7 +194,10 @@ export function TasksPage() {
                   Créer
                 </button>
                 <button
-                  onClick={() => setShowQuickAdd(false)}
+                  onClick={() => {
+                    setShowQuickAdd(false)
+                    setNewTaskProjectId(undefined)
+                  }}
                   className="px-3 py-1.5 text-zinc-500 rounded-xl text-xs hover:bg-zinc-800/50 transition-colors"
                 >
                   Annuler
