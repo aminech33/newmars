@@ -1,25 +1,51 @@
-import { useState, useEffect } from 'react'
+import { Suspense, lazy, useState, useEffect } from 'react'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { LoadingFallback } from './components/LoadingFallback'
 import { useStore } from './store/useStore'
-import { HubV2 } from './components/HubV2'
-import { TasksPage } from './components/tasks/TasksPage'
-import { CalendarPage } from './components/calendar/CalendarPage'
-import { HealthPage } from './components/health/HealthPage'
-import { JournalPage } from './components/journal/JournalPage'
-import { ProjectsPage } from './components/projects/ProjectsPage'
-import { Dashboard } from './components/Dashboard'
-import { AIAssistant } from './components/AIAssistant'
+
+// Lazy load des composants lourds pour éviter les erreurs au chargement initial
+const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.HubV2 })))
+const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
+const CalendarPage = lazy(() => import('./components/calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
+const HealthPage = lazy(() => import('./components/health/HealthPage').then(m => ({ default: m.HealthPage })))
+const JournalPage = lazy(() => import('./components/journal/JournalPage').then(m => ({ default: m.JournalPage })))
+const ProjectsPage = lazy(() => import('./components/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })))
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
+const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
+const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
+
+// Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
 import { CommandPalette } from './components/CommandPalette'
 import { ToastContainer } from './components/ToastContainer'
 import { QuickAdd } from './components/QuickAdd'
-import { FocusMode } from './components/FocusMode'
 import { Confetti } from './components/Confetti'
-import { ErrorBoundary } from './components/ErrorBoundary'
 
-function App() {
+function AppContent() {
   const currentView = useStore((state) => state.currentView)
   const isFocusMode = useStore((state) => state.isFocusMode)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [isReady, setIsReady] = useState(false)
+
+  // Vérification de santé au démarrage
+  useEffect(() => {
+    const checkHealth = () => {
+      try {
+        // Vérifier que le store fonctionne
+        const state = useStore.getState()
+        if (!state || typeof state.setView !== 'function') {
+          throw new Error('Store not initialized properly')
+        }
+        setIsReady(true)
+        console.log('✅ App health check passed')
+      } catch (error) {
+        console.error('❌ App health check failed:', error)
+        setIsReady(false)
+      }
+    }
+    
+    checkHealth()
+  }, [])
 
   useEffect(() => {
     const handleTaskCompleted = () => {
@@ -31,9 +57,14 @@ function App() {
     return () => window.removeEventListener('task-completed', handleTaskCompleted)
   }, [])
 
+  // Afficher un loader si pas prêt
+  if (!isReady) {
+    return <LoadingFallback />
+  }
+
   return (
-    <ErrorBoundary>
-      <div className="h-full w-full bg-mars-bg noise-bg overflow-hidden">
+    <div className="h-full w-full bg-mars-bg noise-bg overflow-hidden">
+      <Suspense fallback={<LoadingFallback />}>
         {isFocusMode ? (
           <FocusMode />
         ) : (
@@ -46,15 +77,24 @@ function App() {
             {currentView === 'projects' && <ProjectsPage />}
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'ai' && <AIAssistant />}
-
-            <KeyboardShortcuts />
-            <CommandPalette />
-            <ToastContainer />
-            <QuickAdd />
-            <Confetti trigger={showConfetti} />
           </>
         )}
-      </div>
+      </Suspense>
+
+      {/* Composants globaux - toujours chargés */}
+      <KeyboardShortcuts />
+      <CommandPalette />
+      <ToastContainer />
+      <QuickAdd />
+      <Confetti trigger={showConfetti} />
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
     </ErrorBoundary>
   )
 }
