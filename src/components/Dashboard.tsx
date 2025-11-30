@@ -16,6 +16,8 @@ import {
 import { Tooltip } from './ui/Tooltip'
 import { ScrollToTop } from './ui/ScrollToTop'
 import { MetricDetailModal } from './dashboard/MetricDetailModal'
+import { HourDetailModal } from './dashboard/HourDetailModal'
+import { Sparkline } from './ui/Sparkline'
 
 // Constantes
 const WORK_HOURS_START = 8
@@ -28,6 +30,7 @@ export function Dashboard() {
   const { tasks, setView, dailyGoal, focusMinutes } = useStore()
   const [activeTab, setActiveTab] = useState<'overview' | 'insights' | 'heatmap'>('overview')
   const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null)
+  const [selectedHour, setSelectedHour] = useState<number | null>(null)
 
   // Raccourcis clavier pour les tabs
   useEffect(() => {
@@ -327,11 +330,21 @@ export function Dashboard() {
               {/* Comparaisons */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
                 {/* vs Hier */}
-                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-xl">
-                  <h3 className="text-base font-semibold text-zinc-300 mb-6 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-indigo-400" />
-                    Aujourd'hui vs Hier
-                  </h3>
+                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-xl motion-reduce:transition-none">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-base font-semibold text-zinc-300 flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-indigo-400" aria-hidden="true" />
+                      Aujourd'hui vs Hier
+                    </h3>
+                    {/* Sparkline des 7 derniers jours */}
+                    <div className="w-24">
+                      <Sparkline 
+                        data={weekStats.map(d => d.tasksCompleted)} 
+                        color="rgb(99, 102, 241)"
+                        height={24}
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-zinc-500 font-medium">Tâches</span>
@@ -369,11 +382,21 @@ export function Dashboard() {
                 </div>
 
                 {/* vs Semaine dernière */}
-                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-xl">
-                  <h3 className="text-base font-semibold text-zinc-300 mb-6 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-cyan-400" />
-                    Cette semaine vs Semaine dernière
-                  </h3>
+                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-xl motion-reduce:transition-none">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-base font-semibold text-zinc-300 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-cyan-400" aria-hidden="true" />
+                      Cette semaine vs Semaine dernière
+                    </h3>
+                    {/* Sparkline de la semaine */}
+                    <div className="w-24">
+                      <Sparkline 
+                        data={weekStats.map(d => d.focusMinutes)} 
+                        color="rgb(34, 211, 238)"
+                        height={24}
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-zinc-500 font-medium">Tâches</span>
@@ -424,30 +447,46 @@ export function Dashboard() {
                     { label: 'Tâches complétées', ...weeklyGoals.tasks, icon: '✅', gradient: 'from-emerald-500 to-emerald-400', shadow: 'shadow-emerald-500/30', format: undefined },
                     { label: 'Temps de focus', ...weeklyGoals.focus, icon: '🎯', gradient: 'from-indigo-500 to-indigo-400', shadow: 'shadow-indigo-500/30', format: (v: number) => formatDuration(v) },
                     { label: 'Jours de streak', ...weeklyGoals.streak, icon: '🔥', gradient: 'from-orange-500 to-orange-400', shadow: 'shadow-orange-500/30', format: undefined },
-                  ].map((goal) => (
-                    <div key={goal.label}>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl" role="img" aria-label={goal.label}>{goal.icon}</span>
-                          <span className="text-sm font-medium text-zinc-400">{goal.label}</span>
+                  ].map((goal) => {
+                    const isNearComplete = goal.percent >= 90 && goal.percent < 100
+                    const isComplete = goal.percent >= 100
+                    
+                    return (
+                      <div key={goal.label} className="relative">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <span className={`text-2xl ${isComplete ? 'animate-bounce' : ''}`} role="img" aria-label={goal.label}>{goal.icon}</span>
+                            <span className="text-sm font-medium text-zinc-400">{goal.label}</span>
+                            {/* Notification badge */}
+                            {isComplete && (
+                              <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-500/20 text-emerald-400 rounded-full animate-pulse">
+                                Atteint !
+                              </span>
+                            )}
+                            {isNearComplete && (
+                              <span className="px-2 py-0.5 text-xs font-semibold bg-amber-500/20 text-amber-400 rounded-full">
+                                Presque !
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-sm font-semibold text-zinc-300">
+                            {goal.format ? goal.format(goal.current) : goal.current} / {goal.format ? goal.format(goal.target) : goal.target}
+                          </span>
                         </div>
-                        <span className="text-sm font-semibold text-zinc-300">
-                          {goal.format ? goal.format(goal.current) : goal.current} / {goal.format ? goal.format(goal.target) : goal.target}
-                        </span>
+                        <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden">
+                          <div 
+                            className={`absolute inset-y-0 left-0 bg-gradient-to-r ${goal.gradient} rounded-full transition-all duration-1000 ease-out shadow-lg ${goal.shadow} motion-reduce:transition-none`}
+                            style={{ width: `${Math.min(goal.percent, 100)}%` }}
+                            role="progressbar"
+                            aria-valuenow={goal.current}
+                            aria-valuemin={0}
+                            aria-valuemax={goal.target}
+                            aria-label={`${goal.label}: ${goal.percent}% complété`}
+                          />
+                        </div>
                       </div>
-                      <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden">
-                        <div 
-                          className={`absolute inset-y-0 left-0 bg-gradient-to-r ${goal.gradient} rounded-full transition-all duration-1000 ease-out shadow-lg ${goal.shadow} motion-reduce:transition-none`}
-                          style={{ width: `${goal.percent}%` }}
-                          role="progressbar"
-                          aria-valuenow={goal.current}
-                          aria-valuemin={0}
-                          aria-valuemax={goal.target}
-                          aria-label={`${goal.label}: ${goal.percent}% complété`}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </section>
 
@@ -471,29 +510,33 @@ export function Dashboard() {
                     const height = maxHourlyTasks > 0 ? (hour.tasksCompleted / maxHourlyTasks) * 100 : 0
                     const isPeak = peakHours[0]?.label === hour.label
                     return (
-                      <div key={hour.hour} className="flex-1 flex flex-col items-center gap-2 group">
+                      <button
+                        key={hour.hour}
+                        onClick={() => setSelectedHour(hour.hour)}
+                        className="flex-1 flex flex-col items-center gap-2 group cursor-pointer"
+                      >
                         <div className="w-full flex items-end justify-center h-24 relative">
                           {/* Tooltip */}
-                          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                             <div className="bg-zinc-800 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap shadow-xl">
-                              {hour.tasksCompleted} tâches
+                              {hour.tasksCompleted} tâches - Cliquer pour détails
                             </div>
                           </div>
                           
                           <div 
-                            className={`w-full rounded-t-lg transition-all duration-500 hover:scale-110 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+                            className={`w-full rounded-t-lg transition-all duration-500 group-hover:scale-110 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
                               isPeak 
                                 ? 'bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-lg shadow-indigo-500/50' 
-                                : 'bg-zinc-700 hover:bg-zinc-600'
+                                : 'bg-zinc-700 group-hover:bg-zinc-600'
                             }`}
                             style={{ height: `${Math.max(8, height)}%` }}
                             role="presentation"
                           />
                         </div>
-                        <span className={`text-[10px] font-medium ${isPeak ? 'text-indigo-400' : 'text-zinc-600'}`}>
+                        <span className={`text-[10px] font-medium ${isPeak ? 'text-indigo-400' : 'text-zinc-600'} group-hover:text-zinc-400 transition-colors`}>
                           {hour.hour}h
                         </span>
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
@@ -703,6 +746,19 @@ export function Dashboard() {
           isOpen={!!selectedMetric}
           onClose={() => setSelectedMetric(null)}
           metric={metricDetails[selectedMetric]}
+        />
+      )}
+
+      {/* Hour detail modal */}
+      {selectedHour !== null && (
+        <HourDetailModal
+          isOpen={selectedHour !== null}
+          onClose={() => setSelectedHour(null)}
+          hour={selectedHour}
+          tasks={completedTasks.filter(t => {
+            const taskHour = new Date(t.createdAt).getHours()
+            return taskHour === selectedHour
+          })}
         />
       )}
     </div>
