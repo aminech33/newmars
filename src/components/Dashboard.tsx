@@ -1,7 +1,7 @@
 import { useStore } from '../store/useStore'
 import { useWeekStats, useCurrentStreak, useCompletedTasks, usePendingTasks, useTasksByCategory } from '../store/selectors'
 import { ArrowLeft, TrendingUp, TrendingDown, Target, Clock, Lightbulb, Calendar, Zap } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   calculateProductivityScore,
   analyzeProductiveHours,
@@ -13,15 +13,32 @@ import {
   generateYearHeatmap,
   formatDuration
 } from '../utils/productivityUtils'
+import { Tooltip } from './ui/Tooltip'
+import { ScrollToTop } from './ui/ScrollToTop'
+import { MetricDetailModal } from './dashboard/MetricDetailModal'
 
 // Constantes
 const WORK_HOURS_START = 8
 const WORK_HOURS_END = 22
 const HEATMAP_DAYS = 365
 
+type MetricType = 'tasks' | 'focus' | 'consistency' | 'efficiency'
+
 export function Dashboard() {
   const { tasks, setView, dailyGoal, focusMinutes } = useStore()
   const [activeTab, setActiveTab] = useState<'overview' | 'insights' | 'heatmap'>('overview')
+  const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null)
+
+  // Raccourcis clavier pour les tabs
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === '1') setActiveTab('overview')
+      if (e.key === '2') setActiveTab('insights')
+      if (e.key === '3') setActiveTab('heatmap')
+    }
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [])
 
   // Sélecteurs optimisés (mémorisés)
   const weekStats = useWeekStats()
@@ -132,10 +149,66 @@ export function Dashboard() {
 
   const scoreTheme = getScoreTheme(productivityScore.score)
 
+  // Données pour les modales de métriques
+  const metricDetails = {
+    tasks: {
+      label: 'Tâches',
+      value: productivityScore.breakdown.tasksCompleted,
+      max: 25,
+      icon: '✅',
+      description: 'Nombre de tâches complétées aujourd\'hui par rapport à votre objectif quotidien. Chaque tâche terminée vous rapproche de votre objectif de productivité.',
+      tips: [
+        'Décompose les grandes tâches en sous-tâches plus petites',
+        'Priorise 3 tâches importantes chaque matin',
+        'Utilise la technique Pomodoro pour rester concentré',
+        'Célèbre chaque tâche terminée pour maintenir la motivation'
+      ]
+    },
+    focus: {
+      label: 'Focus',
+      value: productivityScore.breakdown.focusTime,
+      max: 25,
+      icon: '🎯',
+      description: 'Temps passé en mode focus (sessions Pomodoro). Plus vous accumulez de temps de focus, plus votre score augmente.',
+      tips: [
+        'Bloque des plages horaires dédiées au travail profond',
+        'Élimine les distractions (notifications, téléphone)',
+        'Utilise le mode Pomodoro (25min focus + 5min pause)',
+        'Travaille sur une seule tâche à la fois'
+      ]
+    },
+    consistency: {
+      label: 'Régularité',
+      value: productivityScore.breakdown.consistency,
+      max: 25,
+      icon: '🔥',
+      description: 'Votre streak actuel (jours consécutifs d\'activité). La régularité est la clé du succès à long terme.',
+      tips: [
+        'Travaille un peu chaque jour plutôt que beaucoup d\'un coup',
+        'Fixe-toi un objectif minimum quotidien (ex: 1 tâche)',
+        'Utilise le dashboard pour suivre ton streak',
+        'Ne casse pas la chaîne !'
+      ]
+    },
+    efficiency: {
+      label: 'Efficacité',
+      value: productivityScore.breakdown.efficiency,
+      max: 25,
+      icon: '⚡',
+      description: 'Ratio entre le temps estimé et le temps réel passé sur les tâches. Une bonne efficacité signifie que tu es réaliste dans tes estimations.',
+      tips: [
+        'Estime le temps nécessaire avant de commencer une tâche',
+        'Compare tes estimations avec le temps réel',
+        'Apprends à dire non aux tâches non-prioritaires',
+        'Automatise les tâches répétitives'
+      ]
+    }
+  }
+
   return (
     <div className="h-full w-full flex flex-col view-transition" role="main" aria-label="Dashboard de productivité">
-      {/* Header */}
-      <header className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      {/* Header - Sticky */}
+      <header className="sticky top-0 z-20 flex-shrink-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -150,27 +223,28 @@ export function Dashboard() {
             </div>
           </div>
           
-          {/* Tabs */}
+          {/* Tabs avec raccourcis clavier */}
           <div className="flex items-center gap-1 bg-zinc-900/50 rounded-xl p-1 border border-zinc-800/50" role="tablist" aria-label="Sections du dashboard">
             {[
-              { id: 'overview', label: 'Vue d\'ensemble' },
-              { id: 'insights', label: 'Insights' },
-              { id: 'heatmap', label: 'Activité' },
+              { id: 'overview', label: 'Vue d\'ensemble', key: '1' },
+              { id: 'insights', label: 'Insights', key: '2' },
+              { id: 'heatmap', label: 'Activité', key: '3' },
             ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                aria-controls={`${tab.id}-panel`}
-                className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
-                  activeTab === tab.id 
-                    ? 'bg-zinc-800 text-zinc-100 shadow-lg' 
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {tab.label}
-              </button>
+              <Tooltip key={tab.id} content={`Raccourci: ${tab.key}`} side="bottom">
+                <button
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`${tab.id}-panel`}
+                  className={`px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                    activeTab === tab.id 
+                      ? 'bg-zinc-800 text-zinc-100 shadow-lg' 
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              </Tooltip>
             ))}
           </div>
         </div>
@@ -213,29 +287,34 @@ export function Dashboard() {
                     )}
                   </div>
                   
-                  {/* Breakdown avec animations */}
+                  {/* Breakdown avec animations - Cliquables */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                     {[
-                      { label: 'Tâches', value: productivityScore.breakdown.tasksCompleted, max: 25, icon: '✅', gradient: 'from-emerald-500 to-emerald-400' },
-                      { label: 'Focus', value: productivityScore.breakdown.focusTime, max: 25, icon: '🎯', gradient: 'from-cyan-500 to-cyan-400' },
-                      { label: 'Régularité', value: productivityScore.breakdown.consistency, max: 25, icon: '🔥', gradient: 'from-orange-500 to-orange-400' },
-                      { label: 'Efficacité', value: productivityScore.breakdown.efficiency, max: 25, icon: '⚡', gradient: 'from-indigo-500 to-indigo-400' },
+                      { type: 'tasks' as MetricType, label: 'Tâches', value: productivityScore.breakdown.tasksCompleted, max: 25, icon: '✅', gradient: 'from-emerald-500 to-emerald-400' },
+                      { type: 'focus' as MetricType, label: 'Focus', value: productivityScore.breakdown.focusTime, max: 25, icon: '🎯', gradient: 'from-cyan-500 to-cyan-400' },
+                      { type: 'consistency' as MetricType, label: 'Régularité', value: productivityScore.breakdown.consistency, max: 25, icon: '🔥', gradient: 'from-orange-500 to-orange-400' },
+                      { type: 'efficiency' as MetricType, label: 'Efficacité', value: productivityScore.breakdown.efficiency, max: 25, icon: '⚡', gradient: 'from-indigo-500 to-indigo-400' },
                     ].map((item) => (
-                      <div key={item.label} className="text-center">
-                        <div className="text-2xl mb-2" role="img" aria-label={item.label}>{item.icon}</div>
-                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-3">
-                          <div 
-                            className={`h-full bg-gradient-to-r ${item.gradient} rounded-full transition-all duration-1000 ease-out`}
-                            style={{ width: `${(item.value / item.max) * 100}%` }}
-                            role="progressbar"
-                            aria-valuenow={item.value}
-                            aria-valuemin={0}
-                            aria-valuemax={item.max}
-                          />
-                        </div>
-                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">{item.label}</p>
-                        <p className="text-lg font-semibold text-zinc-300">{item.value}<span className="text-zinc-600">/{item.max}</span></p>
-                      </div>
+                      <Tooltip key={item.label} content="Cliquer pour plus de détails" side="top">
+                        <button
+                          onClick={() => setSelectedMetric(item.type)}
+                          className="text-center hover:scale-105 transition-transform duration-300 motion-reduce:transition-none motion-reduce:hover:scale-100 cursor-pointer group"
+                        >
+                          <div className="text-2xl mb-2 group-hover:scale-110 transition-transform" role="img" aria-label={item.label}>{item.icon}</div>
+                          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-3">
+                            <div 
+                              className={`h-full bg-gradient-to-r ${item.gradient} rounded-full transition-all duration-1000 ease-out`}
+                              style={{ width: `${(item.value / item.max) * 100}%` }}
+                              role="progressbar"
+                              aria-valuenow={item.value}
+                              aria-valuemin={0}
+                              aria-valuemax={item.max}
+                            />
+                          </div>
+                          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1 group-hover:text-zinc-400 transition-colors">{item.label}</p>
+                          <p className="text-lg font-semibold text-zinc-300 group-hover:text-zinc-100 transition-colors">{item.value}<span className="text-zinc-600">/{item.max}</span></p>
+                        </button>
+                      </Tooltip>
                     ))}
                   </div>
                 </div>
@@ -614,6 +693,18 @@ export function Dashboard() {
 
         </div>
       </div>
+
+      {/* Scroll to top button */}
+      <ScrollToTop />
+
+      {/* Metric detail modal */}
+      {selectedMetric && (
+        <MetricDetailModal
+          isOpen={!!selectedMetric}
+          onClose={() => setSelectedMetric(null)}
+          metric={metricDetails[selectedMetric]}
+        />
+      )}
     </div>
   )
 }
