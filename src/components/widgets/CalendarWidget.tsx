@@ -1,13 +1,14 @@
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface CalendarWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function CalendarWidget({ id, size }: CalendarWidgetProps) {
+export function CalendarWidget({ widget }: CalendarWidgetProps) {
+  const { id, size = 'small' } = widget
   const { tasks, events, setView } = useStore()
   
   const today = new Date()

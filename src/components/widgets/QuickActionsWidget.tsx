@@ -1,13 +1,14 @@
 import { FileText, CheckSquare, Timer, Zap } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface QuickActionsWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function QuickActionsWidget({ id, size }: QuickActionsWidgetProps) {
+export function QuickActionsWidget({ widget }: QuickActionsWidgetProps) {
+  const { id, size = 'small' } = widget
   const { setView, addQuickNote, tasks, setFocusMode } = useStore()
 
   const actions = [

@@ -45,33 +45,34 @@ export function WidgetGrid() {
   }
 
   const renderWidget = (widget: Widget) => {
-    const props = { id: widget.id, size: widget.size || 'small' }
+    // Passer le widget complet à tous les composants
+    const widgetProps = { widget }
     
     switch (widget.type) {
       case 'tasks':
-        return <TasksWidget {...props} />
+        return <TasksWidget {...widgetProps} />
       case 'stats':
-        return <StatsWidget {...props} />
+        return <StatsWidget {...widgetProps} />
       case 'habits':
-        return <HabitsWidget {...props} />
+        return <HabitsWidget {...widgetProps} />
       case 'notes':
-        return <NotesWidget {...props} />
+        return <NotesWidget {...widgetProps} />
       case 'quote':
-        return <QuoteWidget {...props} />
+        return <QuoteWidget {...widgetProps} />
       case 'calendar':
-        return <CalendarWidget {...props} />
+        return <CalendarWidget {...widgetProps} />
       case 'pomodoro':
-        return <PomodoroWidget {...props} />
+        return <PomodoroWidget {...widgetProps} />
       case 'links':
-        return <LinksWidget {...props} />
+        return <LinksWidget {...widgetProps} />
       case 'ai':
-        return <AIWidget {...props} />
+        return <AIWidget {...widgetProps} />
       case 'quick-actions':
-        return <QuickActionsWidget {...props} />
+        return <QuickActionsWidget {...widgetProps} />
       case 'health':
-        return <HealthWidget {...props} />
+        return <HealthWidget {...widgetProps} />
       case 'journal':
-        return <JournalWidget {...props} />
+        return <JournalWidget {...widgetProps} />
       default:
         return null
     }

@@ -1,13 +1,14 @@
 import { Sparkles, ArrowRight } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface AIWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function AIWidget({ id, size }: AIWidgetProps) {
+export function AIWidget({ widget }: AIWidgetProps) {
+  const { id, size = 'small' } = widget
   const { setView } = useStore()
 
   if (size === 'small') {

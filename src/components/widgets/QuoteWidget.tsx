@@ -1,10 +1,10 @@
 import { RefreshCw } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface QuoteWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
 const quotes = [
@@ -18,7 +18,8 @@ const quotes = [
   { text: "Start where you are. Use what you have. Do what you can", author: "Arthur Ashe" },
 ]
 
-export function QuoteWidget({ id, size }: QuoteWidgetProps) {
+export function QuoteWidget({ widget }: QuoteWidgetProps) {
+  const { id, size = 'small' } = widget
   const [quoteIndex, setQuoteIndex] = useState(0)
 
   useEffect(() => {

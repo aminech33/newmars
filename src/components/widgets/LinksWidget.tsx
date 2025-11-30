@@ -2,13 +2,14 @@ import { ExternalLink, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface LinksWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function LinksWidget({ id, size }: LinksWidgetProps) {
+export function LinksWidget({ widget }: LinksWidgetProps) {
+  const { id, size = 'small' } = widget
   const { quickLinks, deleteQuickLink } = useStore()
   const [isAdding, setIsAdding] = useState(false)
 

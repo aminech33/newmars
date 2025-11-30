@@ -1,13 +1,14 @@
 import { ArrowRight } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface TasksWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function TasksWidget({ id, size }: TasksWidgetProps) {
+export function TasksWidget({ widget }: TasksWidgetProps) {
+  const { id, size = 'small' } = widget
   const { tasks, setView } = useStore()
   const pendingTasks = tasks.filter(t => !t.completed)
 

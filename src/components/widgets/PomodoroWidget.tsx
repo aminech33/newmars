@@ -2,13 +2,14 @@ import { Play, Pause } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface PomodoroWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function PomodoroWidget({ id, size }: PomodoroWidgetProps) {
+export function PomodoroWidget({ widget }: PomodoroWidgetProps) {
+  const { id, size = 'small' } = widget
   const { tasks, setFocusMode } = useStore()
   const [timeLeft, setTimeLeft] = useState(25 * 60)
   const [isRunning, setIsRunning] = useState(false)

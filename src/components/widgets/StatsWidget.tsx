@@ -1,13 +1,14 @@
 import { TrendingUp } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface StatsWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function StatsWidget({ id, size }: StatsWidgetProps) {
+export function StatsWidget({ widget }: StatsWidgetProps) {
+  const { id, size = 'small' } = widget
   const { tasks, focusMinutes, setView } = useStore()
   const completedTasks = tasks.filter(t => t.completed).length
 

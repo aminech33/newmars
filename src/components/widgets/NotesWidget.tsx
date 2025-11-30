@@ -2,13 +2,14 @@ import { Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
+import { Widget } from '../../types/widgets'
 
 interface NotesWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function NotesWidget({ id, size }: NotesWidgetProps) {
+export function NotesWidget({ widget }: NotesWidgetProps) {
+  const { id, size = 'small' } = widget
   const { quickNotes, addQuickNote, deleteQuickNote } = useStore()
   const [isAdding, setIsAdding] = useState(false)
   const [newNote, setNewNote] = useState('')

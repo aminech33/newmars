@@ -2,13 +2,14 @@ import { Heart, TrendingDown, TrendingUp, Minus, Flame, Apple } from 'lucide-rea
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { calculateBMI, getBMICategory, analyzeWeightTrend } from '../../utils/healthIntelligence'
+import { Widget } from '../../types/widgets'
 
 interface HealthWidgetProps {
-  id: string
-  size: 'small' | 'medium' | 'large'
+  widget: Widget
 }
 
-export function HealthWidget({ id, size }: HealthWidgetProps) {
+export function HealthWidget({ widget }: HealthWidgetProps) {
+  const { id, size = 'small' } = widget
   const { weightEntries, mealEntries, healthGoals, userProfile, setView } = useStore()
 
   // Calculer les stats
