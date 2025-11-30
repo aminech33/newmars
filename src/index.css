@@ -134,52 +134,96 @@ button:active:not(:disabled) {
   100% { transform: translate(var(--velocity-x), var(--velocity-y)) rotate(720deg); opacity: 0; }
 }
 
-/* Glassmorphism & Shine Effects */
+/* ========================================
+   GLASSMORPHISM PREMIUM - PRODUCTION READY
+   ======================================== */
+
+/* Design Tokens */
+:root {
+  --glass-blur: 20px;
+  --glass-blur-hover: 24px;
+  --glass-elevation: -2px;
+  --glass-glow-size: 24px;
+  --glass-transition-duration: 300ms;
+  --glass-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --glass-click-duration: 400ms;
+  --glass-click-scale: 0.98;
+}
+
+/* Glassmorphism Base */
 .glass-widget {
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.05) 0%,
     rgba(255, 255, 255, 0.02) 100%
   );
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
+  /* Transitions optimisées (pas de "all") */
+  transition: 
+    transform var(--glass-transition-duration) var(--glass-transition-easing),
+    box-shadow var(--glass-transition-duration) var(--glass-transition-easing),
+    border-color var(--glass-transition-duration) var(--glass-transition-easing),
+    backdrop-filter var(--glass-transition-duration) var(--glass-transition-easing);
+  
+  will-change: transform;
 }
 
-/* Shine effect on hover */
-/* Premium hover effect - subtle glow & elevation */
-.glass-widget {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Fallback pour anciens navigateurs */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-widget {
+    background: rgba(28, 28, 30, 0.85);
+  }
 }
 
+/* Hover - Élévation & Glow */
 .glass-widget:hover {
-  transform: translateY(-2px);
+  transform: translateY(var(--glass-elevation));
   border-color: rgba(var(--accent-rgb), 0.3);
+  backdrop-filter: blur(var(--glass-blur-hover)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-hover)) saturate(200%);
   box-shadow: 
     0 12px 40px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(var(--accent-rgb), 0.2),
-    0 0 30px rgba(var(--accent-rgb), 0.15),
+    0 0 var(--glass-glow-size) rgba(var(--accent-rgb), 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(24px) saturate(200%);
 }
 
-/* Click pulse effect */
+/* Focus - Accessibilité clavier */
+.glass-widget:focus-visible {
+  outline: none;
+  border-color: rgba(var(--accent-rgb), 0.5);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 2px rgba(var(--accent-rgb), 0.4),
+    0 0 20px rgba(var(--accent-rgb), 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Active - Feedback tactile */
+.glass-widget:active {
+  transform: translateY(-1px) scale(var(--glass-click-scale));
+}
+
+/* Animation Pulse au clic */
 @keyframes glassPulse {
   0% {
     box-shadow: 
       0 8px 32px rgba(0, 0, 0, 0.3),
-      0 0 0 0 rgba(var(--accent-rgb), 0.4),
+      0 0 0 0 rgba(var(--accent-rgb), 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   50% {
     box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.3),
-      0 0 0 10px rgba(var(--accent-rgb), 0),
+      0 12px 40px rgba(0, 0, 0, 0.4),
+      0 0 0 12px rgba(var(--accent-rgb), 0),
       inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
   100% {
@@ -191,7 +235,27 @@ button:active:not(:disabled) {
 }
 
 .glass-widget.clicked {
-  animation: glassPulse 0.6s ease-out;
+  animation: glassPulse var(--glass-click-duration) var(--glass-transition-easing);
+}
+
+/* Accessibilité - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .glass-widget {
+    transition: none;
+    animation: none;
+  }
+  
+  .glass-widget:hover {
+    transform: none;
+  }
+  
+  .glass-widget:active {
+    transform: none;
+  }
+  
+  .glass-widget.clicked {
+    animation: none;
+  }
 }
 
 /* Accent color glow */

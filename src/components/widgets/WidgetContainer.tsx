@@ -59,6 +59,15 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
   return (
     <div 
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (!isEditMode && onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          handleClick()
+        }
+      }}
+      tabIndex={!isEditMode && onClick ? 0 : -1}
+      role={!isEditMode && onClick ? 'button' : undefined}
+      aria-label={!isEditMode && onClick ? `Ouvrir ${widgetTitle}` : undefined}
       className={`
         h-full w-full rounded-3xl p-5 
         glass-widget glass-widget-${accentTheme}
