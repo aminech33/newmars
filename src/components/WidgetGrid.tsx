@@ -18,9 +18,15 @@ export function WidgetGrid() {
   const { widgets, updateWidget, isEditMode, resetWidgets } = useStore()
   const [draggedWidget, setDraggedWidget] = useState<string | null>(null)
 
+  // Debug: afficher les widgets dans la console
+  console.log('📦 Widgets actuels:', widgets)
+
   // Vérifier et réparer les widgets corrompus
   const validWidgets = (widgets || []).filter(w => {
-    if (!w || !w.id || !w.type) return false
+    if (!w || !w.id || !w.type) {
+      console.log('❌ Widget invalide:', w)
+      return false
+    }
     return true
   }).map(w => ({
     ...w,
@@ -29,20 +35,7 @@ export function WidgetGrid() {
     position: w.position || { x: 0, y: 0 }
   }))
 
-  // Si les widgets sont corrompus, proposer de reset
-  if (widgets && widgets.length > 0 && validWidgets.length === 0) {
-    return (
-      <div className="col-span-full text-center py-16">
-        <p className="text-zinc-500 mb-4">Les widgets sont corrompus</p>
-        <button
-          onClick={() => resetWidgets()}
-          className="px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/30 transition-all"
-        >
-          Restaurer les widgets par défaut
-        </button>
-      </div>
-    )
-  }
+  console.log('✅ Widgets valides:', validWidgets.length)
 
   const renderWidget = (widget: Widget) => {
     // Passer le widget complet à tous les composants
