@@ -71,6 +71,11 @@ export function HubV2() {
       setSearchQuery('')
       return
     }
+    if (query === '/learning' || query === '/l' || query === '/learn') {
+      setView('learning')
+      setSearchQuery('')
+      return
+    }
     
     // Par défaut : créer une tâche
     addTask({ 

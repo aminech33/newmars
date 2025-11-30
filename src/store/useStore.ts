@@ -5,6 +5,7 @@ import { Event } from '../types/calendar'
 import { WeightEntry, MealEntry, HealthGoal, UserProfile } from '../types/health'
 import { JournalEntry } from '../types/journal'
 import { TaskRelation } from '../types/taskRelation'
+import { Course, Message, Flashcard, Note as LearningNote } from '../types/learning'
 
 export type TaskCategory = 'dev' | 'design' | 'personal' | 'work' | 'urgent'
 export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'done'
@@ -96,7 +97,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal'
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'learning'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
@@ -239,6 +240,18 @@ interface AppState {
   addTaskRelation: (relation: Omit<TaskRelation, 'id' | 'createdAt'>) => void
   removeTaskRelation: (id: string) => void
   getTaskRelations: (taskId: string) => TaskRelation[]
+  
+  // Learning / Apprentissage IA
+  learningCourses: Course[]
+  addLearningCourse: (course: Course) => void
+  updateLearningCourse: (id: string, updates: Partial<Course>) => void
+  deleteLearningCourse: (id: string) => void
+  addLearningMessage: (courseId: string, message: Message) => void
+  deleteLearningMessage: (courseId: string, messageId: string) => void
+  addLearningFlashcard: (courseId: string, flashcard: Flashcard) => void
+  deleteLearningFlashcard: (courseId: string, flashcardId: string) => void
+  addLearningNote: (courseId: string, note: LearningNote) => void
+  deleteLearningNote: (courseId: string, noteId: string) => void
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
@@ -929,6 +942,70 @@ export const useStore = create<AppState>()(
         const state = get()
         return state.taskRelations.filter(r => r.fromTaskId === taskId || r.toTaskId === taskId)
       },
+      
+      // Learning / Apprentissage IA
+      learningCourses: [],
+      addLearningCourse: (course) => {
+        set((state) => ({ learningCourses: [...state.learningCourses, course] }))
+      },
+      updateLearningCourse: (id, updates) => {
+        set((state) => ({
+          learningCourses: state.learningCourses.map((c) =>
+            c.id === id ? { ...c, ...updates } : c
+          )
+        }))
+      },
+      deleteLearningCourse: (id) => {
+        set((state) => ({ learningCourses: state.learningCourses.filter((c) => c.id !== id) }))
+      },
+      addLearningMessage: (courseId, message) => {
+        set((state) => ({
+          learningCourses: state.learningCourses.map((c) =>
+            c.id === courseId ? { ...c, messages: [...c.messages, message] } : c
+          )
+        }))
+      },
+      deleteLearningMessage: (courseId, messageId) => {
+        set((state) => ({
+          learningCourses: state.learningCourses.map((c) =>
+            c.id === courseId 
+              ? { ...c, messages: c.messages.filter((m) => m.id !== messageId) } 
+              : c
+          )
+        }))
+      },
+      addLearningFlashcard: (courseId, flashcard) => {
+        set((state) => ({
+          learningCourses: state.learningCourses.map((c) =>
+            c.id === courseId ? { ...c, flashcards: [...c.flashcards, flashcard] } : c
+          )
+        }))
+      },
+      deleteLearningFlashcard: (courseId, flashcardId) => {
+        set((state) => ({
+          learningCourses: state.learningCourses.map((c) =>
+            c.id === courseId 
+              ? { ...c, flashcards: c.flashcards.filter((f) => f.id !== flashcardId) } 
+              : c
+          )
+        }))
+      },
+      addLearningNote: (courseId, note) => {
+        set((state) => ({
+          learningCourses: state.learningCourses.map((c) =>
+            c.id === courseId ? { ...c, notes: [...c.notes, note] } : c
+          )
+        }))
+      },
+      deleteLearningNote: (courseId, noteId) => {
+        set((state) => ({
+          learningCourses: state.learningCourses.map((c) =>
+            c.id === courseId 
+              ? { ...c, notes: c.notes.filter((n) => n.id !== noteId) } 
+              : c
+          )
+        }))
+      },
     }),
     {
       name: 'newmars-storage',
@@ -952,6 +1029,7 @@ export const useStore = create<AppState>()(
         healthGoals: state.healthGoals,
         journalEntries: state.journalEntries,
         taskRelations: state.taskRelations,
+        learningCourses: state.learningCourses,
       })
     }
   )

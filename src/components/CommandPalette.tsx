@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store/useStore'
-import { Search, CheckSquare, BarChart3, Sparkles, Plus, Home, Zap } from 'lucide-react'
+import { Search, CheckSquare, BarChart3, Sparkles, Plus, Home, Zap, GraduationCap } from 'lucide-react'
 
 interface Command {
   id: string
@@ -21,6 +21,7 @@ export function CommandPalette() {
     { id: 'tasks', label: 'Voir les tâches', icon: CheckSquare, action: () => setView('tasks'), category: 'Navigation' },
     { id: 'dashboard', label: 'Voir le Dashboard', icon: BarChart3, action: () => setView('dashboard'), category: 'Navigation' },
     { id: 'ai', label: 'Ouvrir l\'Assistant IA', icon: Sparkles, action: () => setView('ai'), category: 'Navigation' },
+    { id: 'learning', label: 'Apprentissage IA', icon: GraduationCap, action: () => setView('learning'), category: 'Navigation' },
     { 
       id: 'new-task', 
       label: 'Nouvelle tâche', 

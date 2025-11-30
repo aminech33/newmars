@@ -1,0 +1,203 @@
+import { memo } from 'react'
+import { Settings, Trash2, Archive, BarChart3, BookOpen, Clock, Flame, ChevronLeft } from 'lucide-react'
+import { Course, COURSE_LEVELS } from '../../types/learning'
+import { Tooltip } from '../ui/Tooltip'
+
+interface CourseHeaderProps {
+  course: Course
+  onBack: () => void
+  onSettings: () => void
+  onArchive: () => void
+  onDelete: () => void
+  onToggleSidebar: () => void
+  sidebarCollapsed: boolean
+}
+
+const COLOR_CLASSES: Record<string, string> = {
+  indigo: 'bg-indigo-500/20 text-indigo-400',
+  emerald: 'bg-emerald-500/20 text-emerald-400',
+  rose: 'bg-rose-500/20 text-rose-400',
+  amber: 'bg-amber-500/20 text-amber-400',
+  cyan: 'bg-cyan-500/20 text-cyan-400',
+  violet: 'bg-violet-500/20 text-violet-400',
+  orange: 'bg-orange-500/20 text-orange-400',
+  teal: 'bg-teal-500/20 text-teal-400'
+}
+
+export const CourseHeader = memo(function CourseHeader({
+  course,
+  onBack,
+  onSettings,
+  onArchive,
+  onDelete,
+  onToggleSidebar,
+  sidebarCollapsed
+}: CourseHeaderProps) {
+  const levelInfo = COURSE_LEVELS.find(l => l.value === course.level)
+  
+  const formatDuration = (minutes: number): string => {
+    if (minutes < 60) return `${minutes}min`
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return mins > 0 ? `${hours}h${mins}` : `${hours}h`
+  }
+
+  const lastActiveText = (): string => {
+    const now = Date.now()
+    const diff = now - course.lastActiveAt
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(diff / 86400000)
+
+    if (minutes < 1) return "À l'instant"
+    if (minutes < 60) return `Il y a ${minutes}min`
+    if (hours < 24) return `Il y a ${hours}h`
+    if (days === 1) return 'Hier'
+    return `Il y a ${days}j`
+  }
+
+  return (
+    <header className="border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl sticky top-0 z-10">
+      <div className="px-4 lg:px-6 py-4">
+        <div className="flex items-center justify-between">
+          {/* Left: Back + Course Info */}
+          <div className="flex items-center gap-4">
+            {/* Toggle Sidebar (mobile) / Back button */}
+            <button
+              onClick={sidebarCollapsed ? onToggleSidebar : onBack}
+              className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-all lg:hidden"
+              aria-label={sidebarCollapsed ? 'Ouvrir la sidebar' : 'Retour'}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            {/* Course Icon */}
+            <div className={`p-2.5 rounded-xl ${COLOR_CLASSES[course.color] || COLOR_CLASSES.indigo}`}>
+              <span className="text-xl">{course.icon}</span>
+            </div>
+
+            {/* Course Info */}
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-semibold text-zinc-100">{course.name}</h1>
+                {levelInfo && (
+                  <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded-full text-zinc-500">
+                    {levelInfo.emoji} {levelInfo.label}
+                  </span>
+                )}
+              </div>
+              {course.description && (
+                <p className="text-sm text-zinc-500 mt-0.5 line-clamp-1">{course.description}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Stats + Actions */}
+          <div className="flex items-center gap-4">
+            {/* Stats (hidden on mobile) */}
+            <div className="hidden md:flex items-center gap-4">
+              <Tooltip content="Temps total d'étude">
+                <div className="flex items-center gap-1.5 text-zinc-500">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm">{formatDuration(course.totalTimeSpent)}</span>
+                </div>
+              </Tooltip>
+
+              <Tooltip content="Messages échangés">
+                <div className="flex items-center gap-1.5 text-zinc-500">
+                  <BookOpen className="w-4 h-4" />
+                  <span className="text-sm">{course.messagesCount}</span>
+                </div>
+              </Tooltip>
+
+              {course.streak > 0 && (
+                <Tooltip content={`${course.streak} jours consécutifs`}>
+                  <div className="flex items-center gap-1.5 text-amber-400">
+                    <Flame className="w-4 h-4" />
+                    <span className="text-sm font-medium">{course.streak}</span>
+                  </div>
+                </Tooltip>
+              )}
+
+              {course.flashcards.length > 0 && (
+                <Tooltip content={`${course.flashcards.length} flashcards`}>
+                  <div className="flex items-center gap-1.5 text-cyan-400">
+                    <span>📇</span>
+                    <span className="text-sm">{course.flashcards.length}</span>
+                  </div>
+                </Tooltip>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="hidden md:block w-px h-6 bg-zinc-800" />
+
+            {/* Actions */}
+            <div className="flex items-center gap-1">
+              <Tooltip content="Statistiques">
+                <button
+                  className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-all"
+                  aria-label="Statistiques du cours"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                </button>
+              </Tooltip>
+
+              <Tooltip content="Paramètres">
+                <button
+                  onClick={onSettings}
+                  className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-all"
+                  aria-label="Paramètres du cours"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              </Tooltip>
+
+              <Tooltip content="Archiver">
+                <button
+                  onClick={onArchive}
+                  className="p-2 text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all"
+                  aria-label="Archiver le cours"
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
+              </Tooltip>
+
+              <Tooltip content="Supprimer">
+                <button
+                  onClick={onDelete}
+                  className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
+                  aria-label="Supprimer le cours"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        {course.progress > 0 && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-zinc-600 mb-1">
+              <span>Progression</span>
+              <span>{course.progress}%</span>
+            </div>
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                style={{ width: `${course.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Last Active (mobile) */}
+        <div className="mt-2 text-xs text-zinc-600 md:hidden">
+          {lastActiveText()}
+        </div>
+      </div>
+    </header>
+  )
+})
+

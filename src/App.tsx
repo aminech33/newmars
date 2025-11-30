@@ -12,6 +12,7 @@ const JournalPage = lazy(() => import('./components/journal/JournalPage').then(m
 const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
+const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
@@ -75,6 +76,7 @@ function AppContent() {
             {currentView === 'journal' && <JournalPage />}
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'ai' && <AIAssistant />}
+            {currentView === 'learning' && <LearningPage />}
           </>
         )}
       </Suspense>
