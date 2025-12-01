@@ -1,5 +1,5 @@
 import { lazy, ComponentType } from 'react'
-import { CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Heart, Book, GraduationCap, Library } from 'lucide-react'
+import { CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Heart, Book, GraduationCap, Library, Cloud } from 'lucide-react'
 import { Widget } from '../types/widgets'
 
 // Lazy load all widgets for better performance
@@ -15,6 +15,7 @@ const HealthWidget = lazy(() => import('../components/widgets/HealthWidget').the
 const JournalWidget = lazy(() => import('../components/widgets/JournalWidget').then(m => ({ default: m.JournalWidget })))
 const LearningWidget = lazy(() => import('../components/widgets/LearningWidget').then(m => ({ default: m.LearningWidget })))
 const LibraryWidget = lazy(() => import('../components/widgets/LibraryWidget').then(m => ({ default: m.LibraryWidget })))
+const WeatherWidget = lazy(() => import('../components/widgets/WeatherWidget').then(m => ({ default: m.WeatherWidget })))
 
 export interface WidgetDefinition {
   type: string
@@ -134,6 +135,15 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     component: LibraryWidget,
     category: 'wellness',
     defaultSize: 'medium'
+  },
+  weather: {
+    type: 'weather',
+    label: 'Météo',
+    description: 'Conditions météo actuelles',
+    icon: Cloud,
+    component: WeatherWidget,
+    category: 'tools',
+    defaultSize: 'small'
   }
 }
 
