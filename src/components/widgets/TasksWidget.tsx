@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { ArrowRight, CheckSquare } from 'lucide-react'
+import { CheckCircle2, Circle, ArrowRight } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -10,50 +10,95 @@ interface TasksWidgetProps {
 
 export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProps) {
   const { id, size = 'small' } = widget
-  const { tasks, setView } = useStore()
+  const { tasks, setView, toggleTask } = useStore()
+  
   const pendingTasks = useMemo(() => tasks.filter(t => !t.completed), [tasks])
+  const urgentTasks = useMemo(() => pendingTasks.filter(t => t.priority === 'urgent'), [pendingTasks])
+  const todayTasks = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return pendingTasks.filter(t => t.dueDate === today)
+  }, [pendingTasks])
 
+  // Small: Juste le nombre
   if (size === 'small') {
     return (
-      <WidgetContainer id={id} title="Tâches" currentSize={size}>
-        <button
-          onClick={() => setView('tasks')}
-          className="flex flex-col items-center justify-center h-full text-center group"
-        >
-          {/* Mini tableau avec checkboxes */}
-          <div className="relative">
-            <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center mb-2"
-              style={{
-                background: 'linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%)',
-                boxShadow: '0 2px 8px rgba(63, 81, 181, 0.2), inset 0 -1px 2px rgba(0,0,0,0.1)'
-              }}
-            >
-              <CheckSquare className="w-8 h-8" style={{ color: '#3f51b5' }} />
-            </div>
-            {pendingTasks.length > 0 && (
-              <div 
-                className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{
-                  background: 'linear-gradient(135deg, #ff5252 0%, #f44336 100%)',
-                  color: 'white',
-                  boxShadow: '0 2px 4px rgba(244, 67, 54, 0.4)'
-                }}
-              >
-                {pendingTasks.length}
+      <WidgetContainer id={id} title="Tâches" currentSize={size} onClick={() => setView('tasks')}>
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="relative mb-2">
+            <div className="text-5xl font-bold text-indigo-400">{pendingTasks.length}</div>
+            {urgentTasks.length > 0 && (
+              <div className="absolute -top-1 -right-3 w-5 h-5 bg-rose-500 rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-white">{urgentTasks.length}</span>
               </div>
             )}
           </div>
-          <p className="text-xs text-zinc-600">Tâches</p>
-        </button>
+          <p className="text-xs text-zinc-500 font-medium">en attente</p>
+        </div>
       </WidgetContainer>
     )
   }
 
+  // Medium: Top 4 tâches
+  if (size === 'medium') {
+    return (
+      <WidgetContainer 
+        id={id} 
+        title="Tâches"
+        currentSize={size}
+        onClick={() => setView('tasks')}
+        actions={
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setView('tasks')
+            }}
+            className="text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        }
+      >
+        <div className="space-y-2 h-full overflow-hidden">
+          {pendingTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-2" />
+              <p className="text-sm text-zinc-400 font-medium">Tout est fait !</p>
+            </div>
+          ) : (
+            <>
+              {pendingTasks.slice(0, 4).map((task) => (
+                <button
+                  key={task.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleTask(task.id)
+                  }}
+                  className="flex items-center gap-3 w-full text-left hover:bg-white/5 p-2 -m-2 rounded-xl transition-colors group"
+                >
+                  <Circle className="w-4 h-4 text-zinc-600 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
+                  <span className="text-sm text-zinc-300 truncate flex-1">{task.title}</span>
+                  {task.priority === 'urgent' && (
+                    <div className="w-2 h-2 bg-rose-500 rounded-full flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+              {pendingTasks.length > 4 && (
+                <div className="text-xs text-zinc-600 text-center pt-1">
+                  +{pendingTasks.length - 4} autres
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </WidgetContainer>
+    )
+  }
+
+  // Large: 8 tâches + stats
   return (
     <WidgetContainer 
       id={id} 
-      title="📋 Tâches en cours"
+      title="Tâches"
       currentSize={size}
       onClick={() => setView('tasks')}
       actions={
@@ -62,65 +107,62 @@ export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProp
             e.stopPropagation()
             setView('tasks')
           }}
-          className="text-zinc-700 hover:text-zinc-500 transition-colors"
+          className="text-indigo-400 hover:text-indigo-300 transition-colors"
         >
           <ArrowRight className="w-4 h-4" />
         </button>
       }
     >
-      {/* Fond papier ligné style bloc-notes */}
-      <div 
-        className="h-full rounded-lg p-4 relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%)',
-          backgroundImage: `
-            linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%),
-            repeating-linear-gradient(
-              0deg,
-              transparent,
-              transparent 29px,
-              rgba(63, 81, 181, 0.1) 29px,
-              rgba(63, 81, 181, 0.1) 30px
-            )
-          `,
-          boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
-        }}
-      >
-        {/* Ligne rouge verticale à gauche (style cahier) */}
-        <div 
-          className="absolute left-8 top-0 bottom-0 w-px"
-          style={{ background: 'rgba(244, 67, 54, 0.3)' }}
-        />
-        
-        <div className="space-y-2 overflow-auto h-full pl-6">
-          {pendingTasks.slice(0, size === 'large' ? 6 : 3).map((task, index) => (
-            <div 
-              key={task.id} 
-              className="flex items-start gap-3 py-1 group"
-              style={{ 
-                fontFamily: '"Segoe UI", sans-serif',
-                animationDelay: `${index * 50}ms`
-              }}
-            >
-              {/* Checkbox dessinée */}
-              <div 
-                className="w-4 h-4 rounded border-2 flex-shrink-0 mt-0.5 transition-colors group-hover:border-indigo-400"
-                style={{ borderColor: '#9fa8da' }}
-              />
-              <span 
-                className="text-sm text-gray-700 line-clamp-2 flex-1"
-                style={{ color: '#424242' }}
-              >
-                {task.title}
-              </span>
+      <div className="flex flex-col h-full">
+        {/* Stats header */}
+        <div className="flex gap-2 mb-3 pb-3 border-b border-white/5">
+          <div className="flex-1 bg-rose-500/10 rounded-lg p-2">
+            <div className="text-xl font-bold text-rose-400">{urgentTasks.length}</div>
+            <div className="text-[10px] text-rose-300/70 uppercase tracking-wide">Urgent</div>
+          </div>
+          <div className="flex-1 bg-amber-500/10 rounded-lg p-2">
+            <div className="text-xl font-bold text-amber-400">{todayTasks.length}</div>
+            <div className="text-[10px] text-amber-300/70 uppercase tracking-wide">Aujourd'hui</div>
+          </div>
+          <div className="flex-1 bg-indigo-500/10 rounded-lg p-2">
+            <div className="text-xl font-bold text-indigo-400">{pendingTasks.length}</div>
+            <div className="text-[10px] text-indigo-300/70 uppercase tracking-wide">Total</div>
+          </div>
+        </div>
+
+        {/* Task list */}
+        <div className="space-y-1.5 flex-1 overflow-auto">
+          {pendingTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-2" />
+              <p className="text-sm text-zinc-400 font-medium">Tout est fait !</p>
             </div>
-          ))}
-          {pendingTasks.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="text-4xl mb-3" style={{ filter: 'grayscale(0.3)' }}>✅</div>
-              <p className="text-gray-600 text-sm font-medium mb-1">Tout est fait !</p>
-              <p className="text-gray-400 text-xs">Profitez de ce moment</p>
-            </div>
+          ) : (
+            <>
+              {pendingTasks.slice(0, 8).map((task) => (
+                <button
+                  key={task.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleTask(task.id)
+                  }}
+                  className="flex items-center gap-3 w-full text-left hover:bg-white/5 p-2 -m-2 rounded-xl transition-colors group"
+                >
+                  <Circle className="w-4 h-4 text-zinc-600 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-300 truncate">{task.title}</p>
+                    {task.dueDate && (
+                      <p className="text-xs text-zinc-600">
+                        {new Date(task.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </p>
+                    )}
+                  </div>
+                  {task.priority === 'urgent' && (
+                    <div className="w-2 h-2 bg-rose-500 rounded-full flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+            </>
           )}
         </div>
       </div>

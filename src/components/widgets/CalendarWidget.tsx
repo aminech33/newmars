@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { Calendar as CalendarIcon } from 'lucide-react'
+import { Calendar as CalendarIcon, Clock, ArrowRight } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -16,62 +16,36 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
   const todayStr = useMemo(() => today.toISOString().split('T')[0], [today])
   
   const tasksWithDates = useMemo(() => tasks.filter(t => t.dueDate && !t.completed), [tasks])
-  const upcomingEvents = useMemo(() => events.filter(e => !e.completed).length, [events])
+  const upcomingEvents = useMemo(() => events.filter(e => !e.completed), [events])
+  
+  const todayEvents = useMemo(() => {
+    return [...tasksWithDates.filter(t => t.dueDate === todayStr), ...upcomingEvents.filter(e => e.startDate === todayStr)]
+  }, [tasksWithDates, upcomingEvents, todayStr])
 
+  // Small: Date + nombre d'événements
   if (size === 'small') {
     return (
       <WidgetContainer id={id} title="Calendrier" currentSize={size} onClick={() => setView('calendar')}>
-        {/* Mini calendrier style page arrachée */}
         <div className="flex flex-col items-center justify-center h-full">
-          <div 
-            className="relative w-20 h-20 rounded-lg overflow-hidden"
-            style={{
-              background: 'linear-gradient(180deg, #fff 0%, #fafafa 100%)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15), inset 0 -2px 4px rgba(0,0,0,0.05)'
-            }}
-          >
-            {/* Haut rouge du calendrier */}
-            <div 
-              className="h-5 flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(180deg, #ef5350 0%, #e53935 100%)'
-              }}
-            >
-              <div className="flex gap-2">
-                <div className="w-1 h-1 bg-white/60 rounded-full" />
-                <div className="w-1 h-1 bg-white/60 rounded-full" />
-              </div>
-            </div>
-            
-            {/* Date */}
-            <div className="flex flex-col items-center justify-center" style={{ height: 'calc(100% - 20px)' }}>
-              <p className="text-3xl font-bold" style={{ color: '#212121' }}>{today.getDate()}</p>
-              <p className="text-[10px] uppercase tracking-wide" style={{ color: '#757575' }}>
-                {today.toLocaleDateString('fr-FR', { month: 'short' })}
-              </p>
-            </div>
-            
-            {/* Badge événements */}
-            {upcomingEvents > 0 && (
-              <div 
-                className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                style={{
-                  background: 'linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%)',
-                  color: 'white',
-                  boxShadow: '0 2px 4px rgba(30, 136, 229, 0.4)'
-                }}
-              >
-                {upcomingEvents}
-              </div>
-            )}
+          <div className="text-xs text-blue-400 font-semibold uppercase tracking-wider mb-1">
+            {today.toLocaleDateString('fr-FR', { month: 'long' })}
           </div>
+          <div className="text-5xl font-bold text-zinc-200 mb-1">{today.getDate()}</div>
+          <div className="text-xs text-zinc-500">
+            {today.toLocaleDateString('fr-FR', { weekday: 'long' })}
+          </div>
+          {todayEvents.length > 0 && (
+            <div className="mt-2 px-2 py-0.5 bg-blue-500/20 rounded-full">
+              <span className="text-xs text-blue-300 font-medium">{todayEvents.length} événement{todayEvents.length > 1 ? 's' : ''}</span>
+            </div>
+          )}
         </div>
       </WidgetContainer>
     )
   }
 
-  const days = useMemo(() => {
-    const count = size === 'large' ? 7 : 3
+  const nextDays = useMemo(() => {
+    const count = size === 'large' ? 7 : 4
     return Array.from({ length: count }, (_, i) => {
       const date = new Date(today)
       date.setDate(date.getDate() + i)
@@ -79,95 +53,157 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
     })
   }, [today, size])
 
-  return (
-    <WidgetContainer id={id} title="📅 Cette semaine" currentSize={size} onClick={() => setView('calendar')}>
-      {/* Fond papier calendrier */}
-      <div 
-        className="h-full rounded-lg p-3 relative"
-        style={{
-          background: 'linear-gradient(180deg, #fff 0%, #f8f8f8 100%)',
-          boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)'
-        }}
+  // Medium: 4 prochains jours
+  if (size === 'medium') {
+    return (
+      <WidgetContainer 
+        id={id} 
+        title="Calendrier"
+        currentSize={size}
+        onClick={() => setView('calendar')}
+        actions={
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setView('calendar')
+            }}
+            className="text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        }
       >
-        <div className="space-y-2 overflow-auto h-full">
-          {days.map((date, index) => {
+        <div className="space-y-2">
+          {nextDays.map((date) => {
             const dateStr = date.toISOString().split('T')[0]
             const dayTasks = tasksWithDates.filter(t => t.dueDate === dateStr)
+            const dayEvents = upcomingEvents.filter(e => e.startDate === dateStr)
+            const totalItems = dayTasks.length + dayEvents.length
             const isToday = dateStr === todayStr
             
             return (
               <div 
-                key={dateStr} 
-                className="p-2 rounded-lg transition-all"
-                style={{
-                  background: isToday 
-                    ? 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
-                    : 'transparent',
-                  border: isToday ? '2px solid #42a5f5' : '1px solid #eeeeee',
-                  animationDelay: `${index * 50}ms`
-                }}
+                key={dateStr}
+                className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${
+                  isToday ? 'bg-blue-500/10' : 'hover:bg-white/5'
+                }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    {/* Petit calendrier iconique */}
-                    <div 
-                      className="w-8 h-8 rounded flex flex-col items-center justify-center"
-                      style={{
-                        background: isToday ? '#1e88e5' : '#bdbdbd',
-                        color: 'white'
-                      }}
-                    >
-                      <span className="text-xs font-bold leading-none">{date.getDate()}</span>
-                      <span className="text-[8px] uppercase leading-none">
-                        {date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 2)}
-                      </span>
-                    </div>
-                    
-                    <span 
-                      className="text-xs font-medium"
-                      style={{ color: isToday ? '#1565c0' : '#616161' }}
-                    >
-                      {date.toLocaleDateString('fr-FR', { weekday: 'long' })}
-                    </span>
+                <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-lg ${
+                  isToday ? 'bg-blue-500' : 'bg-zinc-800'
+                }`}>
+                  <div className={`text-lg font-bold ${isToday ? 'text-white' : 'text-zinc-300'}`}>
+                    {date.getDate()}
                   </div>
-                  
-                  {dayTasks.length > 0 && (
-                    <span 
-                      className="text-xs px-2 py-0.5 rounded-full font-medium"
-                      style={{
-                        background: '#fff3e0',
-                        color: '#e65100'
-                      }}
-                    >
-                      {dayTasks.length}
-                    </span>
+                  <div className={`text-[9px] uppercase ${isToday ? 'text-blue-100' : 'text-zinc-600'}`}>
+                    {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                  </div>
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-zinc-300">
+                    {date.toLocaleDateString('fr-FR', { weekday: 'long' })}
+                  </div>
+                  {totalItems > 0 ? (
+                    <div className="text-xs text-zinc-500">
+                      {totalItems} événement{totalItems > 1 ? 's' : ''}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-zinc-700">Libre</div>
                   )}
                 </div>
                 
-                {dayTasks.length > 0 && (
-                  <div className="space-y-0.5 ml-10">
-                    {dayTasks.slice(0, 2).map((task) => (
-                      <p 
-                        key={task.id} 
-                        className="text-xs truncate"
-                        style={{ color: '#757575' }}
-                      >
-                        • {task.title}
-                      </p>
-                    ))}
+                {totalItems > 0 && (
+                  <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-blue-400">{totalItems}</span>
                   </div>
                 )}
               </div>
             )
           })}
-          
-          {tasksWithDates.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="text-4xl mb-3">✨</div>
-              <p style={{ color: '#616161' }} className="text-sm font-medium mb-1">Aucune échéance</p>
-              <p style={{ color: '#9e9e9e' }} className="text-xs">Tout est sous contrôle</p>
-            </div>
-          )}
+        </div>
+      </WidgetContainer>
+    )
+  }
+
+  // Large: 7 jours + détails
+  return (
+    <WidgetContainer 
+      id={id} 
+      title="Cette semaine"
+      currentSize={size}
+      onClick={() => setView('calendar')}
+      actions={
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            setView('calendar')
+          }}
+          className="text-blue-400 hover:text-blue-300 transition-colors"
+        >
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      }
+    >
+      <div className="flex flex-col h-full">
+        {/* Header avec stats */}
+        <div className="flex gap-2 mb-3 pb-3 border-b border-white/5">
+          <div className="flex-1 bg-blue-500/10 rounded-lg p-2">
+            <div className="text-xl font-bold text-blue-400">{todayEvents.length}</div>
+            <div className="text-[10px] text-blue-300/70 uppercase tracking-wide">Aujourd'hui</div>
+          </div>
+          <div className="flex-1 bg-violet-500/10 rounded-lg p-2">
+            <div className="text-xl font-bold text-violet-400">{upcomingEvents.length}</div>
+            <div className="text-[10px] text-violet-300/70 uppercase tracking-wide">Événements</div>
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div className="space-y-2 flex-1 overflow-auto">
+          {nextDays.map((date) => {
+            const dateStr = date.toISOString().split('T')[0]
+            const dayTasks = tasksWithDates.filter(t => t.dueDate === dateStr)
+            const dayEvents = upcomingEvents.filter(e => e.startDate === dateStr)
+            const isToday = dateStr === todayStr
+            
+            return (
+              <div key={dateStr}>
+                <div className={`flex items-center gap-3 p-2 rounded-xl mb-1 ${
+                  isToday ? 'bg-blue-500/10' : ''
+                }`}>
+                  <div className={`flex flex-col items-center justify-center w-10 h-10 rounded-lg flex-shrink-0 ${
+                    isToday ? 'bg-blue-500' : 'bg-zinc-800'
+                  }`}>
+                    <div className={`text-base font-bold ${isToday ? 'text-white' : 'text-zinc-300'}`}>
+                      {date.getDate()}
+                    </div>
+                    <div className={`text-[8px] uppercase ${isToday ? 'text-blue-100' : 'text-zinc-600'}`}>
+                      {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-zinc-300">
+                      {date.toLocaleDateString('fr-FR', { weekday: 'long' })}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Events pour ce jour */}
+                {dayTasks.slice(0, 2).map((task) => (
+                  <div key={task.id} className="flex items-center gap-2 ml-14 mb-1">
+                    <Clock className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                    <span className="text-xs text-zinc-400 truncate">{task.title}</span>
+                  </div>
+                ))}
+                {dayEvents.slice(0, 1).map((event) => (
+                  <div key={event.id} className="flex items-center gap-2 ml-14 mb-1">
+                    <CalendarIcon className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                    <span className="text-xs text-zinc-400 truncate">{event.title}</span>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
         </div>
       </div>
     </WidgetContainer>

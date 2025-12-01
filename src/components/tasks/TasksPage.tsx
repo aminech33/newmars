@@ -300,7 +300,6 @@ export function TasksPage() {
             tasks={filteredTasks}
             onTaskClick={setSelectedTask}
             onTaskDelete={handleDeleteWithUndo}
-            onTaskDelete={handleDeleteWithUndo}
           />
         </div>
       </div>
