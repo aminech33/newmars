@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Plus, Search } from 'lucide-react'
 import { useStore, Task, TaskCategory, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { SmartSuggestion } from './SmartSuggestion'
-import { CorkBoard } from './CorkBoard'
+import { KanbanBoard } from './KanbanBoard'
 import { TaskDetails } from './TaskDetails'
 import { TaskFilters, TaskFilterState } from './TaskFilters'
 import { TasksStats } from './TasksStats'
@@ -296,9 +296,10 @@ export function TasksPage() {
         
         {/* Content */}
         <div className="h-[calc(100vh-400px)]">
-          <CorkBoard
+          <KanbanBoard
             tasks={filteredTasks}
             onTaskClick={setSelectedTask}
+            onTaskDelete={handleDeleteWithUndo}
             onTaskDelete={handleDeleteWithUndo}
           />
         </div>

@@ -5,6 +5,7 @@ import { DragDropContext, DropResult } from '@hello-pangea/dnd'
 interface CorkBoardProps {
   tasks: Task[]
   onTaskClick: (task: Task) => void
+  onTaskDelete?: (task: Task) => void
 }
 
 const columns: { status: TaskStatus; title: string; icon: string }[] = [

@@ -113,26 +113,24 @@ export function LibraryPage() {
   ]
 
   return (
-    <div className="h-full w-full flex flex-col" style={{
-      background: 'linear-gradient(180deg, #1a1410 0%, #0f0a08 100%)'
-    }}>
-      {/* Header - Style bibliothèque */}
-      <header className="flex-shrink-0 px-4 md:px-6 py-4 md:py-5 bg-zinc-900/20 backdrop-blur-sm border-b border-amber-900/20">
+    <div className="h-full w-full flex flex-col bg-mars-bg">
+      {/* Header */}
+      <header className="flex-shrink-0 px-4 md:px-6 py-4 md:py-5 border-b border-zinc-800/50">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 md:gap-4">
             <button
               onClick={() => setView('hub')}
-              className="p-2 -ml-2 text-amber-600 hover:text-amber-400 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-lg"
+              className="p-2 -ml-2 text-zinc-600 hover:text-zinc-400 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-lg"
               aria-label="Retour au hub"
             >
               <ArrowLeft className="w-5 h-5" aria-hidden="true" />
             </button>
             <div>
-              <h1 className="text-lg md:text-xl font-serif font-medium tracking-tight text-amber-200 flex items-center gap-2">
+              <h1 className="text-lg md:text-xl font-medium tracking-tight text-zinc-200 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-amber-500" aria-hidden="true" />
                 Ma Bibliothèque
               </h1>
-              <p className="text-xs md:text-sm text-amber-900/60">
+              <p className="text-xs md:text-sm text-zinc-600">
                 {stats.totalBooks} livres • {stats.totalPagesRead} pages • {formatReadingTime(stats.totalReadingTime)}
               </p>
             </div>
@@ -140,7 +138,7 @@ export function LibraryPage() {
           
           <button
             onClick={handleOpenAddModal}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/30 transition-all shadow-lg shadow-amber-500/10 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
             <span>Ajouter un livre</span>

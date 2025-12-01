@@ -86,10 +86,10 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
         newSize = 'medium'
       }
       
-      // Update dimensions
+      // Update dimensions (max 2x2 pour compatibilité avec Widget type)
       const dimensions = {
-        width: gridWidth as 1 | 2 | 3,
-        height: gridHeight as 1 | 2 | 3
+        width: Math.min(gridWidth, 2) as 1 | 2,
+        height: Math.min(gridHeight, 2) as 1 | 2
       }
       
       if (size !== newSize || widget?.dimensions?.width !== gridWidth || widget?.dimensions?.height !== gridHeight) {
