@@ -21,9 +21,10 @@ export const formatTime = (time: string): string => {
   return time // Déjà au format HH:mm
 }
 
-export const isToday = (date: string): boolean => {
+export const isToday = (date: Date | string): boolean => {
+  const d = typeof date === 'string' ? date : date.toISOString().split('T')[0]
   const today = new Date().toISOString().split('T')[0]
-  return date === today
+  return d === today
 }
 
 export const isTomorrow = (date: string): boolean => {

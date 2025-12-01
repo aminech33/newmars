@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { BookOpen, Plus, Sparkles, GraduationCap, Brain, Target } from 'lucide-react'
+import { Plus, Sparkles, GraduationCap, Brain, Target } from 'lucide-react'
 
 interface EmptyStateProps {
   onCreateCourse: () => void

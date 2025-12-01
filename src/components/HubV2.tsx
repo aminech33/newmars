@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Search, Edit3, Plus, Save, Layout, RotateCcw } from 'lucide-react'
+import { Search, Edit3, Plus, Save, Layout, RotateCcw, Database } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { WidgetGrid } from './WidgetGrid'
 import { WidgetPicker } from './WidgetPicker'
 import { ThemePicker } from './ThemePicker'
 import { WidgetFAB } from './widgets/WidgetFAB'
+import { DataManager } from './DataManager'
 
 export function HubV2() {
   const { tasks, isEditMode, setEditMode, saveLayout, addTask, setView, setFocusMode, widgets, resetWidgets } = useStore()
@@ -12,6 +13,7 @@ export function HubV2() {
   const [mounted, setMounted] = useState(false)
   const [showWidgetPicker, setShowWidgetPicker] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [showDataManager, setShowDataManager] = useState(false)
   const [layoutName, setLayoutName] = useState('')
 
   useEffect(() => {
@@ -138,6 +140,14 @@ export function HubV2() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDataManager(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-600 hover:text-zinc-400 shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)] rounded-xl transition-all duration-300"
+              style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+              title="Gérer les données"
+            >
+              <Database className="w-3.5 h-3.5" />
+            </button>
             <ThemePicker />
             {isEditMode && (
               <>
@@ -215,6 +225,9 @@ export function HubV2() {
 
       {/* Widget Picker Modal */}
       <WidgetPicker isOpen={showWidgetPicker} onClose={() => setShowWidgetPicker(false)} />
+
+      {/* Data Manager Modal */}
+      <DataManager isOpen={showDataManager} onClose={() => setShowDataManager(false)} />
 
       {/* Mobile FAB */}
       <WidgetFAB onAddWidget={() => setShowWidgetPicker(true)} />

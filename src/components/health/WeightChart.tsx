@@ -78,16 +78,10 @@ export const WeightChart = memo(function WeightChart({ entries, trend }: WeightC
 
       {/* Chart */}
       <div className="h-48 flex items-end gap-1 sm:gap-2">
-        {chartData.map((entry, index) => (
+        {chartData.map((entry) => (
           <Tooltip 
             key={entry.id} 
-            content={
-              <div className="text-center">
-                <p className="font-bold">{entry.weight} kg</p>
-                <p className="text-xs text-zinc-400">{entry.formattedDate}</p>
-                {entry.note && <p className="text-xs text-zinc-500 mt-1">{entry.note}</p>}
-              </div>
-            }
+            content={`${entry.weight} kg - ${entry.formattedDate}${entry.note ? ` (${entry.note})` : ''}`}
           >
             <div className="flex-1 flex flex-col items-center gap-1 group cursor-default">
               <span className="text-xs text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity">

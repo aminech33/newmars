@@ -1,5 +1,5 @@
 import { memo, useState } from 'react'
-import { Copy, Check, ThumbsUp, Bookmark, Sparkles, User, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Copy, Check, ThumbsUp, Bookmark, Sparkles, User, Trash2 } from 'lucide-react'
 import { Message } from '../../types/learning'
 import { Tooltip } from '../ui/Tooltip'
 
@@ -37,7 +37,7 @@ export const MessageBubble = memo(function MessageBubble({
   const formatContent = (content: string) => {
     // Code blocks
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
-    let formatted = content.replace(codeBlockRegex, (_, lang, code) => {
+    let formatted = content.replace(codeBlockRegex, (_, _lang, code) => {
       return `<pre class="bg-zinc-900 rounded-xl p-4 my-3 overflow-x-auto"><code class="text-sm text-emerald-400">${escapeHtml(code.trim())}</code></pre>`
     })
 

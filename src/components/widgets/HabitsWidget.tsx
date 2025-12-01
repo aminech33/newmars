@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useState, useMemo, useCallback } from 'react'
 import { Plus, Flame } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -14,25 +14,28 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
   const [isAdding, setIsAdding] = useState(false)
   const [newHabit, setNewHabit] = useState('')
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = useMemo(() => new Date().toISOString().split('T')[0], [])
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = useCallback((e: React.FormEvent) => {
     e.preventDefault()
     if (newHabit.trim()) {
       addHabit(newHabit.trim())
       setNewHabit('')
       setIsAdding(false)
     }
-  }
+  }, [newHabit, addHabit])
 
-  const getWeekStatus = (habit: typeof habits[0]) => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
+  const last7Days = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
       const date = new Date()
       date.setDate(date.getDate() - (6 - i))
       return date.toISOString().split('T')[0]
     })
+  }, [])
+
+  const getWeekStatus = useCallback((habit: typeof habits[0]) => {
     return last7Days.map(date => habit.completedDates.includes(date))
-  }
+  }, [last7Days])
 
   if (size === 'small') {
     return (

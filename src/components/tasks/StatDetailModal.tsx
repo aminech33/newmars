@@ -1,4 +1,4 @@
-import { X, TrendingUp, TrendingDown } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useEffect } from 'react'
 import { Task } from '../../store/useStore'
 

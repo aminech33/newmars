@@ -1,6 +1,6 @@
 // Utilitaires pour le système de journal
 
-import { JournalEntry, MoodEmoji, JournalStats } from '../types/journal'
+import { JournalEntry, MoodEmoji, MoodLevel, JournalStats } from '../types/journal'
 
 // Convertir mood level en emoji
 export const moodLevelToEmoji = (level: number): MoodEmoji => {
@@ -12,8 +12,8 @@ export const moodLevelToEmoji = (level: number): MoodEmoji => {
 }
 
 // Convertir emoji en mood level
-export const moodEmojiToLevel = (emoji: MoodEmoji): number => {
-  const map: Record<MoodEmoji, number> = {
+export const moodEmojiToLevel = (emoji: MoodEmoji): MoodLevel => {
+  const map: Record<MoodEmoji, MoodLevel> = {
     '😢': 2,
     '😐': 4,
     '🙂': 6,
@@ -96,13 +96,16 @@ export const calculateJournalStats = (entries: JournalEntry[]): JournalStats => 
     return date.getFullYear() === currentYear
   }).length
 
+  const favoriteCount = entries.filter(e => e.isFavorite).length
+
   return {
     totalEntries: entries.length,
     currentStreak: calculateJournalStreak(entries),
     longestStreak: calculateLongestStreak(entries),
     averageMood: calculateAverageMood(entries),
     entriesThisMonth,
-    entriesThisYear
+    entriesThisYear,
+    favoriteCount
   }
 }
 
@@ -112,21 +115,47 @@ export const getTodayEntry = (entries: JournalEntry[]): JournalEntry | undefined
   return entries.find(e => e.date === today)
 }
 
-// Obtenir entrées par mois
-export const getEntriesByMonth = (entries: JournalEntry[], year: number, month: number): JournalEntry[] => {
+// Obtenir entrées par mois (accepte "YYYY-MM" ou year, month séparés)
+export const getEntriesByMonth = (entries: JournalEntry[], yearOrMonthStr: number | string, month?: number): JournalEntry[] => {
+  let targetYear: number
+  let targetMonth: number
+
+  if (typeof yearOrMonthStr === 'string') {
+    // Format "YYYY-MM"
+    const [y, m] = yearOrMonthStr.split('-').map(Number)
+    targetYear = y
+    targetMonth = m - 1 // JS months are 0-indexed
+  } else {
+    targetYear = yearOrMonthStr
+    targetMonth = month!
+  }
+
   return entries.filter(e => {
     const date = new Date(e.date)
-    return date.getFullYear() === year && date.getMonth() === month
+    return date.getFullYear() === targetYear && date.getMonth() === targetMonth
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 }
 
-// Obtenir "Il y a X an(s) aujourd'hui"
-export const getMemoryFromYearsAgo = (entries: JournalEntry[], yearsAgo: number): JournalEntry | undefined => {
+// Obtenir "Il y a X an(s) aujourd'hui" - cherche automatiquement 1, 2, 3... ans
+export const getMemoryFromYearsAgo = (entries: JournalEntry[], yearsAgo?: number): JournalEntry | undefined => {
   const today = new Date()
-  const targetDate = new Date(today.getFullYear() - yearsAgo, today.getMonth(), today.getDate())
-  const targetDateStr = targetDate.toISOString().split('T')[0]
   
-  return entries.find(e => e.date === targetDateStr)
+  // Si yearsAgo est spécifié, chercher cette année spécifique
+  if (yearsAgo !== undefined) {
+    const targetDate = new Date(today.getFullYear() - yearsAgo, today.getMonth(), today.getDate())
+    const targetDateStr = targetDate.toISOString().split('T')[0]
+    return entries.find(e => e.date === targetDateStr)
+  }
+  
+  // Sinon, chercher le premier souvenir trouvé (1 an, 2 ans, 3 ans...)
+  for (let years = 1; years <= 10; years++) {
+    const targetDate = new Date(today.getFullYear() - years, today.getMonth(), today.getDate())
+    const targetDateStr = targetDate.toISOString().split('T')[0]
+    const memory = entries.find(e => e.date === targetDateStr)
+    if (memory) return memory
+  }
+  
+  return undefined
 }
 
 // Formater date relative

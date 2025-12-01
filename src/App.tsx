@@ -13,6 +13,7 @@ const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ defau
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
+const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m => ({ default: m.LibraryPage })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
@@ -37,9 +38,7 @@ function AppContent() {
           throw new Error('Store not initialized properly')
         }
         setIsReady(true)
-        console.log('✅ App health check passed')
-      } catch (error) {
-        console.error('❌ App health check failed:', error)
+      } catch {
         setIsReady(false)
       }
     }
@@ -77,6 +76,7 @@ function AppContent() {
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'ai' && <AIAssistant />}
             {currentView === 'learning' && <LearningPage />}
+            {currentView === 'library' && <LibraryPage />}
           </>
         )}
       </Suspense>

@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -11,7 +11,7 @@ interface TasksWidgetProps {
 export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProps) {
   const { id, size = 'small' } = widget
   const { tasks, setView } = useStore()
-  const pendingTasks = tasks.filter(t => !t.completed)
+  const pendingTasks = useMemo(() => tasks.filter(t => !t.completed), [tasks])
 
   if (size === 'small') {
     return (

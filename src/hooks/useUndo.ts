@@ -8,7 +8,7 @@ interface UndoAction {
 }
 
 export function useUndo() {
-  const [history, setHistory] = useState<UndoAction[]>([])
+  const [_history, setHistory] = useState<UndoAction[]>([])
   const [showToast, setShowToast] = useState(false)
   const [currentAction, setCurrentAction] = useState<UndoAction | null>(null)
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store/useStore'
-import { Search, CheckSquare, BarChart3, Sparkles, Plus, Home, Zap, GraduationCap } from 'lucide-react'
+import { Search, CheckSquare, BarChart3, Sparkles, Plus, Home, Zap, GraduationCap, Calendar, Heart, BookOpen, BookMarked } from 'lucide-react'
 
 interface Command {
   id: string
@@ -17,18 +17,23 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const commands: Command[] = [
+    // Navigation
     { id: 'home', label: 'Aller au Hub', icon: Home, action: () => setView('hub'), category: 'Navigation' },
     { id: 'tasks', label: 'Voir les tâches', icon: CheckSquare, action: () => setView('tasks'), category: 'Navigation' },
+    { id: 'calendar', label: 'Voir le calendrier', icon: Calendar, action: () => setView('calendar'), category: 'Navigation' },
+    { id: 'health', label: 'Suivi santé', icon: Heart, action: () => setView('health'), category: 'Navigation' },
+    { id: 'journal', label: 'Journal personnel', icon: BookOpen, action: () => setView('journal'), category: 'Navigation' },
+    { id: 'library', label: 'Bibliothèque', icon: BookMarked, action: () => setView('library'), category: 'Navigation' },
     { id: 'dashboard', label: 'Voir le Dashboard', icon: BarChart3, action: () => setView('dashboard'), category: 'Navigation' },
     { id: 'ai', label: 'Ouvrir l\'Assistant IA', icon: Sparkles, action: () => setView('ai'), category: 'Navigation' },
     { id: 'learning', label: 'Apprentissage IA', icon: GraduationCap, action: () => setView('learning'), category: 'Navigation' },
+    // Actions
     { 
       id: 'new-task', 
       label: 'Nouvelle tâche', 
       icon: Plus, 
       action: () => {
         setView('tasks')
-        // The tasks page will handle showing the add form
       }, 
       category: 'Actions' 
     },

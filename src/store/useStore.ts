@@ -6,6 +6,7 @@ import { WeightEntry, MealEntry, HealthGoal, UserProfile } from '../types/health
 import { JournalEntry } from '../types/journal'
 import { TaskRelation } from '../types/taskRelation'
 import { Course, Message, Flashcard, Note as LearningNote } from '../types/learning'
+import { Book, DEMO_BOOKS, Quote, ReadingNote, ReadingSession, ReadingGoal } from '../types/library'
 
 export type TaskCategory = 'dev' | 'design' | 'personal' | 'work' | 'urgent'
 export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'done'
@@ -97,7 +98,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'learning'
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'learning' | 'library'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
@@ -161,12 +162,15 @@ interface AppState {
   isCommandPaletteOpen: boolean
   setCommandPaletteOpen: (open: boolean) => void
   
-  // Focus Mode
+  // Focus Mode & Pomodoro
   isFocusMode: boolean
   focusTaskId: string | null
   pomodoroTimeLeft: number
+  isPomodoroRunning: boolean
   setFocusMode: (enabled: boolean, taskId?: string) => void
   setPomodoroTime: (seconds: number) => void
+  togglePomodoroRunning: () => void
+  resetPomodoro: () => void
   
   // Widgets
   widgets: Widget[]
@@ -252,6 +256,44 @@ interface AppState {
   deleteLearningFlashcard: (courseId: string, flashcardId: string) => void
   addLearningNote: (courseId: string, note: LearningNote) => void
   deleteLearningNote: (courseId: string, noteId: string) => void
+  
+  // Library / Bibliothèque
+  books: Book[]
+  readingSessions: ReadingSession[]
+  readingGoal: ReadingGoal | null
+  isReadingSession: boolean
+  currentReadingBookId: string | null
+  readingSessionStart: number | null
+  
+  addBook: (book: Omit<Book, 'id' | 'addedAt' | 'updatedAt' | 'quotes' | 'notes' | 'totalReadingTime' | 'sessionsCount'>) => void
+  updateBook: (id: string, updates: Partial<Book>) => void
+  deleteBook: (id: string) => void
+  
+  // Citations & Notes (livres)
+  addQuote: (bookId: string, quote: Omit<Quote, 'id' | 'addedAt'>) => void
+  updateQuote: (bookId: string, quoteId: string, updates: Partial<Quote>) => void
+  deleteQuote: (bookId: string, quoteId: string) => void
+  addBookNote: (bookId: string, note: Omit<ReadingNote, 'id' | 'addedAt'>) => void
+  deleteBookNote: (bookId: string, noteId: string) => void
+  
+  // Sessions de lecture
+  startReadingSession: (bookId: string) => void
+  endReadingSession: (pagesRead?: number) => void
+  cancelReadingSession: () => void
+  
+  // Objectif annuel
+  setReadingGoal: (goal: ReadingGoal) => void
+  
+  // Stats calculées
+  getReadingStats: () => {
+    totalBooks: number
+    completedBooks: number
+    completedThisYear: number
+    totalPagesRead: number
+    totalReadingTime: number
+    averageRating: number
+    goalProgress: number
+  }
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
@@ -294,27 +336,20 @@ const defaultWidgets: Widget[] = [
   },
   {
     id: '6',
-    type: 'quick-actions',
-    size: 'small',
-    dimensions: { width: 1, height: 1 },
+    type: 'notes',
+    size: 'medium',
+    dimensions: { width: 2, height: 1 },
     position: { x: 2, y: 1 }
   },
   {
     id: '7',
-    type: 'notes',
-    size: 'medium',
-    dimensions: { width: 2, height: 1 },
-    position: { x: 3, y: 1 }
-  },
-  {
-    id: '8',
     type: 'health',
     size: 'small',
     dimensions: { width: 1, height: 1 },
     position: { x: 1, y: 3 }
   },
   {
-    id: '9',
+    id: '8',
     type: 'journal',
     size: 'small',
     dimensions: { width: 1, height: 1 },
@@ -666,16 +701,20 @@ export const useStore = create<AppState>()(
       isCommandPaletteOpen: false,
       setCommandPaletteOpen: (open) => set({ isCommandPaletteOpen: open }),
       
-      // Focus Mode
+      // Focus Mode & Pomodoro
       isFocusMode: false,
       focusTaskId: null,
       pomodoroTimeLeft: 25 * 60,
+      isPomodoroRunning: false,
       setFocusMode: (enabled, taskId) => set({ 
         isFocusMode: enabled, 
         focusTaskId: taskId || null,
-        pomodoroTimeLeft: 25 * 60
+        pomodoroTimeLeft: 25 * 60,
+        isPomodoroRunning: false
       }),
       setPomodoroTime: (seconds) => set({ pomodoroTimeLeft: seconds }),
+      togglePomodoroRunning: () => set((state) => ({ isPomodoroRunning: !state.isPomodoroRunning })),
+      resetPomodoro: () => set({ pomodoroTimeLeft: 25 * 60, isPomodoroRunning: false }),
       
       // Widgets
       widgets: defaultWidgets,
@@ -1006,6 +1045,182 @@ export const useStore = create<AppState>()(
           )
         }))
       },
+      
+      // Library / Bibliothèque
+      books: DEMO_BOOKS.map((book, i) => ({
+        ...book,
+        id: generateId(),
+        addedAt: Date.now() - (i * 86400000),
+        updatedAt: Date.now() - (i * 86400000),
+      })),
+      readingSessions: [],
+      readingGoal: { year: new Date().getFullYear(), targetBooks: 12 },
+      isReadingSession: false,
+      currentReadingBookId: null,
+      readingSessionStart: null,
+      
+      addBook: (book) => {
+        const now = Date.now()
+        set((state) => ({
+          books: [...state.books, { 
+            ...book, 
+            id: generateId(), 
+            addedAt: now, 
+            updatedAt: now,
+            quotes: [],
+            notes: [],
+            totalReadingTime: 0,
+            sessionsCount: 0
+          }]
+        }))
+      },
+      updateBook: (id, updates) => {
+        set((state) => ({
+          books: state.books.map((b) =>
+            b.id === id ? { ...b, ...updates, updatedAt: Date.now() } : b
+          )
+        }))
+      },
+      deleteBook: (id) => {
+        set((state) => ({ 
+          books: state.books.filter((b) => b.id !== id),
+          readingSessions: state.readingSessions.filter((s) => s.bookId !== id)
+        }))
+      },
+      
+      // Citations
+      addQuote: (bookId, quote) => {
+        set((state) => ({
+          books: state.books.map((b) =>
+            b.id === bookId 
+              ? { ...b, quotes: [...b.quotes, { ...quote, id: generateId(), addedAt: Date.now() }], updatedAt: Date.now() }
+              : b
+          )
+        }))
+      },
+      updateQuote: (bookId, quoteId, updates) => {
+        set((state) => ({
+          books: state.books.map((b) =>
+            b.id === bookId 
+              ? { ...b, quotes: b.quotes.map(q => q.id === quoteId ? { ...q, ...updates } : q), updatedAt: Date.now() }
+              : b
+          )
+        }))
+      },
+      deleteQuote: (bookId, quoteId) => {
+        set((state) => ({
+          books: state.books.map((b) =>
+            b.id === bookId 
+              ? { ...b, quotes: b.quotes.filter(q => q.id !== quoteId), updatedAt: Date.now() }
+              : b
+          )
+        }))
+      },
+      
+      // Notes des livres
+      addBookNote: (bookId: string, note: Omit<ReadingNote, 'id' | 'addedAt'>) => {
+        set((state) => ({
+          books: state.books.map((b) =>
+            b.id === bookId 
+              ? { ...b, notes: [...b.notes, { ...note, id: generateId(), addedAt: Date.now() }], updatedAt: Date.now() }
+              : b
+          )
+        }))
+      },
+      deleteBookNote: (bookId: string, noteId: string) => {
+        set((state) => ({
+          books: state.books.map((b) =>
+            b.id === bookId 
+              ? { ...b, notes: b.notes.filter(n => n.id !== noteId), updatedAt: Date.now() }
+              : b
+          )
+        }))
+      },
+      
+      // Sessions de lecture
+      startReadingSession: (bookId) => {
+        set({
+          isReadingSession: true,
+          currentReadingBookId: bookId,
+          readingSessionStart: Date.now()
+        })
+      },
+      endReadingSession: (pagesRead) => {
+        const state = get()
+        if (!state.isReadingSession || !state.currentReadingBookId || !state.readingSessionStart) return
+        
+        const duration = Math.round((Date.now() - state.readingSessionStart) / 60000) // en minutes
+        const book = state.books.find(b => b.id === state.currentReadingBookId)
+        if (!book || duration < 1) {
+          set({ isReadingSession: false, currentReadingBookId: null, readingSessionStart: null })
+          return
+        }
+        
+        const session: ReadingSession = {
+          id: generateId(),
+          bookId: state.currentReadingBookId,
+          bookTitle: book.title,
+          duration,
+          pagesRead,
+          date: new Date().toISOString().split('T')[0],
+          completedAt: Date.now()
+        }
+        
+        set((s) => ({
+          readingSessions: [...s.readingSessions, session],
+          books: s.books.map((b) =>
+            b.id === state.currentReadingBookId
+              ? { 
+                  ...b, 
+                  totalReadingTime: b.totalReadingTime + duration,
+                  sessionsCount: b.sessionsCount + 1,
+                  currentPage: pagesRead ? (b.currentPage || 0) + pagesRead : b.currentPage,
+                  updatedAt: Date.now()
+                }
+              : b
+          ),
+          isReadingSession: false,
+          currentReadingBookId: null,
+          readingSessionStart: null
+        }))
+      },
+      cancelReadingSession: () => {
+        set({ isReadingSession: false, currentReadingBookId: null, readingSessionStart: null })
+      },
+      
+      // Objectif
+      setReadingGoal: (goal) => {
+        set({ readingGoal: goal })
+      },
+      
+      // Stats
+      getReadingStats: () => {
+        const state = get()
+        const currentYear = new Date().getFullYear()
+        const completedBooks = state.books.filter(b => b.status === 'completed')
+        const completedThisYear = completedBooks.filter(b => 
+          b.finishedAt && new Date(b.finishedAt).getFullYear() === currentYear
+        ).length
+        
+        const totalPagesRead = state.books.reduce((acc, b) => acc + (b.currentPage || 0), 0)
+        const totalReadingTime = state.books.reduce((acc, b) => acc + b.totalReadingTime, 0)
+        const ratings = completedBooks.filter(b => b.rating).map(b => b.rating!)
+        const averageRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
+        
+        const goalProgress = state.readingGoal 
+          ? Math.round((completedThisYear / state.readingGoal.targetBooks) * 100)
+          : 0
+        
+        return {
+          totalBooks: state.books.length,
+          completedBooks: completedBooks.length,
+          completedThisYear,
+          totalPagesRead,
+          totalReadingTime,
+          averageRating: Math.round(averageRating * 10) / 10,
+          goalProgress
+        }
+      },
     }),
     {
       name: 'newmars-storage',
@@ -1030,6 +1245,9 @@ export const useStore = create<AppState>()(
         journalEntries: state.journalEntries,
         taskRelations: state.taskRelations,
         learningCourses: state.learningCourses,
+        books: state.books,
+        readingSessions: state.readingSessions,
+        readingGoal: state.readingGoal,
       })
     }
   )
@@ -1056,7 +1274,6 @@ const migrateTasksData = () => {
     const state = useStore.getState()
     
     if (!state.tasks || !Array.isArray(state.tasks)) {
-      console.warn('⚠️ No tasks to migrate')
       migrationDone = true
       return
     }
@@ -1077,13 +1294,9 @@ const migrateTasksData = () => {
       }))
       
       useStore.setState({ tasks: migratedTasks })
-      console.log('✅ Tasks migrated to new format:', migratedTasks.length, 'tasks')
-    } else {
-      console.log('✅ Tasks already in new format')
     }
     migrationDone = true
-  } catch (error) {
-    console.error('❌ Migration failed:', error)
+  } catch {
     migrationDone = true
     // Reset to default tasks if migration fails
     useStore.setState({ 
@@ -1095,9 +1308,57 @@ const migrateTasksData = () => {
   }
 }
 
+// Migration: Add books if not present and ensure new fields exist
+const migrateBooksData = () => {
+  try {
+    const state = useStore.getState()
+    
+    // Si books n'existe pas ou est vide, ajouter les livres de démo
+    if (!state.books || state.books.length === 0) {
+      const demoBooks = DEMO_BOOKS.map((book, i) => ({
+        ...book,
+        id: generateId(),
+        addedAt: Date.now() - (i * 86400000),
+        updatedAt: Date.now() - (i * 86400000),
+      }))
+      
+      useStore.setState({ books: demoBooks })
+    } else {
+      // Migration: ajouter les nouveaux champs si manquants
+      const needsMigration = state.books.some(b => 
+        b.quotes === undefined || b.notes === undefined || b.totalReadingTime === undefined
+      )
+      
+      if (needsMigration) {
+        const migratedBooks = state.books.map(book => ({
+          ...book,
+          quotes: book.quotes || [],
+          notes: book.notes || [],
+          totalReadingTime: book.totalReadingTime || 0,
+          sessionsCount: book.sessionsCount || 0
+        }))
+        useStore.setState({ books: migratedBooks })
+      }
+    }
+    
+    // S'assurer que readingSessions existe
+    if (!state.readingSessions) {
+      useStore.setState({ readingSessions: [] })
+    }
+    
+    // S'assurer que readingGoal existe
+    if (!state.readingGoal) {
+      useStore.setState({ readingGoal: { year: new Date().getFullYear(), targetBooks: 12 } })
+    }
+  } catch {
+    // Silently handle migration errors
+  }
+}
+
 // Run migration once on load
 if (typeof window !== 'undefined') {
   setTimeout(() => {
     migrateTasksData()
+    migrateBooksData()
   }, 100)
 }

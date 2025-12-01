@@ -1,7 +1,6 @@
-import { Clock, CheckSquare, MoreVertical, Calendar, Check, Pencil, Trash2 } from 'lucide-react'
+import { Clock, CheckSquare, Calendar, Check, Pencil, Trash2 } from 'lucide-react'
 import { Task, useStore } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
-import { useState } from 'react'
 
 interface TaskCardProps {
   task: Task
@@ -28,7 +27,6 @@ const categoryColors = {
 export function TaskCard({ task, index, onClick, onDelete }: TaskCardProps) {
   const { projects, toggleTask, deleteTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
-  const [showActions, setShowActions] = useState(false)
   
   const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
   const totalSubtasks = task.subtasks?.length || 0

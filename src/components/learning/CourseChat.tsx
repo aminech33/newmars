@@ -1,5 +1,5 @@
 import { memo, useRef, useEffect } from 'react'
-import { Course, Message } from '../../types/learning'
+import { Course } from '../../types/learning'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { Sparkles } from 'lucide-react'

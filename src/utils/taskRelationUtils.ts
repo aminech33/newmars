@@ -1,37 +1,37 @@
-import { TaskRelation, RelationType } from '../types/taskRelation'
+import { TaskRelation, TaskRelationType } from '../types/taskRelation'
 
-export function getRelationLabel(type: RelationType): string {
-  const labels: Record<RelationType, string> = {
+export function getRelationLabel(type: TaskRelationType): string {
+  const labels: Record<TaskRelationType, string> = {
     'blocks': 'Bloque',
-    'blocked-by': 'Bloqué par',
-    'relates-to': 'Lié à',
-    'duplicates': 'Duplique',
-    'parent-of': 'Parent de',
-    'child-of': 'Enfant de'
+    'blocked_by': 'Bloqué par',
+    'related': 'Lié à',
+    'duplicate': 'Duplique',
+    'parent': 'Parent de',
+    'child': 'Enfant de'
   }
   return labels[type] || type
 }
 
-export function getRelationIcon(type: RelationType): string {
-  const icons: Record<RelationType, string> = {
+export function getRelationIcon(type: TaskRelationType): string {
+  const icons: Record<TaskRelationType, string> = {
     'blocks': '🚫',
-    'blocked-by': '⛔',
-    'relates-to': '🔗',
-    'duplicates': '📋',
-    'parent-of': '📁',
-    'child-of': '📄'
+    'blocked_by': '⛔',
+    'related': '🔗',
+    'duplicate': '📋',
+    'parent': '📁',
+    'child': '📄'
   }
   return icons[type] || '🔗'
 }
 
-export function getInverseRelation(type: RelationType): RelationType {
-  const inverses: Record<RelationType, RelationType> = {
-    'blocks': 'blocked-by',
-    'blocked-by': 'blocks',
-    'relates-to': 'relates-to',
-    'duplicates': 'duplicates',
-    'parent-of': 'child-of',
-    'child-of': 'parent-of'
+export function getInverseRelation(type: TaskRelationType): TaskRelationType {
+  const inverses: Record<TaskRelationType, TaskRelationType> = {
+    'blocks': 'blocked_by',
+    'blocked_by': 'blocks',
+    'related': 'related',
+    'duplicate': 'duplicate',
+    'parent': 'child',
+    'child': 'parent'
   }
   return inverses[type] || type
 }
@@ -39,21 +39,20 @@ export function getInverseRelation(type: RelationType): RelationType {
 export function canCompleteTask(taskId: string, relations: TaskRelation[], completedTaskIds: string[]): boolean {
   // Check if all blocking tasks are completed
   const blockingRelations = relations.filter(r => 
-    r.targetTaskId === taskId && r.type === 'blocks'
+    r.toTaskId === taskId && r.type === 'blocks'
   )
   
-  return blockingRelations.every(r => completedTaskIds.includes(r.sourceTaskId))
+  return blockingRelations.every(r => completedTaskIds.includes(r.fromTaskId))
 }
 
 export function getBlockingTasks(taskId: string, relations: TaskRelation[]): string[] {
   return relations
-    .filter(r => r.targetTaskId === taskId && r.type === 'blocks')
-    .map(r => r.sourceTaskId)
+    .filter(r => r.toTaskId === taskId && r.type === 'blocks')
+    .map(r => r.fromTaskId)
 }
 
 export function getBlockedTasks(taskId: string, relations: TaskRelation[]): string[] {
   return relations
-    .filter(r => r.sourceTaskId === taskId && r.type === 'blocks')
-    .map(r => r.targetTaskId)
+    .filter(r => r.fromTaskId === taskId && r.type === 'blocks')
+    .map(r => r.toTaskId)
 }
-

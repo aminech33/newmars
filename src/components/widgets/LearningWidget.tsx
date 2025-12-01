@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import { memo } from 'react'
 import { GraduationCap, BookOpen, Flame, Plus, ChevronRight } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -44,10 +44,9 @@ export const LearningWidget = memo(function LearningWidget({ widget }: LearningW
 
   return (
     <WidgetContainer
-      widget={widget}
+      id={widget.id}
       title="Apprentissage"
-      icon={<GraduationCap className="w-4 h-4" />}
-      accentColor="violet"
+      currentSize={widget.size}
       onClick={handleClick}
     >
       {learningCourses.length === 0 ? (

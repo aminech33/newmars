@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
@@ -12,12 +12,12 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
   const { id, size = 'small' } = widget
   const { tasks, events, setView } = useStore()
   
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  const today = useMemo(() => new Date(), [])
+  const todayStr = useMemo(() => today.toISOString().split('T')[0], [today])
   
-  const tasksWithDates = tasks.filter(t => t.dueDate && !t.completed)
+  const tasksWithDates = useMemo(() => tasks.filter(t => t.dueDate && !t.completed), [tasks])
 
-  const upcomingEvents = events.filter(e => !e.completed).length
+  const upcomingEvents = useMemo(() => events.filter(e => !e.completed).length, [events])
 
   if (size === 'small') {
     return (
@@ -31,15 +31,14 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
     )
   }
 
-  const getNextDays = (count: number) => {
+  const days = useMemo(() => {
+    const count = size === 'large' ? 7 : 3
     return Array.from({ length: count }, (_, i) => {
       const date = new Date(today)
       date.setDate(date.getDate() + i)
       return date
     })
-  }
-
-  const days = getNextDays(size === 'large' ? 7 : 3)
+  }, [today, size])
 
   return (
     <WidgetContainer id={id} title="Cette semaine" currentSize={size} onClick={() => setView('calendar')}>

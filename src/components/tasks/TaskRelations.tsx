@@ -1,7 +1,7 @@
 import { Link2, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../../store/useStore'
-import { RelationType } from '../../types/taskRelation'
+import { TaskRelationType } from '../../types/taskRelation'
 import { getRelationLabel, getRelationIcon } from '../../utils/taskRelationUtils'
 
 interface TaskRelationsProps {
@@ -11,30 +11,34 @@ interface TaskRelationsProps {
 export function TaskRelations({ taskId }: TaskRelationsProps) {
   const { tasks, taskRelations, addTaskRelation, removeTaskRelation } = useStore()
   const [isAdding, setIsAdding] = useState(false)
-  const [selectedType, setSelectedType] = useState<RelationType>('relates-to')
+  const [selectedType, setSelectedType] = useState<TaskRelationType>('related')
   const [selectedTaskId, setSelectedTaskId] = useState('')
 
   const relations = taskRelations.filter(
-    r => r.sourceTaskId === taskId || r.targetTaskId === taskId
+    r => r.fromTaskId === taskId || r.toTaskId === taskId
   )
 
   const availableTasks = tasks.filter(t => t.id !== taskId)
 
   const handleAddRelation = () => {
     if (selectedTaskId) {
-      addTaskRelation(taskId, selectedTaskId, selectedType)
+      addTaskRelation({
+        fromTaskId: taskId,
+        toTaskId: selectedTaskId,
+        type: selectedType
+      })
       setSelectedTaskId('')
       setIsAdding(false)
     }
   }
 
-  const relationTypes: RelationType[] = [
+  const relationTypes: TaskRelationType[] = [
     'blocks',
-    'blocked-by',
-    'relates-to',
-    'duplicates',
-    'parent-of',
-    'child-of'
+    'blocked_by',
+    'related',
+    'duplicate',
+    'parent',
+    'child'
   ]
 
   return (
@@ -56,7 +60,7 @@ export function TaskRelations({ taskId }: TaskRelationsProps) {
         <div className="space-y-2 p-3 bg-zinc-900/50 rounded-xl">
           <select
             value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value as RelationType)}
+            onChange={(e) => setSelectedType(e.target.value as TaskRelationType)}
             className="w-full bg-zinc-800 text-zinc-300 text-sm px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-zinc-600"
           >
             {relationTypes.map(type => (
@@ -92,8 +96,8 @@ export function TaskRelations({ taskId }: TaskRelationsProps) {
       {relations.length > 0 ? (
         <div className="space-y-2">
           {relations.map(relation => {
-            const isSource = relation.sourceTaskId === taskId
-            const relatedTaskId = isSource ? relation.targetTaskId : relation.sourceTaskId
+            const isSource = relation.fromTaskId === taskId
+            const relatedTaskId = isSource ? relation.toTaskId : relation.fromTaskId
             const relatedTask = tasks.find(t => t.id === relatedTaskId)
             
             if (!relatedTask) return null
@@ -128,4 +132,3 @@ export function TaskRelations({ taskId }: TaskRelationsProps) {
     </div>
   )
 }
-

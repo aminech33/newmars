@@ -77,10 +77,8 @@ Tu es à quel niveau actuellement ? Je peux adapter mes explications.`
 export function LearningPage() {
   const {
     uiState,
-    courses,
     filteredCourses,
     activeCourse,
-    stats,
     createCourse,
     updateCourse,
     deleteCourse,
@@ -184,7 +182,7 @@ export function LearningPage() {
     }
   }, [activeCourse, sendMessage, setIsTyping, addAIResponse, showToast])
 
-  const handleCopyMessage = useCallback((messageId: string) => {
+  const handleCopyMessage = useCallback((_messageId: string) => {
     showToast('Message copié !', 'success')
   }, [showToast])
 
@@ -242,8 +240,6 @@ export function LearningPage() {
     // TODO: Implement flashcard review mode
     showToast('Fonctionnalité à venir', 'info')
   }, [showToast])
-
-  const hasCourses = courses.length > 0
 
   return (
     <div className="h-full flex bg-zinc-950">
@@ -326,10 +322,10 @@ export function LearningPage() {
             ? 'Cette action est irréversible. Tous les messages, notes et flashcards seront perdus.'
             : 'Ce message sera définitivement supprimé.'
         }
-        confirmLabel="Supprimer"
+        confirmText="Supprimer"
         variant="danger"
         onConfirm={handleConfirmDelete}
-        onCancel={() => setConfirmDelete(null)}
+        onClose={() => setConfirmDelete(null)}
       />
 
       {/* Toast */}

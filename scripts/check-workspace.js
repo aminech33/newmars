@@ -12,34 +12,38 @@ console.log('='.repeat(70))
 const currentDir = process.cwd()
 console.log(`\n📂 Workspace actuel: ${currentDir}`)
 
-const expectedDir = 'C:\\Users\\amine\\.cursor\\worktrees\\newmars-1\\iku'
-const isCorrectWorkspace = currentDir.toLowerCase() === expectedDir.toLowerCase()
+// Vérifier qu'on est dans un dossier 'iku' (nom du projet)
+const isCorrectWorkspace = currentDir.includes('iku') && fs.existsSync(path.join(currentDir, 'package.json'))
 
 if (isCorrectWorkspace) {
   console.log('✅ Vous êtes dans le bon workspace!')
+  
+  // Afficher le nom du projet depuis package.json
+  const packageJson = JSON.parse(fs.readFileSync(path.join(currentDir, 'package.json'), 'utf-8'))
+  console.log(`📦 Projet: ${packageJson.name} v${packageJson.version}`)
 } else {
   console.error('❌ ATTENTION: Vous n\'êtes PAS dans le bon workspace!')
-  console.error(`   Attendu: ${expectedDir}`)
-  console.error(`   Actuel:  ${currentDir}`)
-  console.error('\n⚠️  Changez de dossier avant de continuer!')
+  console.error(`   Actuel: ${currentDir}`)
+  console.error('\n⚠️  Assurez-vous d\'être dans le dossier du projet!')
   process.exit(1)
 }
 
-// Vérifier les workspaces en double
-const cursorWorkspaces = path.join(process.env.USERPROFILE, '.cursor', 'worktrees')
-if (fs.existsSync(cursorWorkspaces)) {
-  const workspaces = fs.readdirSync(cursorWorkspaces)
-    .filter(f => f.includes('newmars'))
-  
-  if (workspaces.length > 0) {
-    console.warn('\n⚠️  ATTENTION: Workspaces en double détectés!')
-    workspaces.forEach(ws => {
-      console.warn(`   - ${path.join(cursorWorkspaces, ws)}`)
-    })
-    console.warn('\n💡 Recommandation: Supprimez ces workspaces pour éviter la confusion')
-    console.warn('   Commande: Remove-Item -Recurse -Force "' + cursorWorkspaces + '\\newmars*"')
-  } else {
-    console.log('✅ Aucun workspace en double détecté')
+// Vérifier les workspaces en double (si on est sur Windows avec Cursor)
+if (process.env.USERPROFILE) {
+  const cursorWorkspaces = path.join(process.env.USERPROFILE, '.cursor', 'worktrees')
+  if (fs.existsSync(cursorWorkspaces)) {
+    const workspaces = fs.readdirSync(cursorWorkspaces)
+      .filter(f => f.toLowerCase().includes('newmars') || f.toLowerCase().includes('iku'))
+    
+    if (workspaces.length > 1) {
+      console.warn('\n⚠️  ATTENTION: Workspaces en double détectés!')
+      workspaces.forEach(ws => {
+        console.warn(`   - ${path.join(cursorWorkspaces, ws)}`)
+      })
+      console.warn('\n💡 Recommandation: Supprimez les workspaces inutiles pour éviter la confusion')
+    } else if (workspaces.length === 1) {
+      console.log('✅ Un seul workspace détecté')
+    }
   }
 }
 

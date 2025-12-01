@@ -13,7 +13,7 @@ export function WidgetPicker({ isOpen, onClose }: WidgetPickerProps) {
   const { addWidget, widgets } = useStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all')
-  const [hoveredWidget, setHoveredWidget] = useState<string | null>(null)
+  const [_hoveredWidget, setHoveredWidget] = useState<string | null>(null)
 
   // Reset state when opening
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { memo, useState } from 'react'
 import { Search, Plus, Pin, Archive, MoreVertical, Trash2, Edit2, Filter, SortAsc } from 'lucide-react'
-import { Course, CourseStatus, COURSE_COLORS } from '../../types/learning'
+import { Course, CourseStatus } from '../../types/learning'
 import { Tooltip } from '../ui/Tooltip'
 
 interface CourseListProps {
@@ -70,7 +70,7 @@ export const CourseList = memo(function CourseList({
   if (collapsed) {
     return (
       <div className="w-16 bg-zinc-900/50 border-r border-zinc-800/50 flex flex-col items-center py-4 gap-2">
-        <Tooltip content="Nouveau cours (Ctrl+N)" position="right">
+        <Tooltip content="Nouveau cours (Ctrl+N)" side="right">
           <button
             onClick={onCreateCourse}
             className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
@@ -83,7 +83,7 @@ export const CourseList = memo(function CourseList({
         <div className="w-8 h-px bg-zinc-800 my-2" />
         
         {courses.slice(0, 8).map((course) => (
-          <Tooltip key={course.id} content={course.name} position="right">
+          <Tooltip key={course.id} content={course.name} side="right">
             <button
               onClick={() => onSelectCourse(course.id)}
               className={`p-3 rounded-xl transition-all ${

@@ -35,4 +35,5 @@ export interface JournalStats {
   averageMood: number
   entriesThisMonth: number
   entriesThisYear: number
+  favoriteCount: number
 }

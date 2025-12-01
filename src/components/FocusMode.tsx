@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { X, Play, Pause, RotateCcw, Coffee, SkipForward, Volume2, VolumeX } from 'lucide-react'
+import { X, Play, Pause, RotateCcw, SkipForward, Volume2, VolumeX } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak'
@@ -46,8 +46,8 @@ export function FocusMode() {
       
       oscillator.start(audioContext.currentTime)
       oscillator.stop(audioContext.currentTime + 0.5)
-    } catch (e) {
-      console.log('Audio not supported')
+    } catch {
+      // Audio not supported - silent fail
     }
   }, [soundEnabled])
 

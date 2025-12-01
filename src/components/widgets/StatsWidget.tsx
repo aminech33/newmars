@@ -13,8 +13,6 @@ export const StatsWidget = memo(function StatsWidget({ widget }: StatsWidgetProp
   const { id, size = 'small' } = widget
   const { tasks, focusMinutes, setView, getCurrentStreak, dailyGoal, getWeekStats } = useStore()
   
-  const completedTasks = tasks.filter(t => t.completed).length
-  const pendingTasks = tasks.length - completedTasks
   const streak = useMemo(() => getCurrentStreak(), [getCurrentStreak])
   const weekStats = useMemo(() => getWeekStats(), [getWeekStats])
   
