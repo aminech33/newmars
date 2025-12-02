@@ -15,8 +15,8 @@ html, body, #root {
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #09090b;
-  color: #fafafa;
+  background-color: #0A0A0B;
+  color: #E5E5E7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -154,8 +154,9 @@ button:active:not(:disabled) {
    GLASSMORPHISM PREMIUM - PRODUCTION READY
    ======================================== */
 
-/* Design Tokens */
+/* Design Tokens - Dark Elegant Palette */
 :root {
+  /* Glassmorphism */
   --glass-blur: 20px;
   --glass-blur-hover: 24px;
   --glass-elevation: -2px;
@@ -164,30 +165,70 @@ button:active:not(:disabled) {
   --glass-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
   --glass-click-duration: 400ms;
   --glass-click-scale: 0.98;
+  
+  /* Colors - Dark Elegant */
+  --bg-primary: #0A0A0B;
+  --bg-secondary: #18181B;
+  --bg-tertiary: #27272A;
+  
+  --text-primary: #E5E5E7;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
+  
+  /* Accents désaturés (soft pastels) */
+  --accent-blue-from: #60A5FA;
+  --accent-blue-to: #93C5FD;
+  
+  --accent-violet-from: #A78BFA;
+  --accent-violet-to: #C4B5FD;
+  
+  --accent-pink-from: #F9A8D4;
+  --accent-pink-to: #FBCFE8;
+  
+  --accent-amber-from: #FBBF24;
+  --accent-amber-to: #FCD34D;
+  
+  --accent-emerald-from: #34D399;
+  --accent-emerald-to: #6EE7B7;
+  
+  --accent-rose-from: #FDA4AF;
+  --accent-rose-to: #FECDD3;
+  
+  --accent-cyan-from: #67E8F9;
+  --accent-cyan-to: #A5F3FC;
+  
+  --accent-teal-from: #5EEAD4;
+  --accent-teal-to: #99F6E4;
+  
+  --accent-indigo-from: #818CF8;
+  --accent-indigo-to: #A5B4FC;
 }
 
-/* Glassmorphism Base */
+/* Glassmorphism Base - Subtle & Elegant */
 .glass-widget {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.01) 100%
   );
-  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
   overflow: hidden;
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 20px 25px -5px rgba(0, 0, 0, 0.5),
+    0 10px 10px -5px rgba(0, 0, 0, 0.3),
+    0 4px 6px -2px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   
   /* Transitions optimisées (pas de "all") */
   transition: 
     transform var(--glass-transition-duration) var(--glass-transition-easing),
     box-shadow var(--glass-transition-duration) var(--glass-transition-easing),
     border-color var(--glass-transition-duration) var(--glass-transition-easing),
-    backdrop-filter var(--glass-transition-duration) var(--glass-transition-easing);
+    backdrop-filter var(--glass-transition-duration) var(--glass-transition-easing),
+    background var(--glass-transition-duration) var(--glass-transition-easing);
   
   will-change: transform;
 }
@@ -199,17 +240,22 @@ button:active:not(:disabled) {
   }
 }
 
-/* Hover - Élévation & Glow */
+/* Hover - Élévation & Glow (Subtle) */
 .glass-widget:hover {
-  transform: translateY(var(--glass-elevation));
-  border-color: rgba(var(--accent-rgb), 0.3);
-  backdrop-filter: blur(var(--glass-blur-hover)) saturate(200%);
-  -webkit-backdrop-filter: blur(var(--glass-blur-hover)) saturate(200%);
+  transform: translateY(-6px) scale(1.02);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(var(--glass-blur-hover)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-hover)) saturate(140%);
   box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(var(--accent-rgb), 0.2),
-    0 0 var(--glass-glow-size) rgba(var(--accent-rgb), 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 30px 60px -15px rgba(0, 0, 0, 0.7),
+    0 25px 40px -10px rgba(0, 0, 0, 0.5),
+    0 15px 25px -5px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* Focus - Accessibilité clavier */
@@ -225,7 +271,22 @@ button:active:not(:disabled) {
 
 /* Active - Feedback tactile */
 .glass-widget:active {
-  transform: translateY(-1px) scale(var(--glass-click-scale));
+  transform: translateY(-2px) scale(var(--glass-click-scale));
+}
+
+/* Animation de "lift" ultra visible */
+@keyframes lift {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-6px) scale(1.02); }
+}
+
+/* Test debug - enlever plus tard */
+.glass-widget {
+  animation: none;
+}
+
+.glass-widget:hover {
+  animation: lift 0.3s ease forwards;
 }
 
 /* Animation Pulse au clic */

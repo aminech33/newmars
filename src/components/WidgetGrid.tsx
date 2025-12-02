@@ -170,7 +170,6 @@ export function WidgetGrid() {
     return {
       gridColumn: `span ${width || 1}`,
       gridRow: `span ${height || 1}`,
-      minHeight: (height || 1) === 1 ? '160px' : '340px',
     }
   }
 
@@ -183,7 +182,8 @@ export function WidgetGrid() {
   return (
     <>
       <div 
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 auto-rows-min"
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
+        style={{ gridAutoRows: '220px' }}
         role="grid"
         aria-label="Grille de widgets"
       >

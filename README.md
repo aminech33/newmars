@@ -177,7 +177,6 @@ src/components/widgets/
 ├── WidgetSkeleton.tsx (loading state)
 ├── WidgetFAB.tsx (FAB mobile)
 ├── TasksWidget.tsx
-├── StatsWidget.tsx
 ├── CalendarWidget.tsx
 ├── HabitsWidget.tsx
 ├── NotesWidget.tsx

@@ -1,14 +1,13 @@
 import { lazy, ComponentType } from 'react'
-import { CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Heart, Book, GraduationCap, Library, Cloud } from 'lucide-react'
+import { CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Heart, Book, GraduationCap, Library, Cloud, Search } from 'lucide-react'
 import { Widget } from '../types/widgets'
 
 // Lazy load all widgets for better performance
 const TasksWidget = lazy(() => import('../components/widgets/TasksWidget').then(m => ({ default: m.TasksWidget })))
-const StatsWidget = lazy(() => import('../components/widgets/StatsWidget').then(m => ({ default: m.StatsWidget })))
 const HabitsWidget = lazy(() => import('../components/widgets/HabitsWidget').then(m => ({ default: m.HabitsWidget })))
 const NotesWidget = lazy(() => import('../components/widgets/NotesWidget').then(m => ({ default: m.NotesWidget })))
 const CalendarWidget = lazy(() => import('../components/widgets/CalendarWidget').then(m => ({ default: m.CalendarWidget })))
-const PomodoroWidget = lazy(() => import('../components/widgets/PomodoroWidget').then(m => ({ default: m.PomodoroWidget })))
+const PomodoroWidgetTile = lazy(() => import('../components/widgets/PomodoroWidgetTile').then(m => ({ default: m.PomodoroWidgetTile })))
 const LinksWidget = lazy(() => import('../components/widgets/LinksWidget').then(m => ({ default: m.LinksWidget })))
 const AIWidget = lazy(() => import('../components/widgets/AIWidget').then(m => ({ default: m.AIWidget })))
 const HealthWidget = lazy(() => import('../components/widgets/HealthWidget').then(m => ({ default: m.HealthWidget })))
@@ -16,6 +15,7 @@ const JournalWidget = lazy(() => import('../components/widgets/JournalWidget').t
 const LearningWidget = lazy(() => import('../components/widgets/LearningWidget').then(m => ({ default: m.LearningWidget })))
 const LibraryWidget = lazy(() => import('../components/widgets/LibraryWidget').then(m => ({ default: m.LibraryWidget })))
 const WeatherWidget = lazy(() => import('../components/widgets/WeatherWidget').then(m => ({ default: m.WeatherWidget })))
+const SearchWidgetTile = lazy(() => import('../components/widgets/SearchWidgetTile').then(m => ({ default: m.SearchWidgetTile })))
 
 export interface WidgetDefinition {
   type: string
@@ -35,15 +35,6 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: CheckSquare,
     component: TasksWidget,
     category: 'productivity',
-    defaultSize: 'medium'
-  },
-  stats: {
-    type: 'stats',
-    label: 'Statistiques',
-    description: 'Vos stats de productivité',
-    icon: BarChart3,
-    component: StatsWidget,
-    category: 'tracking',
     defaultSize: 'medium'
   },
   calendar: {
@@ -94,11 +85,11 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
   pomodoro: {
     type: 'pomodoro',
     label: 'Pomodoro',
-    description: 'Timer de focus 25min',
+    description: 'Timer & time tracking avancé',
     icon: Timer,
-    component: PomodoroWidget,
+    component: PomodoroWidgetTile,
     category: 'productivity',
-    defaultSize: 'small'
+    defaultSize: 'medium'
   },
   links: {
     type: 'links',
@@ -144,6 +135,15 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     component: WeatherWidget,
     category: 'tools',
     defaultSize: 'small'
+  },
+  search: {
+    type: 'search',
+    label: 'Recherche',
+    description: 'Recherche globale rapide',
+    icon: Search,
+    component: SearchWidgetTile,
+    category: 'tools',
+    defaultSize: 'medium'
   }
 }
 

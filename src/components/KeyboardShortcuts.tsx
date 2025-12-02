@@ -7,7 +7,7 @@ export function KeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Command Palette: ⌘K or Ctrl+K
+      // Search Widget: ⌘K or Ctrl+K
       if (isModKey(e) && e.key === 'k') {
         e.preventDefault()
         setCommandPaletteOpen(true)

@@ -85,10 +85,18 @@ export interface PomodoroSession {
   id: string
   taskId?: string
   taskTitle?: string
-  duration: number // en minutes (25 par défaut)
+  projectId?: string
+  projectName?: string
+  duration: number // durée prévue en minutes
+  actualDuration?: number // durée réelle si interrompu
   completedAt: number // timestamp
+  startedAt?: number // timestamp de début
   date: string // YYYY-MM-DD
   type: 'focus' | 'break'
+  interrupted?: boolean
+  interruptions?: number
+  tags?: string[]
+  notes?: string
 }
 
 export interface DailyStats {
@@ -98,7 +106,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'learning' | 'library'
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'learning' | 'library' | 'pomodoro'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
@@ -158,7 +166,7 @@ interface AppState {
   addToast: (message: string, type?: Toast['type']) => void
   removeToast: (id: string) => void
   
-  // Command Palette
+  // Search Widget
   isCommandPaletteOpen: boolean
   setCommandPaletteOpen: (open: boolean) => void
   
@@ -315,27 +323,20 @@ const defaultWidgets: Widget[] = [
   },
   {
     id: '3',
-    type: 'stats',
-    size: 'small',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 4, y: 0 }
-  },
-  {
-    id: '4',
     type: 'habits',
     size: 'medium',
     dimensions: { width: 1, height: 2 },
     position: { x: 0, y: 2 }
   },
   {
-    id: '5',
+    id: '4',
     type: 'pomodoro',
     size: 'small',
     dimensions: { width: 1, height: 1 },
     position: { x: 1, y: 2 }
   },
   {
-    id: '6',
+    id: '5',
     type: 'notes',
     size: 'medium',
     dimensions: { width: 2, height: 1 },
@@ -697,7 +698,7 @@ export const useStore = create<AppState>()(
         toasts: state.toasts.filter(t => t.id !== id)
       })),
       
-      // Command Palette
+      // Search Widget
       isCommandPaletteOpen: false,
       setCommandPaletteOpen: (open) => set({ isCommandPaletteOpen: open }),
       

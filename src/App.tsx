@@ -14,10 +14,11 @@ const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ d
 const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m => ({ default: m.LibraryPage })))
+const PomodoroPage = lazy(() => import('./components/pomodoro/PomodoroPage').then(m => ({ default: m.PomodoroPage })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
-import { CommandPalette } from './components/CommandPalette'
+import { SearchWidget } from './components/SearchWidget'
 import { ToastContainer } from './components/ToastContainer'
 import { QuickAdd } from './components/QuickAdd'
 import { Confetti } from './components/Confetti'
@@ -77,13 +78,14 @@ function AppContent() {
             {currentView === 'ai' && <AIAssistant />}
             {currentView === 'learning' && <LearningPage />}
             {currentView === 'library' && <LibraryPage />}
+            {currentView === 'pomodoro' && <PomodoroPage />}
           </>
         )}
       </Suspense>
 
       {/* Composants globaux - toujours chargés */}
       <KeyboardShortcuts />
-      <CommandPalette />
+      <SearchWidget />
       <ToastContainer />
       <QuickAdd />
       <Confetti trigger={showConfetti} />

@@ -150,54 +150,80 @@ export const WeatherWidget = memo(function WeatherWidget({ widget }: WeatherWidg
     )
   }
 
-  // Small: Température + icône
+  // Small: Température + icône avec gradient
   if (size === 'small') {
     return (
-      <WidgetContainer id={id} title="Météo" currentSize={size}>
-        <div className="flex flex-col items-center justify-center h-full">
-          <div className={`w-12 h-12 mb-2 ${getWeatherColor(weather.icon)}`}>
-            {getWeatherIcon(weather.icon)}
+      <WidgetContainer id={id} title="" currentSize={size}>
+        <div 
+          className="absolute inset-0 flex flex-col justify-between p-5 overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+          }}
+        >
+          <div className="absolute inset-0 opacity-20" style={{
+            backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(255,255,255,0.5) 0%, transparent 50%)'
+          }} />
+          
+          <div className="relative z-10 flex flex-col items-center justify-center flex-1">
+            <div className="w-14 h-14 mb-2 text-white drop-shadow-lg">
+              {getWeatherIcon(weather.icon)}
+            </div>
+            <div className="text-5xl font-bold text-white drop-shadow-md">{weather.temp}°</div>
+            <p className="text-xs text-white/80 capitalize mt-1">{weather.description}</p>
           </div>
-          <div className="text-3xl font-bold text-zinc-200">{weather.temp}°</div>
-          <p className="text-xs text-zinc-500">{weather.city}</p>
         </div>
       </WidgetContainer>
     )
   }
 
-  // Medium: Température + détails + 4h forecast
+  // Medium: Température + détails avec gradient
   if (size === 'medium') {
     return (
       <WidgetContainer 
         id={id} 
-        title="Météo"
+        title=""
         currentSize={size}
         actions={
-          <span className="text-xs text-zinc-600">{weather.city}</span>
+          <span className="text-xs text-white/80">{weather.city}</span>
         }
       >
-        <div className="flex flex-col h-full">
-          {/* Current weather */}
-          <div className="flex items-center gap-4 mb-3 pb-3 border-b border-white/5">
-            <div className={`w-16 h-16 ${getWeatherColor(weather.icon)}`}>
-              {getWeatherIcon(weather.icon)}
+        <div 
+          className="absolute inset-0 p-5 overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+          }}
+        >
+          <div className="absolute inset-0 opacity-20" style={{
+            backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(255,255,255,0.5) 0%, transparent 50%)'
+          }} />
+          
+          <div className="relative z-10 h-full flex flex-col">
+            <div className="mb-3">
+              <div className="text-xs font-semibold text-white/80 uppercase tracking-wide">Météo</div>
+              <div className="text-2xl font-bold text-white capitalize">{weather.description}</div>
             </div>
-            <div className="flex-1">
-              <div className="text-4xl font-bold text-zinc-200">{weather.temp}°</div>
-              <p className="text-sm text-zinc-500 capitalize">{weather.description}</p>
-              <p className="text-xs text-zinc-600">Ressenti {weather.feelsLike}°</p>
-            </div>
-          </div>
 
-          {/* Quick stats */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 text-xs">
-              <Droplets className="w-3 h-3 text-blue-400" />
-              <span className="text-zinc-400">{weather.humidity}%</span>
+            {/* Current weather */}
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-16 h-16 text-white drop-shadow-lg">
+                {getWeatherIcon(weather.icon)}
+              </div>
+              <div className="flex-1">
+                <div className="text-4xl font-bold text-white drop-shadow-md">{weather.temp}°</div>
+                <p className="text-xs text-white/70">Ressenti {weather.feelsLike}°</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <Wind className="w-3 h-3 text-cyan-400" />
-              <span className="text-zinc-400">{weather.windSpeed} km/h</span>
+
+            {/* Quick stats */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                <Droplets className="w-4 h-4 text-white" />
+                <span className="text-sm text-white font-medium">{weather.humidity}%</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                <Wind className="w-4 h-4 text-white" />
+                <span className="text-sm text-white font-medium">{weather.windSpeed} km/h</span>
+              </div>
             </div>
           </div>
         </div>
@@ -205,74 +231,90 @@ export const WeatherWidget = memo(function WeatherWidget({ widget }: WeatherWidg
     )
   }
 
-  // Large: Tout + forecast 4h
+  // Large: Tout + forecast 4h avec gradient
   return (
     <WidgetContainer 
       id={id} 
-      title="Météo"
+      title=""
       currentSize={size}
       actions={
-        <span className="text-xs text-zinc-600">{weather.city}</span>
+        <span className="text-xs text-white/80">{weather.city}</span>
       }
     >
-      <div className="flex flex-col h-full">
-        {/* Current weather */}
-        <div className="flex items-center gap-4 mb-3">
-          <div className={`w-20 h-20 ${getWeatherColor(weather.icon)}`}>
-            {getWeatherIcon(weather.icon)}
+      <div 
+        className="absolute inset-0 p-5 overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+        }}
+      >
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(255,255,255,0.5) 0%, transparent 50%)'
+        }} />
+        
+        <div className="relative z-10 h-full flex flex-col">
+          {/* Header */}
+          <div className="mb-3">
+            <div className="text-xs font-semibold text-white/80 uppercase tracking-wide">Météo</div>
+            <div className="text-3xl font-bold text-white capitalize">{weather.description}</div>
           </div>
-          <div className="flex-1">
-            <div className="text-5xl font-bold text-zinc-200 mb-1">{weather.temp}°</div>
-            <p className="text-sm text-zinc-400 capitalize">{weather.description}</p>
-            <p className="text-xs text-zinc-600">Ressenti {weather.feelsLike}°</p>
-          </div>
-        </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-2 mb-3 pb-3 border-b border-white/5">
-          <div className="flex items-center gap-2 p-2 bg-blue-500/10 rounded-lg">
-            <Droplets className="w-4 h-4 text-blue-400" />
-            <div>
-              <div className="text-xs text-blue-300 font-medium">{weather.humidity}%</div>
-              <div className="text-[10px] text-blue-400/70">Humidité</div>
+          {/* Current weather */}
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-20 h-20 text-white drop-shadow-lg">
+              {getWeatherIcon(weather.icon)}
+            </div>
+            <div className="flex-1">
+              <div className="text-5xl font-bold text-white drop-shadow-md mb-1">{weather.temp}°</div>
+              <p className="text-xs text-white/70">Ressenti {weather.feelsLike}°</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 p-2 bg-cyan-500/10 rounded-lg">
-            <Wind className="w-4 h-4 text-cyan-400" />
-            <div>
-              <div className="text-xs text-cyan-300 font-medium">{weather.windSpeed} km/h</div>
-              <div className="text-[10px] text-cyan-400/70">Vent</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-2 bg-violet-500/10 rounded-lg">
-            <Eye className="w-4 h-4 text-violet-400" />
-            <div>
-              <div className="text-xs text-violet-300 font-medium">{weather.visibility} km</div>
-              <div className="text-[10px] text-violet-400/70">Visibilité</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-2 bg-indigo-500/10 rounded-lg">
-            <Gauge className="w-4 h-4 text-indigo-400" />
-            <div>
-              <div className="text-xs text-indigo-300 font-medium">{weather.pressure} hPa</div>
-              <div className="text-[10px] text-indigo-400/70">Pression</div>
-            </div>
-          </div>
-        </div>
 
-        {/* Forecast */}
-        <div>
-          <p className="text-xs text-zinc-500 mb-2">Prochaines heures</p>
-          <div className="grid grid-cols-4 gap-2">
-            {forecast.map((item, index) => (
-              <div key={index} className="text-center p-2 bg-zinc-900/30 rounded-lg">
-                <p className="text-[10px] text-zinc-600 mb-1">{item.time}</p>
-                <div className={`w-6 h-6 mx-auto mb-1 ${getWeatherColor(item.icon)}`}>
-                  {getWeatherIcon(item.icon)}
-                </div>
-                <p className="text-xs text-zinc-300 font-medium">{item.temp}°</p>
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="flex items-center gap-2 p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+              <Droplets className="w-4 h-4 text-white" />
+              <div>
+                <div className="text-xs text-white font-medium">{weather.humidity}%</div>
+                <div className="text-[10px] text-white/70">Humidité</div>
               </div>
-            ))}
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+              <Wind className="w-4 h-4 text-white" />
+              <div>
+                <div className="text-xs text-white font-medium">{weather.windSpeed} km/h</div>
+                <div className="text-[10px] text-white/70">Vent</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+              <Eye className="w-4 h-4 text-white" />
+              <div>
+                <div className="text-xs text-white font-medium">{weather.visibility} km</div>
+                <div className="text-[10px] text-white/70">Visibilité</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+              <Gauge className="w-4 h-4 text-white" />
+              <div>
+                <div className="text-xs text-white font-medium">{weather.pressure} hPa</div>
+                <div className="text-[10px] text-white/70">Pression</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Forecast */}
+          <div className="flex-1 overflow-hidden">
+            <p className="text-xs text-white/80 mb-2">Prochaines heures</p>
+            <div className="grid grid-cols-4 gap-2">
+              {forecast.map((item, index) => (
+                <div key={index} className="text-center p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                  <p className="text-[10px] text-white/70 mb-1">{item.time}</p>
+                  <div className="w-6 h-6 mx-auto mb-1 text-white drop-shadow">
+                    {getWeatherIcon(item.icon)}
+                  </div>
+                  <p className="text-xs text-white font-medium">{item.temp}°</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

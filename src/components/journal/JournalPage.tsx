@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { ArrowLeft, BookOpen, Star, Calendar, TrendingUp, Smile, Target, Lightbulb, Trophy, Heart } from 'lucide-react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { ArrowLeft, BookOpen, Star, Calendar, TrendingUp, Smile, Target, Lightbulb, Trophy, Heart, Save, Sparkles, RefreshCw } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { MoodEmoji } from '../../types/journal'
 import { 
@@ -11,6 +11,8 @@ import {
   getMemoryFromYearsAgo,
   formatRelativeDate
 } from '../../utils/journalUtils'
+import { getDailyPrompt, getRandomPrompt } from '../../data/journalPrompts'
+import { exportJournalToMarkdown, exportJournalToJSON } from '../../utils/journalExport'
 
 export const JournalPage = () => {
   const { 
@@ -18,36 +20,147 @@ export const JournalPage = () => {
     journalEntries, 
     addJournalEntry, 
     updateJournalEntry, 
-    toggleJournalFavorite 
+    toggleJournalFavorite,
+    addToast 
   } = useStore()
 
   const [activeTab, setActiveTab] = useState<'today' | 'history'>('today')
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [isSaving, setIsSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [currentPrompt, setCurrentPrompt] = useState(getDailyPrompt())
 
   // Entrée du jour
   const todayEntry = getTodayEntry(journalEntries)
   
   // États pour l'édition
-  const [mood, setMood] = useState<MoodEmoji>(todayEntry?.moodEmoji || '🙂')
-  const [mainGoal, setMainGoal] = useState(todayEntry?.mainGoal || '')
-  const [gratitude1, setGratitude1] = useState(todayEntry?.gratitude?.[0] || '')
-  const [gratitude2, setGratitude2] = useState(todayEntry?.gratitude?.[1] || '')
-  const [gratitude3, setGratitude3] = useState(todayEntry?.gratitude?.[2] || '')
-  const [reflection, setReflection] = useState(todayEntry?.reflection || '')
-  const [learned, setLearned] = useState(todayEntry?.learned || '')
-  const [victory, setVictory] = useState(todayEntry?.victory || '')
+  const [mood, setMood] = useState<MoodEmoji>('🙂')
+  const [mainGoal, setMainGoal] = useState('')
+  const [gratitude1, setGratitude1] = useState('')
+  const [gratitude2, setGratitude2] = useState('')
+  const [gratitude3, setGratitude3] = useState('')
+  const [reflection, setReflection] = useState('')
+  const [learned, setLearned] = useState('')
+  const [victory, setVictory] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
 
-  // Stats
+  // Filter states for history
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterMood, setFilterMood] = useState<MoodEmoji | null>(null)
+  const [filterTags, setFilterTags] = useState<string[]>([])
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+
+  // Sync state with todayEntry when it changes
+  useEffect(() => {
+    if (todayEntry) {
+      setMood(todayEntry.moodEmoji || '🙂')
+      setMainGoal(todayEntry.mainGoal || '')
+      setGratitude1(todayEntry.gratitude?.[0] || '')
+      setGratitude2(todayEntry.gratitude?.[1] || '')
+      setGratitude3(todayEntry.gratitude?.[2] || '')
+      setReflection(todayEntry.reflection || '')
+      setLearned(todayEntry.learned || '')
+      setVictory(todayEntry.victory || '')
+      setTags(todayEntry.tags || [])
+      setLastSaved(new Date(todayEntry.updatedAt))
+    }
+  }, [todayEntry?.id]) // Only re-sync when entry ID changes
+
+  // Stats - MUST be declared BEFORE filteredEntries
   const stats = useMemo(() => calculateJournalStats(journalEntries), [journalEntries])
   const entriesByMonth = useMemo(() => getEntriesByMonth(journalEntries, selectedMonth), [journalEntries, selectedMonth])
   const memory = useMemo(() => getMemoryFromYearsAgo(journalEntries), [journalEntries])
 
-  const handleSave = () => {
+  // Get all unique tags from all entries
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    journalEntries.forEach(entry => {
+      entry.tags?.forEach(tag => tagSet.add(tag))
+    })
+    return Array.from(tagSet).sort()
+  }, [journalEntries])
+
+  // Filter entries in history
+  const filteredEntries = useMemo(() => {
+    return entriesByMonth.filter(entry => {
+      // Search in reflection, goal, learned, victory
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        const searchFields = [
+          entry.reflection,
+          entry.mainGoal,
+          entry.learned,
+          entry.victory
+        ].filter(Boolean).join(' ').toLowerCase()
+        
+        if (!searchFields.includes(query)) return false
+      }
+
+      // Filter by mood
+      if (filterMood && entry.moodEmoji !== filterMood) return false
+
+      // Filter by tags
+      if (filterTags.length > 0) {
+        if (!entry.tags || !filterTags.some(tag => entry.tags?.includes(tag))) {
+          return false
+        }
+      }
+
+      // Filter favorites only
+      if (showFavoritesOnly && !entry.isFavorite) return false
+
+      return true
+    })
+  }, [entriesByMonth, searchQuery, filterMood, filterTags, showFavoritesOnly])
+
+  // Tag handlers
+  const handleAddTag = () => {
+    const newTag = tagInput.trim().toLowerCase()
+    if (newTag && !tags.includes(newTag)) {
+      setTags([...tags, newTag])
+      setTagInput('')
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove))
+  }
+
+  const handleKeyDownTag = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddTag()
+    }
+  }
+
+  // Validation
+  const canSave = reflection.trim().length > 0
+  const hasChanges = useMemo(() => {
+    if (!todayEntry) return reflection.trim().length > 0
+    const todayTags = todayEntry.tags || []
+    return (
+      mood !== todayEntry.moodEmoji ||
+      mainGoal !== (todayEntry.mainGoal || '') ||
+      gratitude1 !== (todayEntry.gratitude?.[0] || '') ||
+      gratitude2 !== (todayEntry.gratitude?.[1] || '') ||
+      gratitude3 !== (todayEntry.gratitude?.[2] || '') ||
+      reflection !== (todayEntry.reflection || '') ||
+      learned !== (todayEntry.learned || '') ||
+      victory !== (todayEntry.victory || '') ||
+      JSON.stringify(tags.sort()) !== JSON.stringify(todayTags.sort())
+    )
+  }, [mood, mainGoal, gratitude1, gratitude2, gratitude3, reflection, learned, victory, tags, todayEntry])
+
+  const handleSave = useCallback(() => {
+    if (!canSave) return
+
+    setIsSaving(true)
     const gratitude = [gratitude1, gratitude2, gratitude3].filter(g => g.trim())
+    const today = new Date().toISOString().split('T')[0]
     
-    const entry = {
-      id: todayEntry?.id || `journal-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
+    const entryData = {
+      date: today,
       mood: moodEmojiToLevel(mood),
       moodEmoji: mood,
       mainGoal: mainGoal.trim() || undefined,
@@ -55,17 +168,40 @@ export const JournalPage = () => {
       reflection: reflection.trim(),
       learned: learned.trim() || undefined,
       victory: victory.trim() || undefined,
-      isFavorite: todayEntry?.isFavorite || false,
-      createdAt: todayEntry?.createdAt || Date.now(),
-      updatedAt: Date.now()
+      tags: tags.length > 0 ? tags : undefined,
     }
 
     if (todayEntry) {
-      updateJournalEntry(entry.id, entry)
+      updateJournalEntry(todayEntry.id, entryData)
+      addToast('Entrée mise à jour 💾', 'success')
     } else {
-      addJournalEntry(entry)
+      addJournalEntry(entryData)
+      addToast('Entrée créée ✨', 'success')
     }
-  }
+
+    setIsSaving(false)
+    setLastSaved(new Date())
+  }, [mood, mainGoal, gratitude1, gratitude2, gratitude3, reflection, learned, victory, todayEntry, canSave, addJournalEntry, updateJournalEntry, addToast])
+
+  // Auto-save after 3 seconds of inactivity
+  const autoSaveTimerRef = useRef<NodeJS.Timeout>()
+  useEffect(() => {
+    if (!hasChanges || !canSave) return
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave()
+    }, 3000)
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+    }
+  }, [mood, mainGoal, gratitude1, gratitude2, gratitude3, reflection, learned, victory, hasChanges, canSave, handleSave])
 
   const moods: MoodEmoji[] = ['😢', '😐', '🙂', '😊', '🤩']
 
@@ -123,6 +259,29 @@ export const JournalPage = () => {
         <div className="lg:col-span-2 space-y-6">
           {activeTab === 'today' ? (
             <>
+              {/* Daily Prompt */}
+              <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-3xl p-6 border border-purple-500/20">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                    <h2 className="text-lg font-semibold text-white">Prompt du jour</h2>
+                  </div>
+                  <button
+                    onClick={() => setCurrentPrompt(getRandomPrompt())}
+                    className="p-2 hover:bg-purple-500/10 rounded-lg transition-colors group"
+                    title="Changer de prompt"
+                  >
+                    <RefreshCw className="w-4 h-4 text-purple-400 group-hover:rotate-180 transition-transform duration-300" />
+                  </button>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">{currentPrompt.icon}</span>
+                  <p className="text-purple-200 text-base italic leading-relaxed">
+                    {currentPrompt.question}
+                  </p>
+                </div>
+              </div>
+
               {/* Mood Selector */}
               <div className="bg-mars-900/50 backdrop-blur-sm rounded-3xl p-6 border border-mars-800/50">
                 <div className="flex items-center gap-3 mb-4">
@@ -229,29 +388,225 @@ export const JournalPage = () => {
                 </div>
               </div>
 
+              {/* Tags */}
+              <div className="bg-mars-900/50 backdrop-blur-sm rounded-3xl p-6 border border-mars-800/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-xl">🏷️</span>
+                  <h2 className="text-xl font-semibold text-white">Tags</h2>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-sm text-purple-300"
+                    >
+                      #{tag}
+                      <button
+                        onClick={() => handleRemoveTag(tag)}
+                        className="hover:text-red-400 transition-colors"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleKeyDownTag}
+                    placeholder="Ajouter un tag (ex: travail, perso)"
+                    className="flex-1 bg-mars-800/50 border border-mars-700/50 rounded-2xl px-4 py-2 text-white placeholder-mars-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                  />
+                  <button
+                    onClick={handleAddTag}
+                    className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-300 rounded-2xl hover:bg-purple-500/30 transition-colors"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+                {allTags.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs text-mars-500 mb-2">Tags populaires :</p>
+                    <div className="flex flex-wrap gap-2">
+                      {allTags.slice(0, 8).map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => !tags.includes(tag) && setTags([...tags, tag])}
+                          disabled={tags.includes(tag)}
+                          className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                            tags.includes(tag)
+                              ? 'bg-purple-500/10 text-purple-500/50 cursor-not-allowed'
+                              : 'bg-mars-800/30 text-mars-400 hover:bg-purple-500/10 hover:text-purple-300'
+                          }`}
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Save Button */}
-              <button
-                onClick={handleSave}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-4 rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all"
-              >
-                💾 Sauvegarder l'entrée
-              </button>
+              <div className="space-y-3">
+                <button
+                  onClick={handleSave}
+                  disabled={!canSave || isSaving}
+                  className={`w-full font-semibold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 ${
+                    canSave && !isSaving
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:scale-[1.02]'
+                      : 'bg-mars-800 text-mars-500 cursor-not-allowed'
+                  }`}
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Sauvegarde...
+                    </>
+                  ) : hasChanges ? (
+                    <>
+                      <Save className="w-5 h-5" />
+                      Sauvegarder l'entrée
+                    </>
+                  ) : (
+                    <>
+                      ✓ Sauvegardé
+                    </>
+                  )}
+                </button>
+                
+                {/* Last saved indicator */}
+                {lastSaved && !hasChanges && (
+                  <div className="text-center">
+                    <span className="text-xs text-mars-500">
+                      Dernière sauvegarde : {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                )}
+
+                {/* Auto-save indicator */}
+                {hasChanges && canSave && (
+                  <div className="text-center">
+                    <span className="text-xs text-mars-500">
+                      ✨ Sauvegarde automatique dans 3s...
+                    </span>
+                  </div>
+                )}
+
+                {/* Validation message */}
+                {!canSave && reflection.trim().length === 0 && (
+                  <div className="text-center">
+                    <span className="text-xs text-red-400">
+                      ⚠️ La réflexion est requise pour sauvegarder
+                    </span>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <>
               {/* History */}
               <div className="bg-mars-900/50 backdrop-blur-sm rounded-3xl p-6 border border-mars-800/50">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-purple-400" />
-                    <h2 className="text-xl font-semibold text-white">Historique</h2>
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-purple-400" />
+                      <h2 className="text-xl font-semibold text-white">Historique</h2>
+                    </div>
+                    <input
+                      type="month"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="bg-mars-800/50 border border-mars-700/50 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    />
                   </div>
+
+                  {/* Search */}
                   <input
-                    type="month"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="bg-mars-800/50 border border-mars-700/50 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="🔍 Rechercher dans vos entrées..."
+                    className="w-full bg-mars-800/50 border border-mars-700/50 rounded-xl px-4 py-2 text-white placeholder-mars-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                   />
+
+                  {/* Filters */}
+                  <div className="flex flex-wrap gap-2">
+                    {/* Mood filters */}
+                    {moods.map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setFilterMood(filterMood === m ? null : m)}
+                        className={`text-2xl transition-all hover:scale-110 ${
+                          filterMood === m ? 'scale-125 drop-shadow-2xl' : 'opacity-40 hover:opacity-100'
+                        }`}
+                        title={`Filtrer par humeur ${m}`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+
+                    {/* Favorites filter */}
+                    <button
+                      onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                      className={`px-3 py-1 rounded-full text-sm transition-all ${
+                        showFavoritesOnly
+                          ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                          : 'bg-mars-800/30 text-mars-400 border border-mars-700/30 hover:bg-mars-800/50'
+                      }`}
+                    >
+                      <Star className={`w-4 h-4 inline ${showFavoritesOnly ? 'fill-yellow-400' : ''}`} /> Favoris
+                    </button>
+
+                    {/* Clear filters */}
+                    {(searchQuery || filterMood || filterTags.length > 0 || showFavoritesOnly) && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery('')
+                          setFilterMood(null)
+                          setFilterTags([])
+                          setShowFavoritesOnly(false)
+                        }}
+                        className="px-3 py-1 rounded-full text-sm bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-colors"
+                      >
+                        ✕ Réinitialiser
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Tag filters */}
+                  {allTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {allTags.map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => {
+                            if (filterTags.includes(tag)) {
+                              setFilterTags(filterTags.filter(t => t !== tag))
+                            } else {
+                              setFilterTags([...filterTags, tag])
+                            }
+                          }}
+                          className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                            filterTags.includes(tag)
+                              ? 'bg-purple-500/30 text-purple-200 border border-purple-500/50'
+                              : 'bg-mars-800/30 text-mars-400 border border-mars-700/30 hover:bg-mars-800/50'
+                          }`}
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Results count */}
+                  {(searchQuery || filterMood || filterTags.length > 0 || showFavoritesOnly) && (
+                    <p className="text-xs text-mars-500">
+                      {filteredEntries.length} résultat{filteredEntries.length > 1 ? 's' : ''} trouvé{filteredEntries.length > 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
 
                 {/* Memory from years ago */}
@@ -270,13 +625,17 @@ export const JournalPage = () => {
 
                 {/* Entries */}
                 <div className="space-y-4">
-                  {entriesByMonth.length === 0 ? (
+                  {filteredEntries.length === 0 ? (
                     <div className="text-center py-12">
                       <BookOpen className="w-16 h-16 text-mars-600 mx-auto mb-4" />
-                      <p className="text-mars-400">Aucune entrée pour ce mois</p>
+                      <p className="text-mars-400">
+                        {searchQuery || filterMood || filterTags.length > 0 || showFavoritesOnly
+                          ? 'Aucun résultat trouvé'
+                          : 'Aucune entrée pour ce mois'}
+                      </p>
                     </div>
                   ) : (
-                    entriesByMonth.map((entry) => (
+                    filteredEntries.map((entry) => (
                       <div
                         key={entry.id}
                         className="bg-mars-800/50 border border-mars-700/50 rounded-2xl p-4 hover:border-purple-500/30 transition-all group"
@@ -315,6 +674,19 @@ export const JournalPage = () => {
                             🏆 {entry.victory}
                           </div>
                         )}
+
+                        {entry.tags && entry.tags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {entry.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-400 rounded-full border border-purple-500/20"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
@@ -326,6 +698,31 @@ export const JournalPage = () => {
 
         {/* Sidebar Stats */}
         <div className="space-y-6">
+          {/* Export buttons */}
+          <div className="bg-mars-900/50 backdrop-blur-sm rounded-3xl p-4 border border-mars-800/50">
+            <h3 className="text-sm font-medium text-white mb-3">📤 Export</h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  exportJournalToMarkdown(journalEntries)
+                  addToast('Journal exporté en Markdown 📄', 'success')
+                }}
+                className="w-full px-3 py-2 bg-mars-800/50 hover:bg-mars-800 border border-mars-700/50 rounded-xl text-sm text-mars-300 hover:text-white transition-colors"
+              >
+                📝 Export Markdown
+              </button>
+              <button
+                onClick={() => {
+                  exportJournalToJSON(journalEntries)
+                  addToast('Journal exporté en JSON 💾', 'success')
+                }}
+                className="w-full px-3 py-2 bg-mars-800/50 hover:bg-mars-800 border border-mars-700/50 rounded-xl text-sm text-mars-300 hover:text-white transition-colors"
+              >
+                💾 Export JSON
+              </button>
+            </div>
+          </div>
+
           {/* Streak */}
           <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm rounded-3xl p-6 border border-orange-500/30">
             <div className="flex items-center gap-3 mb-4">

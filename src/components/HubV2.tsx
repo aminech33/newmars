@@ -8,8 +8,7 @@ import { WidgetFAB } from './widgets/WidgetFAB'
 import { DataManager } from './DataManager'
 
 export function HubV2() {
-  const { tasks, isEditMode, setEditMode, saveLayout, addTask, setView, setFocusMode, widgets, resetWidgets } = useStore()
-  const [searchQuery, setSearchQuery] = useState('')
+  const { isEditMode, setEditMode, saveLayout, widgets, resetWidgets, setCommandPaletteOpen } = useStore()
   const [mounted, setMounted] = useState(false)
   const [showWidgetPicker, setShowWidgetPicker] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
@@ -29,105 +28,11 @@ export function HubV2() {
     }
   }
 
-  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter' || !searchQuery.trim()) return
-    
-    const query = searchQuery.trim()
-    
-    // Commande IA
-    if (query.startsWith('/ai ')) {
-      setView('ai')
-      setSearchQuery('')
-      return
-    }
-    
-    // Commande Focus
-    if (query === '/focus') {
-      const task = tasks.find(t => !t.completed)
-      if (task) setFocusMode(true, task.id)
-      setSearchQuery('')
-      return
-    }
-    
-    // Commande Pomodoro
-    if (query === '/pomodoro' || query === '/p') {
-      const task = tasks.find(t => !t.completed)
-      if (task) setFocusMode(true, task.id)
-      setSearchQuery('')
-      return
-    }
-    
-    // Navigation
-    if (query === '/tasks' || query === '/t') {
-      setView('tasks')
-      setSearchQuery('')
-      return
-    }
-    if (query === '/dashboard' || query === '/d') {
-      setView('dashboard')
-      setSearchQuery('')
-      return
-    }
-    if (query === '/ai' || query === '/a') {
-      setView('ai')
-      setSearchQuery('')
-      return
-    }
-    if (query === '/learning' || query === '/l' || query === '/learn') {
-      setView('learning')
-      setSearchQuery('')
-      return
-    }
-    
-    // Par défaut : créer une tâche
-    addTask({ 
-      title: query, 
-      completed: false, 
-      category: 'dev',
-      status: 'todo',
-      priority: 'medium'
-    })
-    setSearchQuery('')
-  }
-
   return (
     <div className="min-h-full w-full overflow-y-auto">
       <div 
         className={`w-full max-w-[1800px] mx-auto px-6 lg:px-8 py-6 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
-        {/* Omnibar */}
-        <div className="sticky top-0 z-20 -mx-6 lg:-mx-8 px-6 lg:px-8 py-4 mb-6 backdrop-blur-xl bg-mars-bg/80">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-zinc-500 transition-colors" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearch}
-                placeholder="Taper pour créer, rechercher, ou demander à l'IA..."
-                className="w-full bg-zinc-900/50 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_28px_rgba(0,0,0,0.25)] focus:shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl pl-11 pr-20 py-3 text-sm text-zinc-300 placeholder:text-zinc-700 focus:outline-none transition-all duration-300"
-                style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                autoFocus
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                <kbd className="text-[10px] text-zinc-700 px-1.5 py-0.5 rounded" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>⌘K</kbd>
-              </div>
-            </div>
-            <ThemePicker />
-          </div>
-          {searchQuery && (
-            <div className="mt-2 text-xs text-zinc-600">
-              {searchQuery.startsWith('/ai ') ? (
-                <span>🤖 Demander à l'IA</span>
-              ) : searchQuery.startsWith('/') ? (
-                <span>⚡ Commande</span>
-              ) : (
-                <span>✓ Créer une tâche</span>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Edit Mode Controls */}
         <div className="flex items-center justify-between mb-6">

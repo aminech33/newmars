@@ -36,7 +36,7 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
 
   // Support both old API (id, title) and new API (widget)
   const widgetId = widget?.id || id || ''
-  const widgetTitle = title || (widget?.type ? widgetTitles[widget.type] : '') || 'Widget'
+  const widgetTitle = title || (widget?.type ? widgetTitles[widget.type] : '') || ''
   const size = currentSize || widget?.size || 'small'
 
   const handleClick = () => {
@@ -124,37 +124,39 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
         widget-container h-full w-full rounded-3xl p-5 
         glass-widget glass-widget-${accentTheme}
         group relative
-        ${isClicked ? 'clicked' : ''}
         ${!isEditMode && onClick ? 'cursor-pointer' : ''}
+        ${isClicked ? 'clicked' : ''}
         ${isResizing ? 'select-none' : ''}
       `}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          {isEditMode && (
-            <div className="cursor-move" title="Glisser pour déplacer">
-              <GripVertical className="w-4 h-4 text-zinc-500 hover:text-zinc-300 transition-colors" />
-            </div>
-          )}
-          <h3 className="text-sm font-medium text-zinc-300 tracking-tight">{widgetTitle}</h3>
+      {/* Header - Caché si pas de titre */}
+      {(widgetTitle || actions || isEditMode) && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {isEditMode && (
+              <div className="cursor-move" title="Glisser pour déplacer">
+                <GripVertical className="w-4 h-4 text-zinc-500 hover:text-zinc-300 transition-colors" />
+              </div>
+            )}
+            {widgetTitle && <h3 className="text-sm font-medium text-zinc-300 tracking-tight">{widgetTitle}</h3>}
+          </div>
+          <div className="flex items-center gap-2">
+            {actions}
+            {isEditMode && (
+              <button
+                onClick={(e) => { e.stopPropagation(); removeWidget(widgetId); }}
+                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-all"
+                title="Supprimer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {actions}
-          {isEditMode && (
-            <button
-              onClick={(e) => { e.stopPropagation(); removeWidget(widgetId); }}
-              className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-all"
-              title="Supprimer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Content */}
-      <div className="h-[calc(100%-2.5rem)] overflow-hidden">
+      <div className={widgetTitle || actions || isEditMode ? "h-[calc(100%-2.5rem)] overflow-auto" : "h-full overflow-auto"}>
         {children}
       </div>
 
