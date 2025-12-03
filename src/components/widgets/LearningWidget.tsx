@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { GraduationCap, BookOpen, Flame, Plus, ChevronRight } from 'lucide-react'
+import { GraduationCap, Flame, BookOpen, Zap } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -9,6 +9,7 @@ interface LearningWidgetProps {
 }
 
 export const LearningWidget = memo(function LearningWidget({ widget }: LearningWidgetProps) {
+  const { id } = widget
   const { learningCourses, setView } = useStore()
   
   // Stats
@@ -16,16 +17,16 @@ export const LearningWidget = memo(function LearningWidget({ widget }: LearningW
   const totalMessages = learningCourses.reduce((sum, c) => sum + c.messagesCount, 0)
   const totalFlashcards = learningCourses.reduce((sum, c) => sum + c.flashcards.length, 0)
   
-  // Recent courses (last 3 active)
+  // Recent courses (last 2 active)
   const recentCourses = [...activeCourses]
     .sort((a, b) => b.lastActiveAt - a.lastActiveAt)
-    .slice(0, 3)
+    .slice(0, 2)
 
   // Calculate global streak
   const today = new Date().setHours(0, 0, 0, 0)
   let streak = 0
   let checkDate = today
-  while (true) {
+  while (streak < 30) {
     const hasActivity = learningCourses.some(c => {
       const lastActive = new Date(c.lastActiveAt).setHours(0, 0, 0, 0)
       return lastActive === checkDate
@@ -38,116 +39,99 @@ export const LearningWidget = memo(function LearningWidget({ widget }: LearningW
     }
   }
 
-  const isCompact = widget.size === 'small'
-
-  const handleClick = () => setView('learning')
-
   return (
-    <WidgetContainer
-      id={widget.id}
-      title="Apprentissage"
-      currentSize={widget.size}
-      onClick={handleClick}
-    >
-      {learningCourses.length === 0 ? (
-        // Empty State
-        <div className="h-full flex flex-col items-center justify-center text-center p-4">
-          <div className="p-3 bg-violet-500/10 rounded-2xl mb-3">
-            <GraduationCap className="w-8 h-8 text-violet-400" />
-          </div>
-          <p className="text-sm text-zinc-400 mb-2">Aucun cours</p>
-          <p className="text-xs text-zinc-600 mb-3">
-            Apprends avec un tuteur IA
-          </p>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setView('learning')
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/20 text-violet-400 rounded-xl text-xs hover:bg-violet-500/30 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Créer un cours
-          </button>
-        </div>
-      ) : isCompact ? (
-        // Compact View
-        <div className="h-full flex flex-col justify-between p-1">
-          <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-zinc-200">{activeCourses.length}</span>
-            {streak > 0 && (
-              <div className="flex items-center gap-1 text-amber-400">
-                <Flame className="w-4 h-4" />
-                <span className="text-sm font-medium">{streak}</span>
+    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('learning')}>
+      <div className="h-full flex flex-col p-6 gap-4">
+        {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <GraduationCap className="w-12 h-12 text-violet-400" strokeWidth={1.5} />
               </div>
-            )}
-          </div>
-          <p className="text-xs text-zinc-600">cours actifs</p>
-        </div>
-      ) : (
-        // Full View
-        <div className="h-full flex flex-col">
-          {/* Stats Row */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-violet-400" />
-              <span className="text-sm text-zinc-400">{activeCourses.length} cours</span>
+          {streak > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-br from-violet-500 to-purple-500 rounded-full shadow-lg shadow-violet-500/30">
+              <Flame className="w-4 h-4 text-white" />
+              <span className="text-sm font-bold text-white">{streak}j</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">💬</span>
-              <span className="text-sm text-zinc-400">{totalMessages}</span>
-            </div>
-            {totalFlashcards > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm">📇</span>
-                <span className="text-sm text-zinc-400">{totalFlashcards}</span>
-              </div>
-            )}
-            {streak > 0 && (
-              <div className="flex items-center gap-1.5 text-amber-400 ml-auto">
-                <Flame className="w-4 h-4" />
-                <span className="text-sm font-medium">{streak}j</span>
-              </div>
-            )}
-          </div>
-
-          {/* Recent Courses */}
-          <div className="flex-1 space-y-2 overflow-y-auto">
-            {recentCourses.map((course) => (
-              <button
-                key={course.id}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setView('learning')
-                }}
-                className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-800/50 transition-all text-left group"
-              >
-                <div className={`p-2 rounded-xl bg-${course.color}-500/20`}>
-                  <span className="text-lg">{course.icon}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-zinc-300 truncate">{course.name}</p>
-                  <p className="text-xs text-zinc-600">{course.messagesCount} messages</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
-              </button>
-            ))}
-          </div>
-
-          {/* Footer */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setView('learning')
-            }}
-            className="mt-3 w-full flex items-center justify-center gap-2 py-2 text-xs text-violet-400 hover:text-violet-300 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Nouveau cours
-          </button>
+          )}
         </div>
-      )}
+
+        {/* Big Count */}
+        <div className="text-center">
+          <div className="text-6xl font-bold text-white tabular-nums leading-none">
+            {activeCourses.length}
+          </div>
+          <div className="text-sm text-zinc-500 uppercase tracking-wide mt-2">
+            {activeCourses.length > 1 ? 'cours actifs' : 'cours actif'}
+          </div>
+        </div>
+
+        {/* Courses List */}
+        <div className="flex-1 space-y-2 overflow-hidden">
+          {learningCourses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center text-zinc-500 text-sm py-4">
+              <BookOpen className="w-8 h-8 text-zinc-600 mb-2" />
+              <span>Aucun cours</span>
+            </div>
+          ) : recentCourses.length === 0 ? (
+            <div className="text-center text-zinc-500 text-sm py-4">
+              Tous les cours terminés ✓
+            </div>
+          ) : (
+            recentCourses.map((course) => {
+              const progress = course.lessonsCompleted > 0 && course.totalLessons > 0
+                ? Math.round((course.lessonsCompleted / course.totalLessons) * 100)
+                : 0
+              
+              return (
+                <div
+                  key={course.id}
+                  className="flex items-start gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/8 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 
+                                  flex items-center justify-center flex-shrink-0 border border-violet-500/20">
+                    <BookOpen className="w-5 h-5 text-violet-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-zinc-300 font-medium truncate">
+                      {course.name}
+                    </div>
+                    <div className="text-xs text-zinc-500 truncate">
+                      {course.subject}
+                    </div>
+                    {progress > 0 && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-zinc-600 tabular-nums">{progress}%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* Footer Stats */}
+        {learningCourses.length > 0 && (
+          <div className="pt-2 border-t border-white/10">
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div>
+                <div className="text-xs text-zinc-400">Messages</div>
+                <div className="text-lg font-bold text-white tabular-nums">{totalMessages}</div>
+              </div>
+              <div>
+                <div className="text-xs text-zinc-400">Flashcards</div>
+                <div className="text-lg font-bold text-white tabular-nums">{totalFlashcards}</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </WidgetContainer>
   )
 })
-

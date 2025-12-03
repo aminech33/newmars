@@ -1,34 +1,74 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Send, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Sparkles, Code, Lightbulb, BarChart3, Zap, BookOpen } from 'lucide-react'
 import { useStore } from '../store/useStore'
+import { generateGeminiStreamingResponse } from '../utils/geminiAI'
+import { MessageBubble } from './ai/MessageBubble'
+import { TypingIndicator } from './ai/TypingIndicator'
+import { SuggestionCard } from './ai/SuggestionCard'
 
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: number
+  isLiked?: boolean
 }
 
 const suggestions = [
-  "Quelles sont mes priorités ?",
-  "Résume ma semaine",
-  "Planifie ma journée",
+  {
+    icon: Code,
+    title: "Aide au code",
+    description: "Explique-moi un concept",
+    prompt: "Explique-moi les closures en JavaScript avec un exemple simple"
+  },
+  {
+    icon: Lightbulb,
+    title: "Idée créative",
+    description: "Inspire-moi",
+    prompt: "Donne-moi 3 idées de projets créatifs que je peux réaliser ce weekend"
+  },
+  {
+    icon: BarChart3,
+    title: "Analyse productivité",
+    description: "Résume ma journée",
+    prompt: "Quelles sont mes priorités aujourd'hui ?"
+  },
+  {
+    icon: Zap,
+    title: "Question rapide",
+    description: "Discussion simple",
+    prompt: "Comment ça va ?"
+  },
+  {
+    icon: BookOpen,
+    title: "Apprentissage",
+    description: "Enseigne-moi",
+    prompt: "Enseigne-moi un concept intéressant en 2 minutes"
+  },
 ]
 
 export function AIAssistant() {
-  const { setView, tasks, focusMinutes } = useStore()
+  const { 
+    setView, 
+    tasks, 
+    focusMinutes, 
+    habits, 
+    books,
+    learningCourses
+  } = useStore()
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: "Comment puis-je vous aider aujourd'hui ?",
+      content: "👋 Bonjour ! Je suis Gemini, votre assistant IA. Je peux vous aider avec du code, des idées créatives, analyser votre productivité, ou simplement discuter. Comment puis-je vous aider ?",
       timestamp: Date.now(),
     }
   ])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -41,35 +81,6 @@ export function AIAssistant() {
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
-
-  const generateResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase()
-    const pendingTasks = tasks.filter(t => !t.completed)
-    const completedTasks = tasks.filter(t => t.completed)
-    const urgentTasks = tasks.filter(t => t.category === 'urgent' && !t.completed)
-
-    if (lowerMessage.includes('priorit') || lowerMessage.includes('urgent')) {
-      if (urgentTasks.length > 0) {
-        return `${urgentTasks.length} tâche(s) urgente(s) :\n\n${urgentTasks.map(t => `→ ${t.title}`).join('\n')}`
-      }
-      const topTasks = pendingTasks.slice(0, 3)
-      return `Vos priorités :\n\n${topTasks.map(t => `→ ${t.title}`).join('\n')}`
-    }
-
-    if (lowerMessage.includes('résume') || lowerMessage.includes('semaine')) {
-      return `Cette semaine :\n\n→ ${completedTasks.length} tâches terminées\n→ ${pendingTasks.length} en cours\n→ ${Math.floor(focusMinutes / 60)}h de focus\n\n${completedTasks.length > pendingTasks.length ? 'Excellent travail.' : 'Continuez ainsi.'}`
-    }
-
-    if (lowerMessage.includes('planif') || lowerMessage.includes('journée')) {
-      const todayTasks = pendingTasks.slice(0, 3)
-      if (todayTasks.length === 0) {
-        return "Aucune tâche en attente. Profitez de votre journée."
-      }
-      return `Plan suggéré :\n\n${todayTasks.map((t, i) => `${i + 1}. ${t.title}`).join('\n')}`
-    }
-
-    return `${pendingTasks.length} tâches en cours. Comment puis-je vous aider ?`
-  }
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -85,17 +96,107 @@ export function AIAssistant() {
     setInput('')
     setIsTyping(true)
 
-    setTimeout(() => {
-      const response = generateResponse(userMessage.content)
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: Date.now(),
+    // Prepare assistant message ID (but don't create the bubble yet)
+    const assistantMessageId = (Date.now() + 1).toString()
+    let messageCreated = false
+
+    try {
+      // Detect if user is asking about productivity/data
+      const lowerContent = userMessage.content.toLowerCase()
+      const needsData = 
+        lowerContent.includes('tâche') ||
+        lowerContent.includes('task') ||
+        lowerContent.includes('priorité') ||
+        lowerContent.includes('habitude') ||
+        lowerContent.includes('livre') ||
+        lowerContent.includes('cours') ||
+        lowerContent.includes('focus') ||
+        lowerContent.includes('productiv') ||
+        lowerContent.includes('journée') ||
+        lowerContent.includes('semaine') ||
+        lowerContent.includes('aujourd\'hui') ||
+        lowerContent.includes('résume') ||
+        lowerContent.includes('analyse')
+
+      // Build context based on need
+      let context = ''
+      
+      if (needsData) {
+        // Full context with user data
+        const pendingTasks = tasks.filter(t => !t.completed)
+        const completedTasks = tasks.filter(t => t.completed)
+        const urgentTasks = tasks.filter(t => t.category === 'urgent' && !t.completed)
+        const activeHabits = habits.filter(h => !h.archived)
+        const readingBooks = books.filter(b => b.status === 'reading')
+        const activeCourses = learningCourses.filter(c => c.status === 'active')
+
+        context = `Tu es un assistant IA polyvalent et chaleureux. L'utilisateur t'a demandé des infos sur sa productivité/données personnelles. Voici ses données actuelles :
+
+📋 TÂCHES: ${tasks.length} total (${completedTasks.length} complétées, ${pendingTasks.length} en cours, ${urgentTasks.length} urgentes)
+${pendingTasks.length > 0 ? `En cours: ${pendingTasks.slice(0, 5).map(t => t.title).join(', ')}` : ''}
+
+🔥 HABITUDES: ${activeHabits.length} actives${activeHabits.length > 0 ? ` (${activeHabits.map(h => h.name).join(', ')})` : ''}
+📚 LECTURE: ${readingBooks.length} livre(s) en cours${readingBooks.length > 0 ? ` (${readingBooks.map(b => b.title).join(', ')})` : ''}
+🎓 COURS: ${activeCourses.length} actif(s)${activeCourses.length > 0 ? ` (${activeCourses.map(c => c.name).join(', ')})` : ''}
+⏱️ FOCUS: ${Math.floor(focusMinutes / 60)}h${focusMinutes % 60}min total
+
+Réponds de manière naturelle, chaleureuse et utile. N'hésite pas à féliciter ou encourager si c'est pertinent !`
+      } else {
+        // Minimal context - general conversation
+        context = `Tu es Gemini, un assistant IA polyvalent développé par Google. Tu peux discuter de tout, aider sur n'importe quel sujet, expliquer des concepts, donner des conseils, être créatif, etc.
+
+Sois naturel, chaleureux et serviable. Réponds comme un ami intelligent et bienveillant. N'hésite pas à poser des questions pour mieux comprendre les besoins de l'utilisateur.
+
+Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitudes, livres, cours...) mais uniquement si il te le demande explicitement.`
       }
-      setMessages(prev => [...prev, assistantMessage])
+
+      // Build conversation history
+      const conversationHistory = messages
+        .filter(m => m.id !== '1' && m.id !== assistantMessageId)
+        .map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content
+        }))
+
+      // Use streaming API with real-time updates
+      let accumulatedContent = ''
+      await generateGeminiStreamingResponse(
+        context,
+        userMessage.content,
+        conversationHistory,
+        (chunk) => {
+          // Accumulate chunks
+          accumulatedContent += chunk
+          
+          // Create message on first chunk (avoid empty bubble)
+          if (!messageCreated) {
+            setMessages(prev => [...prev, {
+              id: assistantMessageId,
+              role: 'assistant',
+              content: accumulatedContent,
+              timestamp: Date.now(),
+            }])
+            messageCreated = true
+          } else {
+            // Update existing message
+            setMessages(prev => prev.map(m => 
+              m.id === assistantMessageId 
+                ? { ...m, content: accumulatedContent }
+                : m
+            ))
+          }
+        }
+      )
+    } catch (error) {
+      console.error('Error sending message:', error)
+      setMessages(prev => prev.map(m => 
+        m.id === assistantMessageId 
+          ? { ...m, content: `❌ Une erreur est survenue. ${error instanceof Error ? error.message : ''}` }
+          : m
+      ))
+    } finally {
       setIsTyping(false)
-    }, 600 + Math.random() * 400)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -106,96 +207,112 @@ export function AIAssistant() {
   }
 
   return (
-    <div className="h-full w-full flex flex-col view-transition">
-      {/* Minimal Header */}
-      <header className="flex-shrink-0 px-6 py-5 border-b border-zinc-900">
-        <div className="max-w-2xl mx-auto flex items-center gap-4">
-          <button
-            onClick={() => setView('hub')}
-            className="p-2 -ml-2 text-zinc-600 hover:text-zinc-400 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-zinc-600" />
-            <h1 className="text-xl font-medium tracking-tight text-zinc-200">Assistant</h1>
+    <div className="min-h-screen w-full flex flex-col bg-zinc-950">
+      {/* Premium Header */}
+      <header className="flex-shrink-0 px-6 py-4 border-b border-zinc-900/50 backdrop-blur-sm bg-zinc-950/80 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setView('hub')}
+              className="p-2 rounded-xl text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/50 transition-all duration-200"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10">
+                <Sparkles className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-zinc-100">AI Assistant</h1>
+                <p className="text-xs text-zinc-500">Propulsé par Gemini 2.5 Flash ⚡</p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Messages - No bubbles, clean layout */}
+      {/* Messages Area */}
       <div className="flex-1 overflow-auto px-6 py-8">
-        <div className="max-w-2xl mx-auto space-y-8">
-          {messages.map((message, index) => (
-            <div
+        <div className="max-w-4xl mx-auto space-y-6">
+          {messages.map((message) => (
+            <MessageBubble
               key={message.id}
-              className="animate-fade-in"
-              style={{ animationDelay: `${index * 30}ms` }}
-            >
-              {message.role === 'assistant' ? (
-                <div className="flex gap-4">
-                  <span className="text-zinc-700 mt-0.5">◆</span>
-                  <p className="text-zinc-400 whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                </div>
-              ) : (
-                <div className="flex gap-4">
-                  <span className="text-zinc-600 mt-0.5">▸</span>
-                  <p className="text-zinc-200 whitespace-pre-wrap">{message.content}</p>
-                </div>
-              )}
-            </div>
+              role={message.role}
+              content={message.content}
+              timestamp={message.timestamp}
+              isLiked={message.isLiked}
+              onCopy={() => {}}
+              onLike={() => {
+                setMessages(prev => prev.map(m =>
+                  m.id === message.id ? { ...m, isLiked: !m.isLiked } : m
+                ))
+              }}
+              onRegenerate={() => {
+                // TODO: Implement regenerate
+              }}
+            />
           ))}
 
-          {isTyping && (
-            <div className="flex gap-4 animate-fade-in">
-              <span className="text-zinc-700 mt-0.5">◆</span>
-              <Loader2 className="w-4 h-4 text-zinc-600 animate-spin" />
-            </div>
-          )}
+          {isTyping && <TypingIndicator />}
 
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Suggestions */}
-      {messages.length < 3 && (
-        <div className="px-6 pb-4">
-          <div className="max-w-2xl mx-auto flex gap-2">
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => setInput(suggestion)}
-                className="px-3 py-1.5 text-xs text-zinc-600 hover:text-zinc-400 border border-zinc-800 hover:border-zinc-700 rounded-full transition-colors"
-              >
-                {suggestion}
-              </button>
-            ))}
+      {/* Suggestions (only show if less than 2 messages) */}
+      {messages.length <= 1 && (
+        <div className="flex-shrink-0 px-6 pb-6">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-sm font-medium text-zinc-400 mb-3">💡 Suggestions</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {suggestions.map((suggestion, index) => (
+                <SuggestionCard
+                  key={index}
+                  icon={suggestion.icon}
+                  title={suggestion.title}
+                  description={suggestion.description}
+                  onClick={() => setInput(suggestion.prompt)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Inline Input */}
-      <div className="flex-shrink-0 px-6 pb-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-4 py-4 border-t border-zinc-900">
-            <span className="text-zinc-700">▸</span>
-            <input
+      {/* Premium Input Area */}
+      <div className="flex-shrink-0 px-6 pb-6 border-t border-zinc-900/50">
+        <div className="max-w-4xl mx-auto pt-4">
+          <div className="relative">
+            {/* Textarea */}
+            <textarea
               ref={inputRef}
-              type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Posez une question..."
-              className="flex-1 bg-transparent text-zinc-200 placeholder:text-zinc-700 focus:outline-none"
+              placeholder="Posez votre question... (Shift+Enter pour nouvelle ligne)"
+              rows={1}
+              className="w-full px-4 py-3 pr-12 bg-zinc-900/50 border border-zinc-800 rounded-xl text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent resize-none transition-all duration-200"
+              style={{
+                minHeight: '48px',
+                maxHeight: '200px',
+              }}
             />
+
+            {/* Send Button */}
             <button
               onClick={handleSend}
               disabled={!input.trim() || isTyping}
-              className="text-zinc-700 hover:text-zinc-400 disabled:opacity-30 transition-colors"
+              className="absolute right-2 bottom-2 p-2 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg shadow-indigo-500/20"
             >
-              <Send className="w-4 h-4" />
+              <Sparkles className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Helper Text */}
+          <p className="text-xs text-zinc-600 mt-2">
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">Enter</kbd> pour envoyer · 
+            <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 ml-1">Shift+Enter</kbd> pour nouvelle ligne
+          </p>
         </div>
       </div>
     </div>

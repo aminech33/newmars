@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Search, Edit3, Plus, Save, Layout, RotateCcw, Database } from 'lucide-react'
+import { Edit3, Plus, Save, Layout, RotateCcw, Database } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { WidgetGrid } from './WidgetGrid'
 import { WidgetPicker } from './WidgetPicker'
 import { ThemePicker } from './ThemePicker'
-import { WidgetFAB } from './widgets/WidgetFAB'
 import { DataManager } from './DataManager'
+import { AppBar } from './AppBar'
 
 export function HubV2() {
-  const { isEditMode, setEditMode, saveLayout, widgets, resetWidgets, setCommandPaletteOpen } = useStore()
+  const { isEditMode, setEditMode, saveLayout, widgets, resetWidgets } = useStore()
   const [mounted, setMounted] = useState(false)
   const [showWidgetPicker, setShowWidgetPicker] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
@@ -33,6 +33,11 @@ export function HubV2() {
       <div 
         className={`w-full max-w-[1800px] mx-auto px-6 lg:px-8 py-6 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
+
+        {/* App Bar - Dock d'icônes en haut */}
+        <div className="mb-8">
+          <AppBar />
+        </div>
 
         {/* Edit Mode Controls */}
         <div className="flex items-center justify-between mb-6">
@@ -133,9 +138,6 @@ export function HubV2() {
 
       {/* Data Manager Modal */}
       <DataManager isOpen={showDataManager} onClose={() => setShowDataManager(false)} />
-
-      {/* Mobile FAB */}
-      <WidgetFAB onAddWidget={() => setShowWidgetPicker(true)} />
 
       {/* Save Layout Dialog */}
       {showSaveDialog && (

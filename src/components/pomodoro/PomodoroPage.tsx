@@ -19,7 +19,8 @@ import {
   Timer,
   Award,
   Flame,
-  Activity
+  Activity,
+  BookOpen
 } from 'lucide-react'
 import { 
   formatTime, 
@@ -51,8 +52,10 @@ export function PomodoroPage() {
   const {
     tasks,
     projects,
+    books,
     pomodoroSessions,
     addPomodoroSession,
+    updateBook,
     addToast,
     setView
   } = useStore()
@@ -72,12 +75,14 @@ export function PomodoroPage() {
     currentSessionStartedAt: undefined
   })
 
-  // Task & Project selection
+  // Task & Project & Book selection
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>()
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>()
+  const [selectedBookId, setSelectedBookId] = useState<string | undefined>()
   const [customDuration, setCustomDuration] = useState<number>(25)
   const [showTaskSelector, setShowTaskSelector] = useState(false)
   const [showProjectSelector, setShowProjectSelector] = useState(false)
+  const [showBookSelector, setShowBookSelector] = useState(false)
 
   // History view
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
@@ -86,10 +91,12 @@ export function PomodoroPage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const notificationShownRef = useRef(false)
 
-  // Selected task & project
+  // Selected task & project & book
   const selectedTask = tasks.find(t => t.id === selectedTaskId)
   const selectedProject = projects.find(p => p.id === selectedProjectId) || 
                           (selectedTask?.projectId ? projects.find(p => p.id === selectedTask.projectId) : undefined)
+  const selectedBook = books.find(b => b.id === selectedBookId)
+  const readingBooks = books.filter(b => b.status === 'reading')
 
   // Stats calculations
   const stats = useMemo(() => calculatePomodoroStats(pomodoroSessions), [pomodoroSessions])
@@ -150,10 +157,22 @@ export function PomodoroPage() {
         taskTitle: selectedTask?.title,
         projectId: timerState.currentProjectId || selectedTask?.projectId,
         projectName: selectedProject?.name,
+        bookId: selectedBookId,
+        bookTitle: selectedBook?.title,
         duration,
         type: 'focus',
         startedAt: timerState.currentSessionStartedAt
       })
+      
+      // Si lié à un livre, mettre à jour le temps de lecture
+      if (selectedBookId && selectedBook) {
+        updateBook(selectedBookId, {
+          totalReadingTime: (selectedBook.totalReadingTime || 0) + duration,
+          sessionsCount: (selectedBook.sessionsCount || 0) + 1,
+          updatedAt: Date.now()
+        })
+        addToast(`📚 ${duration}min ajoutées à "${selectedBook.title}"`, 'success')
+      }
       
       setTimerState(prev => ({ 
         ...prev, 
@@ -425,6 +444,17 @@ export function PomodoroPage() {
                       </div>
                     )}
 
+                    {selectedBook && (
+                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                        <BookOpen className="w-5 h-5 text-amber-400" />
+                        <div className="flex-1">
+                          <div className="text-sm text-zinc-400">Livre en lecture</div>
+                          <div className="font-medium">{selectedBook.title}</div>
+                          <div className="text-xs text-zinc-600">{selectedBook.author}</div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
                       <Award className="w-5 h-5 text-yellow-400" />
                       <div className="flex-1">
@@ -522,6 +552,24 @@ export function PomodoroPage() {
                         <option value="">Aucun projet</option>
                         {projects.map(project => (
                           <option key={project.id} value={project.id}>{project.icon} {project.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-zinc-500 mb-2 block flex items-center gap-2">
+                        <BookOpen className="w-3 h-3 text-amber-400" />
+                        Livre (lecture)
+                      </label>
+                      <select
+                        value={selectedBookId || ''}
+                        onChange={(e) => setSelectedBookId(e.target.value || undefined)}
+                        disabled={timerState.status !== 'idle'}
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
+                      >
+                        <option value="">Aucun livre</option>
+                        {readingBooks.map(book => (
+                          <option key={book.id} value={book.id}>📖 {book.title}</option>
                         ))}
                       </select>
                     </div>

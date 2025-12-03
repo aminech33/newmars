@@ -104,7 +104,7 @@ export const CourseList = memo(function CourseList({
 
   return (
     <aside 
-      className="w-72 lg:w-80 bg-zinc-900/30 border-r border-zinc-800/50 flex flex-col h-full"
+      className="w-64 lg:w-72 xl:w-80 2xl:w-96 bg-zinc-900/30 border-r border-zinc-800/50 flex flex-col h-full transition-all duration-300"
       role="navigation"
       aria-label="Liste des cours"
     >

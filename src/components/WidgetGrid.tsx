@@ -164,12 +164,11 @@ export function WidgetGrid() {
     }
   }, [isEditMode, validWidgets, updateWidget, handleRemoveWidget])
 
-  const getGridStyle = (widget: Widget) => {
-    const dimensions = widget.dimensions || { width: 1, height: 1 }
-    const { width, height } = dimensions
+  // Taille unique : toutes les cellules sont identiques (1x1)
+  const getGridStyle = () => {
     return {
-      gridColumn: `span ${width || 1}`,
-      gridRow: `span ${height || 1}`,
+      gridColumn: 'span 1',
+      gridRow: 'span 1',
     }
   }
 
@@ -179,18 +178,21 @@ export function WidgetGrid() {
     return a.position.x - b.position.x
   })
 
+  // Limiter à 8 widgets maximum (2 lignes x 4 colonnes max)
+  const displayedWidgets = sortedWidgets.slice(0, 8)
+
   return (
     <>
       <div 
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
-        style={{ gridAutoRows: '220px' }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        style={{ gridAutoRows: '350px', gridTemplateRows: 'repeat(2, 350px)' }}
         role="grid"
         aria-label="Grille de widgets"
       >
-        {sortedWidgets.map((widget, index) => (
+        {displayedWidgets.map((widget, index) => (
           <div
             key={widget.id}
-            style={getGridStyle(widget)}
+            style={getGridStyle()}
             draggable={isEditMode}
             onDragStart={(e) => handleDragStart(e, widget.id)}
             onDragOver={handleDragOver}

@@ -1,8 +1,9 @@
-import { memo, useRef, useEffect } from 'react'
+import { memo, useRef, useEffect, useState } from 'react'
 import { Course } from '../../types/learning'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
-import { Sparkles } from 'lucide-react'
+import { CodeEditor } from './CodeEditor'
+import { Sparkles, Code, X } from 'lucide-react'
 
 interface CourseChatProps {
   course: Course
@@ -27,6 +28,7 @@ export const CourseChat = memo(function CourseChat({
 }: CourseChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [showCodeEditor, setShowCodeEditor] = useState(false)
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -120,6 +122,48 @@ export const CourseChat = memo(function CourseChat({
         disabled={false}
         placeholder={`Demande quelque chose sur ${course.name}...`}
       />
+
+      {/* Floating Code Editor */}
+      {showCodeEditor && (
+        <div className="fixed bottom-6 right-6 w-[600px] max-w-[90vw] z-50 animate-slide-up">
+          <div className="relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowCodeEditor(false)}
+              className="absolute -top-3 -right-3 p-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 shadow-lg z-10 transition-all duration-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Editor */}
+            <CodeEditor
+              language={course.name.toLowerCase().includes('python') ? 'python' : 
+                       course.name.toLowerCase().includes('javascript') ? 'javascript' :
+                       course.name.toLowerCase().includes('typescript') ? 'typescript' :
+                       course.name.toLowerCase().includes('java') ? 'java' :
+                       course.name.toLowerCase().includes('cpp') || course.name.toLowerCase().includes('c++') ? 'cpp' :
+                       course.name.toLowerCase().includes('rust') ? 'rust' :
+                       'python'}
+              defaultCode={`# ${course.name}\n# Écris ton code ici\n\n`}
+              onAskHelp={(code) => onSendMessage(`Aide-moi avec ce code:\n\`\`\`\n${code}\n\`\`\``)}
+              onRun={(code) => onSendMessage(`Exécute et explique ce code:\n\`\`\`\n${code}\n\`\`\``)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Floating Code Editor Toggle Button */}
+      <button
+        onClick={() => setShowCodeEditor(!showCodeEditor)}
+        className={`fixed bottom-6 right-6 p-4 rounded-full shadow-2xl transition-all duration-300 ${
+          showCodeEditor 
+            ? 'bg-zinc-800 text-zinc-400' 
+            : 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:scale-110'
+        } z-40`}
+        title={showCodeEditor ? 'Fermer l\'éditeur' : 'Ouvrir l\'éditeur de code'}
+      >
+        <Code className="w-5 h-5" />
+      </button>
     </div>
   )
 })

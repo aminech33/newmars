@@ -40,6 +40,9 @@ export interface Course {
   level: CourseLevel
   status: CourseStatus
   
+  // Lien projet (obligatoire)
+  linkedProjectId: string      // ID du projet lié
+  
   // Chat
   messages: Message[]
   systemPrompt?: string        // Contexte personnalisé pour l'IA
@@ -198,6 +201,7 @@ export interface CreateCourseData {
   icon: string
   color: string
   level: CourseLevel
+  linkedProjectId: string      // Obligatoire
   systemPrompt?: string
   topics?: string[]
 }

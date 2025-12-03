@@ -1,7 +1,10 @@
-export { Bookshelf } from './Bookshelf'
+export { Bookshelf } from '../Bookshelf'
+export { BookCover } from '../BookCover'
 export { StatsCards } from './StatsCards'
 export { ReadingSessionBar } from './ReadingSessionBar'
 export { BookDetailModal } from './BookDetailModal'
 export { AddBookModal } from './AddBookModal'
 export { GoalModal } from './GoalModal'
+export { ReadingChart } from './ReadingChart'
+export { LibraryStatsPage } from './LibraryStatsPage'
 

@@ -24,6 +24,29 @@ export interface MealEntry {
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
+export interface ExerciseEntry {
+  id: string
+  date: string // YYYY-MM-DD
+  time: string // HH:mm
+  type: 'cardio' | 'strength' | 'flexibility' | 'sports' | 'other'
+  name: string
+  duration: number // minutes
+  calories?: number // calories brûlées
+  intensity?: 'low' | 'moderate' | 'high'
+  note?: string
+  createdAt: number
+}
+
+export type ExerciseType = 'cardio' | 'strength' | 'flexibility' | 'sports' | 'other'
+
+export interface HydrationEntry {
+  id: string
+  date: string // YYYY-MM-DD
+  time: string // HH:mm
+  amount: number // ml
+  createdAt: number
+}
+
 export interface HealthGoal {
   id: string
   type: 'weight' | 'calories' | 'protein' | 'exercise'

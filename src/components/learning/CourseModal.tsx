@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Sparkles } from 'lucide-react'
+import { X, Sparkles, FolderKanban } from 'lucide-react'
 import { 
   Course, 
   CreateCourseData, 
@@ -8,6 +8,7 @@ import {
   COURSE_LEVELS,
   CourseColor
 } from '../../types/learning'
+import { useStore } from '../../store/useStore'
 
 interface CourseModalProps {
   isOpen: boolean
@@ -28,11 +29,14 @@ const COLOR_CLASSES: Record<CourseColor, { bg: string; border: string; text: str
 }
 
 export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalProps) {
+  const projects = useStore(state => state.projects)
+  
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [icon, setIcon] = useState('📚')
   const [color, setColor] = useState<CourseColor>('indigo')
   const [level, setLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner')
+  const [linkedProjectId, setLinkedProjectId] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [error, setError] = useState('')
@@ -51,6 +55,7 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
         setIcon(course.icon)
         setColor(course.color as CourseColor)
         setLevel(course.level)
+        setLinkedProjectId(course.linkedProjectId || '')
         setSystemPrompt(course.systemPrompt || '')
       } else {
         setName('')
@@ -58,6 +63,7 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
         setIcon('📚')
         setColor('indigo')
         setLevel('beginner')
+        setLinkedProjectId('')
         setSystemPrompt('')
       }
       setError('')
@@ -110,12 +116,18 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
       return
     }
 
+    if (!linkedProjectId) {
+      setError('Veuillez sélectionner un projet')
+      return
+    }
+
     onSubmit({
       name: name.trim(),
       description: description.trim() || undefined,
       icon,
       color,
       level,
+      linkedProjectId,
       systemPrompt: systemPrompt.trim() || undefined
     })
 
@@ -196,6 +208,32 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
               rows={2}
               className="w-full bg-zinc-800/50 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none"
             />
+          </div>
+
+          {/* Projet lié */}
+          <div>
+            <label htmlFor="linked-project" className="text-sm text-zinc-400 mb-2 block flex items-center gap-2">
+              <FolderKanban className="w-4 h-4" />
+              Projet lié <span className="text-rose-400">*</span>
+            </label>
+            <select
+              id="linked-project"
+              value={linkedProjectId}
+              onChange={(e) => setLinkedProjectId(e.target.value)}
+              required
+              className="w-full bg-zinc-800/50 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            >
+              <option value="">-- Sélectionner un projet --</option>
+              {projects.map(project => (
+                <option key={project.id} value={project.id}>
+                  {project.icon} {project.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-zinc-600 mt-2 flex items-start gap-2">
+              <span>💡</span>
+              <span>Les tâches et concepts de ce projet seront accessibles pendant le chat via un widget flottant.</span>
+            </p>
           </div>
 
           {/* Icon & Color */}

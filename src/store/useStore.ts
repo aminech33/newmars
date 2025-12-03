@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Widget, WidgetLayout, Habit, QuickNote, QuickLink } from '../types/widgets'
 import { Event } from '../types/calendar'
-import { WeightEntry, MealEntry, HealthGoal, UserProfile } from '../types/health'
+import { WeightEntry, MealEntry, HealthGoal, UserProfile, ExerciseEntry, HydrationEntry } from '../types/health'
 import { JournalEntry } from '../types/journal'
 import { TaskRelation } from '../types/taskRelation'
 import { Course, Message, Flashcard, Note as LearningNote } from '../types/learning'
@@ -44,6 +44,7 @@ export interface Project {
   color: string
   icon: string
   createdAt: number
+  linkedCourseId?: string // Lien vers un cours d'apprentissage
 }
 
 // Couleurs disponibles pour les projets
@@ -106,7 +107,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'learning' | 'library' | 'pomodoro'
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'learning' | 'library' | 'pomodoro' | 'habits'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
@@ -229,6 +230,13 @@ interface AppState {
   addMealEntry: (entry: Omit<MealEntry, 'id' | 'createdAt'>) => void
   updateMealEntry: (id: string, updates: Partial<MealEntry>) => void
   deleteMealEntry: (id: string) => void
+  exerciseEntries: ExerciseEntry[]
+  addExerciseEntry: (entry: Omit<ExerciseEntry, 'id' | 'createdAt'>) => void
+  updateExerciseEntry: (id: string, updates: Partial<ExerciseEntry>) => void
+  deleteExerciseEntry: (id: string) => void
+  hydrationEntries: HydrationEntry[]
+  addHydrationEntry: (entry: Omit<HydrationEntry, 'id' | 'createdAt'>) => void
+  deleteHydrationEntry: (id: string) => void
   healthGoals: HealthGoal[]
   addHealthGoal: (goal: Omit<HealthGoal, 'id'>) => void
   updateHealthGoal: (id: string, updates: Partial<HealthGoal>) => void
@@ -306,55 +314,63 @@ interface AppState {
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
 
+// Widgets par défaut - Taille unique pour tous
 const defaultWidgets: Widget[] = [
   {
     id: '1',
     type: 'tasks',
-    size: 'large',
-    dimensions: { width: 2, height: 2 },
+    size: 'notification',
+    dimensions: { width: 1, height: 1 },
     position: { x: 0, y: 0 }
   },
   {
     id: '2',
     type: 'calendar',
-    size: 'medium',
-    dimensions: { width: 2, height: 1 },
-    position: { x: 2, y: 0 }
+    size: 'notification',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 1, y: 0 }
   },
   {
     id: '3',
-    type: 'habits',
-    size: 'medium',
-    dimensions: { width: 1, height: 2 },
-    position: { x: 0, y: 2 }
+    type: 'journal',
+    size: 'notification',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 2, y: 0 }
   },
   {
     id: '4',
     type: 'pomodoro',
-    size: 'small',
+    size: 'notification',
     dimensions: { width: 1, height: 1 },
-    position: { x: 1, y: 2 }
+    position: { x: 3, y: 0 }
   },
   {
     id: '5',
-    type: 'notes',
-    size: 'medium',
-    dimensions: { width: 2, height: 1 },
-    position: { x: 2, y: 1 }
+    type: 'habits',
+    size: 'notification',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 4, y: 0 }
+  },
+  {
+    id: '6',
+    type: 'health',
+    size: 'notification',
+    dimensions: { width: 1, height: 1 },
+    position: { x: 5, y: 0 }
   },
   {
     id: '7',
-    type: 'health',
-    size: 'small',
+    type: 'learning',
+    size: 'notification',
     dimensions: { width: 1, height: 1 },
-    position: { x: 1, y: 3 }
+    position: { x: 6, y: 0 }
   },
   {
     id: '8',
-    type: 'journal',
-    size: 'small',
+    type: 'library',
+    size: 'notification',
     dimensions: { width: 1, height: 1 },
-    position: { x: 2, y: 2 }
+    position: { x: 7, y: 0 }
   }
 ]
 
@@ -903,6 +919,34 @@ export const useStore = create<AppState>()(
         get().addToast('Repas supprimé', 'info')
       },
       
+      exerciseEntries: [],
+      addExerciseEntry: (entry) => {
+        const newEntry = { ...entry, id: generateId(), createdAt: Date.now() }
+        set((state) => ({ exerciseEntries: [...state.exerciseEntries, newEntry] }))
+        get().addToast('Exercice enregistré', 'success')
+      },
+      updateExerciseEntry: (id, updates) => {
+        set((state) => ({
+          exerciseEntries: state.exerciseEntries.map((e) => e.id === id ? { ...e, ...updates } : e)
+        }))
+        get().addToast('Exercice mis à jour', 'success')
+      },
+      deleteExerciseEntry: (id) => {
+        set((state) => ({ exerciseEntries: state.exerciseEntries.filter((e) => e.id !== id) }))
+        get().addToast('Exercice supprimé', 'info')
+      },
+      
+      hydrationEntries: [],
+      addHydrationEntry: (entry) => {
+        const newEntry = { ...entry, id: generateId(), createdAt: Date.now() }
+        set((state) => ({ hydrationEntries: [...state.hydrationEntries, newEntry] }))
+        get().addToast('Hydratation enregistrée', 'success')
+      },
+      deleteHydrationEntry: (id) => {
+        set((state) => ({ hydrationEntries: state.hydrationEntries.filter((e) => e.id !== id) }))
+        get().addToast('Entrée supprimée', 'info')
+      },
+      
       healthGoals: [
         {
           id: '1',
@@ -1242,6 +1286,8 @@ export const useStore = create<AppState>()(
         userProfile: state.userProfile,
         weightEntries: state.weightEntries,
         mealEntries: state.mealEntries,
+        exerciseEntries: state.exerciseEntries,
+        hydrationEntries: state.hydrationEntries,
         healthGoals: state.healthGoals,
         journalEntries: state.journalEntries,
         taskRelations: state.taskRelations,

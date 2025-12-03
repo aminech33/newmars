@@ -1,99 +1,133 @@
-import { memo, useEffect, useCallback, useMemo } from 'react'
-import { Play, Pause, RotateCcw } from 'lucide-react'
+import { useState, useEffect, useRef, memo } from 'react'
+import { Play, Pause, RotateCcw, Timer } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
+import { formatTime } from '../../utils/pomodoroUtils'
 
 interface PomodoroWidgetProps {
   widget: Widget
 }
 
 export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroWidgetProps) {
-  const { id, size = 'small' } = widget
-  const { 
-    tasks, 
-    setFocusMode, 
-    pomodoroTimeLeft, 
-    isPomodoroRunning, 
-    setPomodoroTime,
-    togglePomodoroRunning,
-    resetPomodoro 
-  } = useStore()
+  const { id } = widget
+  const { setView, addPomodoroSession, tasks } = useStore()
+  
+  const [isRunning, setIsRunning] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(25 * 60)
+  const [totalTime] = useState(25 * 60)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Timer global synchronisé
+  const incompleteTasks = tasks.filter(t => !t.completed)
+  const nextTask = incompleteTasks[0]
+
   useEffect(() => {
-    if (!isPomodoroRunning) return
-    const interval = setInterval(() => {
-      if (pomodoroTimeLeft <= 1) {
-        resetPomodoro()
-      } else {
-        setPomodoroTime(pomodoroTimeLeft - 1)
+    if (isRunning) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            handleComplete()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => {
+        if (intervalRef.current) clearInterval(intervalRef.current)
       }
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [isPomodoroRunning, pomodoroTimeLeft, setPomodoroTime, resetPomodoro])
-
-  const formatTime = useCallback((seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }, [])
-
-  const nextTask = useMemo(() => tasks.find(t => !t.completed), [tasks])
-
-  const handleFullFocus = useCallback(() => {
-    if (nextTask) {
-      setFocusMode(true, nextTask.id)
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [nextTask, setFocusMode])
+  }, [isRunning])
 
-  if (size === 'small') {
-    return (
-      <WidgetContainer id={id} title="Pomodoro" currentSize={size}>
-        <button
-          onClick={togglePomodoroRunning}
-          className="flex flex-col items-center justify-center h-full"
-          aria-label={isPomodoroRunning ? 'Pause timer' : 'Start timer'}
-        >
-          <p className="text-2xl font-extralight text-zinc-200 tabular-nums mb-1">{formatTime(pomodoroTimeLeft)}</p>
-          {isPomodoroRunning ? (
-            <Pause className="w-4 h-4 text-zinc-600" />
-          ) : (
-            <Play className="w-4 h-4 text-zinc-600" />
-          )}
-        </button>
-      </WidgetContainer>
-    )
+  const handleComplete = () => {
+    setIsRunning(false)
+    const duration = Math.round(totalTime / 60)
+    
+    addPomodoroSession({
+      taskId: nextTask?.id,
+      taskTitle: nextTask?.title,
+      duration,
+      type: 'focus',
+      startedAt: Date.now() - totalTime * 1000
+    })
+
+    setTimeLeft(25 * 60)
   }
 
+  const toggleTimer = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsRunning(!isRunning)
+  }
+
+  const resetTimer = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsRunning(false)
+    setTimeLeft(25 * 60)
+    if (intervalRef.current) clearInterval(intervalRef.current)
+  }
+
+  const progress = ((totalTime - timeLeft) / totalTime) * 100
+
   return (
-    <WidgetContainer id={id} title="Timer Focus" currentSize={size}>
-      <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-5xl font-extralight text-zinc-200 tabular-nums">{formatTime(pomodoroTimeLeft)}</p>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={togglePomodoroRunning}
-            className="w-10 h-10 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 rounded-full flex items-center justify-center transition-all"
-            aria-label={isPomodoroRunning ? 'Pause timer' : 'Start timer'}
-          >
-            {isPomodoroRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-          </button>
-          <button
-            onClick={resetPomodoro}
-            className="w-10 h-10 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-full flex items-center justify-center transition-all"
-            aria-label="Reset timer"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          {size === 'large' && (
-            <button
-              onClick={handleFullFocus}
-              className="px-3 py-1.5 text-xs text-zinc-600 hover:text-zinc-400 border border-zinc-800 rounded-full transition-colors"
-            >
-              Mode Focus
-            </button>
-          )}
+    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('pomodoro')}>
+      <div className="h-full flex flex-col p-6 gap-4">
+        {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <Timer className="w-12 h-12 text-rose-400" strokeWidth={1.5} />
+              </div>
+          <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50' : 'bg-zinc-600'}`} />
         </div>
+
+        {/* Timer Display */}
+        <div className="text-center flex-1 flex flex-col justify-center">
+          <div className="text-7xl font-bold text-white tabular-nums leading-none mb-4">
+            {formatTime(timeLeft)}
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-6">
+            <div 
+              className="h-full bg-gradient-to-r from-rose-500 to-orange-500 transition-all duration-1000"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={toggleTimer}
+              className="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 
+                         flex items-center justify-center transition-colors"
+            >
+              {isRunning ? (
+                <Pause className="w-6 h-6 text-white" />
+              ) : (
+                <Play className="w-6 h-6 text-white ml-1" />
+              )}
+            </button>
+            
+            <button
+              onClick={resetTimer}
+              className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 
+                         flex items-center justify-center transition-colors"
+            >
+              <RotateCcw className="w-4 h-4 text-zinc-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Task info */}
+        {nextTask && (
+          <div className="text-center pt-2 border-t border-white/10">
+            <div className="text-[10px] text-zinc-600 uppercase mb-1">Focus sur</div>
+            <div className="text-xs text-zinc-400 truncate">
+              {nextTask.title}
+            </div>
+          </div>
+        )}
       </div>
     </WidgetContainer>
   )

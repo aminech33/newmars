@@ -6,9 +6,11 @@ import { CourseHeader } from './CourseHeader'
 import { CourseModal } from './CourseModal'
 import { EmptyState } from './EmptyState'
 import { LearningFAB } from './LearningFAB'
+import { ProjectWidget } from './ProjectWidget'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Toast, ToastType } from '../ui/Toast'
 import { CreateCourseData, Course } from '../../types/learning'
+import { generateGeminiStreamingResponse } from '../../utils/geminiAI'
 
 // Hook local pour les toasts (sans Provider)
 function useLocalToast() {
@@ -25,54 +27,7 @@ function useLocalToast() {
   return { toast, showToast, hideToast }
 }
 
-// Simulated AI Response (à remplacer par une vraie API)
-const generateAIResponse = async (courseContext: string, userMessage: string): Promise<string> => {
-  // Simulation d'un délai réseau
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000))
-  
-  // Réponses simulées basées sur le contexte
-  const responses = [
-    `Excellente question sur ${courseContext} ! Voici ce que je peux te dire :
-
-**Concept clé** : ${userMessage.split(' ').slice(0, 3).join(' ')}...
-
-Pour bien comprendre cela, il faut d'abord savoir que :
-1. Les fondamentaux sont essentiels
-2. La pratique régulière est la clé
-3. N'hésite pas à expérimenter
-
-Veux-tu que j'approfondisse un point en particulier ?`,
-    
-    `Je vois que tu t'intéresses à "${userMessage.slice(0, 50)}..."
-
-Voici une explication structurée :
-
-\`\`\`javascript
-// Exemple de code
-const example = "Hello World";
-console.log(example);
-\`\`\`
-
-**Points importants :**
-- Premier point crucial
-- Deuxième élément à retenir
-- Troisième aspect pratique
-
-Est-ce que c'est plus clair maintenant ?`,
-
-    `C'est un sujet fascinant ! Laisse-moi t'expliquer...
-
-Dans le contexte de ${courseContext}, on peut distinguer plusieurs aspects :
-
-1. **Théorie** : La base conceptuelle
-2. **Pratique** : L'application concrète
-3. **Maîtrise** : L'expertise avancée
-
-Tu es à quel niveau actuellement ? Je peux adapter mes explications.`
-  ]
-  
-  return responses[Math.floor(Math.random() * responses.length)]
-}
+// REMOVED: Simulated AI Response - Now using real Gemini API
 
 export function LearningPage() {
   const {
@@ -170,13 +125,51 @@ export function LearningPage() {
     // Add user message
     await sendMessage(activeCourse.id, content)
     
-    // Generate AI response
+    // Generate AI response with streaming
     setIsTyping(true)
+    
     try {
-      const response = await generateAIResponse(activeCourse.name, content)
-      addAIResponse(activeCourse.id, response)
+      // Build conversation history
+      const conversationHistory = activeCourse.messages.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content
+      }))
+
+      // Build optimized context - prioritize user's system prompt
+      let courseContext = ''
+      
+      if (activeCourse.systemPrompt && activeCourse.systemPrompt.trim()) {
+        // User defined their own instructions - use them as primary context
+        courseContext = activeCourse.systemPrompt
+      } else {
+        // Fallback to default context
+        const levelText = activeCourse.level === 'beginner' ? 'Débutant' : activeCourse.level === 'intermediate' ? 'Intermédiaire' : 'Avancé'
+        courseContext = `Tu es un tuteur IA expert en ${activeCourse.name}. 
+Niveau de l'élève: ${levelText}.
+${activeCourse.description ? `Contexte: ${activeCourse.description}` : ''}
+${activeCourse.topics && activeCourse.topics.length > 0 ? `Sujets: ${activeCourse.topics.map(t => t.name).join(', ')}` : ''}
+
+Réponds de manière pédagogique et claire. Adapte-toi au niveau de l'élève.`
+      }
+
+      let fullResponse = ''
+      
+      // Use streaming to accumulate response
+      await generateGeminiStreamingResponse(
+        courseContext,
+        content,
+        conversationHistory,
+        (chunk) => {
+          fullResponse += chunk
+        }
+      )
+      
+      // Add the complete AI response
+      addAIResponse(activeCourse.id, fullResponse)
     } catch (error) {
-      showToast('Erreur lors de la génération de la réponse', 'error')
+      console.error('Gemini API Error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+      showToast(errorMessage, 'error')
     } finally {
       setIsTyping(false)
     }
@@ -242,7 +235,7 @@ export function LearningPage() {
   }, [showToast])
 
   return (
-    <div className="h-full flex bg-zinc-950">
+    <div className="h-screen flex bg-zinc-950">
       {/* Sidebar - Course List */}
       <CourseList
         courses={filteredCourses}
@@ -263,7 +256,7 @@ export function LearningPage() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
+      <main className="flex-1 flex flex-col h-full">
         {activeCourse ? (
           <>
             {/* Course Header */}
@@ -288,6 +281,9 @@ export function LearningPage() {
               onCreateFlashcard={handleCreateFlashcard}
               onDeleteMessage={handleDeleteMessage}
             />
+
+            {/* Widget Projet (flottant en bas-droite) */}
+            <ProjectWidget course={activeCourse} />
           </>
         ) : (
           // Empty State or Course Selection

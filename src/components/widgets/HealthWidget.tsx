@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Heart, TrendingDown, TrendingUp, Minus, Flame, Activity, ArrowRight } from 'lucide-react'
+import { Heart, TrendingDown, TrendingUp, Minus, Activity } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { calculateBMI, getBMICategory, analyzeWeightTrend } from '../../utils/healthIntelligence'
@@ -10,7 +10,7 @@ interface HealthWidgetProps {
 }
 
 export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetProps) {
-  const { id, size = 'small' } = widget
+  const { id } = widget
   const { weightEntries, mealEntries, healthGoals, userProfile, setView } = useStore()
 
   // Calculer les stats
@@ -45,247 +45,96 @@ export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetP
   const bmi = latestWeight > 0 ? calculateBMI(latestWeight, userProfile.height) : 0
   const bmiCategory = getBMICategory(bmi)
 
-  // SMALL - One main metric (Weight)
-  if (size === 'small') {
-    return (
-      <WidgetContainer id={id} title="" currentSize={size} onClick={() => setView('health')}>
-        <div className="h-full flex flex-col justify-between p-4">
-          {/* Main metric - Weight */}
-          <div>
-            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">
-              Santé
-            </div>
-            {latestWeight > 0 ? (
-              <>
-                <div className="text-5xl font-bold text-white tabular-nums leading-none mb-2">
-                  {latestWeight}
-                  <span className="text-2xl text-zinc-500">kg</span>
-                </div>
-                <div className={`flex items-center gap-1.5 ${trendInfo.color}`}>
-                  <TrendIcon className="w-3.5 h-3.5" />
-                  <span className="text-xs font-medium">{trendInfo.text}</span>
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-zinc-600">Aucune donnée</div>
-            )}
-          </div>
-
-          {/* Secondary metric - Calories badge */}
-          <div className="p-2.5 bg-white/5 rounded-lg border border-white/10">
+  return (
+    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('health')}>
+      <div className="h-full flex flex-col p-6 gap-4">
+        {/* Header */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-xs text-zinc-400 font-medium">Calories</span>
+              <div>
+                <Heart className="w-12 h-12 text-rose-400" strokeWidth={1.5} />
               </div>
-              <span className="text-xs text-white font-semibold tabular-nums">{todayCalories}</span>
-            </div>
-          </div>
-        </div>
-      </WidgetContainer>
-    )
-  }
-
-  // MEDIUM - Weight + Calories with progress
-  if (size === 'medium') {
-    return (
-      <WidgetContainer 
-        id={id} 
-        title="Santé"
-        currentSize={size}
-        onClick={() => setView('health')}
-        actions={
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setView('health')
-            }}
-            className="text-zinc-400 hover:text-white transition-colors"
-          >
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        }
-      >
-        <div className="h-full flex flex-col gap-3">
-          {/* Weight Card */}
           {latestWeight > 0 && (
-            <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className="text-xs text-zinc-500 mb-0.5">Poids actuel</div>
-                  <div className="text-3xl font-bold text-white tabular-nums">
-                    {latestWeight}
-                    <span className="text-lg text-zinc-500">kg</span>
-                  </div>
-                </div>
-                <div className={`flex items-center gap-1 ${trendInfo.color}`}>
-                  <TrendIcon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{trendInfo.text}</span>
-                </div>
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${
+              trend.trend === 'decreasing' 
+                ? 'bg-emerald-500/20' 
+                : trend.trend === 'increasing'
+                ? 'bg-rose-500/20'
+                : 'bg-zinc-700/50'
+            }`}>
+              <TrendIcon className={`w-4 h-4 ${trendInfo.color}`} />
+              <span className={`text-xs font-medium ${trendInfo.color}`}>{trendInfo.text}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Big Weight */}
+        <div className="text-center">
+          {latestWeight > 0 ? (
+            <>
+              <div className="text-6xl font-bold text-white tabular-nums leading-none">
+                {latestWeight}
+                <span className="text-2xl text-zinc-500">kg</span>
               </div>
-              
-              {/* Progress to goal */}
-              {targetWeight > 0 && (
-                <div>
-                  <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
-                    <span>Objectif</span>
-                    <span className="tabular-nums">{targetWeight}kg</span>
-                  </div>
-                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-pink-400 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min((latestWeight / targetWeight) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
+              <div className="text-sm text-zinc-500 uppercase tracking-wide mt-2">
+                poids actuel
+              </div>
+            </>
+          ) : (
+            <div className="text-sm text-zinc-500 py-8">
+              Aucune donnée
+            </div>
+          )}
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="flex-1 space-y-2">
+          {/* BMI */}
+          {bmi > 0 && (
+            <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs text-zinc-400">IMC</span>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-bold text-white">{bmi.toFixed(1)}</div>
+                <div className="text-[10px] text-zinc-500">{bmiCategory.label}</div>
+              </div>
             </div>
           )}
 
-          {/* Calories Card */}
-          <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Flame className="w-4 h-4 text-amber-400" />
-              <span className="text-xs text-zinc-500">Calories aujourd'hui</span>
-            </div>
-            <div className="text-2xl font-bold text-white tabular-nums mb-2">
-              {todayCalories} 
-              <span className="text-sm font-normal text-zinc-500">/{targetCalories}</span>
-            </div>
-            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
-                  todayCalories > targetCalories ? 'bg-rose-400' : 'bg-emerald-400'
-                }`}
-                style={{ width: `${caloriesPercent}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-auto grid grid-cols-2 gap-2">
-            <div className="p-2 bg-white/5 rounded-lg border border-white/10 text-center">
-              <div className="text-xs text-zinc-600 uppercase tracking-wide">IMC</div>
-              <div className="text-lg font-bold text-white tabular-nums">{bmi > 0 ? bmi.toFixed(1) : '--'}</div>
-            </div>
-            <div className="p-2 bg-white/5 rounded-lg border border-white/10 text-center">
-              <div className="text-xs text-zinc-600 uppercase tracking-wide">Repas</div>
-              <div className="text-lg font-bold text-white tabular-nums">{todayMeals.length}</div>
-            </div>
-          </div>
-        </div>
-      </WidgetContainer>
-    )
-  }
-
-  // LARGE - Full dashboard
-  return (
-    <WidgetContainer 
-      id={id} 
-      title="Santé"
-      currentSize={size}
-      onClick={() => setView('health')}
-      actions={
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setView('health')
-          }}
-          className="text-zinc-400 hover:text-white transition-colors"
-        >
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      }
-    >
-      <div className="h-full flex flex-col gap-3">
-        {/* Main metrics */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Weight */}
-          <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Heart className="w-4 h-4 text-pink-400" />
-              <span className="text-xs text-zinc-500 uppercase tracking-wide font-medium">Poids</span>
-            </div>
-            {latestWeight > 0 ? (
-              <>
-                <div className="text-3xl font-bold text-white tabular-nums mb-1">
-                  {latestWeight}<span className="text-lg text-zinc-500">kg</span>
-                </div>
-                <div className={`flex items-center gap-1 text-xs ${trendInfo.color}`}>
-                  <TrendIcon className="w-3.5 h-3.5" />
-                  <span className="font-medium">{trendInfo.text}/sem</span>
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-zinc-600">Aucune donnée</div>
-            )}
-          </div>
-
           {/* Calories */}
-          <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Flame className="w-4 h-4 text-amber-400" />
-              <span className="text-xs text-zinc-500 uppercase tracking-wide font-medium">Calories</span>
+          {todayCalories > 0 && (
+            <div className="p-3 bg-white/5 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-zinc-400">Calories</span>
+                <span className="text-xs font-bold text-white tabular-nums">
+                  {todayCalories}/{targetCalories}
+                </span>
+              </div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-500"
+                  style={{ width: `${caloriesPercent}%` }}
+                />
+              </div>
             </div>
-            <div className="text-3xl font-bold text-white tabular-nums mb-1">{todayCalories}</div>
-            <div className="text-xs text-zinc-600">
-              {Math.round(caloriesPercent)}% de {targetCalories} kcal
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Progress bars */}
-        {targetWeight > 0 && latestWeight > 0 && (
-          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-            <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
-              <span>Objectif poids</span>
-              <span className="font-medium tabular-nums">{latestWeight}kg → {targetWeight}kg</span>
+        {/* Footer - Weight Goal */}
+        {weightGoal && targetWeight > 0 && (
+          <div className="pt-2 border-t border-white/10 text-center">
+            <div className="text-xs text-zinc-400">
+              Objectif: <span className="text-white font-medium">{targetWeight}kg</span>
             </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-pink-400 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((latestWeight / targetWeight) * 100, 100)}%` }}
-              />
+            <div className="text-[10px] text-zinc-600 mt-1">
+              {latestWeight > targetWeight 
+                ? `${(latestWeight - targetWeight).toFixed(1)}kg à perdre` 
+                : `Objectif atteint !`
+              }
             </div>
           </div>
         )}
-
-        <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-          <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
-            <span className="flex items-center gap-1.5">
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
-              Calories aujourd'hui
-            </span>
-            <span className="font-medium tabular-nums">{todayCalories} / {targetCalories} kcal</span>
-          </div>
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-500 ${
-                todayCalories > targetCalories ? 'bg-rose-400' : 'bg-emerald-400'
-              }`}
-              style={{ width: `${caloriesPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-center">
-            <div className="text-xs text-zinc-600 mb-1 uppercase tracking-wide">IMC</div>
-            <div className="text-2xl font-bold text-white tabular-nums">{bmi > 0 ? bmi.toFixed(1) : '--'}</div>
-            <div className="text-[9px] text-zinc-600">{bmi > 0 ? bmiCategory : ''}</div>
-          </div>
-          <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-center">
-            <Activity className="w-4 h-4 text-pink-400 mx-auto mb-1" />
-            <div className="text-2xl font-bold text-white tabular-nums">{todayMeals.length}</div>
-            <div className="text-[9px] text-zinc-600 uppercase tracking-wide">Repas</div>
-          </div>
-          <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-center">
-            <Heart className="w-4 h-4 text-pink-400 mx-auto mb-1" />
-            <div className="text-2xl font-bold text-white tabular-nums">{weightEntries.length}</div>
-            <div className="text-[9px] text-zinc-600 uppercase tracking-wide">Entrées</div>
-          </div>
-        </div>
       </div>
     </WidgetContainer>
   )

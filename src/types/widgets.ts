@@ -13,11 +13,12 @@ export type WidgetType =
   | 'journal'
   | 'learning'
 
-export type WidgetSize = 'small' | 'medium' | 'large'
+// Taille unique pour tous les widgets dans le centre de notifications
+export type WidgetSize = 'notification'
 
 export interface WidgetDimensions {
-  width: 1 | 2 | 3
-  height: 1 | 2
+  width: 1  // Toujours 1 colonne
+  height: 1 // Toujours 1 ligne
 }
 
 export interface WidgetPosition {
@@ -50,7 +51,7 @@ export interface WidgetDefinition {
   description: string
   defaultSize: WidgetSize
   defaultDimensions: WidgetDimensions
-  availableSizes: WidgetSize[]
+  // Plus besoin de availableSizes, taille unique
 }
 
 export interface Habit {

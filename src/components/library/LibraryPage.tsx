@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { ArrowLeft, Plus, BookOpen, Search, Filter, Target, Trophy } from 'lucide-react'
+import { ArrowLeft, Plus, BookOpen, Search, Filter, Target, Trophy, TrendingUp } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { Book } from '../../types/library'
 import { formatReadingTime } from '../../utils/libraryFormatters'
@@ -9,7 +9,8 @@ import {
   ReadingSessionBar,
   BookDetailModal,
   AddBookModal,
-  GoalModal
+  GoalModal,
+  LibraryStatsPage
 } from './components'
 
 type FilterStatus = 'all' | 'reading' | 'completed' | 'to-read'
@@ -26,6 +27,7 @@ export function LibraryPage() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showGoalModal, setShowGoalModal] = useState(false)
+  const [showStatsPage, setShowStatsPage] = useState(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [sessionTime, setSessionTime] = useState(0)
@@ -112,8 +114,13 @@ export function LibraryPage() {
     { status: 'to-read', label: `À lire (${pageStats.toRead})` },
   ]
 
+  // Show stats sub-page if activated
+  if (showStatsPage) {
+    return <LibraryStatsPage books={books} onBack={() => setShowStatsPage(false)} />
+  }
+
   return (
-    <div className="h-full w-full flex flex-col bg-mars-bg">
+    <div className="min-h-screen w-full flex flex-col bg-mars-bg">
       {/* Header */}
       <header className="flex-shrink-0 px-4 md:px-6 py-4 md:py-5 border-b border-zinc-800/50">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -136,13 +143,22 @@ export function LibraryPage() {
             </div>
           </div>
           
-          <button
-            onClick={handleOpenAddModal}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
-          >
-            <Plus className="w-4 h-4" aria-hidden="true" />
-            <span>Ajouter un livre</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowStatsPage(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <TrendingUp className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Statistiques</span>
+            </button>
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              <span>Ajouter</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -206,15 +222,20 @@ export function LibraryPage() {
         </div>
       </div>
 
-      {/* Stats rapides */}
-      <div className="px-4 md:px-6 py-4 border-b border-zinc-800/30">
-        <div className="max-w-6xl mx-auto">
-          <StatsCards
-            totalBooks={stats.totalBooks}
-            totalReadingTime={stats.totalReadingTime}
-            totalPagesRead={stats.totalPagesRead}
-            averageRating={stats.averageRating}
-          />
+      {/* Stats rapides - Inline compact */}
+      <div className="px-4 md:px-6 py-3 border-b border-zinc-800/30">
+        <div className="max-w-6xl mx-auto flex items-center gap-6 text-sm text-zinc-500">
+          <span className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-cyan-400" />
+            <span className="font-semibold text-zinc-300">{stats.totalBooks}</span> livres
+          </span>
+          <span className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <span className="font-semibold text-zinc-300">{stats.totalPagesRead}</span> pages
+          </span>
+          <span className="flex items-center gap-2 hidden sm:flex">
+            📚 <span className="font-semibold text-zinc-300">{formatReadingTime(stats.totalReadingTime)}</span> de lecture
+          </span>
         </div>
       </div>
 

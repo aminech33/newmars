@@ -10,7 +10,7 @@ interface WidgetContainerProps {
   widget?: Widget
   children: ReactNode
   actions?: ReactNode
-  currentSize?: 'small' | 'medium' | 'large'
+  currentSize?: 'notification' // Taille unique
   onClick?: () => void
 }
 
@@ -37,7 +37,8 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
   // Support both old API (id, title) and new API (widget)
   const widgetId = widget?.id || id || ''
   const widgetTitle = title || (widget?.type ? widgetTitles[widget.type] : '') || ''
-  const size = currentSize || widget?.size || 'small'
+  // Taille unique, ignorée
+  const size = 'notification'
 
   const handleClick = () => {
     if (!isEditMode && onClick) {

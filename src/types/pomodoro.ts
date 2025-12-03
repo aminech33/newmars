@@ -7,6 +7,8 @@ export interface PomodoroSession {
   projectId?: string
   projectName?: string
   projectIcon?: string
+  bookId?: string
+  bookTitle?: string
   duration: number // durée prévue en minutes
   actualDuration?: number // durée réelle si interrompu
   completedAt: number

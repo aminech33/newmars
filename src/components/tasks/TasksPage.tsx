@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Search } from 'lucide-react'
+import { ArrowLeft, Plus, Search, FolderKanban, TrendingUp } from 'lucide-react'
 import { useStore, Task, TaskCategory, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
-import { SmartSuggestion } from './SmartSuggestion'
 import { KanbanBoard } from './KanbanBoard'
 import { TaskDetails } from './TaskDetails'
 import { TaskFilters, TaskFilterState } from './TaskFilters'
-import { TasksStats } from './TasksStats'
 import { QuickFilters } from './QuickFilters'
-import { ProjectsBar } from './ProjectsBar'
+import { AddProjectModal } from './AddProjectModal'
+import { ProjectsManagementPage } from './ProjectsManagementPage'
+import { StatsPage } from './StatsPage'
 import { StatDetailModal } from './StatDetailModal'
 import { TaskFAB } from './TaskFAB'
 import { UndoToast } from '../ui/UndoToast'
@@ -35,6 +35,8 @@ export function TasksPage() {
   // View & Selection States
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [selectedStat, setSelectedStat] = useState<'total' | 'today' | 'completed' | 'productivity' | null>(null)
+  const [showProjectsManagement, setShowProjectsManagement] = useState(false)
+  const [showStatsPage, setShowStatsPage] = useState(false)
   
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | 'all'>('all')
@@ -134,6 +136,7 @@ export function TasksPage() {
       icon: newProjectIcon
     })
     
+    // Reset form and close modal
     setNewProjectName('')
     setNewProjectColor(PROJECT_COLORS[0])
     setNewProjectIcon(PROJECT_ICONS[0])
@@ -173,6 +176,22 @@ export function TasksPage() {
     })
   }
   
+  // Show sub-pages if activated
+  if (showProjectsManagement) {
+    return <ProjectsManagementPage onBack={() => setShowProjectsManagement(false)} />
+  }
+
+  if (showStatsPage) {
+    return (
+      <StatsPage 
+        onBack={() => setShowStatsPage(false)}
+        tasks={tasks}
+        last7DaysStats={last7DaysStats}
+        completedToday={completedToday}
+      />
+    )
+  }
+
   return (
     <div className="h-full flex flex-col bg-mars-surface">
       {/* Header */}
@@ -188,7 +207,20 @@ export function TasksPage() {
         </div>
         
         <div className="flex items-center gap-3">
-          <SmartSuggestion tasks={tasks} />
+          <button
+            onClick={() => setShowStatsPage(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-2xl hover:bg-zinc-700/50 border border-white/10 transition-all duration-300"
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span className="text-sm font-medium">Statistiques</span>
+          </button>
+          <button
+            onClick={() => setShowProjectsManagement(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-2xl hover:bg-zinc-700/50 border border-white/10 transition-all duration-300"
+          >
+            <FolderKanban className="w-4 h-4" />
+            <span className="text-sm font-medium">Gérer projets</span>
+          </button>
           <Tooltip content="Ctrl+N" side="bottom">
             <button
               onClick={() => setShowQuickAdd(true)}
@@ -222,31 +254,6 @@ export function TasksPage() {
           </div>
         )}
         
-        {/* Stats */}
-        <TasksStats
-          tasks={tasks}
-          last7DaysStats={last7DaysStats}
-          completedToday={completedToday}
-          onStatClick={setSelectedStat}
-        />
-        
-        {/* Projects Bar */}
-        <ProjectsBar
-          projects={projects}
-          selectedProjectId={selectedProjectId}
-          onSelectProject={setSelectedProjectId}
-          onDeleteProject={deleteProject}
-          projectStats={projectStats}
-          showNewProject={showNewProject}
-          onToggleNewProject={() => setShowNewProject(!showNewProject)}
-          newProjectName={newProjectName}
-          onNewProjectNameChange={setNewProjectName}
-          newProjectColor={newProjectColor}
-          onNewProjectColorChange={setNewProjectColor}
-          newProjectIcon={newProjectIcon}
-          onNewProjectIconChange={setNewProjectIcon}
-          onCreateProject={handleCreateProject}
-        />
         
         {/* Quick Filters */}
         <QuickFilters
@@ -375,6 +382,19 @@ export function TasksPage() {
           icon="⚡"
         />
       )}
+
+      {/* Add Project Modal */}
+      <AddProjectModal
+        isOpen={showNewProject}
+        onClose={() => setShowNewProject(false)}
+        projectName={newProjectName}
+        onNameChange={setNewProjectName}
+        projectColor={newProjectColor}
+        onColorChange={setNewProjectColor}
+        projectIcon={newProjectIcon}
+        onIconChange={setNewProjectIcon}
+        onCreate={handleCreateProject}
+      />
     </div>
   )
 }

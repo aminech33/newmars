@@ -209,7 +209,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="h-full w-full flex flex-col view-transition" role="main" aria-label="Dashboard de productivité">
+    <div className="min-h-screen w-full flex flex-col view-transition" role="main" aria-label="Dashboard de productivité">
       {/* Header - Sticky */}
       <header className="sticky top-0 z-20 flex-shrink-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">

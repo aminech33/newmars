@@ -15,12 +15,12 @@ const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ defau
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m => ({ default: m.LibraryPage })))
 const PomodoroPage = lazy(() => import('./components/pomodoro/PomodoroPage').then(m => ({ default: m.PomodoroPage })))
+const HabitsPage = lazy(() => import('./components/habits/HabitsPage').then(m => ({ default: m.HabitsPage })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
 import { SearchWidget } from './components/SearchWidget'
 import { ToastContainer } from './components/ToastContainer'
-import { QuickAdd } from './components/QuickAdd'
 import { Confetti } from './components/Confetti'
 
 function AppContent() {
@@ -63,7 +63,7 @@ function AppContent() {
   }
 
   return (
-    <div className="h-full w-full bg-mars-bg noise-bg overflow-hidden">
+    <div className="min-h-screen w-full bg-mars-bg noise-bg">
       <Suspense fallback={<LoadingFallback />}>
         {isFocusMode ? (
           <FocusMode />
@@ -79,6 +79,7 @@ function AppContent() {
             {currentView === 'learning' && <LearningPage />}
             {currentView === 'library' && <LibraryPage />}
             {currentView === 'pomodoro' && <PomodoroPage />}
+            {currentView === 'habits' && <HabitsPage />}
           </>
         )}
       </Suspense>
@@ -87,7 +88,6 @@ function AppContent() {
       <KeyboardShortcuts />
       <SearchWidget />
       <ToastContainer />
-      <QuickAdd />
       <Confetti trigger={showConfetti} />
     </div>
   )

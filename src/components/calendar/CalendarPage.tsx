@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, ChevronLeft, ChevronRight, LayoutGrid, LayoutList } from 'lucide-react'
+import { ArrowLeft, Plus, ChevronLeft, ChevronRight, LayoutGrid, LayoutList, Clock } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { EventCard } from './EventCard'
 import { EventDetails } from './EventDetails'
 import { WeekView } from './WeekView'
+import { DayView } from './DayView'
 import { CalendarFilters } from './CalendarFilters'
 import { Tooltip } from '../ui/Tooltip'
 import { useCalendarEvents, CalendarFilterState } from '../../hooks/useCalendarEvents'
 import { getCalendarDays, getMonthName, getWeekDays, isToday } from '../../utils/dateUtils'
 import { detectEventType, detectEventCategory, detectEventPriority } from '../../utils/calendarIntelligence'
 
-type ViewMode = 'month' | 'week'
+type ViewMode = 'month' | 'week' | 'day'
 
 export function CalendarPage() {
   const { events, addEvent, setView, isEditMode } = useStore()
@@ -149,28 +150,45 @@ export function CalendarPage() {
 
             {/* View toggle */}
             <div className="flex items-center gap-1 p-1 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
-              <button
-                onClick={() => setViewMode('month')}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === 'month'
-                    ? 'bg-indigo-500/20 text-indigo-400'
-                    : 'text-zinc-600 hover:text-zinc-400'
-                }`}
-                aria-label="Vue mois"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('week')}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === 'week'
-                    ? 'bg-indigo-500/20 text-indigo-400'
-                    : 'text-zinc-600 hover:text-zinc-400'
-                }`}
-                aria-label="Vue semaine"
-              >
-                <LayoutList className="w-4 h-4" />
-              </button>
+              <Tooltip content="Mois" side="bottom">
+                <button
+                  onClick={() => setViewMode('month')}
+                  className={`p-2 rounded-lg transition-all ${
+                    viewMode === 'month'
+                      ? 'bg-indigo-500/20 text-indigo-400'
+                      : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                  aria-label="Vue mois"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Semaine" side="bottom">
+                <button
+                  onClick={() => setViewMode('week')}
+                  className={`p-2 rounded-lg transition-all ${
+                    viewMode === 'week'
+                      ? 'bg-indigo-500/20 text-indigo-400'
+                      : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                  aria-label="Vue semaine"
+                >
+                  <LayoutList className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Jour" side="bottom">
+                <button
+                  onClick={() => setViewMode('day')}
+                  className={`p-2 rounded-lg transition-all ${
+                    viewMode === 'day'
+                      ? 'bg-indigo-500/20 text-indigo-400'
+                      : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                  aria-label="Vue jour"
+                >
+                  <Clock className="w-4 h-4" />
+                </button>
+              </Tooltip>
             </div>
 
             <Tooltip content="Ctrl+N" side="bottom">
@@ -383,11 +401,22 @@ export function CalendarPage() {
               </div>
             </aside>
           </div>
-        ) : (
+        ) : viewMode === 'week' ? (
           <WeekView
             currentDate={currentDate}
             events={filteredEvents}
             onEventClick={handleEventClick}
+          />
+        ) : (
+          <DayView
+            date={selectedDate || currentDate}
+            events={filteredEvents}
+            onEventClick={handleEventClick}
+            onTimeSlotClick={(hour) => {
+              setShowQuickAdd(true)
+              const time = `${hour.toString().padStart(2, '0')}:00`
+              setNewEventTitle(`${time} - `)
+            }}
           />
         )}
       </main>

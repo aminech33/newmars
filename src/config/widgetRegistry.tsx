@@ -1,21 +1,17 @@
 import { lazy, ComponentType } from 'react'
-import { CheckSquare, BarChart3, Calendar, BookOpen, Flame, Timer, ExternalLink, Sparkles, Heart, Book, GraduationCap, Library, Cloud, Search } from 'lucide-react'
+import { CheckSquare, Calendar, Flame, Timer, Sparkles, Heart, Book, GraduationCap, Library } from 'lucide-react'
 import { Widget } from '../types/widgets'
 
 // Lazy load all widgets for better performance
 const TasksWidget = lazy(() => import('../components/widgets/TasksWidget').then(m => ({ default: m.TasksWidget })))
 const HabitsWidget = lazy(() => import('../components/widgets/HabitsWidget').then(m => ({ default: m.HabitsWidget })))
-const NotesWidget = lazy(() => import('../components/widgets/NotesWidget').then(m => ({ default: m.NotesWidget })))
 const CalendarWidget = lazy(() => import('../components/widgets/CalendarWidget').then(m => ({ default: m.CalendarWidget })))
-const PomodoroWidgetTile = lazy(() => import('../components/widgets/PomodoroWidgetTile').then(m => ({ default: m.PomodoroWidgetTile })))
-const LinksWidget = lazy(() => import('../components/widgets/LinksWidget').then(m => ({ default: m.LinksWidget })))
+const PomodoroWidget = lazy(() => import('../components/widgets/PomodoroWidget').then(m => ({ default: m.PomodoroWidget })))
 const AIWidget = lazy(() => import('../components/widgets/AIWidget').then(m => ({ default: m.AIWidget })))
 const HealthWidget = lazy(() => import('../components/widgets/HealthWidget').then(m => ({ default: m.HealthWidget })))
 const JournalWidget = lazy(() => import('../components/widgets/JournalWidget').then(m => ({ default: m.JournalWidget })))
 const LearningWidget = lazy(() => import('../components/widgets/LearningWidget').then(m => ({ default: m.LearningWidget })))
 const LibraryWidget = lazy(() => import('../components/widgets/LibraryWidget').then(m => ({ default: m.LibraryWidget })))
-const WeatherWidget = lazy(() => import('../components/widgets/WeatherWidget').then(m => ({ default: m.WeatherWidget })))
-const SearchWidgetTile = lazy(() => import('../components/widgets/SearchWidgetTile').then(m => ({ default: m.SearchWidgetTile })))
 
 export interface WidgetDefinition {
   type: string
@@ -24,7 +20,7 @@ export interface WidgetDefinition {
   icon: ComponentType<{ className?: string }>
   component: ComponentType<{ widget: Widget }>
   category: 'productivity' | 'tracking' | 'tools' | 'wellness'
-  defaultSize: 'small' | 'medium' | 'large'
+  defaultSize: 'notification' // Taille unique
 }
 
 export const widgetRegistry: Record<string, WidgetDefinition> = {
@@ -35,7 +31,7 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: CheckSquare,
     component: TasksWidget,
     category: 'productivity',
-    defaultSize: 'medium'
+    defaultSize: 'notification'
   },
   calendar: {
     type: 'calendar',
@@ -44,7 +40,7 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: Calendar,
     component: CalendarWidget,
     category: 'productivity',
-    defaultSize: 'medium'
+    defaultSize: 'notification'
   },
   health: {
     type: 'health',
@@ -53,7 +49,7 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: Heart,
     component: HealthWidget,
     category: 'wellness',
-    defaultSize: 'small'
+    defaultSize: 'notification'
   },
   journal: {
     type: 'journal',
@@ -62,16 +58,7 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: Book,
     component: JournalWidget,
     category: 'wellness',
-    defaultSize: 'medium'
-  },
-  notes: {
-    type: 'notes',
-    label: 'Notes',
-    description: 'Notes rapides',
-    icon: BookOpen,
-    component: NotesWidget,
-    category: 'tools',
-    defaultSize: 'medium'
+    defaultSize: 'notification'
   },
   habits: {
     type: 'habits',
@@ -80,25 +67,16 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: Flame,
     component: HabitsWidget,
     category: 'tracking',
-    defaultSize: 'medium'
+    defaultSize: 'notification'
   },
   pomodoro: {
     type: 'pomodoro',
     label: 'Pomodoro',
     description: 'Timer & time tracking avancé',
     icon: Timer,
-    component: PomodoroWidgetTile,
+    component: PomodoroWidget,
     category: 'productivity',
-    defaultSize: 'medium'
-  },
-  links: {
-    type: 'links',
-    label: 'Liens',
-    description: 'Liens rapides favoris',
-    icon: ExternalLink,
-    component: LinksWidget,
-    category: 'tools',
-    defaultSize: 'small'
+    defaultSize: 'notification'
   },
   ai: {
     type: 'ai',
@@ -107,7 +85,7 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: Sparkles,
     component: AIWidget,
     category: 'tools',
-    defaultSize: 'small'
+    defaultSize: 'notification'
   },
   learning: {
     type: 'learning',
@@ -116,7 +94,7 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: GraduationCap,
     component: LearningWidget,
     category: 'productivity',
-    defaultSize: 'medium'
+    defaultSize: 'notification'
   },
   library: {
     type: 'library',
@@ -125,26 +103,8 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: Library,
     component: LibraryWidget,
     category: 'wellness',
-    defaultSize: 'medium'
+    defaultSize: 'notification'
   },
-  weather: {
-    type: 'weather',
-    label: 'Météo',
-    description: 'Conditions météo actuelles',
-    icon: Cloud,
-    component: WeatherWidget,
-    category: 'tools',
-    defaultSize: 'small'
-  },
-  search: {
-    type: 'search',
-    label: 'Recherche',
-    description: 'Recherche globale rapide',
-    icon: Search,
-    component: SearchWidgetTile,
-    category: 'tools',
-    defaultSize: 'medium'
-  }
 }
 
 // Helper functions
