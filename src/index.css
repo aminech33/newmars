@@ -354,6 +354,15 @@ button:active:not(:disabled) {
   100% { transform: translateY(-6px) scale(1.02); }
 }
 
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
 /* Test debug - enlever plus tard */
 .glass-widget {
   animation: none;

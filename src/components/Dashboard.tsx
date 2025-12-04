@@ -18,6 +18,7 @@ import { ScrollToTop } from './ui/ScrollToTop'
 import { MetricDetailModal } from './dashboard/MetricDetailModal'
 import { HourDetailModal } from './dashboard/HourDetailModal'
 import { Sparkline } from './ui/Sparkline'
+import { CountUp } from './ui/CountUp'
 
 // Constantes
 const WORK_HOURS_START = 8
@@ -260,19 +261,22 @@ export function Dashboard() {
           <section className="mb-8 sm:mb-12" aria-labelledby="productivity-score-heading">
             <div className="relative group">
               {/* Background gradient animé */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${scoreTheme.bg} rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity duration-500`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${scoreTheme.bg} rounded-3xl blur-3xl opacity-40 group-hover:opacity-60 transition-opacity duration-700 animate-pulse-slow`} />
               
-              {/* Card principale */}
-              <div className={`relative bg-gradient-to-br from-zinc-900/90 to-zinc-900/50 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 border border-zinc-800/50 shadow-2xl ${scoreTheme.glow} hover:shadow-3xl transition-all duration-500 motion-reduce:transition-none`}>
-                <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-6 sm:gap-8">
-                  {/* Score */}
+              {/* Card principale avec glassmorphism */}
+              <div className="glass-widget relative p-8 sm:p-10 lg:p-12 overflow-hidden">
+                {/* Gradient border animé */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${scoreTheme.gradient} opacity-5 pointer-events-none`} />
+                
+                <div className="relative flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 sm:gap-10">
+                  {/* Score géant */}
                   <div className="flex-1 text-center lg:text-left">
-                    <p id="productivity-score-heading" className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">Score de Productivité</p>
-                    <div className="flex items-baseline justify-center lg:justify-start gap-3 mb-6">
-                      <h2 className={`text-5xl sm:text-7xl lg:text-8xl font-extralight bg-gradient-to-br ${scoreTheme.gradient} bg-clip-text text-transparent animate-fade-in`}>
-                        {productivityScore.score}
+                    <p id="productivity-score-heading" className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Score de Productivité</p>
+                    <div className="flex items-baseline justify-center lg:justify-start gap-4 mb-6">
+                      <h2 className={`text-7xl sm:text-8xl lg:text-9xl font-mono-display font-bold bg-gradient-to-br ${scoreTheme.gradient} bg-clip-text text-transparent number-glow`}>
+                        <CountUp end={productivityScore.score} duration={1500} />
                       </h2>
-                      <span className="text-2xl sm:text-3xl text-zinc-600 font-light">/100</span>
+                      <span className="text-3xl sm:text-4xl text-zinc-600 font-light">/100</span>
                     </div>
                     
                     {/* Tendance */}
@@ -293,20 +297,21 @@ export function Dashboard() {
                   {/* Breakdown avec animations - Cliquables */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                     {[
-                      { type: 'tasks' as MetricType, label: 'Tâches', value: productivityScore.breakdown.tasksCompleted, max: 25, icon: '✅', gradient: 'from-emerald-500 to-emerald-400' },
-                      { type: 'focus' as MetricType, label: 'Focus', value: productivityScore.breakdown.focusTime, max: 25, icon: '🎯', gradient: 'from-cyan-500 to-cyan-400' },
-                      { type: 'consistency' as MetricType, label: 'Régularité', value: productivityScore.breakdown.consistency, max: 25, icon: '🔥', gradient: 'from-orange-500 to-orange-400' },
-                      { type: 'efficiency' as MetricType, label: 'Efficacité', value: productivityScore.breakdown.efficiency, max: 25, icon: '⚡', gradient: 'from-indigo-500 to-indigo-400' },
-                    ].map((item) => (
+                      { type: 'tasks' as MetricType, label: 'Tâches', value: productivityScore.breakdown.tasksCompleted, max: 25, icon: '✅', gradient: 'from-emerald-500 to-emerald-400', shadow: 'shadow-emerald-500/20' },
+                      { type: 'focus' as MetricType, label: 'Focus', value: productivityScore.breakdown.focusTime, max: 25, icon: '🎯', gradient: 'from-cyan-500 to-cyan-400', shadow: 'shadow-cyan-500/20' },
+                      { type: 'consistency' as MetricType, label: 'Régularité', value: productivityScore.breakdown.consistency, max: 25, icon: '🔥', gradient: 'from-orange-500 to-orange-400', shadow: 'shadow-orange-500/20' },
+                      { type: 'efficiency' as MetricType, label: 'Efficacité', value: productivityScore.breakdown.efficiency, max: 25, icon: '⚡', gradient: 'from-indigo-500 to-indigo-400', shadow: 'shadow-indigo-500/20' },
+                    ].map((item, index) => (
                       <Tooltip key={item.label} content="Cliquer pour plus de détails" side="top">
                         <button
                           onClick={() => setSelectedMetric(item.type)}
-                          className="text-center hover:scale-105 transition-transform duration-300 motion-reduce:transition-none motion-reduce:hover:scale-100 cursor-pointer group"
+                          className={`text-center hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer group bg-zinc-900/30 backdrop-blur-sm rounded-2xl p-4 border border-zinc-800/50 hover:border-zinc-700 hover:${item.shadow}`}
+                          style={{ animationDelay: `${index * 100}ms` }}
                         >
-                          <div className="text-2xl mb-2 group-hover:scale-110 transition-transform" role="img" aria-label={item.label}>{item.icon}</div>
-                          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-3">
+                          <div className="text-3xl mb-3 group-hover:scale-110 transition-transform" role="img" aria-label={item.label}>{item.icon}</div>
+                          <div className="h-2.5 bg-zinc-800/50 rounded-full overflow-hidden mb-3 shadow-inner">
                             <div 
-                              className={`h-full bg-gradient-to-r ${item.gradient} rounded-full transition-all duration-1000 ease-out`}
+                              className={`h-full bg-gradient-to-r ${item.gradient} rounded-full transition-all duration-1000 ease-out shadow-lg ${item.shadow}`}
                               style={{ width: `${(item.value / item.max) * 100}%` }}
                               role="progressbar"
                               aria-valuenow={item.value}
@@ -314,8 +319,11 @@ export function Dashboard() {
                               aria-valuemax={item.max}
                             />
                           </div>
-                          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1 group-hover:text-zinc-400 transition-colors">{item.label}</p>
-                          <p className="text-lg font-semibold text-zinc-300 group-hover:text-zinc-100 transition-colors">{item.value}<span className="text-zinc-600">/{item.max}</span></p>
+                          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2 group-hover:text-zinc-400 transition-colors">{item.label}</p>
+                          <p className="text-xl font-mono-display font-bold text-zinc-200 group-hover:text-zinc-100 transition-colors">
+                            <CountUp end={item.value} duration={1200} />
+                            <span className="text-zinc-600 text-sm">/{item.max}</span>
+                          </p>
                         </button>
                       </Tooltip>
                     ))}
@@ -330,7 +338,7 @@ export function Dashboard() {
               {/* Comparaisons */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
                 {/* vs Hier */}
-                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-xl motion-reduce:transition-none">
+                <div className="glass-widget p-6 group">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-base font-semibold text-zinc-300 flex items-center gap-2">
                       <Zap className="w-5 h-5 text-indigo-400" aria-hidden="true" />
@@ -382,7 +390,7 @@ export function Dashboard() {
                 </div>
 
                 {/* vs Semaine dernière */}
-                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-xl motion-reduce:transition-none">
+                <div className="glass-widget p-6 group">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-base font-semibold text-zinc-300 flex items-center gap-2">
                       <TrendingUp className="w-5 h-5 text-cyan-400" aria-hidden="true" />
@@ -435,7 +443,7 @@ export function Dashboard() {
               </div>
 
               {/* Objectifs Hebdomadaires */}
-              <section className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-zinc-800/50 mb-8 sm:mb-12 hover:border-zinc-700/50 transition-all duration-300 motion-reduce:transition-none" aria-labelledby="weekly-goals-heading">
+              <section className="glass-widget p-6 sm:p-8 mb-8 sm:mb-12 group" aria-labelledby="weekly-goals-heading">
                 <div className="flex items-center gap-3 mb-6 sm:mb-8">
                   <div className="p-2 bg-cyan-500/10 rounded-xl">
                     <Target className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" aria-hidden="true" />
@@ -491,7 +499,7 @@ export function Dashboard() {
               </section>
 
               {/* Heures Productives */}
-              <section className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-zinc-800/50 mb-8 sm:mb-12 hover:border-zinc-700/50 transition-all duration-300 motion-reduce:transition-none" aria-labelledby="productive-hours-heading">
+              <section className="glass-widget p-6 sm:p-8 mb-8 sm:mb-12 group" aria-labelledby="productive-hours-heading">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 rounded-xl">
@@ -545,7 +553,7 @@ export function Dashboard() {
               {/* Graphiques */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Tâches hebdo */}
-                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300">
+                <div className="glass-widget p-6 group">
                   <h3 className="text-base font-semibold text-zinc-300 mb-6">Tâches cette semaine</h3>
                   <div className="flex items-end justify-between h-40 gap-3">
                     {weekStats.map((day, i) => {
@@ -581,7 +589,7 @@ export function Dashboard() {
                 </div>
 
                 {/* Par catégorie */}
-                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300">
+                <div className="glass-widget p-6 group">
                   <h3 className="text-base font-semibold text-zinc-300 mb-6">Par catégorie</h3>
                   <div className="space-y-4">
                     {[
@@ -672,7 +680,7 @@ export function Dashboard() {
                 <h2 className="text-xl font-semibold text-zinc-100">Activité sur l'année</h2>
               </div>
               
-              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-8 border border-zinc-800/50">
+              <div className="glass-widget p-8 group">
                 {/* Heatmap Grid */}
                 <div className="overflow-x-auto pb-4">
                   <div className="flex flex-wrap gap-1 sm:gap-1.5 min-w-[280px]">

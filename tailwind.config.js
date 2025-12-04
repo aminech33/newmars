@@ -29,6 +29,7 @@ export default {
         'slide-in-right': 'slideInRight 200ms ease-out',
         'scale-in': 'scaleIn 150ms ease-out',
         'breathe': 'breathe 8s ease-in-out infinite',
+        'pulse-slow': 'pulse-slow 4s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -46,6 +47,10 @@ export default {
         breathe: {
           '0%, 100%': { transform: 'scale(1)', opacity: '1' },
           '50%': { transform: 'scale(1.002)', opacity: '0.98' },
+        },
+        'pulse-slow': {
+          '0%, 100%': { opacity: '0.4' },
+          '50%': { opacity: '0.6' },
         },
       },
     },
