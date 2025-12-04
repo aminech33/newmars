@@ -319,9 +319,9 @@ export function PomodoroPage() {
   const isToday = selectedDate === new Date().toISOString().split('T')[0]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-100">
+    <div className="h-full w-full flex flex-col bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-100">
       {/* Header */}
-      <div className="border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="flex-shrink-0 border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -360,8 +360,9 @@ export function PomodoroPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* TIMER TAB */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* TIMER TAB */}
         {activeTab === 'timer' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Timer */}
@@ -1133,6 +1134,7 @@ export function PomodoroPage() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )

@@ -207,9 +207,9 @@ Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitude
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-zinc-950">
+    <div className="h-full w-full flex flex-col bg-zinc-950">
       {/* Premium Header */}
-      <header className="flex-shrink-0 px-6 py-4 border-b border-zinc-900/50 backdrop-blur-sm bg-zinc-950/80 sticky top-0 z-10">
+      <header className="flex-shrink-0 px-6 py-4 border-b border-zinc-900/50 backdrop-blur-sm bg-zinc-950/80">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button

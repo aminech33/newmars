@@ -81,26 +81,26 @@ export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroW
 
   return (
     <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('pomodoro')}>
-      <div className="h-full flex flex-col p-5 gap-2.5">
+      <div className="h-full flex flex-col p-4 gap-2 overflow-hidden">
         {/* Header compact */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Timer className="w-6 h-6 text-orange-400 hover-glow" strokeWidth={1.5} />
+            <Timer className="w-5 h-5 text-orange-400 hover-glow" strokeWidth={1.5} />
             <div className="text-[10px] text-orange-400/80 uppercase tracking-wider font-semibold">
               POMODORO
             </div>
           </div>
-          <div className={`w-2.5 h-2.5 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50' : 'bg-zinc-600'}`} />
+          <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50' : 'bg-zinc-600'}`} />
         </div>
 
         {/* Timer Display - Plus compact */}
-        <div className="text-center">
-          <div className="text-5xl font-bold text-white tabular-nums leading-none mb-2 font-mono-display gradient-text">
+        <div className="text-center flex-shrink-0">
+          <div className="text-4xl font-bold text-white tabular-nums leading-none mb-1.5 font-mono-display gradient-text">
             {formatTime(timeLeft)}
           </div>
 
           {/* Progress bar */}
-          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-3">
+          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-2">
             <div 
               className="h-full bg-gradient-to-r from-rose-500 to-orange-500 transition-all duration-1000"
               style={{ width: `${progress}%` }}
@@ -108,51 +108,51 @@ export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroW
           </div>
 
           {/* Controls - Plus petits */}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-1.5">
             <button
               onClick={toggleTimer}
-              className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 
                          flex items-center justify-center transition-colors"
             >
               {isRunning ? (
-                <Pause className="w-5 h-5 text-white" />
+                <Pause className="w-4 h-4 text-white" />
               ) : (
-                <Play className="w-5 h-5 text-white ml-0.5" />
+                <Play className="w-4 h-4 text-white ml-0.5" />
               )}
             </button>
             
             <button
               onClick={resetTimer}
-              className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 
+              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 
                          flex items-center justify-center transition-colors"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
+              <RotateCcw className="w-3 h-3 text-zinc-400" />
             </button>
           </div>
         </div>
 
         {/* Stats aujourd'hui */}
-        <div className="flex-1 space-y-1.5">
+        <div className="flex-1 min-h-0 space-y-1.5">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
             Aujourd'hui
           </div>
           
           <div className="grid grid-cols-2 gap-1.5">
-            <div className="p-2 gradient-border-amber rounded-lg text-center">
-              <div className="text-lg font-bold text-white tabular-nums">{todaySessions.length}</div>
-              <div className="text-[10px] text-zinc-600">Sessions</div>
+            <div className="p-1.5 gradient-border-amber rounded-lg text-center">
+              <div className="text-base font-bold text-white tabular-nums">{todaySessions.length}</div>
+              <div className="text-[9px] text-zinc-600">Sessions</div>
             </div>
-            <div className="p-2 gradient-border-rose rounded-lg text-center">
-              <div className="text-lg font-bold text-white tabular-nums">{todayFocusTime}</div>
-              <div className="text-[10px] text-zinc-600">Minutes</div>
+            <div className="p-1.5 gradient-border-rose rounded-lg text-center">
+              <div className="text-base font-bold text-white tabular-nums">{todayFocusTime}</div>
+              <div className="text-[9px] text-zinc-600">Minutes</div>
             </div>
           </div>
 
           {/* Task en cours */}
           {nextTask && (
-            <div className="p-2 bg-rose-500/5 rounded-lg border border-rose-500/20">
-              <div className="text-[10px] text-rose-400 font-medium mb-0.5">Focus sur:</div>
-              <div className="text-xs text-zinc-300 truncate font-medium">
+            <div className="p-1.5 bg-rose-500/5 rounded-lg border border-rose-500/20">
+              <div className="text-[9px] text-rose-400 font-medium mb-0.5">Focus sur:</div>
+              <div className="text-[10px] text-zinc-300 truncate font-medium">
                 {nextTask.title}
               </div>
             </div>
@@ -160,9 +160,9 @@ export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroW
         </div>
 
         {/* Footer - Objectif */}
-        <div className="pt-2 border-t border-white/10 text-center">
-          <span className="text-[10px] text-zinc-600">
-            Objectif: <span className="text-zinc-400 font-semibold">4 sessions/jour</span>
+        <div className="pt-1.5 border-t border-white/10 text-center flex-shrink-0">
+          <span className="text-[9px] text-zinc-600">
+            Objectif: <span className="text-zinc-400 font-semibold">4 sessions</span>
           </span>
         </div>
       </div>

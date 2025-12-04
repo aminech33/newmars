@@ -69,7 +69,7 @@ export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProp
   return (
     <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('tasks')}>
       <div className="h-full flex flex-col p-5 gap-2.5 relative">
-        {/* Header compact */}
+        {/* Header avec badge urgent proéminent */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckSquare className="w-6 h-6 text-emerald-400 hover-glow" strokeWidth={1.5} />
@@ -81,8 +81,14 @@ export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProp
             </div>
           </div>
           {urgentTasks.length > 0 && (
-            <div className="px-2 py-0.5 bg-gradient-to-br from-rose-500 to-rose-600 rounded-full shadow-lg shadow-rose-500/30">
-              <span className="text-[10px] font-bold text-white">{urgentTasks.length} urgent{urgentTasks.length > 1 ? 's' : ''}</span>
+            <div className="relative">
+              <div className="absolute inset-0 bg-rose-500 rounded-full blur-md opacity-50 animate-pulse" />
+              <div className="relative px-2.5 py-1 bg-gradient-to-br from-rose-500 to-rose-600 rounded-full shadow-lg shadow-rose-500/50 border border-rose-400/30">
+                <span className="text-xs font-bold text-white flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {urgentTasks.length}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -95,35 +101,54 @@ export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProp
               <span className="text-sm text-zinc-500">Tout est fait !</span>
             </div>
           ) : (
-            topTasks.map((task, index) => (
-              <button
-                key={task.id}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleTask(task.id)
-                }}
-                className={`flex items-start gap-2 w-full text-left p-2 rounded-lg
-                           hover:bg-white/5 transition-colors group
-                           ${index === 0 && task.priority === 'urgent' ? 'bg-rose-500/5 border border-rose-500/20' : ''}`}
-              >
-                <Circle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5
-                                   group-hover:text-emerald-300 transition-colors" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-zinc-300 group-hover:text-white 
-                                 transition-colors line-clamp-1 font-medium">
-                    {task.title}
-                  </p>
-                  {task.dueDate && (
-                    <p className="text-[10px] text-zinc-500 mt-0.5">
-                      {formatDueDate(task.dueDate)}
-                    </p>
+            topTasks.map((task, index) => {
+              const isUrgent = task.priority === 'urgent'
+              return (
+                <button
+                  key={task.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleTask(task.id)
+                  }}
+                  className={`flex items-start gap-2 w-full text-left rounded-lg
+                             hover:bg-white/5 transition-all group relative
+                             ${isUrgent 
+                               ? 'p-2.5 bg-gradient-to-r from-rose-500/10 to-transparent border-l-2 border-rose-500 shadow-lg shadow-rose-500/10' 
+                               : 'p-2'
+                             }`}
+                >
+                  {isUrgent && (
+                    <div className="absolute inset-0 bg-rose-500/5 rounded-lg animate-pulse" />
                   )}
-                </div>
-                {task.priority === 'urgent' && (
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-400 flex-shrink-0 mt-0.5" />
-                )}
-              </button>
-            ))
+                  <Circle className={`flex-shrink-0 mt-0.5 transition-colors ${
+                    isUrgent 
+                      ? 'w-4 h-4 text-rose-400 group-hover:text-rose-300' 
+                      : 'w-3.5 h-3.5 text-emerald-400 group-hover:text-emerald-300'
+                  }`} />
+                  <div className="flex-1 min-w-0 relative z-10">
+                    <p className={`transition-colors line-clamp-1 ${
+                      isUrgent 
+                        ? 'text-sm font-bold text-rose-100 group-hover:text-white' 
+                        : 'text-xs font-medium text-zinc-300 group-hover:text-white'
+                    }`}>
+                      {task.title}
+                    </p>
+                    {task.dueDate && (
+                      <p className={`mt-0.5 ${
+                        isUrgent 
+                          ? 'text-[10px] text-rose-300/80 font-medium' 
+                          : 'text-[10px] text-zinc-500'
+                      }`}>
+                        {formatDueDate(task.dueDate)}
+                      </p>
+                    )}
+                  </div>
+                  {isUrgent && (
+                    <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5 animate-pulse" />
+                  )}
+                </button>
+              )
+            })
           )}
         </div>
 

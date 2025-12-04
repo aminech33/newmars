@@ -35,6 +35,7 @@ export interface Task {
   focusScore?: number
   linkedEventId?: string // Link to calendar event
   projectId?: string // ID du projet associé
+  isVisible?: boolean // Pour le système de quota (true = visible, false = cachée)
 }
 
 // Interface pour les projets personnalisés
@@ -255,6 +256,13 @@ interface AppState {
   updateProject: (id: string, updates: Partial<Project>) => void
   deleteProject: (id: string) => void
   
+  // Task Quota System
+  taskQuota: number // Nombre max de tâches visibles
+  setTaskQuota: (quota: number) => void
+  unlockNextTasks: (count: number) => void // Débloque N tâches selon priorité
+  getVisibleTasks: () => Task[]
+  getHiddenTasks: () => Task[]
+  
   // Task Relations
   taskRelations: TaskRelation[]
   addTaskRelation: (relation: Omit<TaskRelation, 'id' | 'createdAt'>) => void
@@ -419,19 +427,28 @@ export const useStore = create<AppState>()(
       
       // Tasks
       tasks: [
-        { id: '1', title: 'Finaliser le composant Dashboard', completed: false, category: 'dev', createdAt: Date.now() - 86400000, status: 'in-progress', priority: 'high', estimatedTime: 60, projectId: 'proj-1' },
-        { id: '2', title: 'Revoir les maquettes UI', completed: false, category: 'design', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 45, projectId: 'proj-1' },
+        { id: '1', title: 'Finaliser le composant Dashboard', completed: false, category: 'dev', createdAt: Date.now() - 86400000, status: 'in-progress', priority: 'high', estimatedTime: 60, projectId: 'proj-1', isVisible: true },
+        { id: '2', title: 'Revoir les maquettes UI', completed: false, category: 'design', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 45, projectId: 'proj-1', isVisible: true },
         { id: '3', title: 'Appel avec l\'équipe produit', completed: true, category: 'work', createdAt: Date.now() - 259200000, status: 'done', priority: 'medium', estimatedTime: 30, projectId: 'proj-3' },
-        { id: '4', title: 'Implémenter la recherche globale', completed: false, category: 'dev', createdAt: Date.now() - 43200000, status: 'todo', priority: 'high', estimatedTime: 90, projectId: 'proj-1' },
-        { id: '5', title: 'Préparer la présentation client', completed: false, category: 'urgent', createdAt: Date.now() - 21600000, status: 'in-progress', priority: 'urgent', estimatedTime: 120, dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], projectId: 'proj-3' },
+        { id: '4', title: 'Implémenter la recherche globale', completed: false, category: 'dev', createdAt: Date.now() - 43200000, status: 'todo', priority: 'high', estimatedTime: 90, projectId: 'proj-1', isVisible: true },
+        { id: '5', title: 'Préparer la présentation client', completed: false, category: 'urgent', createdAt: Date.now() - 21600000, status: 'in-progress', priority: 'urgent', estimatedTime: 120, dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], projectId: 'proj-3', isVisible: true },
         { id: '6', title: 'Rechercher des idées', completed: true, category: 'personal', createdAt: Date.now() - 345600000, status: 'done', priority: 'low', estimatedTime: 30, projectId: 'proj-2' },
-        { id: '7', title: 'Créer le prototype', completed: false, category: 'dev', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 120, projectId: 'proj-2' },
+        { id: '7', title: 'Créer le prototype', completed: false, category: 'dev', createdAt: Date.now() - 172800000, status: 'todo', priority: 'medium', estimatedTime: 120, projectId: 'proj-2', isVisible: true },
       ],
       addTask: (task) => {
-        const newTask = { ...task, id: generateId(), createdAt: Date.now() }
+        const visibleCount = get().getVisibleTasks().length
+        const quota = get().taskQuota
+        const isVisible = visibleCount < quota ? true : false
+        
+        const newTask = { ...task, id: generateId(), createdAt: Date.now(), isVisible }
         set((state) => ({ tasks: [...state.tasks, newTask] }))
         get().addToHistory({ type: 'add', task: newTask })
-        get().addToast('Tâche créée', 'success')
+        
+        if (isVisible) {
+          get().addToast('Tâche créée', 'success')
+        } else {
+          get().addToast('Tâche créée (cachée, quota atteint)', 'info')
+        }
       },
       toggleTask: (id) => {
         const task = get().tasks.find(t => t.id === id)
@@ -446,6 +463,13 @@ export const useStore = create<AppState>()(
           // Trigger confetti on completion
           if (!wasCompleted) {
             window.dispatchEvent(new CustomEvent('task-completed'))
+            
+            // Auto-unlock 1 task when completing a task
+            const visibleCount = get().getVisibleTasks().length
+            const hiddenCount = get().getHiddenTasks().length
+            if (visibleCount < get().taskQuota && hiddenCount > 0) {
+              setTimeout(() => get().unlockNextTasks(1), 500)
+            }
           }
         }
       },
@@ -508,6 +532,71 @@ export const useStore = create<AppState>()(
               : t
           )
         }))
+      },
+      
+      // Task Quota System
+      taskQuota: 10, // Max 10 tâches visibles par défaut
+      setTaskQuota: (quota) => set({ taskQuota: quota }),
+      
+      getVisibleTasks: () => {
+        return get().tasks.filter(t => !t.completed && (t.isVisible === undefined || t.isVisible === true))
+      },
+      
+      getHiddenTasks: () => {
+        return get().tasks.filter(t => !t.completed && t.isVisible === false)
+      },
+      
+      unlockNextTasks: (count) => {
+        const state = get()
+        const hiddenTasks = state.tasks.filter(t => !t.completed && t.isVisible === false)
+        
+        if (hiddenTasks.length === 0) return
+        
+        // Trier par priorité pour débloquer les plus importantes
+        const sortedHidden = [...hiddenTasks].sort((a, b) => {
+          // 1. Urgentes d'abord
+          if (a.priority === 'urgent' && b.priority !== 'urgent') return -1
+          if (a.priority !== 'urgent' && b.priority === 'urgent') return 1
+          
+          // 2. Overdue (en retard)
+          const aOverdue = a.dueDate && new Date(a.dueDate) < new Date() ? 1 : 0
+          const bOverdue = b.dueDate && new Date(b.dueDate) < new Date() ? 1 : 0
+          if (aOverdue !== bOverdue) return bOverdue - aOverdue
+          
+          // 3. Deadline proche (< 3 jours)
+          const now = Date.now()
+          const threeDays = 3 * 24 * 60 * 60 * 1000
+          const aClose = a.dueDate && (new Date(a.dueDate).getTime() - now) < threeDays ? 1 : 0
+          const bClose = b.dueDate && (new Date(b.dueDate).getTime() - now) < threeDays ? 1 : 0
+          if (aClose !== bClose) return bClose - aClose
+          
+          // 4. Avec deadline vs sans deadline
+          if (a.dueDate && !b.dueDate) return -1
+          if (!a.dueDate && b.dueDate) return 1
+          
+          // 5. Deadline la plus proche
+          if (a.dueDate && b.dueDate) {
+            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+          }
+          
+          // 6. Par priorité
+          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 }
+          return priorityOrder[b.priority] - priorityOrder[a.priority]
+        })
+        
+        // Débloquer les N premières tâches
+        const toUnlock = sortedHidden.slice(0, count)
+        const unlockedIds = toUnlock.map(t => t.id)
+        
+        set((state) => ({
+          tasks: state.tasks.map(t => 
+            unlockedIds.includes(t.id) ? { ...t, isVisible: true } : t
+          )
+        }))
+        
+        if (toUnlock.length > 0) {
+          get().addToast(`🔓 ${toUnlock.length} tâche${toUnlock.length > 1 ? 's' : ''} débloquée${toUnlock.length > 1 ? 's' : ''}`, 'success')
+        }
       },
       
       // Notes

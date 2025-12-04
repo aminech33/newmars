@@ -63,7 +63,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-mars-bg noise-bg">
+    <div className="h-full w-full bg-mars-bg noise-bg overflow-hidden">
       <Suspense fallback={<LoadingFallback />}>
         {isFocusMode ? (
           <FocusMode />

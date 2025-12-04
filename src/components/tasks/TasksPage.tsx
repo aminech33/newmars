@@ -6,6 +6,9 @@ import { TaskDetails } from './TaskDetails'
 import { TaskFilters, TaskFilterState } from './TaskFilters'
 import { QuickFilters } from './QuickFilters'
 import { AddProjectModal } from './AddProjectModal'
+import { CreateProjectWithTasksModal } from './CreateProjectWithTasksModal'
+import { TaskQuotaDisplay } from './TaskQuotaDisplay'
+import { TaskQuotaSettings } from './TaskQuotaSettings'
 import { ProjectsManagementPage } from './ProjectsManagementPage'
 import { StatsPage } from './StatsPage'
 import { StatDetailModal } from './StatDetailModal'
@@ -13,6 +16,7 @@ import { TaskFAB } from './TaskFAB'
 import { UndoToast } from '../ui/UndoToast'
 import { Tooltip } from '../ui/Tooltip'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { CommandCenter } from './CommandCenter'
 import { useUndo } from '../../hooks/useUndo'
 import { useDebounce } from '../../hooks/useDebounce'
 import { useTaskFilters, QuickFilter } from '../../hooks/useTaskFilters'
@@ -37,6 +41,8 @@ export function TasksPage() {
   const [selectedStat, setSelectedStat] = useState<'total' | 'today' | 'completed' | 'productivity' | null>(null)
   const [showProjectsManagement, setShowProjectsManagement] = useState(false)
   const [showStatsPage, setShowStatsPage] = useState(false)
+  const [showCreateProjectWithTasks, setShowCreateProjectWithTasks] = useState(false)
+  const [showQuotaSettings, setShowQuotaSettings] = useState(false)
   
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | 'all'>('all')
@@ -143,6 +149,43 @@ export function TasksPage() {
     setShowNewProject(false)
   }
   
+  const handleCreateProjectWithTasks = (projectData: {
+    name: string
+    color: string
+    icon: string
+    tasks: Array<{
+      title: string
+      dueDate?: string
+      estimatedTime?: number
+      priority: any
+      category: any
+    }>
+  }) => {
+    // Create project first
+    const projectId = Math.random().toString(36).substring(2, 9)
+    addProject({
+      name: projectData.name,
+      color: projectData.color,
+      icon: projectData.icon
+    })
+    
+    // Then create all tasks with the project ID
+    projectData.tasks.forEach((task) => {
+      addTask({
+        title: task.title,
+        category: task.category,
+        priority: task.priority,
+        estimatedTime: task.estimatedTime,
+        dueDate: task.dueDate,
+        completed: false,
+        status: 'todo',
+        projectId: projectId
+      })
+    })
+    
+    setShowCreateProjectWithTasks(false)
+  }
+  
   const handleDeleteWithUndo = (task: Task) => {
     setConfirmDelete({ task })
   }
@@ -221,6 +264,13 @@ export function TasksPage() {
             <FolderKanban className="w-4 h-4" />
             <span className="text-sm font-medium">Gérer projets</span>
           </button>
+          <button
+            onClick={() => setShowCreateProjectWithTasks(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-2xl hover:bg-emerald-500/30 border border-emerald-500/20 transition-all duration-300"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-sm font-medium">Projet + Tâches</span>
+          </button>
           <Tooltip content="Ctrl+N" side="bottom">
             <button
               onClick={() => setShowQuickAdd(true)}
@@ -262,6 +312,17 @@ export function TasksPage() {
           activeFiltersCount={activeFiltersCount}
           onResetFilters={handleResetFilters}
         />
+        
+        {/* Command Center - Vue prioritaire */}
+        <CommandCenter
+          tasks={tasks}
+          onTaskClick={(task) => setSelectedTask(task)}
+        />
+        
+        {/* Task Quota Display */}
+        <div className="mb-8">
+          <TaskQuotaDisplay onSettingsClick={() => setShowQuotaSettings(true)} />
+        </div>
         
         {/* Filters & View Modes */}
         <div className="flex items-center justify-between mb-6">
@@ -394,6 +455,19 @@ export function TasksPage() {
         projectIcon={newProjectIcon}
         onIconChange={setNewProjectIcon}
         onCreate={handleCreateProject}
+      />
+      
+      {/* Create Project With Tasks Modal */}
+      <CreateProjectWithTasksModal
+        isOpen={showCreateProjectWithTasks}
+        onClose={() => setShowCreateProjectWithTasks(false)}
+        onCreate={handleCreateProjectWithTasks}
+      />
+      
+      {/* Task Quota Settings */}
+      <TaskQuotaSettings
+        isOpen={showQuotaSettings}
+        onClose={() => setShowQuotaSettings(false)}
       />
     </div>
   )

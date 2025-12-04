@@ -1,6 +1,6 @@
 import { useStore } from '../store/useStore'
 import { useWeekStats, useCurrentStreak, useCompletedTasks, usePendingTasks, useTasksByCategory } from '../store/selectors'
-import { ArrowLeft, TrendingUp, TrendingDown, Target, Clock, Lightbulb, Calendar, Zap } from 'lucide-react'
+import { ArrowLeft, TrendingUp, TrendingDown, Target, Clock, Lightbulb, Calendar, Zap, Award, Flame, ChevronRight, Sparkles } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import {
   calculateProductivityScore,
@@ -33,16 +33,30 @@ export function Dashboard() {
   const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null)
   const [selectedHour, setSelectedHour] = useState<number | null>(null)
 
-  // Raccourcis clavier pour les tabs
+  // Raccourcis clavier améliorés
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === '1') setActiveTab('overview')
-      if (e.key === '2') setActiveTab('insights')
-      if (e.key === '3') setActiveTab('heatmap')
+      // Tabs
+      if (e.key === '1' && !e.metaKey && !e.ctrlKey) setActiveTab('overview')
+      if (e.key === '2' && !e.metaKey && !e.ctrlKey) setActiveTab('insights')
+      if (e.key === '3' && !e.metaKey && !e.ctrlKey) setActiveTab('heatmap')
+      
+      // Navigation
+      if (e.key === 'Escape') setView('hub')
+      if (e.key === 'ArrowLeft' && e.metaKey) {
+        const tabs: Array<'overview' | 'insights' | 'heatmap'> = ['overview', 'insights', 'heatmap']
+        const currentIndex = tabs.indexOf(activeTab)
+        if (currentIndex > 0) setActiveTab(tabs[currentIndex - 1])
+      }
+      if (e.key === 'ArrowRight' && e.metaKey) {
+        const tabs: Array<'overview' | 'insights' | 'heatmap'> = ['overview', 'insights', 'heatmap']
+        const currentIndex = tabs.indexOf(activeTab)
+        if (currentIndex < tabs.length - 1) setActiveTab(tabs[currentIndex + 1])
+      }
     }
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [])
+  }, [activeTab, setView])
 
   // Sélecteurs optimisés (mémorisés)
   const weekStats = useWeekStats()
@@ -70,11 +84,32 @@ export function Dashboard() {
   const totalFocusMinutes = weekStats.reduce((acc, day) => acc + day.focusMinutes, 0)
   const weekTasksCompleted = weekStats.reduce((acc, day) => acc + day.tasksCompleted, 0)
   
-  // Score de productivité
+  // Score de productivité avec moyenne 30j
   const productivityScore = useMemo(() => 
     calculateProductivityScore(todayTasks, focusMinutes, streak, 1, dailyGoal),
     [todayTasks, focusMinutes, streak, dailyGoal]
   )
+  
+  // Moyenne sur 30 jours
+  const last30DaysScores = useMemo(() => {
+    const scores: number[] = []
+    for (let i = 0; i < 30; i++) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      const dayTasks = completedTasks.filter(t => 
+        new Date(t.createdAt).toISOString().split('T')[0] === dateStr
+      ).length
+      // Estimation simplifiée du score (on n'a pas l'historique complet de focusMinutes)
+      const dayScore = calculateProductivityScore(dayTasks, 0, streak, 1, dailyGoal)
+      scores.push(dayScore.score)
+    }
+    return scores
+  }, [completedTasks, streak, dailyGoal])
+  
+  const averageScore = Math.round(last30DaysScores.reduce((a, b) => a + b, 0) / last30DaysScores.length)
+  const scoreDiff = productivityScore.score - averageScore
+  const scorePercentile = Math.round((last30DaysScores.filter(s => s < productivityScore.score).length / last30DaysScores.length) * 100)
 
   // Comparaison jour
   const dayComparison = useMemo(() => 
@@ -211,45 +246,71 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen w-full flex flex-col view-transition" role="main" aria-label="Dashboard de productivité">
-      {/* Header - Sticky */}
-      <header className="sticky top-0 z-20 flex-shrink-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setView('hub')}
-              className="p-2 -ml-2 text-zinc-600 hover:text-zinc-400 transition-colors rounded-xl hover:bg-zinc-800/50"
-            >
-              <ArrowLeft className="w-5 h-5" />
+      {/* Header - Sticky avec Breadcrumb et Shortcuts */}
+      <header className="sticky top-0 z-20 flex-shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50">
+        <div className="max-w-7xl mx-auto">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-zinc-500 mb-3">
+            <button onClick={() => setView('hub')} className="hover:text-zinc-300 transition-colors">
+              Hub
             </button>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Dashboard</h1>
-              <p className="text-sm text-zinc-500">Analyse de ta productivité</p>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-zinc-300 font-medium">Dashboard</span>
+            <div className="ml-auto flex items-center gap-2 text-xs">
+              <kbd className="px-2 py-1 bg-zinc-800/50 border border-zinc-700 rounded text-zinc-400">Esc</kbd>
+              <span className="text-zinc-600">Retour</span>
             </div>
           </div>
           
-          {/* Tabs avec raccourcis clavier */}
-          <div className="flex items-center gap-1 bg-zinc-900/50 rounded-xl p-1 border border-zinc-800/50" role="tablist" aria-label="Sections du dashboard">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Tooltip content="Retour au Hub (Esc)" side="bottom">
+                <button
+                  onClick={() => setView('hub')}
+                  className="p-2.5 -ml-2 text-zinc-400 hover:text-zinc-100 transition-all rounded-xl hover:bg-zinc-800/50 hover:scale-110"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              </Tooltip>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Dashboard</h1>
+                <p className="text-sm text-zinc-500">Analyse de ta productivité en temps réel</p>
+              </div>
+            </div>
+          
+            {/* Tabs avec raccourcis clavier visibles */}
+            <div className="flex items-center gap-1 bg-zinc-900/50 rounded-xl p-1 border border-zinc-800/50" role="tablist" aria-label="Sections du dashboard">
             {[
               { id: 'overview', label: 'Vue d\'ensemble', key: '1' },
               { id: 'insights', label: 'Insights', key: '2' },
               { id: 'heatmap', label: 'Activité', key: '3' },
             ].map((tab) => (
-              <Tooltip key={tab.id} content={`Raccourci: ${tab.key}`} side="bottom">
+              <Tooltip key={tab.id} content={`Raccourci: ${tab.key} | Cmd+← / Cmd+→ pour naviguer`} side="bottom">
                 <button
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
                   role="tab"
                   aria-selected={activeTab === tab.id}
                   aria-controls={`${tab.id}-panel`}
-                  className={`px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                  className={`group relative px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all ${
                     activeTab === tab.id 
                       ? 'bg-zinc-800 text-zinc-100 shadow-lg' 
-                      : 'text-zinc-500 hover:text-zinc-300'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
                   }`}
                 >
-                  {tab.label}
+                  <span className="flex items-center gap-2">
+                    {tab.label}
+                    <kbd className={`hidden sm:inline-block px-1.5 py-0.5 text-[10px] rounded border transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-zinc-700 border-zinc-600 text-zinc-300'
+                        : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-600 group-hover:text-zinc-500'
+                    }`}>
+                      {tab.key}
+                    </kbd>
+                  </span>
                 </button>
               </Tooltip>
             ))}
+            </div>
           </div>
         </div>
       </header>
@@ -269,29 +330,64 @@ export function Dashboard() {
                 <div className={`absolute inset-0 bg-gradient-to-br ${scoreTheme.gradient} opacity-5 pointer-events-none`} />
                 
                 <div className="relative flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 sm:gap-10">
-                  {/* Score géant */}
-                  <div className="flex-1 text-center lg:text-left">
-                    <p id="productivity-score-heading" className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">Score de Productivité</p>
-                    <div className="flex items-baseline justify-center lg:justify-start gap-4 mb-6">
+                  {/* Score géant avec contexte */}
+                  <div className="flex-1 text-center lg:text-left space-y-4">
+                    <p id="productivity-score-heading" className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider">Score de Productivité</p>
+                    
+                    <div className="flex items-baseline justify-center lg:justify-start gap-4">
                       <h2 className={`text-7xl sm:text-8xl lg:text-9xl font-mono-display font-bold bg-gradient-to-br ${scoreTheme.gradient} bg-clip-text text-transparent number-glow`}>
                         <CountUp end={productivityScore.score} duration={1500} />
                       </h2>
                       <span className="text-3xl sm:text-4xl text-zinc-600 font-light">/100</span>
                     </div>
                     
-                    {/* Tendance */}
-                    {dayComparison.tasksDiff !== 0 && (
-                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
-                        dayComparison.tasksDiff > 0 
-                          ? 'bg-emerald-500/10 text-emerald-400' 
-                          : 'bg-rose-500/10 text-rose-400'
-                      }`}>
-                        {dayComparison.tasksDiff > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                        <span className="text-sm font-medium">
-                          {dayComparison.tasksDiff > 0 ? '+' : ''}{dayComparison.tasksDiff} vs hier
-                        </span>
-                      </div>
-                    )}
+                    {/* Contexte et Tendances */}
+                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                      {/* Tendance vs hier */}
+                      <Tooltip content="Évolution par rapport à hier" side="top">
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                          scoreDiff > 0 
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                            : scoreDiff < 0
+                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50'
+                        }`}>
+                          {scoreDiff > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : scoreDiff < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : <Target className="w-3.5 h-3.5" />}
+                          <span>{scoreDiff > 0 ? '+' : ''}{scoreDiff} vs moyenne</span>
+                        </div>
+                      </Tooltip>
+                      
+                      {/* Percentile */}
+                      <Tooltip content={`Meilleur que ${scorePercentile}% de tes 30 derniers jours`} side="top">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                          <Award className="w-3.5 h-3.5" />
+                          <span>Top {100 - scorePercentile}%</span>
+                        </div>
+                      </Tooltip>
+                      
+                      {/* Streak */}
+                      {streak > 0 && (
+                        <Tooltip content={`${streak} jours consécutifs d'activité`} side="top">
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                            <Flame className="w-3.5 h-3.5" />
+                            <span>{streak} jours</span>
+                          </div>
+                        </Tooltip>
+                      )}
+                    </div>
+                    
+                    {/* Message motivant */}
+                    <p className="text-sm text-zinc-500">
+                      {productivityScore.score >= 80 ? (
+                        <span className="text-emerald-400">🎉 Excellente journée ! Continue comme ça !</span>
+                      ) : productivityScore.score >= 60 ? (
+                        <span className="text-cyan-400">💪 Bonne progression ! Encore un petit effort !</span>
+                      ) : productivityScore.score >= 40 ? (
+                        <span className="text-amber-400">⚡ Tu peux faire mieux ! Focus sur tes priorités.</span>
+                      ) : (
+                        <span className="text-rose-400">🚀 Démarre ta journée ! Chaque petite action compte.</span>
+                      )}
+                    </p>
                   </div>
                   
                   {/* Breakdown avec animations - Cliquables */}
@@ -332,6 +428,51 @@ export function Dashboard() {
               </div>
             </div>
           </section>
+
+          {/* Badges de Gamification */}
+          {(streak >= 7 || todayTasks >= dailyGoal || productivityScore.score >= 90) && (
+            <section className="mb-8 sm:mb-12">
+              <div className="flex items-center gap-3 mb-4">
+                <Award className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Réussites</h3>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {streak >= 7 && (
+                  <div className="glass-widget p-4 flex items-center gap-3 animate-scale-in">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/50">
+                      <Flame className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-zinc-200">Série de feu ! 🔥</p>
+                      <p className="text-xs text-zinc-500">{streak} jours consécutifs</p>
+                    </div>
+                  </div>
+                )}
+                {todayTasks >= dailyGoal && (
+                  <div className="glass-widget p-4 flex items-center gap-3 animate-scale-in">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/50">
+                      <Target className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-zinc-200">Objectif atteint ! 🎯</p>
+                      <p className="text-xs text-zinc-500">{todayTasks}/{dailyGoal} tâches</p>
+                    </div>
+                  </div>
+                )}
+                {productivityScore.score >= 90 && (
+                  <div className="glass-widget p-4 flex items-center gap-3 animate-scale-in">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/50">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-zinc-200">Journée parfaite ! ✨</p>
+                      <p className="text-xs text-zinc-500">Score de {productivityScore.score}/100</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
 
           {activeTab === 'overview' && (
             <div role="tabpanel" id="overview-panel" aria-labelledby="overview-tab">
@@ -651,9 +792,43 @@ export function Dashboard() {
                           <span className="text-2xl">{insight.icon}</span>
                         </div>
                         
-                        {/* Card */}
+                        {/* Card avec actions */}
                         <div className={`ml-6 pl-8 border-l-2 ${colors.border} bg-gradient-to-r ${colors.bg} rounded-r-2xl p-5 hover:shadow-lg transition-all duration-300`}>
-                          <p className={`text-sm ${colors.text} font-medium leading-relaxed`}>{insight.message}</p>
+                          <div className="flex items-start justify-between gap-4">
+                            <p className={`text-sm ${colors.text} font-medium leading-relaxed flex-1`}>{insight.message}</p>
+                            
+                            {/* Actions rapides */}
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {insight.type === 'tip' && (
+                                <Tooltip content="Créer une tâche pour ça" side="top">
+                                  <button
+                                    onClick={() => setView('tasks')}
+                                    className="p-2 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 transition-colors"
+                                  >
+                                    <Target className="w-4 h-4" />
+                                  </button>
+                                </Tooltip>
+                              )}
+                              {insight.type === 'warning' && peakHours[0] && (
+                                <Tooltip content="Planifier une session" side="top">
+                                  <button
+                                    onClick={() => setView('pomodoro')}
+                                    className="p-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 transition-colors"
+                                  >
+                                    <Clock className="w-4 h-4" />
+                                  </button>
+                                </Tooltip>
+                              )}
+                              <Tooltip content="Voir les détails" side="top">
+                                <button
+                                  onClick={() => setActiveTab('overview')}
+                                  className={`p-2 rounded-lg ${colors.icon} bg-opacity-20 hover:bg-opacity-30 ${colors.text} transition-colors`}
+                                >
+                                  <Sparkles className="w-4 h-4" />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )
