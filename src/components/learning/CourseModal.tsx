@@ -38,6 +38,8 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
   const [level, setLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner')
   const [linkedProjectId, setLinkedProjectId] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
+  const [isProgramming, setIsProgramming] = useState(false)
+  const [programmingLanguage, setProgrammingLanguage] = useState('python')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [error, setError] = useState('')
 
@@ -45,6 +47,19 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
   const modalRef = useRef<HTMLDivElement>(null)
 
   const isEditMode = !!course
+  
+  const PROGRAMMING_LANGUAGES = [
+    { value: 'python', label: 'Python' },
+    { value: 'javascript', label: 'JavaScript' },
+    { value: 'typescript', label: 'TypeScript' },
+    { value: 'java', label: 'Java' },
+    { value: 'cpp', label: 'C++' },
+    { value: 'csharp', label: 'C#' },
+    { value: 'rust', label: 'Rust' },
+    { value: 'go', label: 'Go' },
+    { value: 'php', label: 'PHP' },
+    { value: 'ruby', label: 'Ruby' }
+  ]
 
   // Initialize form when opening
   useEffect(() => {
@@ -57,6 +72,8 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
         setLevel(course.level)
         setLinkedProjectId(course.linkedProjectId || '')
         setSystemPrompt(course.systemPrompt || '')
+        setIsProgramming(course.isProgramming || false)
+        setProgrammingLanguage(course.programmingLanguage || 'python')
       } else {
         setName('')
         setDescription('')
@@ -65,6 +82,8 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
         setLevel('beginner')
         setLinkedProjectId('')
         setSystemPrompt('')
+        setIsProgramming(false)
+        setProgrammingLanguage('python')
       }
       setError('')
       setShowAdvanced(false)
@@ -128,7 +147,9 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
       color,
       level,
       linkedProjectId,
-      systemPrompt: systemPrompt.trim() || undefined
+      systemPrompt: systemPrompt.trim() || undefined,
+      isProgramming,
+      programmingLanguage: isProgramming ? programmingLanguage : undefined
     })
 
     onClose()
@@ -302,6 +323,46 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Programming Options */}
+          <div>
+            <label className="flex items-center gap-3 p-4 bg-zinc-800/30 rounded-xl cursor-pointer hover:bg-zinc-800/50 transition-all">
+              <input
+                type="checkbox"
+                checked={isProgramming}
+                onChange={(e) => setIsProgramming(e.target.checked)}
+                className="w-4 h-4 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+              />
+              <div className="flex-1">
+                <div className="text-sm text-zinc-200 font-medium flex items-center gap-2">
+                  💻 Cours de programmation
+                </div>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Active l'éditeur de code en split view
+                </p>
+              </div>
+            </label>
+
+            {isProgramming && (
+              <div className="mt-3 animate-fade-in">
+                <label htmlFor="programming-language" className="text-sm text-zinc-400 mb-2 block">
+                  Langage de programmation
+                </label>
+                <select
+                  id="programming-language"
+                  value={programmingLanguage}
+                  onChange={(e) => setProgrammingLanguage(e.target.value)}
+                  className="w-full bg-zinc-800/50 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                >
+                  {PROGRAMMING_LANGUAGES.map(lang => (
+                    <option key={lang.value} value={lang.value}>
+                      {lang.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Advanced Options */}

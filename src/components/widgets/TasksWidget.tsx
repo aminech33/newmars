@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { AlertCircle, Circle, CheckSquare, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, Circle, CheckSquare, CheckCircle2, Plus } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -10,83 +10,139 @@ interface TasksWidgetProps {
 
 export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProps) {
   const { id } = widget
-  const { tasks, setView, toggleTask } = useStore()
+  const { tasks, setView, toggleTask, addTask } = useStore()
   
   const pendingTasks = useMemo(() => tasks.filter(t => !t.completed), [tasks])
   const urgentTasks = useMemo(() => pendingTasks.filter(t => t.priority === 'urgent'), [pendingTasks])
   
-  // Top 3 tâches (urgentes en premier)
-  const topTasks = useMemo(() => {
-    const urgent = pendingTasks.filter(t => t.priority === 'urgent').slice(0, 3)
-    if (urgent.length >= 3) return urgent
+  // Prochaine tâche prioritaire (avec date de préférence)
+  const nextTask = useMemo(() => {
+    // Prioriser les tâches urgentes avec dates
+    const urgentWithDates = pendingTasks
+      .filter(t => t.priority === 'urgent' && t.dueDate)
+      .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
     
-    const remaining = pendingTasks.filter(t => t.priority !== 'urgent').slice(0, 3 - urgent.length)
-    return [...urgent, ...remaining]
+    if (urgentWithDates.length > 0) return urgentWithDates[0]
+    
+    // Sinon tâches urgentes sans dates
+    const urgentNoDates = pendingTasks.filter(t => t.priority === 'urgent' && !t.dueDate)
+    if (urgentNoDates.length > 0) return urgentNoDates[0]
+    
+    // Sinon tâches normales avec dates
+    const normalWithDates = pendingTasks
+      .filter(t => t.dueDate)
+      .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
+    
+    if (normalWithDates.length > 0) return normalWithDates[0]
+    
+    // Sinon première tâche disponible
+    return pendingTasks[0]
+  }, [pendingTasks])
+  
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setView('tasks')
+  }
+
+  // Format date/time pour affichage
+  const formatDueDate = (dueDate: string | undefined) => {
+    if (!dueDate) return null
+    const date = new Date(dueDate)
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    
+    const isToday = date.toDateString() === today.toDateString()
+    const isTomorrow = date.toDateString() === tomorrow.toDateString()
+    
+    if (isToday) return "Aujourd'hui"
+    if (isTomorrow) return "Demain"
+    
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  }
+
+  // Top 3 tâches pour affichage
+  const topTasks = useMemo(() => {
+    return pendingTasks.slice(0, 3)
   }, [pendingTasks])
 
   return (
     <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('tasks')}>
-      <div className="h-full flex flex-col p-6 gap-4">
-        {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <CheckSquare className="w-12 h-12 text-emerald-400" strokeWidth={1.5} />
-              </div>
+      <div className="h-full flex flex-col p-5 gap-2.5 relative">
+        {/* Header compact */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="w-6 h-6 text-emerald-400 hover-glow" strokeWidth={1.5} />
+            <div className="text-3xl font-bold text-white tabular-nums leading-none font-mono-display number-glow">
+              {pendingTasks.length}
+            </div>
+            <div className="text-[10px] text-emerald-400/80 uppercase tracking-wider font-semibold">
+              TÂCHES
+            </div>
+          </div>
           {urgentTasks.length > 0 && (
-            <div className="px-3 py-1 bg-gradient-to-br from-rose-500 to-rose-600 rounded-full shadow-lg shadow-rose-500/30">
-              <span className="text-sm font-bold text-white">{urgentTasks.length}</span>
+            <div className="px-2 py-0.5 bg-gradient-to-br from-rose-500 to-rose-600 rounded-full shadow-lg shadow-rose-500/30">
+              <span className="text-[10px] font-bold text-white">{urgentTasks.length} urgent{urgentTasks.length > 1 ? 's' : ''}</span>
             </div>
           )}
         </div>
 
-        {/* Big Count */}
-        <div className="text-center">
-          <div className="text-6xl font-bold text-white tabular-nums leading-none">
-            {pendingTasks.length}
-          </div>
-          <div className="text-sm text-zinc-500 uppercase tracking-wide mt-2">
-            tâches
-          </div>
-        </div>
-
-        {/* Task List */}
-        <div className="flex-1 space-y-2 overflow-hidden">
+        {/* Task List - 3 tâches */}
+        <div className="flex-1 space-y-1.5 overflow-hidden">
           {topTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center text-zinc-500 text-sm py-4">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600 mb-2" />
-              <span>Tout est fait !</span>
+            <div className="flex flex-col items-center justify-center text-center h-full">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600 mb-2" />
+              <span className="text-sm text-zinc-500">Tout est fait !</span>
             </div>
           ) : (
-            topTasks.map((task) => (
+            topTasks.map((task, index) => (
               <button
                 key={task.id}
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleTask(task.id)
                 }}
-                className="flex items-start gap-2 w-full text-left p-2 rounded-lg
-                           hover:bg-white/5 transition-colors group"
+                className={`flex items-start gap-2 w-full text-left p-2 rounded-lg
+                           hover:bg-white/5 transition-colors group
+                           ${index === 0 && task.priority === 'urgent' ? 'bg-rose-500/5 border border-rose-500/20' : ''}`}
               >
-                <Circle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5
+                <Circle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5
                                    group-hover:text-emerald-300 transition-colors" />
-                <span className="text-sm text-zinc-300 group-hover:text-white 
-                                 transition-colors line-clamp-2 flex-1">
-                  {task.title}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-zinc-300 group-hover:text-white 
+                                 transition-colors line-clamp-1 font-medium">
+                    {task.title}
+                  </p>
+                  {task.dueDate && (
+                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                      {formatDueDate(task.dueDate)}
+                    </p>
+                  )}
+                </div>
                 {task.priority === 'urgent' && (
-                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-400 flex-shrink-0 mt-0.5" />
                 )}
               </button>
             ))
           )}
         </div>
 
-        {/* Footer */}
-        {urgentTasks.length > 0 && (
-          <div className="text-center pt-2 border-t border-white/10">
-            <span className="text-xs text-rose-400 font-medium">
-              {urgentTasks.length} urgente{urgentTasks.length > 1 ? 's' : ''}
+        {/* Footer Stats */}
+        {pendingTasks.length > 0 && (
+          <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+            <span className="text-[10px] text-zinc-600">
+              {pendingTasks.filter(t => t.dueDate).length} avec échéance
             </span>
+            <button
+              onClick={handleQuickAdd}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg
+                         bg-emerald-500/10 hover:bg-emerald-500/20
+                         text-emerald-400 hover:text-emerald-300
+                         transition-all duration-200 group"
+            >
+              <Plus className="w-3 h-3" strokeWidth={2.5} />
+              <span className="text-[10px] font-semibold">Ajouter</span>
+            </button>
           </div>
         )}
       </div>

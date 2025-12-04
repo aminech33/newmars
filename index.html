@@ -1,14 +1,40 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/mars.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NewMars - Your Personal Productivity Hub</title>
-    <!-- Google Fonts - Calligraphy fonts -->
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#6366F1" />
+    <meta name="description" content="IKU - Your personal productivity hub with tasks, calendar, journal, habits and more" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="IKU" />
+    <link rel="apple-touch-icon" href="/mars.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <title>IKU - Personal Productivity Hub</title>
+    
+    <!-- Google Fonts - Calligraphy fonts + Space Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Parisienne&family=Tangerine:wght@400;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Parisienne&family=Tangerine:wght@400;700&family=Playfair+Display:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Register Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered:', registration);
+            })
+            .catch((error) => {
+              console.log('SW registration failed:', error);
+            });
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

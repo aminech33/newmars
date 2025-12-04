@@ -9,6 +9,8 @@ export interface PomodoroSession {
   projectIcon?: string
   bookId?: string
   bookTitle?: string
+  courseId?: string              // NEW: Pour Learning
+  courseName?: string            // NEW: Pour Learning
   duration: number // durée prévue en minutes
   actualDuration?: number // durée réelle si interrompu
   completedAt: number

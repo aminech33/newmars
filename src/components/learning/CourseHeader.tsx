@@ -1,7 +1,8 @@
 import { memo } from 'react'
-import { Settings, Trash2, Archive, BarChart3, BookOpen, Clock, Flame, ChevronLeft } from 'lucide-react'
+import { Settings, Trash2, Archive, BarChart3, BookOpen, Clock, Flame, ChevronLeft, Timer } from 'lucide-react'
 import { Course, COURSE_LEVELS } from '../../types/learning'
 import { Tooltip } from '../ui/Tooltip'
+import { useStore } from '../../store/useStore'
 
 interface CourseHeaderProps {
   course: Course
@@ -33,7 +34,9 @@ export const CourseHeader = memo(function CourseHeader({
   onToggleSidebar,
   sidebarCollapsed
 }: CourseHeaderProps) {
+  const { setView, projects, addToast } = useStore()
   const levelInfo = COURSE_LEVELS.find(l => l.value === course.level)
+  const linkedProject = projects.find(p => p.id === course.linkedProjectId)
   
   const formatDuration = (minutes: number): string => {
     if (minutes < 60) return `${minutes}min`
@@ -54,6 +57,26 @@ export const CourseHeader = memo(function CourseHeader({
     if (hours < 24) return `Il y a ${hours}h`
     if (days === 1) return 'Hier'
     return `Il y a ${days}j`
+  }
+
+  const startPomodoroForCourse = () => {
+    if (!linkedProject) {
+      addToast('⚠️ Aucun projet lié à ce cours', 'warning')
+      return
+    }
+    
+    // Naviguer vers Pomodoro avec le projet pré-sélectionné
+    // Le store devrait sauvegarder ces infos pour la page Pomodoro
+    localStorage.setItem('pomodoro-preselect', JSON.stringify({
+      projectId: course.linkedProjectId,
+      projectName: linkedProject.name,
+      taskTitle: `Étudier ${course.name}`,
+      courseId: course.id,
+      courseName: course.name
+    }))
+    
+    addToast(`🍅 Pomodoro prêt pour "${course.name}"`, 'success')
+    setView('pomodoro')
   }
 
   return (
@@ -134,6 +157,17 @@ export const CourseHeader = memo(function CourseHeader({
 
             {/* Actions */}
             <div className="flex items-center gap-1">
+              {/* Pomodoro Button - NEW */}
+              <Tooltip content={`Étudier ${course.name} (25min)`}>
+                <button
+                  onClick={startPomodoroForCourse}
+                  className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all group"
+                  aria-label="Démarrer un Pomodoro"
+                >
+                  <Timer className="w-4 h-4 group-hover:animate-pulse" />
+                </button>
+              </Tooltip>
+
               <Tooltip content="Statistiques">
                 <button
                   className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-all"

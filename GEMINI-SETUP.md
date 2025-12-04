@@ -75,6 +75,12 @@ L'IA utilise automatiquement :
 - System prompts personnalisés
 - Exemples concrets (code, exercices, flashcards)
 
+**🆕 Split View pour la programmation** :
+- Active l'éditeur de code côté du chat (cours de programmation uniquement)
+- L'IA peut lire ton code en temps réel pour t'aider
+- Pas besoin de copier-coller : le code est automatiquement inclus
+- Langages supportés : Python, JavaScript, TypeScript, Java, C++, C#, Rust, Go, PHP, Ruby
+
 ### **2️⃣ AI Assistant (Assistant Personnel)**
 
 L'IA a accès à **TOUTES vos données** :
@@ -114,8 +120,22 @@ npm run dev
 Puis :
 1. Allez dans **Learning** (Apprentissage)
 2. Créez un cours
+   - ✅ Coche "Cours de programmation" pour activer le split view
+   - Sélectionne le langage (Python, JavaScript, etc.)
 3. Tapez un message
 4. L'IA répond en ~2 secondes ! 🚀
+
+**Exemple d'utilisation du split view** :
+```
+Chat (gauche)              │  Éditeur (droite)
+──────────────────────────────────────────────
+Toi: "Aide-moi à créer    │  def fibonacci(n):
+      une fonction         │      # Ton code ici
+      fibonacci"           │      pass
+                           │
+IA: "Regarde ligne 2,      │  [💡 Aide] [▶️ Analyser]
+     tu dois ajouter..."   │
+```
 
 ---
 

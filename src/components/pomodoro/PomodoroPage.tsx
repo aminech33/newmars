@@ -53,9 +53,11 @@ export function PomodoroPage() {
     tasks,
     projects,
     books,
+    courses,
     pomodoroSessions,
     addPomodoroSession,
     updateBook,
+    updateLearningCourse,
     addToast,
     setView
   } = useStore()
@@ -75,10 +77,11 @@ export function PomodoroPage() {
     currentSessionStartedAt: undefined
   })
 
-  // Task & Project & Book selection
+  // Task & Project & Book & Course selection
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>()
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>()
   const [selectedBookId, setSelectedBookId] = useState<string | undefined>()
+  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>()
   const [customDuration, setCustomDuration] = useState<number>(25)
   const [showTaskSelector, setShowTaskSelector] = useState(false)
   const [showProjectSelector, setShowProjectSelector] = useState(false)
@@ -91,12 +94,30 @@ export function PomodoroPage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const notificationShownRef = useRef(false)
 
-  // Selected task & project & book
+  // Selected task & project & book & course
   const selectedTask = tasks.find(t => t.id === selectedTaskId)
   const selectedProject = projects.find(p => p.id === selectedProjectId) || 
                           (selectedTask?.projectId ? projects.find(p => p.id === selectedTask.projectId) : undefined)
   const selectedBook = books.find(b => b.id === selectedBookId)
+  const selectedCourse = courses?.find(c => c.id === selectedCourseId)
   const readingBooks = books.filter(b => b.status === 'reading')
+  const activeCourses = courses?.filter(c => c.status === 'active') || []
+  
+  // Load preselected data from localStorage (from Learning page)
+  useEffect(() => {
+    const preselectData = localStorage.getItem('pomodoro-preselect')
+    if (preselectData) {
+      try {
+        const data = JSON.parse(preselectData)
+        if (data.projectId) setSelectedProjectId(data.projectId)
+        if (data.courseId) setSelectedCourseId(data.courseId)
+        localStorage.removeItem('pomodoro-preselect')
+        addToast(`✅ Pomodoro configuré pour "${data.courseName || data.projectName}"`, 'success')
+      } catch (e) {
+        console.error('Error parsing preselect data:', e)
+      }
+    }
+  }, [])
 
   // Stats calculations
   const stats = useMemo(() => calculatePomodoroStats(pomodoroSessions), [pomodoroSessions])
@@ -159,6 +180,8 @@ export function PomodoroPage() {
         projectName: selectedProject?.name,
         bookId: selectedBookId,
         bookTitle: selectedBook?.title,
+        courseId: selectedCourseId,
+        courseName: selectedCourse?.name,
         duration,
         type: 'focus',
         startedAt: timerState.currentSessionStartedAt
@@ -172,6 +195,17 @@ export function PomodoroPage() {
           updatedAt: Date.now()
         })
         addToast(`📚 ${duration}min ajoutées à "${selectedBook.title}"`, 'success')
+      }
+      
+      // Si lié à un cours, mettre à jour le temps d'étude
+      if (selectedCourseId && selectedCourse) {
+        updateLearningCourse(selectedCourseId, {
+          totalTimeSpent: (selectedCourse.totalTimeSpent || 0) + duration,
+          sessionsCount: (selectedCourse.sessionsCount || 0) + 1,
+          lastActiveAt: Date.now(),
+          updatedAt: Date.now()
+        })
+        addToast(`🎓 ${duration}min ajoutées à "${selectedCourse.name}"`, 'success')
       }
       
       setTimerState(prev => ({ 
@@ -455,6 +489,17 @@ export function PomodoroPage() {
                       </div>
                     )}
 
+                    {selectedCourse && (
+                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                        <span className="text-xl">{selectedCourse.icon}</span>
+                        <div className="flex-1">
+                          <div className="text-sm text-zinc-400">Cours d'apprentissage</div>
+                          <div className="font-medium">{selectedCourse.name}</div>
+                          <div className="text-xs text-zinc-600">{selectedCourse.totalTimeSpent}min étudiées</div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
                       <Award className="w-5 h-5 text-yellow-400" />
                       <div className="flex-1">
@@ -570,6 +615,23 @@ export function PomodoroPage() {
                         <option value="">Aucun livre</option>
                         {readingBooks.map(book => (
                           <option key={book.id} value={book.id}>📖 {book.title}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-zinc-500 mb-2 block flex items-center gap-2">
+                        🎓 Cours (apprentissage)
+                      </label>
+                      <select
+                        value={selectedCourseId || ''}
+                        onChange={(e) => setSelectedCourseId(e.target.value || undefined)}
+                        disabled={timerState.status !== 'idle'}
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                      >
+                        <option value="">Aucun cours</option>
+                        {activeCourses.map(course => (
+                          <option key={course.id} value={course.id}>{course.icon} {course.name}</option>
                         ))}
                       </select>
                     </div>

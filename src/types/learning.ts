@@ -43,6 +43,10 @@ export interface Course {
   // Lien projet (obligatoire)
   linkedProjectId: string      // ID du projet lié
   
+  // Programmation
+  isProgramming?: boolean      // Active le split view avec éditeur
+  programmingLanguage?: string // python, javascript, typescript, etc.
+  
   // Chat
   messages: Message[]
   systemPrompt?: string        // Contexte personnalisé pour l'IA
@@ -204,6 +208,8 @@ export interface CreateCourseData {
   linkedProjectId: string      // Obligatoire
   systemPrompt?: string
   topics?: string[]
+  isProgramming?: boolean
+  programmingLanguage?: string
 }
 
 export interface UpdateCourseData {

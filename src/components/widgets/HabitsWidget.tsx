@@ -40,40 +40,74 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
     return maxStreak
   }, [habits])
 
+  // Mini graphique 7 derniers jours
+  const last7Days = useMemo(() => {
+    const days = []
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      const completed = habits.filter(h => h.completedDates.includes(dateStr)).length
+      days.push({
+        day: date.getDate(),
+        completed,
+        total: habits.length
+      })
+    }
+    return days
+  }, [habits])
+
   return (
     <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('hub')}>
-      <div className="h-full flex flex-col p-6 gap-4">
-        {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Flame className="w-12 h-12 text-amber-400" strokeWidth={1.5} />
-              </div>
+      <div className="h-full flex flex-col p-5 gap-2.5">
+        {/* Header compact */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flame className="w-6 h-6 text-amber-400 hover-glow" strokeWidth={1.5} />
+            <div className="text-3xl font-bold text-white tabular-nums leading-none font-mono-display number-glow">
+              {todayCompleted}<span className="text-xl text-zinc-500/60">/{habits.length}</span>
+            </div>
+          </div>
           {currentStreak > 0 && (
-            <div className="px-3 py-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full shadow-lg shadow-amber-500/30">
-              <span className="text-sm font-bold text-white">{currentStreak}j</span>
+            <div className="px-2 py-0.5 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full shadow-lg shadow-amber-500/30">
+              <span className="text-[10px] font-bold text-white">{currentStreak}j</span>
             </div>
           )}
         </div>
 
-        {/* Big Count */}
-        <div className="text-center">
-          <div className="text-6xl font-bold text-white tabular-nums leading-none">
-            {todayCompleted}<span className="text-3xl text-zinc-500">/{habits.length}</span>
+        {/* Mini graphique 7 jours */}
+        {habits.length > 0 && (
+          <div className="h-10 flex items-end gap-0.5">
+            {last7Days.map((day, i) => {
+              const height = day.total > 0 ? (day.completed / day.total) * 100 : 0
+              const isToday = i === 6
+              
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <div 
+                    className={`w-full rounded-t transition-all hover:scale-105 ${
+                      isToday 
+                        ? 'chart-bar-amber' 
+                        : 'bg-amber-500/50'
+                    }`}
+                    style={{ height: `${Math.max(20, height)}%` }}
+                  />
+                  <div className="text-[8px] text-zinc-600">{day.day}</div>
+                </div>
+              )
+            })}
           </div>
-          <div className="text-sm text-zinc-500 uppercase tracking-wide mt-2">
-            aujourd'hui
-          </div>
-        </div>
+        )}
 
-        {/* Habits List */}
-        <div className="flex-1 space-y-2 overflow-hidden">
+        {/* Habits List - Toutes les habitudes */}
+        <div className="flex-1 space-y-1 overflow-hidden">
           {habits.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center text-zinc-500 text-sm py-4">
-              <Flame className="w-8 h-8 text-zinc-600 mb-2" />
-              <span>Aucune habitude</span>
+            <div className="flex flex-col items-center justify-center text-center h-full">
+              <Flame className="w-10 h-10 text-zinc-600 mb-2" />
+              <span className="text-xs text-zinc-500">Aucune habitude</span>
             </div>
           ) : (
-            habits.slice(0, 3).map((habit) => {
+            habits.map((habit) => {
               const isCompleted = habit.completedDates.includes(today)
               
               return (
@@ -83,28 +117,28 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
                     e.stopPropagation()
                     toggleHabitToday(habit.id)
                   }}
-                  className="flex items-center gap-3 w-full text-left p-2 rounded-lg
+                  className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg
                              hover:bg-white/5 transition-colors group"
                 >
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center
                                    transition-all flex-shrink-0
                                    ${isCompleted 
                                      ? 'bg-amber-400 border-amber-400' 
                                      : 'border-zinc-600 group-hover:border-amber-400'
                                    }`}>
-                    {isCompleted && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                    {isCompleted && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                   </div>
-                  <span className={`text-sm flex-1 transition-colors
+                  <span className={`text-xs flex-1 transition-colors truncate
                                     ${isCompleted 
                                       ? 'text-zinc-500 line-through' 
                                       : 'text-zinc-300 group-hover:text-white'
                                     }`}>
                     {habit.name}
                   </span>
-                  {habit.streak > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/20 rounded-full">
-                      <Flame className="w-3 h-3 text-orange-400" />
-                      <span className="text-xs text-orange-400 font-medium">{habit.streak}</span>
+                  {habit.streak > 0 && !isCompleted && (
+                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-500/20 rounded-full">
+                      <Flame className="w-2.5 h-2.5 text-orange-400" />
+                      <span className="text-[9px] text-orange-400 font-medium">{habit.streak}</span>
                     </div>
                   )}
                 </button>
@@ -116,7 +150,11 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
         {/* Footer Progress */}
         {habits.length > 0 && (
           <div className="pt-2 border-t border-white/10">
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-zinc-600">Progression</span>
+              <span className="text-[10px] text-zinc-400 font-semibold">{Math.round((todayCompleted / habits.length) * 100)}%</span>
+            </div>
+            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
                 style={{ width: `${(todayCompleted / habits.length) * 100}%` }}

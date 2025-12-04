@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'mono-display': ['"Space Mono"', 'monospace'],
+      },
       colors: {
         mars: {
           bg: '#09090b',

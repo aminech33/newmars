@@ -313,22 +313,23 @@ button:active:not(:disabled) {
   }
 }
 
-/* Hover - Élévation & Glow (Subtle) */
+/* Hover - Élévation & Glow (Plus visible) */
 .glass-widget:hover {
-  transform: translateY(-6px) scale(1.02);
+  transform: translateY(-8px) scale(1.03);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.02) 100%
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 100%
   );
-  border-color: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(var(--glass-blur-hover)) saturate(140%);
-  -webkit-backdrop-filter: blur(var(--glass-blur-hover)) saturate(140%);
+  border-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(var(--glass-blur-hover)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-hover)) saturate(150%);
   box-shadow: 
-    0 30px 60px -15px rgba(0, 0, 0, 0.7),
-    0 25px 40px -10px rgba(0, 0, 0, 0.5),
-    0 15px 25px -5px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 35px 70px -15px rgba(0, 0, 0, 0.8),
+    0 30px 50px -10px rgba(0, 0, 0, 0.6),
+    0 20px 30px -5px rgba(0, 0, 0, 0.5),
+    0 0 40px -10px rgba(var(--accent-rgb), 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* Focus - Accessibilité clavier */
@@ -408,29 +409,201 @@ button:active:not(:disabled) {
   }
 }
 
-/* Accent color glow */
+/* Accent color glow - Plus intense */
 .glass-widget-indigo {
-  --accent-rgb: 91, 127, 255;
+  --accent-rgb: 99, 102, 241;
+  --accent-glow: rgba(99, 102, 241, 0.2);
 }
 
 .glass-widget-cyan {
-  --accent-rgb: 100, 210, 255;
+  --accent-rgb: 34, 211, 238;
+  --accent-glow: rgba(34, 211, 238, 0.2);
 }
 
 .glass-widget-emerald {
-  --accent-rgb: 48, 209, 88;
+  --accent-rgb: 52, 211, 153;
+  --accent-glow: rgba(52, 211, 153, 0.2);
 }
 
 .glass-widget-rose {
-  --accent-rgb: 255, 55, 95;
+  --accent-rgb: 251, 113, 133;
+  --accent-glow: rgba(251, 113, 133, 0.2);
 }
 
 .glass-widget-violet {
-  --accent-rgb: 191, 90, 242;
+  --accent-rgb: 167, 139, 250;
+  --accent-glow: rgba(167, 139, 250, 0.2);
 }
 
 .glass-widget-amber {
-  --accent-rgb: 255, 159, 10;
+  --accent-rgb: 251, 191, 36;
+  --accent-glow: rgba(251, 191, 36, 0.2);
+}
+
+/* Animations numériques premium */
+@keyframes numberPulse {
+  0%, 100% { 
+    transform: scale(1);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    transform: scale(1.02);
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  }
+}
+
+.number-glow {
+  animation: numberPulse 3s ease-in-out infinite;
+  text-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 0 40px rgba(var(--accent-rgb), 0.2);
+}
+
+/* Gradient text animé */
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.gradient-text {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(var(--accent-rgb), 1) 50%,
+    rgba(255, 255, 255, 1) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+/* Glow sur hover des éléments interactifs */
+.hover-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-glow:hover {
+  filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.6));
+  transform: scale(1.05);
+}
+
+/* Bordures gradient pour stats cards */
+.gradient-border-emerald {
+  position: relative;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(16, 185, 129, 0.05));
+  border: 1px solid transparent;
+}
+
+.gradient-border-emerald::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.3), rgba(16, 185, 129, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.gradient-border-cyan {
+  position: relative;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(6, 182, 212, 0.05));
+  border: 1px solid transparent;
+}
+
+.gradient-border-cyan::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.3), rgba(6, 182, 212, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.gradient-border-rose {
+  position: relative;
+  background: linear-gradient(135deg, rgba(251, 113, 133, 0.1), rgba(244, 63, 94, 0.05));
+  border: 1px solid transparent;
+}
+
+.gradient-border-rose::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(251, 113, 133, 0.3), rgba(244, 63, 94, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.gradient-border-violet {
+  position: relative;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(139, 92, 246, 0.05));
+  border: 1px solid transparent;
+}
+
+.gradient-border-violet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.3), rgba(139, 92, 246, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.gradient-border-amber {
+  position: relative;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05));
+  border: 1px solid transparent;
+}
+
+.gradient-border-amber::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Mini graphiques avec gradient glow */
+.chart-bar-emerald {
+  background: linear-gradient(to top, #10b981, #34d399);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+}
+
+.chart-bar-rose {
+  background: linear-gradient(to top, #f43f5e, #fb7185);
+  box-shadow: 0 0 10px rgba(251, 113, 133, 0.3);
+}
+
+.chart-bar-amber {
+  background: linear-gradient(to top, #f59e0b, #fbbf24);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+.chart-bar-cyan {
+  background: linear-gradient(to top, #06b6d4, #22d3ee);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
 }
 
 /* Shimmer effect removed - was too distracting */

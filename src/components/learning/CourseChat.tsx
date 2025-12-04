@@ -3,7 +3,7 @@ import { Course } from '../../types/learning'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { CodeEditor } from './CodeEditor'
-import { Sparkles, Code, X } from 'lucide-react'
+import { Sparkles, Code, Lightbulb, Play } from 'lucide-react'
 
 interface CourseChatProps {
   course: Course
@@ -28,7 +28,8 @@ export const CourseChat = memo(function CourseChat({
 }: CourseChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [showCodeEditor, setShowCodeEditor] = useState(false)
+  const [editorCode, setEditorCode] = useState(`# ${course.name}\n# Écris ton code ici\n\n`)
+  const [includeCode, setIncludeCode] = useState(true)
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -36,17 +37,38 @@ export const CourseChat = memo(function CourseChat({
   }, [course.messages.length, isTyping])
 
   const hasMessages = course.messages.length > 0
+  const showSplitView = course.isProgramming === true
+
+  // Gestion de l'envoi avec le code
+  const handleSendWithCode = (message: string) => {
+    if (showSplitView && includeCode && editorCode.trim()) {
+      const fullMessage = `${message}\n\n📎 Mon code actuel:\n\`\`\`${course.programmingLanguage || 'python'}\n${editorCode}\n\`\`\``
+      onSendMessage(fullMessage)
+    } else {
+      onSendMessage(message)
+    }
+  }
+
+  const handleRunCode = () => {
+    onSendMessage(`Exécute et explique ce code:\n\`\`\`${course.programmingLanguage || 'python'}\n${editorCode}\n\`\`\``)
+  }
+
+  const handleAskHelp = () => {
+    onSendMessage(`J'ai besoin d'aide avec ce code:\n\`\`\`${course.programmingLanguage || 'python'}\n${editorCode}\n\`\`\``)
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages Area */}
-      <div 
-        ref={containerRef}
-        className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6"
-        role="log"
-        aria-label="Conversation"
-        aria-live="polite"
-      >
+    <div className="flex h-full overflow-hidden">
+      {/* Chat Area (left side or full width) */}
+      <div className={`flex flex-col ${showSplitView ? 'w-1/2 border-r border-zinc-800' : 'w-full'} h-full`}>
+        {/* Messages Area */}
+        <div 
+          ref={containerRef}
+          className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 min-h-0"
+          role="log"
+          aria-label="Conversation"
+          aria-live="polite"
+        >
         {!hasMessages ? (
           // Empty State
           <div className="h-full flex flex-col items-center justify-center text-center px-4">
@@ -115,55 +137,47 @@ export const CourseChat = memo(function CourseChat({
         )}
       </div>
 
-      {/* Input */}
-      <ChatInput
-        onSend={onSendMessage}
-        isTyping={isTyping}
-        disabled={false}
-        placeholder={`Demande quelque chose sur ${course.name}...`}
-      />
+        {/* Input */}
+        <div className="border-t border-zinc-800 bg-zinc-900/50">
+          {showSplitView && (
+            <div className="px-4 pt-2 pb-1 flex items-center gap-2 text-xs">
+              <label className="flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-300 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={includeCode}
+                  onChange={(e) => setIncludeCode(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+                />
+                📎 Inclure mon code dans les messages
+              </label>
+            </div>
+          )}
+          <ChatInput
+            onSend={handleSendWithCode}
+            isTyping={isTyping}
+            disabled={false}
+            placeholder={`Demande quelque chose sur ${course.name}...`}
+          />
+        </div>
+      </div>
 
-      {/* Floating Code Editor */}
-      {showCodeEditor && (
-        <div className="fixed bottom-6 right-6 w-[600px] max-w-[90vw] z-50 animate-slide-up">
-          <div className="relative">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowCodeEditor(false)}
-              className="absolute -top-3 -right-3 p-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 shadow-lg z-10 transition-all duration-200"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* Editor */}
-            <CodeEditor
-              language={course.name.toLowerCase().includes('python') ? 'python' : 
-                       course.name.toLowerCase().includes('javascript') ? 'javascript' :
-                       course.name.toLowerCase().includes('typescript') ? 'typescript' :
-                       course.name.toLowerCase().includes('java') ? 'java' :
-                       course.name.toLowerCase().includes('cpp') || course.name.toLowerCase().includes('c++') ? 'cpp' :
-                       course.name.toLowerCase().includes('rust') ? 'rust' :
-                       'python'}
-              defaultCode={`# ${course.name}\n# Écris ton code ici\n\n`}
-              onAskHelp={(code) => onSendMessage(`Aide-moi avec ce code:\n\`\`\`\n${code}\n\`\`\``)}
-              onRun={(code) => onSendMessage(`Exécute et explique ce code:\n\`\`\`\n${code}\n\`\`\``)}
-            />
-          </div>
+      {/* Code Editor (right side) - Only for programming courses */}
+      {showSplitView && (
+        <div className="w-1/2 flex flex-col h-full overflow-hidden">
+          <CodeEditor
+            language={course.programmingLanguage || 'python'}
+            value={editorCode}
+            onChange={setEditorCode}
+            readOnly={false}
+            showHeader={true}
+            courseName={course.name}
+            onRun={handleRunCode}
+            onAskHelp={handleAskHelp}
+            includeAI={includeCode}
+            isTyping={isTyping}
+          />
         </div>
       )}
-
-      {/* Floating Code Editor Toggle Button */}
-      <button
-        onClick={() => setShowCodeEditor(!showCodeEditor)}
-        className={`fixed bottom-6 right-6 p-4 rounded-full shadow-2xl transition-all duration-300 ${
-          showCodeEditor 
-            ? 'bg-zinc-800 text-zinc-400' 
-            : 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:scale-110'
-        } z-40`}
-        title={showCodeEditor ? 'Fermer l\'éditeur' : 'Ouvrir l\'éditeur de code'}
-      >
-        <Code className="w-5 h-5" />
-      </button>
     </div>
   )
 })

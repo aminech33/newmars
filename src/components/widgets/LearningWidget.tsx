@@ -41,39 +41,35 @@ export const LearningWidget = memo(function LearningWidget({ widget }: LearningW
 
   return (
     <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('learning')}>
-      <div className="h-full flex flex-col p-6 gap-4">
-        {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <GraduationCap className="w-12 h-12 text-violet-400" strokeWidth={1.5} />
-              </div>
+      <div className="h-full flex flex-col p-5 gap-2.5">
+        {/* Header compact */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-6 h-6 text-violet-400 hover-glow" strokeWidth={1.5} />
+            <div className="text-3xl font-bold text-white tabular-nums leading-none font-mono-display number-glow">
+              {activeCourses.length}
+            </div>
+            <div className="text-[10px] text-violet-400/80 uppercase tracking-wider font-semibold">
+              COURS
+            </div>
+          </div>
           {streak > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-br from-violet-500 to-purple-500 rounded-full shadow-lg shadow-violet-500/30">
-              <Flame className="w-4 h-4 text-white" />
-              <span className="text-sm font-bold text-white">{streak}j</span>
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-gradient-to-br from-violet-500 to-purple-500 rounded-full shadow-lg shadow-violet-500/30">
+              <Flame className="w-3 h-3 text-white" />
+              <span className="text-[10px] font-bold text-white">{streak}j</span>
             </div>
           )}
         </div>
 
-        {/* Big Count */}
-        <div className="text-center">
-          <div className="text-6xl font-bold text-white tabular-nums leading-none">
-            {activeCourses.length}
-          </div>
-          <div className="text-sm text-zinc-500 uppercase tracking-wide mt-2">
-            {activeCourses.length > 1 ? 'cours actifs' : 'cours actif'}
-          </div>
-        </div>
-
-        {/* Courses List */}
-        <div className="flex-1 space-y-2 overflow-hidden">
+        {/* Courses List - Top 3 */}
+        <div className="flex-1 space-y-1.5 overflow-hidden">
           {learningCourses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center text-zinc-500 text-sm py-4">
-              <BookOpen className="w-8 h-8 text-zinc-600 mb-2" />
-              <span>Aucun cours</span>
+            <div className="flex flex-col items-center justify-center text-center h-full">
+              <BookOpen className="w-10 h-10 text-zinc-600 mb-2" />
+              <span className="text-xs text-zinc-500">Aucun cours</span>
             </div>
           ) : recentCourses.length === 0 ? (
-            <div className="text-center text-zinc-500 text-sm py-4">
+            <div className="text-center text-zinc-500 text-xs py-4">
               Tous les cours terminés ✓
             </div>
           ) : (
@@ -85,48 +81,55 @@ export const LearningWidget = memo(function LearningWidget({ widget }: LearningW
               return (
                 <div
                   key={course.id}
-                  className="flex items-start gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/8 transition-colors"
+                  className="flex items-start gap-2 p-2 bg-white/5 rounded-lg hover:bg-white/8 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 
                                   flex items-center justify-center flex-shrink-0 border border-violet-500/20">
-                    <BookOpen className="w-5 h-5 text-violet-400" />
+                    <BookOpen className="w-4 h-4 text-violet-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-zinc-300 font-medium truncate">
+                    <div className="text-xs text-zinc-300 font-medium truncate">
                       {course.name}
                     </div>
-                    <div className="text-xs text-zinc-500 truncate">
+                    <div className="text-[10px] text-zinc-500 truncate">
                       {course.subject}
                     </div>
                     {progress > 0 && (
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1.5 mt-1">
                         <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-zinc-600 tabular-nums">{progress}%</span>
+                        <span className="text-[9px] text-zinc-600 tabular-nums">{progress}%</span>
                       </div>
                     )}
                   </div>
+                  {course.messagesCount > 0 && (
+                    <Zap className="w-3 h-3 text-violet-400/60 flex-shrink-0 mt-0.5" />
+                  )}
                 </div>
               )
             })
           )}
         </div>
 
-        {/* Footer Stats */}
+        {/* Footer Stats Grid */}
         {learningCourses.length > 0 && (
           <div className="pt-2 border-t border-white/10">
-            <div className="grid grid-cols-2 gap-2 text-center">
-              <div>
-                <div className="text-xs text-zinc-400">Messages</div>
-                <div className="text-lg font-bold text-white tabular-nums">{totalMessages}</div>
+            <div className="grid grid-cols-3 gap-1.5">
+              <div className="text-center p-1.5 gradient-border-violet rounded">
+                <div className="text-sm font-bold text-white tabular-nums">{totalMessages}</div>
+                <div className="text-[9px] text-zinc-600">Messages</div>
               </div>
-              <div>
-                <div className="text-xs text-zinc-400">Flashcards</div>
-                <div className="text-lg font-bold text-white tabular-nums">{totalFlashcards}</div>
+              <div className="text-center p-1.5 gradient-border-violet rounded">
+                <div className="text-sm font-bold text-white tabular-nums">{totalFlashcards}</div>
+                <div className="text-[9px] text-zinc-600">Cartes</div>
+              </div>
+              <div className="text-center p-1.5 gradient-border-violet rounded">
+                <div className="text-sm font-bold text-violet-400 tabular-nums">{streak}</div>
+                <div className="text-[9px] text-zinc-600">Jours</div>
               </div>
             </div>
           </div>
