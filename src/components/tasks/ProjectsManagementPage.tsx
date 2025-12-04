@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, Archive, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, Archive, TrendingUp, Link, ListPlus } from 'lucide-react'
 import { useStore, Project, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { AddProjectModal } from './AddProjectModal'
+import { CreateProjectWithTasksModal } from './CreateProjectWithTasksModal'
+import { AssignTasksToProjectModal } from './AssignTasksToProjectModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 interface ProjectsManagementPageProps {
@@ -9,11 +11,13 @@ interface ProjectsManagementPageProps {
 }
 
 export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) {
-  const { projects, tasks, addProject, updateProject, deleteProject } = useStore()
+  const { projects, tasks, addProject, updateProject, deleteProject, addTask } = useStore()
   
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showCreateWithTasks, setShowCreateWithTasks] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [assigningProject, setAssigningProject] = useState<Project | null>(null)
   
   // Form states
   const [projectName, setProjectName] = useState('')
@@ -77,6 +81,43 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
     }
   }
 
+  const handleCreateProjectWithTasks = (projectData: {
+    name: string
+    color: string
+    icon: string
+    tasks: Array<{
+      title: string
+      dueDate?: string
+      estimatedTime?: number
+      priority: any
+      category: any
+    }>
+  }) => {
+    // Create project first
+    const projectId = Math.random().toString(36).substring(2, 9)
+    addProject({
+      name: projectData.name,
+      color: projectData.color,
+      icon: projectData.icon
+    })
+    
+    // Then create all tasks with the project ID
+    projectData.tasks.forEach((task) => {
+      addTask({
+        title: task.title,
+        category: task.category,
+        priority: task.priority,
+        estimatedTime: task.estimatedTime,
+        dueDate: task.dueDate,
+        completed: false,
+        status: 'todo',
+        projectId: projectId
+      })
+    })
+    
+    setShowCreateWithTasks(false)
+  }
+
   return (
     <div className="min-h-screen w-full bg-mars-bg overflow-y-auto">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -101,13 +142,22 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
             </div>
           </div>
 
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
-          >
-            <Plus className="w-5 h-5" />
-            Nouveau projet
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              Projet simple
+            </button>
+            <button
+              onClick={() => setShowCreateWithTasks(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
+            >
+              <ListPlus className="w-5 h-5" />
+              Projet + Tâches
+            </button>
+          </div>
         </div>
 
         {/* Projects Grid */}
@@ -116,13 +166,22 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
             <FolderKanban className="w-16 h-16 text-zinc-700 mb-4" />
             <h3 className="text-xl font-semibold text-zinc-400 mb-2">Aucun projet</h3>
             <p className="text-zinc-600 mb-6">Créez votre premier projet pour organiser vos tâches</p>
-            <button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
-            >
-              <Plus className="w-5 h-5" />
-              Créer un projet
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleOpenAddModal}
+                className="flex items-center gap-2 px-6 py-3 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                Projet simple
+              </button>
+              <button
+                onClick={() => setShowCreateWithTasks(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
+              >
+                <ListPlus className="w-5 h-5" />
+                Projet + Tâches
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -152,6 +211,13 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
 
                     {/* Actions */}
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => setAssigningProject(project)}
+                        className="p-2 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        title="Assigner des tâches"
+                      >
+                        <Link className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handleOpenEditModal(project)}
                         className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
@@ -195,6 +261,15 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                       </span>
                     </div>
                   </div>
+
+                  {/* Assign Tasks Button */}
+                  <button
+                    onClick={() => setAssigningProject(project)}
+                    className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 border border-emerald-500/30 transition-all text-sm font-medium"
+                  >
+                    <Link className="w-4 h-4" />
+                    Assigner des tâches
+                  </button>
                 </div>
               )
             })}
@@ -227,6 +302,22 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         onIconChange={setProjectIcon}
         onCreate={handleCreateOrUpdate}
       />
+
+      {/* Create Project With Tasks Modal */}
+      <CreateProjectWithTasksModal
+        isOpen={showCreateWithTasks}
+        onClose={() => setShowCreateWithTasks(false)}
+        onCreate={handleCreateProjectWithTasks}
+      />
+
+      {/* Assign Tasks Modal */}
+      {assigningProject && (
+        <AssignTasksToProjectModal
+          isOpen={!!assigningProject}
+          onClose={() => setAssigningProject(null)}
+          project={assigningProject}
+        />
+      )}
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
