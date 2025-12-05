@@ -11,7 +11,7 @@ const criticalFiles = [
   'src/App.tsx',
   'src/main.tsx',
   'src/components/HubV2.tsx',
-  'src/components/journal/JournalPage.tsx',
+  'src/components/myday/MyDayPage.tsx',
   'src/components/widgets/JournalWidget.tsx',
   'src/components/WidgetGrid.tsx',
   'src/components/WidgetPicker.tsx',

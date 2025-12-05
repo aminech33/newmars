@@ -91,12 +91,12 @@ function BookSpine({ book, index, onSelect, onStartReading, isReadingSession, is
     >
       <button
         onClick={onSelect}
-        className="relative transition-all duration-300 hover:-translate-y-3 hover:z-10 animate-fade-in focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#2a1a0f] rounded-sm"
+        className="relative transition-colors duration-300 hover:-translate-y-3 hover:z-10 animate-fade-in focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#2a1a0f] rounded-sm"
         aria-label={`${book.title} par ${book.author}${book.status === 'reading' ? `, ${progress}% lu` : book.status === 'completed' ? ', terminé' : ', à lire'}`}
       >
         <div 
           className={`
-            relative rounded-sm cursor-pointer overflow-hidden transition-all duration-300
+            relative rounded-sm cursor-pointer overflow-hidden transition-colors duration-300
             group-hover:shadow-xl group-hover:shadow-black/60
             ${book.status === 'reading' ? 'ring-2 ring-amber-500/60' : ''}
             ${isCurrentReading ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-[#2a1a0f]' : ''}
@@ -107,7 +107,22 @@ function BookSpine({ book, index, onSelect, onStartReading, isReadingSession, is
           }}
         >
           {/* Couverture */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${book.coverColor}`} />
+          {book.coverUrl ? (
+            <>
+              <img 
+                src={book.coverUrl} 
+                alt={`Couverture de ${book.title}`}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to gradient if image fails to load
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+              <div className={`absolute inset-0 bg-gradient-to-br ${book.coverColor} opacity-0`} />
+            </>
+          ) : (
+            <div className={`absolute inset-0 bg-gradient-to-br ${book.coverColor}`} />
+          )}
           
           {/* Reliure */}
           <div className="absolute left-0 top-0 bottom-0 w-2 bg-black/30" aria-hidden="true" />
@@ -131,7 +146,7 @@ function BookSpine({ book, index, onSelect, onStartReading, isReadingSession, is
           
           {/* Barre de progression */}
           {book.status === 'reading' && book.pages && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50" aria-hidden="true">
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40" aria-hidden="true">
               <div 
                 className="h-full bg-amber-400" 
                 style={{ width: `${progress}%` }} 
@@ -196,4 +211,5 @@ function BookSpine({ book, index, onSelect, onStartReading, isReadingSession, is
     </div>
   )
 }
+
 

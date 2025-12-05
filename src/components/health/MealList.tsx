@@ -1,11 +1,12 @@
 import { memo } from 'react'
-import { Calendar, Apple, Flame, Trash2 } from 'lucide-react'
+import { Calendar, Apple, Flame, Trash2, Copy } from 'lucide-react'
 import { MealEntry } from '../../types/health'
 import { Tooltip } from '../ui/Tooltip'
 
 interface MealListProps {
   entries: MealEntry[]
   onDelete: (id: string) => void
+  onDuplicate?: (meal: MealEntry) => void
 }
 
 const MEAL_EMOJIS = {
@@ -22,7 +23,7 @@ const MEAL_LABELS = {
   snack: 'Collation'
 }
 
-export const MealList = memo(function MealList({ entries, onDelete }: MealListProps) {
+export const MealList = memo(function MealList({ entries, onDelete, onDuplicate }: MealListProps) {
   if (entries.length === 0) {
     return (
       <div className="text-center py-12">
@@ -77,18 +78,32 @@ export const MealList = memo(function MealList({ entries, onDelete }: MealListPr
               {meals.map((meal) => (
                 <div 
                   key={meal.id} 
-                  className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-2xl hover:bg-zinc-800/50 transition-all group"
+                  className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-2xl hover:bg-zinc-800/50 transition-[background-color] duration-200 group"
                   role="listitem"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-lg" aria-hidden="true">{MEAL_EMOJIS[meal.type]}</span>
                       <div>
                         <span className="text-xs text-zinc-600 block">{meal.time}</span>
                         <span className="text-xs text-zinc-500">{MEAL_LABELS[meal.type]}</span>
                       </div>
                     </div>
-                    <span className="text-sm font-medium text-zinc-200">{meal.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-zinc-200 block truncate">{meal.name}</span>
+                      {/* Affichage des macros */}
+                      <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500">
+                        {meal.protein !== undefined && (
+                          <span className="text-rose-400/80">P: {meal.protein}g</span>
+                        )}
+                        {meal.carbs !== undefined && (
+                          <span className="text-amber-400/80">G: {meal.carbs}g</span>
+                        )}
+                        {meal.fat !== undefined && (
+                          <span className="text-yellow-400/80">L: {meal.fat}g</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-3">
@@ -98,15 +113,29 @@ export const MealList = memo(function MealList({ entries, onDelete }: MealListPr
                       <span className="text-xs text-zinc-600">kcal</span>
                     </div>
                     
-                    <Tooltip content="Supprimer ce repas">
-                      <button
-                        onClick={() => onDelete(meal.id)}
-                        className="p-2 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                        aria-label={`Supprimer ${meal.name}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </Tooltip>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {onDuplicate && (
+                        <Tooltip content="Dupliquer ce repas">
+                          <button
+                            onClick={() => onDuplicate(meal)}
+                            className="p-2 text-zinc-600 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-[background-color] duration-200"
+                            aria-label={`Dupliquer ${meal.name}`}
+                          >
+                            <Copy className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                        </Tooltip>
+                      )}
+                      
+                      <Tooltip content="Supprimer ce repas">
+                        <button
+                          onClick={() => onDelete(meal.id)}
+                          className="p-2 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-[background-color] duration-200"
+                          aria-label={`Supprimer ${meal.name}`}
+                        >
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                      </Tooltip>
+                    </div>
                   </div>
                 </div>
               ))}

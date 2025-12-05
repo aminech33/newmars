@@ -38,7 +38,7 @@ export const LearningFAB = memo(function LearningFAB({
                 action.onClick()
                 setIsOpen(false)
               }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg transition-all ${colorClasses[action.color]}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-lg transition-[background-color] duration-200 ${colorClasses[action.color]}`}
               style={{
                 animationDelay: `${index * 50}ms`,
                 transform: `translateY(${isOpen ? 0 : 20}px)`,
@@ -46,7 +46,7 @@ export const LearningFAB = memo(function LearningFAB({
               }}
               aria-label={action.label}
             >
-              <action.icon className="w-5 h-5" />
+              <action.icon className="w-5 h-5" aria-hidden="true" />
               <span className="text-sm font-medium whitespace-nowrap">{action.label}</span>
             </button>
           ))}
@@ -56,7 +56,7 @@ export const LearningFAB = memo(function LearningFAB({
       {/* Main FAB */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-4 rounded-2xl shadow-xl transition-all ${
+        className={`p-4 rounded-2xl shadow-xl transition-[background-color,transform] duration-200 ${
           isOpen 
             ? 'bg-zinc-700 text-zinc-300 rotate-45' 
             : 'bg-indigo-500 text-white hover:bg-indigo-600'
@@ -64,7 +64,7 @@ export const LearningFAB = memo(function LearningFAB({
         aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
         aria-expanded={isOpen}
       >
-        {isOpen ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+        {isOpen ? <X className="w-6 h-6" aria-hidden="true" /> : <Plus className="w-6 h-6" aria-hidden="true" />}
       </button>
 
       {/* Backdrop */}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useStore } from '../../store/useStore'
 import { useLearningData } from '../../hooks/useLearningData'
 import { CourseList } from './CourseList'
 import { CourseChat } from './CourseChat'
@@ -30,6 +31,8 @@ function useLocalToast() {
 // REMOVED: Simulated AI Response - Now using real Gemini API
 
 export function LearningPage() {
+  const setView = useStore(state => state.setView)
+  
   const {
     uiState,
     filteredCourses,
@@ -167,7 +170,6 @@ Réponds de manière pédagogique et claire. Adapte-toi au niveau de l'élève.`
       // Add the complete AI response
       addAIResponse(activeCourse.id, fullResponse)
     } catch (error) {
-      console.error('Gemini API Error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
       showToast(errorMessage, 'error')
     } finally {
@@ -225,13 +227,14 @@ Réponds de manière pédagogique et claire. Adapte-toi au niveau de l'élève.`
   }, [activeCourse])
 
   const handleQuickChat = useCallback(() => {
-    // TODO: Implement quick chat without course
-    showToast('Fonctionnalité à venir', 'info')
-  }, [showToast])
+    // Quick chat: naviguer vers l'assistant IA général
+    setView('ai')
+    showToast('Assistant IA ouvert', 'success')
+  }, [setView, showToast])
 
   const handleFlashcards = useCallback(() => {
-    // TODO: Implement flashcard review mode
-    showToast('Fonctionnalité à venir', 'info')
+    // Flashcards: afficher un toast informatif (feature optionnelle)
+    showToast('Les flashcards sont générées dans chaque cours', 'info')
   }, [showToast])
 
   return (

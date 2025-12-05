@@ -61,7 +61,7 @@ export function TaskRelations({ taskId }: TaskRelationsProps) {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value as TaskRelationType)}
-            className="w-full bg-zinc-800 text-zinc-300 text-sm px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-zinc-600"
+            className="w-full bg-zinc-800 text-zinc-300 text-sm px-3 py-2 rounded-lg border border-zinc-800 focus:outline-none focus:border-zinc-800"
           >
             {relationTypes.map(type => (
               <option key={type} value={type}>
@@ -73,7 +73,7 @@ export function TaskRelations({ taskId }: TaskRelationsProps) {
           <select
             value={selectedTaskId}
             onChange={(e) => setSelectedTaskId(e.target.value)}
-            className="w-full bg-zinc-800 text-zinc-300 text-sm px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-zinc-600"
+            className="w-full bg-zinc-800 text-zinc-300 text-sm px-3 py-2 rounded-lg border border-zinc-800 focus:outline-none focus:border-zinc-800"
           >
             <option value="">Sélectionner une tâche...</option>
             {availableTasks.map(task => (
@@ -116,7 +116,7 @@ export function TaskRelations({ taskId }: TaskRelationsProps) {
                 </div>
                 <button
                   onClick={() => removeTaskRelation(relation.id)}
-                  className="p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-colors"
                 >
                   <X className="w-3 h-3" />
                 </button>

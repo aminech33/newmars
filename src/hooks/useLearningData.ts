@@ -25,7 +25,6 @@ const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9
 export function useLearningData() {
   const {
     learningCourses,
-    projects,
     addLearningCourse,
     updateLearningCourse,
     deleteLearningCourse,
@@ -34,8 +33,7 @@ export function useLearningData() {
     addLearningFlashcard,
     deleteLearningFlashcard,
     addLearningNote,
-    deleteLearningNote,
-    updateProject
+    deleteLearningNote
   } = useStore()
 
   // UI State
@@ -198,13 +196,10 @@ export function useLearningData() {
 
     addLearningCourse(newCourse)
     
-    // Mettre à jour le projet avec le lien vers le cours
-    updateProject(data.linkedProjectId, { linkedCourseId: newCourse.id })
-    
     setUIState(prev => ({ ...prev, activeCourseId: newCourse.id }))
 
     return newCourse
-  }, [addLearningCourse, updateProject])
+  }, [addLearningCourse])
 
   const updateCourse = useCallback((courseId: string, data: UpdateCourseData) => {
     updateLearningCourse(courseId, {

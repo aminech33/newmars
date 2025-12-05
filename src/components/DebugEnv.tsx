@@ -4,7 +4,7 @@ export function DebugEnv() {
   const model = import.meta.env.VITE_GEMINI_MODEL
 
   return (
-    <div className="fixed bottom-4 left-4 bg-zinc-900 border border-zinc-700 rounded-lg p-4 text-xs font-mono max-w-md z-50">
+    <div className="fixed bottom-4 left-4 bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-xs font-mono max-w-md z-50">
       <h3 className="text-zinc-400 font-bold mb-2">🔧 DEBUG ENV</h3>
       <div className="space-y-1">
         <div className="flex items-start gap-2">
@@ -34,4 +34,5 @@ export function DebugEnv() {
     </div>
   )
 }
+
 

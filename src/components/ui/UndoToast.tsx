@@ -11,7 +11,7 @@ export function UndoToast({ message, onUndo, isVisible }: UndoToastProps) {
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
-      <div className="flex items-center gap-3 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl">
+      <div className="flex items-center gap-3 px-4 py-3 bg-zinc-800 border border-zinc-800 rounded-xl shadow-2xl">
         <span className="text-sm text-zinc-300">{message}</span>
         <button
           onClick={onUndo}

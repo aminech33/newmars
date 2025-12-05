@@ -6,6 +6,8 @@ import { EventDetailsHeader } from './EventDetailsHeader'
 import { EventDateTimeSection } from './EventDateTimeSection'
 import { EventMetadataSection } from './EventMetadataSection'
 import { EventRecurrenceSection } from './EventRecurrenceSection'
+import { EventRemindersSection } from './EventRemindersSection'
+import { ConflictWarning } from './ConflictWarning'
 import { Collapsible } from '../ui/Collapsible'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 
@@ -15,7 +17,7 @@ interface EventDetailsProps {
 }
 
 export function EventDetails({ event, onClose }: EventDetailsProps) {
-  const { updateEvent, deleteEvent, tasks } = useStore()
+  const { updateEvent, deleteEvent, tasks, events } = useStore()
   
   // Form state
   const [editTitle, setEditTitle] = useState(event.title)
@@ -32,6 +34,7 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
   const [newAttendee, setNewAttendee] = useState('')
   const [editIsRecurring, setEditIsRecurring] = useState(event.isRecurring)
   const [editRecurrence, setEditRecurrence] = useState<Recurrence | undefined>(event.recurrence)
+  const [editReminders, setEditReminders] = useState(event.reminders || [])
   
   // UI state
   const [showSaved, setShowSaved] = useState(false)
@@ -52,6 +55,7 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
     setEditAttendees(event.attendees || [])
     setEditIsRecurring(event.isRecurring)
     setEditRecurrence(event.recurrence)
+    setEditReminders(event.reminders || [])
   }, [event])
 
   // Auto-save feedback
@@ -89,7 +93,8 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
       location: editLocation || undefined,
       attendees: editAttendees.length > 0 ? editAttendees : undefined,
       isRecurring: editIsRecurring,
-      recurrence: editRecurrence
+      recurrence: editRecurrence,
+      reminders: editReminders.length > 0 ? editReminders : undefined
     })
     setShowSaved(true)
   }
@@ -151,6 +156,9 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
           )}
 
           <div className="p-6 space-y-4">
+            {/* Conflict Warning */}
+            <ConflictWarning event={event} allEvents={events} />
+            
             {/* Date & Time */}
             <Collapsible title="Date et heure" defaultOpen={true}>
               <EventDateTimeSection
@@ -251,6 +259,14 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
                 recurrence={editRecurrence}
                 onRecurringChange={(val) => { setEditIsRecurring(val); handleSave() }}
                 onRecurrenceChange={(rec) => { setEditRecurrence(rec); handleSave() }}
+              />
+            </Collapsible>
+
+            {/* Reminders */}
+            <Collapsible title="Rappels" defaultOpen={editReminders.length > 0}>
+              <EventRemindersSection
+                reminders={editReminders}
+                onRemindersChange={(reminders) => { setEditReminders(reminders); handleSave() }}
               />
             </Collapsible>
 

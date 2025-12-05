@@ -87,9 +87,16 @@ export const HealthStats = memo(function HealthStats({
               <p className="text-4xl font-bold text-zinc-200">{bmi}</p>
               <p className={`text-xs ${bmiColor} mt-1`}>{bmiLabel}</p>
               {/* Progress bar IMC */}
-              <div className="mt-3 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div 
+                className="mt-3 h-1.5 bg-zinc-800 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={bmi}
+                aria-valuemin={0}
+                aria-valuemax={40}
+                aria-label="Indice de masse corporelle"
+              >
                 <div 
-                  className={`h-full rounded-full transition-all duration-500 ${
+                  className={`h-full rounded-full transition-[width] duration-500 ${
                     bmiColor.includes('emerald') ? 'bg-emerald-500' :
                     bmiColor.includes('amber') ? 'bg-amber-500' :
                     bmiColor.includes('orange') ? 'bg-orange-500' : 'bg-rose-500'
@@ -119,9 +126,16 @@ export const HealthStats = memo(function HealthStats({
           <p className="text-4xl font-bold text-zinc-200">{todayCalories}</p>
           <p className="text-xs text-zinc-600 mt-1">/ {targetCalories} kcal</p>
           {/* Progress bar calories */}
-          <div className="mt-3 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+          <div 
+            className="mt-3 h-1.5 bg-zinc-800 rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuenow={todayCalories}
+            aria-valuemin={0}
+            aria-valuemax={targetCalories}
+            aria-label="Calories consommées"
+          >
             <div 
-              className={`h-full rounded-full transition-all duration-500 ${
+              className={`h-full rounded-full transition-[width] duration-500 ${
                 todayCalories > targetCalories ? 'bg-rose-500' : 'bg-emerald-500'
               }`}
               style={{ width: `${caloriesPercent}%` }}

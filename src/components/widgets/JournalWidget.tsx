@@ -17,7 +17,7 @@ export const JournalWidget = memo(function JournalWidget({ widget }: JournalWidg
   const stats = useMemo(() => calculateJournalStats(journalEntries), [journalEntries])
 
   return (
-    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('journal')}>
+    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('myday')}>
       <div className="h-full flex flex-col p-5 gap-2.5 relative">
         {/* Header compact */}
         <div className="flex items-center justify-between">

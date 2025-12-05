@@ -76,7 +76,7 @@ export function TaskQuotaDisplay({ onSettingsClick }: TaskQuotaDisplayProps) {
       <div className="space-y-2">
         <div className="h-3 bg-zinc-800 rounded-full overflow-hidden relative">
           <div
-            className={`h-full transition-all duration-500 ${
+            className={`h-full transition-colors duration-500 ${
               isFull 
                 ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
                 : 'bg-gradient-to-r from-indigo-500 to-cyan-500'
@@ -150,4 +150,5 @@ export function TaskQuotaDisplay({ onSettingsClick }: TaskQuotaDisplayProps) {
     </div>
   )
 }
+
 

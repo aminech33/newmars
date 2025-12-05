@@ -20,7 +20,7 @@ export function WidgetFAB({ onAddWidget }: WidgetFABProps) {
               setEditMode(!isEditMode)
               setIsExpanded(false)
             }}
-            className={`p-3 rounded-full shadow-lg transition-all ${
+            className={`p-3 rounded-full shadow-lg transition-colors ${
               isEditMode 
                 ? 'bg-indigo-500 text-white' 
                 : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
@@ -35,7 +35,7 @@ export function WidgetFAB({ onAddWidget }: WidgetFABProps) {
               onAddWidget()
               setIsExpanded(false)
             }}
-            className="p-3 bg-emerald-500 text-white rounded-full shadow-lg hover:bg-emerald-600 transition-all"
+            className="p-3 bg-emerald-500 text-white rounded-full shadow-lg hover:bg-emerald-600 transition-colors"
             aria-label="Ajouter un widget"
           >
             <Plus className="w-5 h-5" />
@@ -46,7 +46,7 @@ export function WidgetFAB({ onAddWidget }: WidgetFABProps) {
       {/* Main FAB */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`p-4 rounded-full shadow-xl transition-all duration-300 ${
+        className={`p-4 rounded-full shadow-xl transition-colors duration-300 ${
           isExpanded 
             ? 'bg-zinc-700 rotate-45' 
             : 'bg-indigo-500 hover:bg-indigo-600'

@@ -9,7 +9,7 @@ import { Course, Message, Flashcard, Note as LearningNote } from '../types/learn
 import { Book, DEMO_BOOKS, Quote, ReadingNote, ReadingSession, ReadingGoal } from '../types/library'
 
 export type TaskCategory = 'dev' | 'design' | 'personal' | 'work' | 'urgent'
-export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'done'
+export type TaskStatus = 'todo' | 'in-progress' | 'done'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
 
 export interface SubTask {
@@ -89,6 +89,10 @@ export interface PomodoroSession {
   taskTitle?: string
   projectId?: string
   projectName?: string
+  bookId?: string
+  bookTitle?: string
+  courseId?: string
+  courseName?: string
   duration: number // durée prévue en minutes
   actualDuration?: number // durée réelle si interrompu
   completedAt: number // timestamp
@@ -108,14 +112,25 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'journal' | 'learning' | 'library' | 'pomodoro' | 'habits'
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
 interface AppState {
   // Navigation
   currentView: View
+  navigationHistory: View[]
   setView: (view: View) => void
+  goBack: () => void
+  canGoBack: boolean
+  
+  // Deep linking - selected items to open after navigation
+  selectedTaskId: string | null
+  selectedEventId: string | null
+  selectedBookId: string | null
+  setSelectedTaskId: (id: string | null) => void
+  setSelectedEventId: (id: string | null) => void
+  setSelectedBookId: (id: string | null) => void
   
   // User
   userName: string
@@ -252,7 +267,7 @@ interface AppState {
   
   // Projects
   projects: Project[]
-  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => void
+  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => string
   updateProject: (id: string, updates: Partial<Project>) => void
   deleteProject: (id: string) => void
   
@@ -387,7 +402,38 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       // Navigation
       currentView: 'hub',
-      setView: (view) => set({ currentView: view }),
+      navigationHistory: [] as View[],
+      setView: (view) => {
+        const currentView = get().currentView
+        // Ne pas ajouter si c'est la même vue
+        if (currentView !== view) {
+          set((state) => ({
+            currentView: view,
+            navigationHistory: [...state.navigationHistory.slice(-9), currentView], // Garder les 10 dernières
+            canGoBack: true
+          }))
+        }
+      },
+      goBack: () => {
+        const history = get().navigationHistory
+        if (history.length > 0) {
+          const previousView = history[history.length - 1]
+          set((state) => ({
+            currentView: previousView,
+            navigationHistory: state.navigationHistory.slice(0, -1),
+            canGoBack: state.navigationHistory.length > 1
+          }))
+        }
+      },
+      canGoBack: false,
+      
+      // Deep linking
+      selectedTaskId: null,
+      selectedEventId: null,
+      selectedBookId: null,
+      setSelectedTaskId: (id) => set({ selectedTaskId: id }),
+      setSelectedEventId: (id) => set({ selectedEventId: id }),
+      setSelectedBookId: (id) => set({ selectedBookId: id }),
       
       // User
       userName: 'Alexandre',
@@ -410,6 +456,7 @@ export const useStore = create<AppState>()(
         const newProject = { ...project, id: generateId(), createdAt: Date.now() }
         set((state) => ({ projects: [...state.projects, newProject] }))
         get().addToast('Projet créé', 'success')
+        return newProject.id
       },
       updateProject: (id, updates) => {
         set((state) => ({

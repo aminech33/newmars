@@ -31,7 +31,7 @@ export const HealthSuggestions = memo(function HealthSuggestions({ suggestions }
         {suggestions.slice(0, 5).map((suggestion, index) => (
           <div 
             key={index} 
-            className={`p-4 rounded-2xl border ${PRIORITY_COLORS[suggestion.priority]} transition-all hover:scale-[1.01]`}
+            className={`p-4 rounded-2xl border ${PRIORITY_COLORS[suggestion.priority]} transition-[background-color] duration-200 hover:scale-[1.01]`}
           >
             <p className="text-sm text-zinc-300 mb-1">{suggestion.message}</p>
             {suggestion.action && (

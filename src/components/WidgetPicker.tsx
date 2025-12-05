@@ -134,7 +134,7 @@ export function WidgetPicker({ isOpen, onClose }: WidgetPickerProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher un widget..."
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors"
               autoFocus
             />
           </div>
@@ -143,7 +143,7 @@ export function WidgetPicker({ isOpen, onClose }: WidgetPickerProps) {
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                 selectedCategory === 'all'
                   ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
                   : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent'
@@ -155,7 +155,7 @@ export function WidgetPicker({ isOpen, onClose }: WidgetPickerProps) {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                   selectedCategory === cat.id
                     ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
                     : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent'
@@ -203,7 +203,7 @@ export function WidgetPicker({ isOpen, onClose }: WidgetPickerProps) {
                             onMouseLeave={() => setHoveredWidget(null)}
                             disabled={alreadyAdded}
                             className={`
-                              relative p-4 text-left rounded-2xl transition-all duration-200 group
+                              relative p-4 text-left rounded-2xl transition-colors duration-200 group
                               ${alreadyAdded 
                                 ? 'bg-zinc-800/30 opacity-50 cursor-not-allowed' 
                                 : 'bg-zinc-800/50 hover:bg-zinc-800 hover:shadow-lg hover:scale-[1.02]'

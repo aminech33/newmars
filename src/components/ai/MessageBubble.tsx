@@ -55,9 +55,9 @@ export function MessageBubble({
       <div className="flex-1 max-w-[75%]">
         {/* Bubble */}
         <div
-          className={`relative px-4 py-3 rounded-2xl shadow-lg transition-all duration-300 ${
+          className={`relative px-4 py-3 rounded-2xl shadow-lg transition-colors duration-300 ${
             isAssistant
-              ? 'bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 backdrop-blur-sm border border-zinc-700/50 text-zinc-100'
+              ? 'bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 backdrop-blur-sm border border-zinc-800/50 text-zinc-100'
               : 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white'
           } ${showActions ? 'ring-2 ring-indigo-500/20' : ''}`}
         >
@@ -85,7 +85,7 @@ export function MessageBubble({
             {/* Copy */}
             <button
               onClick={handleCopy}
-              className="p-1.5 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-200 transition-all duration-200 hover:scale-110"
+              className="p-1.5 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-200 transition-colors duration-200 hover:scale-110"
               title="Copier"
             >
               {copied ? (
@@ -98,7 +98,7 @@ export function MessageBubble({
             {/* Like */}
             <button
               onClick={onLike}
-              className={`p-1.5 rounded-lg transition-all duration-200 hover:scale-110 ${
+              className={`p-1.5 rounded-lg transition-colors duration-200 hover:scale-110 ${
                 isLiked
                   ? 'bg-pink-500/20 text-pink-400'
                   : 'bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-200'
@@ -111,7 +111,7 @@ export function MessageBubble({
             {/* Regenerate */}
             <button
               onClick={onRegenerate}
-              className="p-1.5 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-200 transition-all duration-200 hover:scale-110 hover:rotate-180"
+              className="p-1.5 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-zinc-200 transition-colors duration-200 hover:scale-110 hover:rotate-180"
               title="Régénérer"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -122,4 +122,5 @@ export function MessageBubble({
     </div>
   )
 }
+
 

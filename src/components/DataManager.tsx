@@ -1,6 +1,9 @@
 import { useState, useRef } from 'react'
-import { Download, Upload, AlertTriangle, Check, X } from 'lucide-react'
+import { Download, Upload, AlertTriangle, Check } from 'lucide-react'
 import { downloadExport, importData, readFile } from '../utils/dataExport'
+import { Modal } from './ui/Modal'
+import { Button } from './ui/Button'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 
 interface DataManagerProps {
   isOpen: boolean
@@ -13,8 +16,6 @@ export function DataManager({ isOpen, onClose }: DataManagerProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  if (!isOpen) return null
 
   const handleExport = () => {
     try {
@@ -68,21 +69,14 @@ export function DataManager({ isOpen, onClose }: DataManagerProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-mars-surface border border-zinc-800 rounded-2xl overflow-hidden animate-scale-in">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-          <h3 className="text-lg font-medium text-zinc-200">Gestion des données</h3>
-          <button
-            onClick={onClose}
-            className="p-1 text-zinc-600 hover:text-zinc-400 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-4">
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Gestion des données"
+        size="md"
+      >
+        <div className="space-y-4">
           {/* Status message */}
           {status !== 'idle' && (
             <div className={`flex items-center gap-3 p-3 rounded-lg ${
@@ -100,7 +94,7 @@ export function DataManager({ isOpen, onClose }: DataManagerProps) {
           )}
 
           {/* Export */}
-          <div className="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+          <div className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-800">
             <div className="flex items-start gap-4">
               <div className="p-2 bg-indigo-500/10 rounded-lg">
                 <Download className="w-5 h-5 text-indigo-400" />
@@ -110,18 +104,20 @@ export function DataManager({ isOpen, onClose }: DataManagerProps) {
                 <p className="text-xs text-zinc-500 mb-3">
                   Téléchargez une copie de toutes vos données (tâches, événements, habitudes, etc.)
                 </p>
-                <button
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Download}
                   onClick={handleExport}
-                  className="px-4 py-2 text-sm bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 transition-colors"
                 >
                   Télécharger le backup
-                </button>
+                </Button>
               </div>
             </div>
           </div>
 
           {/* Import */}
-          <div className="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+          <div className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-800">
             <div className="flex items-start gap-4">
               <div className="p-2 bg-amber-500/10 rounded-lg">
                 <Upload className="w-5 h-5 text-amber-400" />
@@ -138,12 +134,14 @@ export function DataManager({ isOpen, onClose }: DataManagerProps) {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                <button
+                <Button
+                  variant="warning"
+                  size="sm"
+                  icon={Upload}
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 text-sm bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 transition-colors"
                 >
                   Sélectionner un fichier
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -156,39 +154,18 @@ export function DataManager({ isOpen, onClose }: DataManagerProps) {
             </p>
           </div>
         </div>
-      </div>
+      </Modal>
 
       {/* Confirmation Dialog */}
-      {showConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-mars-surface border border-zinc-800 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
-              </div>
-              <h4 className="text-lg font-medium text-zinc-200">Confirmer l'import</h4>
-            </div>
-            <p className="text-sm text-zinc-400 mb-6">
-              Cette action remplacera toutes vos données actuelles par celles du fichier sélectionné. Êtes-vous sûr ?
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={handleCancelImport}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirmImport}
-                className="px-4 py-2 text-sm bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 transition-colors"
-              >
-                Confirmer l'import
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <ConfirmDialog
+        isOpen={showConfirm}
+        onClose={handleCancelImport}
+        onConfirm={handleConfirmImport}
+        title="Confirmer l'import"
+        message="Cette action remplacera toutes vos données actuelles par celles du fichier sélectionné. Êtes-vous sûr ?"
+        confirmText="Confirmer l'import"
+        variant="warning"
+      />
+    </>
   )
 }
-

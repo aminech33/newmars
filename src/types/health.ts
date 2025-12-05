@@ -8,16 +8,32 @@ export interface WeightEntry {
   createdAt: number
 }
 
+// Portion d'un aliment dans un repas
+export interface FoodPortion {
+  foodId: string           // Référence à FoodItem dans foodDatabase
+  grams: number            // Quantité en grammes
+  unit?: string            // Unité lisible (ex: "2 pièces", "1 tasse")
+  unitCount?: number       // Nombre d'unités (ex: 2 pour "2 bananes")
+}
+
+// Repas composé de plusieurs aliments
 export interface MealEntry {
   id: string
   date: string // YYYY-MM-DD
   time: string // HH:mm
   type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
   name: string
-  calories: number
-  protein?: number // g
-  carbs?: number // g
-  fat?: number // g
+  
+  // Liste des aliments du repas
+  foods?: FoodPortion[]    // Nouveau système (optionnel pour rétrocompat)
+  
+  // Valeurs calculées automatiquement depuis foods[]
+  calories: number         // Total
+  protein: number          // g (obligatoire maintenant)
+  carbs: number            // g (obligatoire maintenant)
+  fat: number              // g (obligatoire maintenant)
+  fiber?: number           // g (optionnel)
+  
   note?: string
   createdAt: number
 }

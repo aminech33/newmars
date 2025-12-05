@@ -2,9 +2,14 @@ import { Event, Recurrence } from '../types/calendar'
 import { addDays } from './dateUtils'
 
 /**
- * Génère toutes les instances d'un événement récurrent
+ * Génère les instances d'un événement récurrent pour une période donnée
  */
-export function generateRecurringInstances(baseEvent: Event, maxInstances: number = 52): Event[] {
+export function generateRecurringInstances(
+  baseEvent: Event, 
+  rangeStart?: Date, 
+  rangeEnd?: Date,
+  maxInstances: number = 100
+): Event[] {
   if (!baseEvent.isRecurring || !baseEvent.recurrence) {
     return [baseEvent]
   }
@@ -12,12 +17,21 @@ export function generateRecurringInstances(baseEvent: Event, maxInstances: numbe
   const instances: Event[] = []
   const { frequency, interval, endDate, daysOfWeek } = baseEvent.recurrence
   const startDate = new Date(baseEvent.startDate)
-  const endDateLimit = endDate ? new Date(endDate) : addDays(startDate, 365) // Max 1 year if no end date
+  
+  // Use provided range or default to 3 months window
+  const windowStart = rangeStart || new Date()
+  const windowEnd = rangeEnd || addDays(windowStart, 90)
+  const endDateLimit = endDate ? new Date(endDate) : windowEnd
   
   let currentDate = new Date(startDate)
   let instanceCount = 0
 
-  while (currentDate <= endDateLimit && instanceCount < maxInstances) {
+  // Skip to range start if event starts before
+  if (currentDate < windowStart) {
+    currentDate = new Date(windowStart)
+  }
+
+  while (currentDate <= endDateLimit && currentDate <= windowEnd && instanceCount < maxInstances) {
     // Check if this date matches the recurrence pattern
     let shouldInclude = true
 

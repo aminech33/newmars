@@ -93,7 +93,7 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
   const linkedEvent = events.find(e => e.linkedTaskId === task.id)
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-2xl h-full bg-mars-surface shadow-[0_0_64px_rgba(0,0,0,0.5)] overflow-y-auto animate-slide-in-right"
         style={{ border: '1px solid rgba(255,255,255,0.08)' }}
@@ -122,7 +122,7 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-zinc-600 hover:text-zinc-400 transition-all rounded-xl hover:bg-zinc-800/50"
+              className="p-2 text-zinc-600 hover:text-zinc-400 transition-colors rounded-xl hover:bg-zinc-800/50"
             >
               <X className="w-5 h-5" />
             </button>
@@ -135,7 +135,7 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => handleUpdate({ projectId: undefined })}
-                className={`px-3 py-1.5 rounded-xl text-xs transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs transition-colors ${
                   !task.projectId
                     ? 'bg-zinc-700 text-zinc-300'
                     : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'
@@ -147,7 +147,7 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
                 <button
                   key={project.id}
                   onClick={() => handleUpdate({ projectId: project.id })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-colors ${
                     task.projectId === project.id
                       ? 'text-white'
                       : 'text-zinc-600 hover:text-zinc-400'
@@ -302,7 +302,7 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
                   </span>
                   <button
                     onClick={() => deleteSubtask(task.id, subtask.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-zinc-700 hover:text-rose-400 transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1 text-zinc-700 hover:text-rose-400 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -343,7 +343,7 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
             ) : (
               <button
                 onClick={handleBlockTime}
-                className="w-full p-3 bg-zinc-900/50 border border-zinc-800 hover:border-cyan-600 rounded-xl text-sm text-zinc-400 hover:text-cyan-400 transition-all flex items-center justify-center gap-2"
+                className="w-full p-3 bg-zinc-900/50 border border-zinc-800 hover:border-cyan-600 rounded-xl text-sm text-zinc-400 hover:text-cyan-400 transition-colors flex items-center justify-center gap-2"
               >
                 <Calendar className="w-4 h-4" />
                 Bloquer du temps dans le calendrier

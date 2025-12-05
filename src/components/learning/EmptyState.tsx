@@ -39,7 +39,7 @@ export const EmptyState = memo(function EmptyState({ onCreateCourse }: EmptyStat
       <div className="relative mb-8">
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-violet-500/20 to-cyan-500/20 blur-3xl" />
         <div className="relative p-6 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 rounded-3xl border border-indigo-500/20">
-          <Sparkles className="w-16 h-16 text-indigo-400 mx-auto" />
+          <Sparkles className="w-16 h-16 text-indigo-400 mx-auto" aria-hidden="true" />
         </div>
       </div>
 
@@ -54,9 +54,9 @@ export const EmptyState = memo(function EmptyState({ onCreateCourse }: EmptyStat
       {/* CTA */}
       <button
         onClick={onCreateCourse}
-        className="flex items-center gap-2 px-6 py-3 bg-indigo-500 text-white rounded-2xl font-medium hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20 mb-12"
+        className="flex items-center gap-2 px-6 py-3 bg-indigo-500 text-white rounded-2xl font-medium hover:bg-indigo-600 transition-[background-color] duration-200 shadow-lg shadow-indigo-500/20 mb-12"
       >
-        <Plus className="w-5 h-5" />
+        <Plus className="w-5 h-5" aria-hidden="true" />
         Créer mon premier cours
       </button>
 
@@ -65,9 +65,9 @@ export const EmptyState = memo(function EmptyState({ onCreateCourse }: EmptyStat
         {FEATURES.map((feature) => (
           <div
             key={feature.title}
-            className="p-4 bg-zinc-800/30 rounded-2xl border border-zinc-700/50"
+            className="p-4 bg-zinc-800/30 rounded-2xl border border-zinc-800/50"
           >
-            <feature.icon className="w-8 h-8 text-indigo-400 mb-3 mx-auto" />
+            <feature.icon className="w-8 h-8 text-indigo-400 mb-3 mx-auto" aria-hidden="true" />
             <h3 className="font-medium text-zinc-200 mb-1">{feature.title}</h3>
             <p className="text-xs text-zinc-500">{feature.description}</p>
           </div>
@@ -82,7 +82,7 @@ export const EmptyState = memo(function EmptyState({ onCreateCourse }: EmptyStat
             <button
               key={template.name}
               onClick={onCreateCourse}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl text-sm text-zinc-400 hover:text-zinc-200 transition-all border border-zinc-700/50 hover:border-zinc-600"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl text-sm text-zinc-400 hover:text-zinc-200 transition-[background-color,border-color] duration-200 border border-zinc-800/50 hover:border-zinc-600"
             >
               <span>{template.icon}</span>
               {template.name}

@@ -19,7 +19,7 @@ export function ThemePicker() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 text-zinc-600 hover:text-zinc-400 transition-all duration-300 rounded-xl hover:bg-zinc-800/50 shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
+        className="p-2 text-zinc-600 hover:text-zinc-400 transition-colors duration-300 rounded-xl hover:bg-zinc-800/50 shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
         style={{ border: '1px solid rgba(255,255,255,0.08)' }}
         title="Changer le thème"
       >
@@ -44,7 +44,7 @@ export function ThemePicker() {
                     setAccentTheme(theme.key)
                     setIsOpen(false)
                   }}
-                  className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-zinc-800/50 transition-all duration-300 group"
+                  className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-zinc-800/50 transition-colors duration-300 group"
                 >
                   <div 
                     className={`w-6 h-6 rounded-full bg-gradient-to-br ${theme.gradient} flex items-center justify-center`}

@@ -119,3 +119,4 @@ className="min-h-screen w-full flex flex-col view-transition"
 - [ ] Persistance état sidebar (localStorage)
 - [ ] Mode compact pour petits écrans (zoom navigateur)
 
+

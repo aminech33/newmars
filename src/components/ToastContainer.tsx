@@ -11,7 +11,7 @@ const icons = {
 const colors = {
   success: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
   error: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
-  info: 'text-zinc-400 bg-zinc-800/50 border-zinc-700',
+  info: 'text-zinc-400 bg-zinc-800/50 border-zinc-800',
   warning: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
 }
 

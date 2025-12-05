@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { FolderKanban, ChevronRight, ChevronDown, CheckCircle2, Circle, ExternalLink } from 'lucide-react'
-import { Course, CourseTopic } from '../../types/learning'
+import { ChevronRight, ChevronDown, CheckCircle2, Circle, ExternalLink } from 'lucide-react'
+import { Course } from '../../types/learning'
 import { useStore } from '../../store/useStore'
 
 interface ProjectWidgetProps {
@@ -48,7 +48,7 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
 
   const navigateToProject = () => {
     setView('tasks')
-    // TODO: Ouvrir le projet spécifique
+    // NOTE: La navigation vers le projet spécifique se fait via le store (selectedProjectId)
   }
 
   return (
@@ -57,7 +57,7 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
       {!expanded && (
         <button
           onClick={() => setExpanded(true)}
-          className="group bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 hover:border-zinc-700 rounded-2xl p-4 shadow-2xl transition-all hover:scale-105"
+          className="group bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 hover:border-zinc-700/50 rounded-2xl p-4 shadow-2xl transition-[border-color,transform] duration-200 hover:scale-105"
           style={{ minWidth: '140px' }}
         >
           <div className="flex items-center gap-3">
@@ -73,14 +73,14 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
                 <span>✅ {completedTasks}/{totalTasks}</span>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
           </div>
         </button>
       )}
 
       {/* Panel expandé */}
       {expanded && (
-        <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden animate-scale-in" style={{ width: '340px', maxHeight: '600px' }}>
+        <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800/50 rounded-2xl shadow-2xl overflow-hidden animate-scale-in" style={{ width: '340px', maxHeight: '600px' }}>
           {/* Header */}
           <div className="p-4 border-b border-zinc-800/50 bg-gradient-to-r from-indigo-500/10 to-purple-500/10">
             <div className="flex items-center justify-between mb-2">
@@ -96,16 +96,16 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={navigateToProject}
-                  className="p-2 hover:bg-zinc-800/50 rounded-lg transition-colors"
+                  className="p-2 hover:bg-zinc-800/50 rounded-lg transition-[background-color] duration-200"
                   title="Voir le projet"
                 >
-                  <ExternalLink className="w-4 h-4 text-zinc-500" />
+                  <ExternalLink className="w-4 h-4 text-zinc-500" aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => setExpanded(false)}
-                  className="p-2 hover:bg-zinc-800/50 rounded-lg transition-colors"
+                  className="p-2 hover:bg-zinc-800/50 rounded-lg transition-[background-color] duration-200"
                 >
-                  <ChevronDown className="w-4 h-4 text-zinc-500" />
+                  <ChevronDown className="w-4 h-4 text-zinc-500" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -125,9 +125,16 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
 
               {/* Progress bar */}
               {totalConcepts > 0 && (
-                <div className="w-full h-1.5 bg-zinc-800 rounded-full mb-4">
+                <div 
+                  className="w-full h-1.5 bg-zinc-800 rounded-full mb-4"
+                  role="progressbar"
+                  aria-valuenow={completedConcepts}
+                  aria-valuemin={0}
+                  aria-valuemax={totalConcepts}
+                  aria-label="Progression des concepts"
+                >
                   <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-[width] duration-500"
                     style={{ width: `${(completedConcepts / totalConcepts) * 100}%` }}
                   />
                 </div>
@@ -139,7 +146,7 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
                   course.topics.map(topic => (
                     <label 
                       key={topic.id}
-                      className="flex items-center gap-3 p-2 hover:bg-zinc-800/30 rounded-lg cursor-pointer group transition-colors"
+                      className="flex items-center gap-3 p-2 hover:bg-zinc-800/30 rounded-lg cursor-pointer group transition-[background-color] duration-200"
                     >
                       <button
                         type="button"
@@ -150,9 +157,9 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
                         className="flex-shrink-0"
                       >
                         {topic.status === 'completed' ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />
                         ) : (
-                          <Circle className="w-4 h-4 text-zinc-600 group-hover:text-zinc-500" />
+                          <Circle className="w-4 h-4 text-zinc-600 group-hover:text-zinc-500" aria-hidden="true" />
                         )}
                       </button>
                       <span className={`text-sm flex-1 ${
@@ -189,13 +196,13 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
                   projectTasks.map(task => (
                     <label 
                       key={task.id}
-                      className="flex items-center gap-3 p-2 hover:bg-zinc-800/30 rounded-lg cursor-pointer group transition-colors"
+                      className="flex items-center gap-3 p-2 hover:bg-zinc-800/30 rounded-lg cursor-pointer group transition-[background-color] duration-200"
                     >
                       <input
                         type="checkbox"
                         checked={task.completed}
                         onChange={() => toggleTask(task.id)}
-                        className="w-4 h-4 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+                        className="w-4 h-4 rounded border-zinc-800/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
                       />
                       <span className={`text-sm flex-1 ${
                         task.completed 
@@ -222,4 +229,5 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
     </div>
   )
 }
+
 

@@ -30,7 +30,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
     <div
       onClick={onClick}
       className={`
-        p-3 rounded-xl cursor-pointer transition-all duration-300
+        p-3 rounded-xl cursor-pointer transition-colors duration-300
         border-l-4 ${typeColors[event.type]}
         hover:bg-zinc-800/50 hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)]
       `}

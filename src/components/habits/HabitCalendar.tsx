@@ -113,7 +113,7 @@ export function HabitCalendar({ habits }: HabitCalendarProps) {
           return (
             <div
               key={i}
-              className={`aspect-square rounded-lg p-2 transition-all ${
+              className={`aspect-square rounded-lg p-2 transition-colors ${
                 !day.isCurrentMonth
                   ? 'opacity-30'
                   : ''
@@ -167,4 +167,5 @@ export function HabitCalendar({ habits }: HabitCalendarProps) {
     </div>
   )
 }
+
 

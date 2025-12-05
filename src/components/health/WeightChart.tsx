@@ -88,7 +88,7 @@ export const WeightChart = memo(function WeightChart({ entries, trend }: WeightC
                 {entry.weight}
               </span>
               <div 
-                className="w-full bg-gradient-to-t from-rose-500/60 to-rose-400/40 rounded-t-lg transition-all duration-300 hover:from-rose-500/80 hover:to-rose-400/60 min-h-[4px]"
+                className="w-full bg-gradient-to-t from-rose-500/60 to-rose-400/40 rounded-t-lg transition-[background-color] duration-200 duration-300 hover:from-rose-500/80 hover:to-rose-400/60 min-h-[4px]"
                 style={{ height: `${Math.max(entry.height, 5)}%` }}
               />
               <p className="text-[10px] text-zinc-600 truncate w-full text-center">
@@ -100,7 +100,7 @@ export const WeightChart = memo(function WeightChart({ entries, trend }: WeightC
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-800">
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-800/50">
         <div className="flex items-center gap-4 text-xs text-zinc-600">
           <span>Min: {Math.min(...chartData.map(e => e.weight))} kg</span>
           <span>Max: {Math.max(...chartData.map(e => e.weight))} kg</span>

@@ -1,5 +1,6 @@
 import { Event } from '../../types/calendar'
 import { isSameDay } from '../../utils/dateUtils'
+import { layoutEvents, getEventStyle } from '../../utils/eventLayoutUtils'
 
 interface WeekViewProps {
   currentDate: Date
@@ -30,21 +31,6 @@ export function WeekView({ currentDate, events, onEventClick }: WeekViewProps) {
   const getEventsForDay = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0]
     return events.filter(e => e.startDate === dateStr && e.startTime)
-  }
-
-  const getEventPosition = (startTime: string, endTime?: string) => {
-    const [startH, startM] = startTime.split(':').map(Number)
-    const startMinutes = (startH - 8) * 60 + startM
-    const top = (startMinutes / 60) * 80 // 80px per hour
-    
-    if (endTime) {
-      const [endH, endM] = endTime.split(':').map(Number)
-      const endMinutes = (endH - 8) * 60 + endM
-      const height = ((endMinutes - startMinutes) / 60) * 80
-      return { top, height }
-    }
-    
-    return { top, height: 40 } // Default 30min
   }
 
   const isToday = (date: Date) => {
@@ -93,6 +79,7 @@ export function WeekView({ currentDate, events, onEventClick }: WeekViewProps) {
             {/* Day columns */}
             {weekDays.map((day, dayIndex) => {
               const dayEvents = getEventsForDay(day)
+              const positionedEvents = layoutEvents(dayEvents, 80)
               
               return (
                 <div key={dayIndex} className="relative bg-zinc-900/10">
@@ -106,21 +93,22 @@ export function WeekView({ currentDate, events, onEventClick }: WeekViewProps) {
                     />
                   ))}
 
-                  {/* Events positioned absolutely */}
+                  {/* Events positioned absolutely with smart layout */}
                   <div className="absolute inset-0 p-1">
-                    {dayEvents.map(event => {
-                      const { top, height } = getEventPosition(event.startTime!, event.endTime)
+                    {positionedEvents.map(positioned => {
+                      const { event } = positioned
+                      const style = getEventStyle(positioned)
                       
                       return (
                         <div
                           key={event.id}
                           onClick={() => onEventClick(event.id)}
-                          className="absolute left-1 right-1 cursor-pointer"
-                          style={{ top: `${top}px`, height: `${height}px` }}
+                          className="cursor-pointer"
+                          style={style}
                         >
                           <div className={`
                             h-full p-2 rounded-lg text-xs overflow-hidden
-                            transition-all duration-200 hover:scale-[1.02] hover:shadow-lg
+                            transition-colors duration-200 hover:scale-[1.02] hover:shadow-lg
                             ${event.type === 'meeting' ? 'bg-cyan-500/20 border-l-2 border-cyan-500 text-cyan-300' : ''}
                             ${event.type === 'deadline' ? 'bg-rose-500/20 border-l-2 border-rose-500 text-rose-300' : ''}
                             ${event.type === 'reminder' ? 'bg-amber-500/20 border-l-2 border-amber-500 text-amber-300' : ''}

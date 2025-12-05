@@ -34,14 +34,14 @@ export function EventDetailsHeader({
         <div className="flex items-center gap-2">
           <button
             onClick={onDelete}
-            className="p-2 text-rose-500 hover:text-rose-400 transition-all rounded-xl hover:bg-rose-500/10"
+            className="p-2 text-rose-500 hover:text-rose-400 transition-colors rounded-xl hover:bg-rose-500/10"
             aria-label="Supprimer l'événement"
           >
             <Trash2 className="w-5 h-5" />
           </button>
           <button
             onClick={onClose}
-            className="p-2 text-zinc-600 hover:text-zinc-400 transition-all rounded-xl hover:bg-zinc-800/50"
+            className="p-2 text-zinc-600 hover:text-zinc-400 transition-colors rounded-xl hover:bg-zinc-800/50"
             aria-label="Fermer"
           >
             <X className="w-5 h-5" />

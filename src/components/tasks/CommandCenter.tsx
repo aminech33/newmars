@@ -76,7 +76,7 @@ export function CommandCenter({ tasks, onTaskClick }: CommandCenterProps) {
                 <button
                   key={task.id}
                   onClick={() => onTaskClick(task)}
-                  className="w-full text-left p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all group"
+                  className="w-full text-left p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-colors group"
                 >
                   <p className="text-sm font-bold text-rose-100 group-hover:text-white line-clamp-1">
                     {task.title}
@@ -112,7 +112,7 @@ export function CommandCenter({ tasks, onTaskClick }: CommandCenterProps) {
                 <button
                   key={task.id}
                   onClick={() => onTaskClick(task)}
-                  className="w-full text-left p-1.5 rounded-lg hover:bg-emerald-500/10 transition-all group"
+                  className="w-full text-left p-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors group"
                 >
                   <p className="text-xs font-medium text-zinc-300 group-hover:text-white line-clamp-1">
                     {task.title}
@@ -137,7 +137,7 @@ export function CommandCenter({ tasks, onTaskClick }: CommandCenterProps) {
                 <button
                   key={task.id}
                   onClick={() => onTaskClick(task)}
-                  className="w-full text-left p-1.5 rounded-lg hover:bg-cyan-500/10 transition-all group"
+                  className="w-full text-left p-1.5 rounded-lg hover:bg-cyan-500/10 transition-colors group"
                 >
                   <p className="text-xs font-medium text-zinc-300 group-hover:text-white line-clamp-1">
                     {task.title}
@@ -162,7 +162,7 @@ export function CommandCenter({ tasks, onTaskClick }: CommandCenterProps) {
                 <button
                   key={task.id}
                   onClick={() => onTaskClick(task)}
-                  className="w-full text-left p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all group"
+                  className="w-full text-left p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors group"
                 >
                   <p className="text-sm font-bold text-amber-100 group-hover:text-white line-clamp-1">
                     {task.title}

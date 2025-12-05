@@ -163,6 +163,32 @@ select:focus-visible {
   outline-offset: 2px;
 }
 
+/* Disabled states - Global styles */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button:disabled:hover,
+input:disabled:hover,
+select:disabled:hover,
+textarea:disabled:hover {
+  transform: none;
+  box-shadow: inherit;
+}
+
+/* Disabled link-style buttons */
+a[aria-disabled="true"],
+button[aria-disabled="true"] {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 /* View transitions */
 .view-transition {
   animation: viewFadeIn 250ms ease-out;
@@ -663,5 +689,84 @@ button:active:not(:disabled) {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ============================================
+   TOUCH TARGETS - Minimum 44px pour mobile
+   ============================================ */
+
+/* Boutons interactifs */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Boutons dans les listes */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Exceptions pour les petits éléments inline */
+  .inline-action,
+  .badge,
+  .tag {
+    min-height: auto;
+    min-width: auto;
+  }
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================
+   AUTO-BACKUP INDICATOR
+   ============================================ */
+
+.backup-indicator {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  color: rgb(16, 185, 129);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.backup-indicator.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 
 

@@ -8,26 +8,30 @@ const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.Hu
 const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
 const CalendarPage = lazy(() => import('./components/calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
 const HealthPage = lazy(() => import('./components/health/HealthPage').then(m => ({ default: m.HealthPage })))
-const JournalPage = lazy(() => import('./components/journal/JournalPage').then(m => ({ default: m.JournalPage })))
+const MyDayPage = lazy(() => import('./components/myday/MyDayPage').then(m => ({ default: m.MyDayPage })))
 const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m => ({ default: m.LibraryPage })))
 const PomodoroPage = lazy(() => import('./components/pomodoro/PomodoroPage').then(m => ({ default: m.PomodoroPage })))
-const HabitsPage = lazy(() => import('./components/habits/HabitsPage').then(m => ({ default: m.HabitsPage })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
 import { SearchWidget } from './components/SearchWidget'
 import { ToastContainer } from './components/ToastContainer'
 import { Confetti } from './components/Confetti'
+import { OfflineIndicator } from './components/OfflineIndicator'
+import { useAutoBackup } from './hooks/useAutoBackup'
 
 function AppContent() {
   const currentView = useStore((state) => state.currentView)
   const isFocusMode = useStore((state) => state.isFocusMode)
   const [showConfetti, setShowConfetti] = useState(false)
   const [isReady, setIsReady] = useState(false)
+
+  // Backup automatique
+  useAutoBackup()
 
   // Vérification de santé au démarrage
   useEffect(() => {
@@ -73,13 +77,12 @@ function AppContent() {
             {currentView === 'tasks' && <TasksPage />}
             {currentView === 'calendar' && <CalendarPage />}
             {currentView === 'health' && <HealthPage />}
-            {currentView === 'journal' && <JournalPage />}
+            {currentView === 'myday' && <MyDayPage />}
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'ai' && <AIAssistant />}
             {currentView === 'learning' && <LearningPage />}
             {currentView === 'library' && <LibraryPage />}
             {currentView === 'pomodoro' && <PomodoroPage />}
-            {currentView === 'habits' && <HabitsPage />}
           </>
         )}
       </Suspense>
@@ -89,6 +92,7 @@ function AppContent() {
       <SearchWidget />
       <ToastContainer />
       <Confetti trigger={showConfetti} />
+      <OfflineIndicator />
     </div>
   )
 }

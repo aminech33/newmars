@@ -7,11 +7,6 @@
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBFlZdThjH9z3ciJVSIJwfPDfmTpZeN85w'
 const MODEL = 'gemini-2.5-flash'
 
-// DEBUG: Log to verify this file is loaded
-console.log('🔧 geminiAI.ts loaded!')
-console.log('🔑 API_KEY:', API_KEY ? `${API_KEY.slice(0, 20)}...` : '❌ UNDEFINED')
-console.log('📡 MODEL:', MODEL)
-
 interface ConversationMessage {
   role: 'user' | 'assistant'
   content: string

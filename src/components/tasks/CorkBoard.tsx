@@ -9,7 +9,6 @@ interface CorkBoardProps {
 }
 
 const columns: { status: TaskStatus; title: string; icon: string }[] = [
-  { status: 'backlog', title: 'Backlog', icon: '📥' },
   { status: 'todo', title: 'À faire', icon: '🎯' },
   { status: 'in-progress', title: 'En cours', icon: '⚡' },
   { status: 'done', title: 'Terminé', icon: '✅' }

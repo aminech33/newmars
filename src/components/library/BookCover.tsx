@@ -25,7 +25,7 @@ export const BookCover = memo(function BookCover({ book, onClick }: BookCoverPro
           relative w-full aspect-[2/3] rounded-lg overflow-hidden
           bg-gradient-to-br ${book.coverColor}
           shadow-lg shadow-black/20
-          transition-all duration-300
+          transition-colors duration-300
           group-hover:shadow-2xl group-hover:shadow-black/40
           group-hover:scale-105 group-hover:-translate-y-2
           border border-white/10
@@ -66,7 +66,7 @@ export const BookCover = memo(function BookCover({ book, onClick }: BookCoverPro
         {book.status === 'reading' && progress > 0 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
             <div 
-              className="h-full bg-amber-400 transition-all duration-500"
+              className="h-full bg-amber-400 transition-colors duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -113,4 +113,5 @@ export const BookCover = memo(function BookCover({ book, onClick }: BookCoverPro
     </div>
   )
 })
+
 

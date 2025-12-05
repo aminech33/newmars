@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, Archive, TrendingUp, Link, ListPlus } from 'lucide-react'
+import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, TrendingUp, Link, ListPlus } from 'lucide-react'
 import { useStore, Project, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { AddProjectModal } from './AddProjectModal'
 import { CreateProjectWithTasksModal } from './CreateProjectWithTasksModal'
@@ -145,14 +145,14 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
           <div className="flex items-center gap-3">
             <button
               onClick={handleOpenAddModal}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors"
             >
               <Plus className="w-5 h-5" />
               Projet simple
             </button>
             <button
               onClick={() => setShowCreateWithTasks(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
             >
               <ListPlus className="w-5 h-5" />
               Projet + Tâches
@@ -169,14 +169,14 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
             <div className="flex gap-3">
               <button
                 onClick={handleOpenAddModal}
-                className="flex items-center gap-2 px-6 py-3 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors"
               >
                 <Plus className="w-5 h-5" />
                 Projet simple
               </button>
               <button
                 onClick={() => setShowCreateWithTasks(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
               >
                 <ListPlus className="w-5 h-5" />
                 Projet + Tâches
@@ -190,7 +190,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
               return (
                 <div
                   key={project.id}
-                  className="group relative p-6 bg-zinc-900/30 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 transition-all"
+                  className="group relative p-6 bg-zinc-900/30 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 transition-colors"
                 >
                   {/* Project Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -243,7 +243,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                     </div>
                     <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full transition-all duration-500"
+                        className="h-full transition-colors duration-500"
                         style={{
                           width: `${stats.progress}%`,
                           backgroundColor: project.color
@@ -265,7 +265,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                   {/* Assign Tasks Button */}
                   <button
                     onClick={() => setAssigningProject(project)}
-                    className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 border border-emerald-500/30 transition-all text-sm font-medium"
+                    className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors text-sm font-medium"
                   >
                     <Link className="w-4 h-4" />
                     Assigner des tâches

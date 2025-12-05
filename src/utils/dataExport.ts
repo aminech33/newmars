@@ -106,3 +106,4 @@ export function readFile(file: File): Promise<string> {
   })
 }
 
+

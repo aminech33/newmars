@@ -88,10 +88,10 @@ export const CourseHeader = memo(function CourseHeader({
             {/* Toggle Sidebar (mobile) / Back button */}
             <button
               onClick={sidebarCollapsed ? onToggleSidebar : onBack}
-              className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-all lg:hidden"
+              className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-[background-color] duration-200 lg:hidden"
               aria-label={sidebarCollapsed ? 'Ouvrir la sidebar' : 'Retour'}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" aria-hidden="true" />
             </button>
 
             {/* Course Icon */}
@@ -121,14 +121,14 @@ export const CourseHeader = memo(function CourseHeader({
             <div className="hidden md:flex items-center gap-4">
               <Tooltip content="Temps total d'étude">
                 <div className="flex items-center gap-1.5 text-zinc-500">
-                  <Clock className="w-4 h-4" />
+                  <Clock className="w-4 h-4" aria-hidden="true" />
                   <span className="text-sm">{formatDuration(course.totalTimeSpent)}</span>
                 </div>
               </Tooltip>
 
               <Tooltip content="Messages échangés">
                 <div className="flex items-center gap-1.5 text-zinc-500">
-                  <BookOpen className="w-4 h-4" />
+                  <BookOpen className="w-4 h-4" aria-hidden="true" />
                   <span className="text-sm">{course.messagesCount}</span>
                 </div>
               </Tooltip>
@@ -136,7 +136,7 @@ export const CourseHeader = memo(function CourseHeader({
               {course.streak > 0 && (
                 <Tooltip content={`${course.streak} jours consécutifs`}>
                   <div className="flex items-center gap-1.5 text-amber-400">
-                    <Flame className="w-4 h-4" />
+                    <Flame className="w-4 h-4" aria-hidden="true" />
                     <span className="text-sm font-medium">{course.streak}</span>
                   </div>
                 </Tooltip>
@@ -161,49 +161,49 @@ export const CourseHeader = memo(function CourseHeader({
               <Tooltip content={`Étudier ${course.name} (25min)`}>
                 <button
                   onClick={startPomodoroForCourse}
-                  className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all group"
+                  className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-[background-color,color] duration-200 group"
                   aria-label="Démarrer un Pomodoro"
                 >
-                  <Timer className="w-4 h-4 group-hover:animate-pulse" />
+                  <Timer className="w-4 h-4 group-hover:animate-pulse" aria-hidden="true" />
                 </button>
               </Tooltip>
 
               <Tooltip content="Statistiques">
                 <button
-                  className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-all"
+                  className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-[background-color,color] duration-200"
                   aria-label="Statistiques du cours"
                 >
-                  <BarChart3 className="w-4 h-4" />
+                  <BarChart3 className="w-4 h-4" aria-hidden="true" />
                 </button>
               </Tooltip>
 
               <Tooltip content="Paramètres">
                 <button
                   onClick={onSettings}
-                  className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-all"
+                  className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl transition-[background-color,color] duration-200"
                   aria-label="Paramètres du cours"
                 >
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-4 h-4" aria-hidden="true" />
                 </button>
               </Tooltip>
 
               <Tooltip content="Archiver">
                 <button
                   onClick={onArchive}
-                  className="p-2 text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all"
+                  className="p-2 text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-[background-color,color] duration-200"
                   aria-label="Archiver le cours"
                 >
-                  <Archive className="w-4 h-4" />
+                  <Archive className="w-4 h-4" aria-hidden="true" />
                 </button>
               </Tooltip>
 
               <Tooltip content="Supprimer">
                 <button
                   onClick={onDelete}
-                  className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
+                  className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-[background-color,color] duration-200"
                   aria-label="Supprimer le cours"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
                 </button>
               </Tooltip>
             </div>
@@ -217,9 +217,16 @@ export const CourseHeader = memo(function CourseHeader({
               <span>Progression</span>
               <span>{course.progress}%</span>
             </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div 
+              className="h-1.5 bg-zinc-800 rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuenow={course.progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Progression du cours"
+            >
               <div 
-                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-[width] duration-500"
                 style={{ width: `${course.progress}%` }}
               />
             </div>

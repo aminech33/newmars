@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
+import logger from '../utils/logger'
 
 interface Props {
   children: ReactNode
@@ -22,8 +23,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('🚨 ErrorBoundary caught an error:', error)
-    console.error('Component stack:', errorInfo.componentStack)
+    logger.error('🚨 ErrorBoundary caught an error:', error)
+    logger.error('Component stack:', errorInfo.componentStack)
     this.setState({ errorInfo })
   }
 
@@ -34,8 +35,8 @@ export class ErrorBoundary extends Component<Props, State> {
   handleClearAndReload = () => {
     try {
       localStorage.removeItem('newmars-storage')
-    } catch (e) {
-      console.error('Failed to clear storage:', e)
+    } catch {
+      // Ignore storage errors
     }
     window.location.reload()
   }

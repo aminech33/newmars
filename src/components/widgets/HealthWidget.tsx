@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { Heart, TrendingDown, TrendingUp, Minus, Activity, Plus } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
-import { calculateBMI, getBMICategory, analyzeWeightTrend } from '../../utils/healthIntelligence'
+import { calculateBMI, analyzeWeightTrend } from '../../utils/healthIntelligence'
 import { Widget } from '../../types/widgets'
 
 interface HealthWidgetProps {
@@ -43,7 +43,7 @@ export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetP
 
   // BMI
   const bmi = latestWeight > 0 ? calculateBMI(latestWeight, userProfile.height) : 0
-  const bmiCategory = getBMICategory(bmi)
+  // bmiCategory disponible si besoin: getBMICategory(bmi)
 
   // Historique 7 derniers jours (mini graphique)
   const last7Days = weightEntries
@@ -97,7 +97,7 @@ export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetP
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
                       <div 
-                        className="w-full chart-bar-rose rounded-t transition-all hover:scale-105"
+                        className="w-full chart-bar-rose rounded-t transition-colors hover:scale-105"
                         style={{ height: `${Math.max(30, height)}%` }}
                       />
                       <div className="text-[8px] text-zinc-600 font-semibold">
@@ -135,7 +135,7 @@ export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetP
                 </div>
                 <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-500 shadow-lg shadow-rose-500/30"
+                    className="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-colors duration-500 shadow-lg shadow-rose-500/30"
                     style={{ width: `${caloriesPercent}%` }}
                   />
                 </div>
@@ -181,7 +181,7 @@ export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetP
                         bg-gradient-to-br from-rose-500 to-rose-600
                         shadow-lg shadow-rose-500/30
                         hover:shadow-xl hover:shadow-rose-500/40
-                        hover:scale-105 transition-all duration-200"
+                        hover:scale-105 transition-colors duration-200"
             >
               <Plus className="w-4 h-4 text-white" strokeWidth={2.5} />
               <span className="text-xs font-bold text-white uppercase tracking-wide">

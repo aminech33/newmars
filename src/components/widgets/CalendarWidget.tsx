@@ -22,47 +22,13 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
     return [...tasksWithDates.filter(t => t.dueDate === todayStr), ...upcomingEvents.filter(e => e.startDate === todayStr)]
   }, [tasksWithDates, upcomingEvents, todayStr])
 
-  // Prochain événement le plus proche
-  const nextEvent = useMemo(() => {
-    const allItems = [
-      ...tasksWithDates.map(t => ({ 
-        id: t.id, 
-        title: t.title, 
-        date: t.dueDate,
-        type: 'task' as const 
-      })),
-      ...upcomingEvents.map(e => ({ 
-        id: e.id, 
-        title: e.title, 
-        date: e.startDate,
-        time: e.startTime,
-        type: 'event' as const 
-      }))
-    ]
-    
-    const upcoming = allItems
-      .filter(item => item.date >= todayStr)
-      .sort((a, b) => {
-        const dateCompare = a.date.localeCompare(b.date)
-        if (dateCompare !== 0) return dateCompare
-        
-        // Si même date, prioriser ceux avec horaire
-        if ('time' in a && a.time && !('time' in b && b.time)) return -1
-        if (!('time' in a && a.time) && 'time' in b && b.time) return 1
-        
-        return 0
-      })
-    
-    return upcoming[0]
-  }, [tasksWithDates, upcomingEvents, todayStr])
-
   // Prochains 3 événements
   const nextEvents = useMemo(() => {
     const allItems = [
       ...tasksWithDates.map(t => ({ 
         id: t.id, 
         title: t.title, 
-        date: t.dueDate,
+        date: t.dueDate || '',
         type: 'task' as const 
       })),
       ...upcomingEvents.map(e => ({ 
@@ -75,9 +41,9 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
     ]
     
     return allItems
-      .filter(item => item.date >= todayStr)
+      .filter(item => item.date && item.date >= todayStr)
       .sort((a, b) => {
-        const dateCompare = a.date.localeCompare(b.date)
+        const dateCompare = (a.date || '').localeCompare(b.date || '')
         if (dateCompare !== 0) return dateCompare
         if ('time' in a && a.time && !('time' in b && b.time)) return -1
         if (!('time' in a && a.time) && 'time' in b && b.time) return 1
@@ -93,14 +59,13 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
       const date = new Date(today)
       date.setDate(date.getDate() + i)
       const dateStr = date.toISOString().split('T')[0]
-      const hasEvents = [...tasksWithDates, ...upcomingEvents].some(
-        item => (item.dueDate || item.startDate) === dateStr
-      )
+      const hasTasksOnDate = tasksWithDates.some(t => t.dueDate === dateStr)
+      const hasEventsOnDate = upcomingEvents.some(e => e.startDate === dateStr)
       days.push({
         day: date.getDate(),
         name: date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 1).toUpperCase(),
         isToday: i === 0,
-        hasEvents
+        hasEvents: hasTasksOnDate || hasEventsOnDate
       })
     }
     return days
@@ -130,7 +95,7 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
           {weekDays.map((day, i) => (
             <div key={i} className="flex-1 flex flex-col items-center">
               <div className="text-[9px] text-zinc-600 font-medium mb-1">{day.name}</div>
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold transition-all hover:scale-110
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold transition-colors hover:scale-110
                               ${day.isToday 
                                 ? 'bg-gradient-to-br from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/40' 
                                 : day.hasEvents
@@ -164,7 +129,7 @@ export const CalendarWidget = memo(function CalendarWidget({ widget }: CalendarW
               return (
                 <div
                   key={item.id}
-                  className="flex items-start gap-2 p-2 rounded-lg gradient-border-cyan hover:scale-[1.02] transition-all"
+                  className="flex items-start gap-2 p-2 rounded-lg gradient-border-cyan hover:scale-[1.02] transition-colors"
                 >
                   <Clock className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">

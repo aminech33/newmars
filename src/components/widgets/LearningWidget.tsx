@@ -74,9 +74,7 @@ export const LearningWidget = memo(function LearningWidget({ widget }: LearningW
             </div>
           ) : (
             recentCourses.map((course) => {
-              const progress = course.lessonsCompleted > 0 && course.totalLessons > 0
-                ? Math.round((course.lessonsCompleted / course.totalLessons) * 100)
-                : 0
+              const progress = course.progress || 0
               
               return (
                 <div
@@ -92,13 +90,13 @@ export const LearningWidget = memo(function LearningWidget({ widget }: LearningW
                       {course.name}
                     </div>
                     <div className="text-[10px] text-zinc-500 truncate">
-                      {course.subject}
+                      {course.description || course.level}
                     </div>
                     {progress > 0 && (
                       <div className="flex items-center gap-1.5 mt-1">
                         <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all"
+                            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-colors"
                             style={{ width: `${progress}%` }}
                           />
                         </div>

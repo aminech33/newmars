@@ -6,15 +6,17 @@ import { EventDetails } from './EventDetails'
 import { WeekView } from './WeekView'
 import { DayView } from './DayView'
 import { CalendarFilters } from './CalendarFilters'
+import { SmartSuggestions } from './SmartSuggestions'
 import { Tooltip } from '../ui/Tooltip'
 import { useCalendarEvents, CalendarFilterState } from '../../hooks/useCalendarEvents'
+import { useEventReminders } from '../../hooks/useEventReminders'
 import { getCalendarDays, getMonthName, getWeekDays, isToday } from '../../utils/dateUtils'
 import { detectEventType, detectEventCategory, detectEventPriority } from '../../utils/calendarIntelligence'
 
 type ViewMode = 'month' | 'week' | 'day'
 
 export function CalendarPage() {
-  const { events, addEvent, setView, isEditMode } = useStore()
+  const { events, addEvent, setView, isEditMode, selectedEventId: deepLinkedEventId, setSelectedEventId: setDeepLinkedEventId } = useStore()
   
   // Navigation state
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -26,6 +28,21 @@ export function CalendarPage() {
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [newEventTitle, setNewEventTitle] = useState('')
   
+  // Deep linking: ouvrir l'événement sélectionné depuis la recherche
+  useEffect(() => {
+    if (deepLinkedEventId) {
+      const event = events.find(e => e.id === deepLinkedEventId)
+      if (event) {
+        setSelectedEventId(event.id)
+        // Naviguer vers la date de l'événement
+        const eventDate = new Date(event.startDate)
+        setCurrentDate(eventDate)
+      }
+      // Reset après utilisation
+      setDeepLinkedEventId(null)
+    }
+  }, [deepLinkedEventId, events, setDeepLinkedEventId])
+  
   // Filters
   const [filters, setFilters] = useState<CalendarFilterState>({
     types: [],
@@ -36,6 +53,9 @@ export function CalendarPage() {
 
   // Custom hook for events
   const { filteredEvents, getEventsForDay, stats } = useCalendarEvents({ events, filters })
+  
+  // Enable event reminders
+  useEventReminders(events)
 
   // Calendar data
   const year = currentDate.getFullYear()
@@ -46,11 +66,22 @@ export function CalendarPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
+      
       // Ctrl+N for new event
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault()
         setShowQuickAdd(true)
       }
+      
+      // Escape to close quick add
+      if (e.key === 'Escape' && showQuickAdd) {
+        e.preventDefault()
+        setShowQuickAdd(false)
+        setNewEventTitle('')
+      }
+      
       // Arrow keys for navigation
       if (e.key === 'ArrowLeft' && e.altKey) {
         e.preventDefault()
@@ -60,10 +91,26 @@ export function CalendarPage() {
         e.preventDefault()
         handleNextMonth()
       }
-      // T for today
-      if (e.key === 't' && !e.ctrlKey && !e.metaKey) {
-        const target = e.target as HTMLElement
-        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+      
+      // View mode shortcuts (only when not in input)
+      if (!isInputField) {
+        // M for month view
+        if (e.key === 'm') {
+          e.preventDefault()
+          setViewMode('month')
+        }
+        // W for week view
+        if (e.key === 'w') {
+          e.preventDefault()
+          setViewMode('week')
+        }
+        // D for day view
+        if (e.key === 'd') {
+          e.preventDefault()
+          setViewMode('day')
+        }
+        // T for today
+        if (e.key === 't') {
           e.preventDefault()
           handleGoToToday()
         }
@@ -71,7 +118,7 @@ export function CalendarPage() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [showQuickAdd, viewMode])
 
   // Navigation handlers
   const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1))
@@ -153,7 +200,7 @@ export function CalendarPage() {
               <Tooltip content="Mois" side="bottom">
                 <button
                   onClick={() => setViewMode('month')}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`p-2 rounded-lg transition-colors ${
                     viewMode === 'month'
                       ? 'bg-indigo-500/20 text-indigo-400'
                       : 'text-zinc-600 hover:text-zinc-400'
@@ -166,7 +213,7 @@ export function CalendarPage() {
               <Tooltip content="Semaine" side="bottom">
                 <button
                   onClick={() => setViewMode('week')}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`p-2 rounded-lg transition-colors ${
                     viewMode === 'week'
                       ? 'bg-indigo-500/20 text-indigo-400'
                       : 'text-zinc-600 hover:text-zinc-400'
@@ -179,7 +226,7 @@ export function CalendarPage() {
               <Tooltip content="Jour" side="bottom">
                 <button
                   onClick={() => setViewMode('day')}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`p-2 rounded-lg transition-colors ${
                     viewMode === 'day'
                       ? 'bg-indigo-500/20 text-indigo-400'
                       : 'text-zinc-600 hover:text-zinc-400'
@@ -194,7 +241,7 @@ export function CalendarPage() {
             <Tooltip content="Ctrl+N" side="bottom">
               <button
                 onClick={() => setShowQuickAdd(true)}
-                className="flex items-center gap-2 px-3 lg:px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
+                className="flex items-center gap-2 px-3 lg:px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden lg:inline text-sm font-medium">Nouvel événement</span>
@@ -238,6 +285,9 @@ export function CalendarPage() {
 
       {/* Main content */}
       <main className="p-4 lg:p-6">
+        {/* Smart Suggestions */}
+        <SmartSuggestions events={events} />
+        
         {viewMode === 'month' ? (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Calendar grid */}
@@ -274,7 +324,7 @@ export function CalendarPage() {
                       onClick={() => day && setSelectedDate(day)}
                       disabled={!day}
                       className={`
-                        relative min-h-[80px] lg:min-h-[100px] p-1 lg:p-2 rounded-xl transition-all text-left
+                        relative min-h-[80px] lg:min-h-[100px] p-1 lg:p-2 rounded-xl transition-colors text-left
                         ${!day ? 'bg-transparent cursor-default' : ''}
                         ${day && !isCurrentMonth ? 'opacity-30' : ''}
                         ${day && isCurrentMonth ? 'hover:bg-zinc-800/30' : ''}
@@ -432,7 +482,7 @@ export function CalendarPage() {
       {/* Mobile FAB */}
       <button
         onClick={() => setShowQuickAdd(true)}
-        className="fixed bottom-6 right-6 z-40 p-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all hover:scale-110 lg:hidden"
+        className="fixed bottom-6 right-6 z-40 p-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-colors hover:scale-110 lg:hidden"
         aria-label="Nouvel événement"
       >
         <Plus className="w-6 h-6" />

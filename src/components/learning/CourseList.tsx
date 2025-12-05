@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useState, useEffect, useRef } from 'react'
 import { Search, Plus, Pin, Archive, MoreVertical, Trash2, Edit2, Filter, SortAsc } from 'lucide-react'
 import { Course, CourseStatus } from '../../types/learning'
 import { Tooltip } from '../ui/Tooltip'
@@ -66,6 +66,28 @@ export const CourseList = memo(function CourseList({
 }: CourseListProps) {
   const [showFilters, setShowFilters] = useState(false)
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!menuOpenId) return
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpenId(null)
+      }
+    }
+    
+    // Delay to avoid immediate close on open click
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside)
+    }, 0)
+    
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [menuOpenId])
 
   if (collapsed) {
     return (
@@ -73,10 +95,10 @@ export const CourseList = memo(function CourseList({
         <Tooltip content="Nouveau cours (Ctrl+N)" side="right">
           <button
             onClick={onCreateCourse}
-            className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
+            className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-[background-color] duration-200"
             aria-label="Nouveau cours"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-5 h-5" aria-hidden="true" />
           </button>
         </Tooltip>
         
@@ -86,7 +108,7 @@ export const CourseList = memo(function CourseList({
           <Tooltip key={course.id} content={course.name} side="right">
             <button
               onClick={() => onSelectCourse(course.id)}
-              className={`p-3 rounded-xl transition-all ${
+              className={`p-3 rounded-xl transition-[background-color] duration-200 ${
                 activeCourseId === course.id
                   ? COLOR_CLASSES[course.color] || COLOR_CLASSES.indigo
                   : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
@@ -104,7 +126,7 @@ export const CourseList = memo(function CourseList({
 
   return (
     <aside 
-      className="w-64 lg:w-72 xl:w-80 2xl:w-96 bg-zinc-900/30 border-r border-zinc-800/50 flex flex-col h-full transition-all duration-300"
+      className="w-64 lg:w-72 xl:w-80 2xl:w-96 bg-zinc-900/30 border-r border-zinc-800/50 flex flex-col h-full transition-[background-color] duration-300"
       role="navigation"
       aria-label="Liste des cours"
     >
@@ -115,10 +137,10 @@ export const CourseList = memo(function CourseList({
           <Tooltip content="Nouveau cours (Ctrl+N)">
             <button
               onClick={onCreateCourse}
-              className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
-              aria-label="Nouveau cours"
-            >
-              <Plus className="w-4 h-4" />
+            className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-[background-color] duration-200"
+            aria-label="Nouveau cours"
+          >
+            <Plus className="w-4 h-4" aria-hidden="true" />
             </button>
           </Tooltip>
         </div>
@@ -131,7 +153,7 @@ export const CourseList = memo(function CourseList({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Rechercher un cours..."
-            className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow duration-200"
             aria-label="Rechercher un cours"
           />
         </div>
@@ -140,14 +162,14 @@ export const CourseList = memo(function CourseList({
         <div className="flex items-center gap-2 mt-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-[background-color] duration-200 ${
               showFilters || filterStatus !== 'all'
                 ? 'bg-indigo-500/20 text-indigo-400'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
             }`}
             aria-expanded={showFilters}
           >
-            <Filter className="w-3.5 h-3.5" />
+            <Filter className="w-3.5 h-3.5" aria-hidden="true" />
             Filtres
             {filterStatus !== 'all' && (
               <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full" />
@@ -160,10 +182,10 @@ export const CourseList = memo(function CourseList({
               const nextIndex = (currentIndex + 1) % SORT_OPTIONS.length
               onSortChange(SORT_OPTIONS[nextIndex].value)
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-[background-color] duration-200"
             aria-label={`Tri: ${SORT_OPTIONS.find(o => o.value === sortBy)?.label}`}
           >
-            <SortAsc className="w-3.5 h-3.5" />
+            <SortAsc className="w-3.5 h-3.5" aria-hidden="true" />
             {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
           </button>
         </div>
@@ -177,7 +199,7 @@ export const CourseList = memo(function CourseList({
                 <button
                   key={filter.value}
                   onClick={() => onFilterChange(filter.value)}
-                  className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-xs transition-[background-color] duration-200 ${
                     filterStatus === filter.value
                       ? 'bg-indigo-500/20 text-indigo-400'
                       : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50'
@@ -204,7 +226,7 @@ export const CourseList = memo(function CourseList({
             {!searchQuery && (
               <button
                 onClick={onCreateCourse}
-                className="px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all text-sm"
+                className="px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-[background-color] duration-200 text-sm"
               >
                 Créer un cours
               </button>
@@ -215,7 +237,7 @@ export const CourseList = memo(function CourseList({
             <div
               key={course.id}
               role="listitem"
-              className={`relative group mb-1 rounded-2xl transition-all ${
+              className={`relative group mb-1 rounded-2xl transition-[background-color] duration-200 ${
                 activeCourseId === course.id
                   ? 'bg-zinc-800/70'
                   : 'hover:bg-zinc-800/40'
@@ -249,9 +271,16 @@ export const CourseList = memo(function CourseList({
                     
                     {/* Progress bar */}
                     {course.progress > 0 && (
-                      <div className="mt-2 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                      <div 
+                        className="mt-2 h-1 bg-zinc-800 rounded-full overflow-hidden"
+                        role="progressbar"
+                        aria-valuenow={course.progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`Progression: ${course.progress}%`}
+                      >
                         <div 
-                          className="h-full bg-emerald-500/60 rounded-full transition-all"
+                          className="h-full bg-emerald-500/60 rounded-full transition-[width] duration-300"
                           style={{ width: `${course.progress}%` }}
                         />
                       </div>
@@ -281,16 +310,17 @@ export const CourseList = memo(function CourseList({
                     e.stopPropagation()
                     setMenuOpenId(menuOpenId === course.id ? null : course.id)
                   }}
-                  className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-lg transition-all"
+                  className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-lg transition-[background-color] duration-200"
                   aria-label="Options du cours"
                   aria-expanded={menuOpenId === course.id}
                 >
-                  <MoreVertical className="w-4 h-4" />
+                  <MoreVertical className="w-4 h-4" aria-hidden="true" />
                 </button>
 
                 {menuOpenId === course.id && (
                   <div 
-                    className="absolute right-0 top-8 w-40 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl py-1 z-10 animate-scale-in"
+                    ref={menuRef}
+                    className="absolute right-0 top-8 w-40 bg-zinc-800 border border-zinc-800/50 rounded-xl shadow-xl py-1 z-10 animate-scale-in"
                     role="menu"
                   >
                     <button
@@ -299,10 +329,10 @@ export const CourseList = memo(function CourseList({
                         onEditCourse(course)
                         setMenuOpenId(null)
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-[background-color] duration-200"
                       role="menuitem"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-4 h-4" aria-hidden="true" />
                       Modifier
                     </button>
                     <button
@@ -311,10 +341,10 @@ export const CourseList = memo(function CourseList({
                         onPinCourse(course.id)
                         setMenuOpenId(null)
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-[background-color] duration-200"
                       role="menuitem"
                     >
-                      <Pin className="w-4 h-4" />
+                      <Pin className="w-4 h-4" aria-hidden="true" />
                       {course.pinnedAt ? 'Désépingler' : 'Épingler'}
                     </button>
                     <button
@@ -323,10 +353,10 @@ export const CourseList = memo(function CourseList({
                         onArchiveCourse(course.id)
                         setMenuOpenId(null)
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-[background-color] duration-200"
                       role="menuitem"
                     >
-                      <Archive className="w-4 h-4" />
+                      <Archive className="w-4 h-4" aria-hidden="true" />
                       Archiver
                     </button>
                     <div className="h-px bg-zinc-700 my-1" />
@@ -336,10 +366,10 @@ export const CourseList = memo(function CourseList({
                         onDeleteCourse(course.id)
                         setMenuOpenId(null)
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-rose-400 hover:bg-rose-500/10 flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-sm text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-[background-color] duration-200"
                       role="menuitem"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
                       Supprimer
                     </button>
                   </div>

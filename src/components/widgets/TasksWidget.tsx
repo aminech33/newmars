@@ -10,34 +10,12 @@ interface TasksWidgetProps {
 
 export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProps) {
   const { id } = widget
-  const { tasks, setView, toggleTask, addTask } = useStore()
+  const { tasks, setView, toggleTask } = useStore()
   
   const pendingTasks = useMemo(() => tasks.filter(t => !t.completed), [tasks])
   const urgentTasks = useMemo(() => pendingTasks.filter(t => t.priority === 'urgent'), [pendingTasks])
   
-  // Prochaine tâche prioritaire (avec date de préférence)
-  const nextTask = useMemo(() => {
-    // Prioriser les tâches urgentes avec dates
-    const urgentWithDates = pendingTasks
-      .filter(t => t.priority === 'urgent' && t.dueDate)
-      .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
-    
-    if (urgentWithDates.length > 0) return urgentWithDates[0]
-    
-    // Sinon tâches urgentes sans dates
-    const urgentNoDates = pendingTasks.filter(t => t.priority === 'urgent' && !t.dueDate)
-    if (urgentNoDates.length > 0) return urgentNoDates[0]
-    
-    // Sinon tâches normales avec dates
-    const normalWithDates = pendingTasks
-      .filter(t => t.dueDate)
-      .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
-    
-    if (normalWithDates.length > 0) return normalWithDates[0]
-    
-    // Sinon première tâche disponible
-    return pendingTasks[0]
-  }, [pendingTasks])
+  // Top tasks for display
   
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -101,7 +79,7 @@ export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProp
               <span className="text-sm text-zinc-500">Tout est fait !</span>
             </div>
           ) : (
-            topTasks.map((task, index) => {
+            topTasks.map((task) => {
               const isUrgent = task.priority === 'urgent'
               return (
                 <button
@@ -111,7 +89,7 @@ export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProp
                     toggleTask(task.id)
                   }}
                   className={`flex items-start gap-2 w-full text-left rounded-lg
-                             hover:bg-white/5 transition-all group relative
+                             hover:bg-white/5 transition-colors group relative
                              ${isUrgent 
                                ? 'p-2.5 bg-gradient-to-r from-rose-500/10 to-transparent border-l-2 border-rose-500 shadow-lg shadow-rose-500/10' 
                                : 'p-2'
@@ -163,7 +141,7 @@ export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProp
               className="flex items-center gap-1 px-2 py-1 rounded-lg
                          bg-emerald-500/10 hover:bg-emerald-500/20
                          text-emerald-400 hover:text-emerald-300
-                         transition-all duration-200 group"
+                         transition-colors duration-200 group"
             >
               <Plus className="w-3 h-3" strokeWidth={2.5} />
               <span className="text-[10px] font-semibold">Ajouter</span>

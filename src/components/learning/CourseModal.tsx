@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Sparkles, FolderKanban } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { 
   Course, 
   CreateCourseData, 
@@ -9,6 +9,9 @@ import {
   CourseColor
 } from '../../types/learning'
 import { useStore } from '../../store/useStore'
+import { Modal } from '../ui/Modal'
+import { Button } from '../ui/Button'
+import { Input, Textarea, Select } from '../ui/Input'
 
 interface CourseModalProps {
   isOpen: boolean
@@ -44,7 +47,6 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
   const [error, setError] = useState('')
 
   const inputRef = useRef<HTMLInputElement>(null)
-  const modalRef = useRef<HTMLDivElement>(null)
 
   const isEditMode = !!course
   
@@ -93,36 +95,8 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
     }
   }, [isOpen, course])
 
-  // Focus trap and keyboard handling
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-
-      if (e.key === 'Tab' && modalRef.current) {
-        const focusables = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        )
-        const first = focusables[0]
-        const last = focusables[focusables.length - 1]
-
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault()
-          last.focus()
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault()
-          first.focus()
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault()
     setError('')
 
     if (!name.trim()) {
@@ -155,282 +129,219 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
     onClose()
   }
 
-  if (!isOpen) return null
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="course-modal-title"
-    >
-      <div
-        ref={modalRef}
-        className="w-full max-w-lg bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden animate-scale-in"
-        style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${COLOR_CLASSES[color].bg}`}>
-              <Sparkles className={`w-5 h-5 ${COLOR_CLASSES[color].text}`} />
-            </div>
-            <h2 id="course-modal-title" className="text-lg font-semibold text-zinc-100">
-              {isEditMode ? 'Modifier le cours' : 'Nouveau cours'}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-xl transition-colors"
-            aria-label="Fermer"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button 
+            variant="primary"
+            onClick={() => handleSubmit()}
           >
-            <X className="w-5 h-5" />
-          </button>
+            {isEditMode ? 'Enregistrer' : 'Créer le cours'}
+          </Button>
+        </>
+      }
+    >
+      {/* Header with icon */}
+      <div className="flex items-center gap-3 mb-6 -mt-2">
+        <div className={`p-2 rounded-xl ${COLOR_CLASSES[color].bg}`}>
+          <Sparkles className={`w-5 h-5 ${COLOR_CLASSES[color].text}`} aria-hidden="true" />
         </div>
+        <h2 className="text-lg font-semibold text-zinc-100">
+          {isEditMode ? 'Modifier le cours' : 'Nouveau cours'}
+        </h2>
+      </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {error && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-sm text-rose-400" role="alert">
-              {error}
-            </div>
-          )}
-
-          {/* Name */}
-          <div>
-            <label htmlFor="course-name" className="text-sm text-zinc-400 mb-2 block">
-              Nom du cours <span className="text-rose-400">*</span>
-            </label>
-            <input
-              ref={inputRef}
-              id="course-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="JavaScript Avancé"
-              required
-              maxLength={50}
-              className="w-full bg-zinc-800/50 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-            />
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-sm text-rose-400" role="alert">
+            {error}
           </div>
+        )}
 
-          {/* Description */}
+        {/* Name */}
+        <Input
+          ref={inputRef}
+          label="Nom du cours"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="JavaScript Avancé"
+          required
+          maxLength={50}
+        />
+
+        {/* Description */}
+        <Textarea
+          label="Description (optionnel)"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Promises, async/await, modules ES6..."
+          maxLength={200}
+          rows={2}
+        />
+
+        {/* Projet lié */}
+        <Select
+          label="Projet lié"
+          value={linkedProjectId}
+          onChange={(e) => setLinkedProjectId(e.target.value)}
+          options={[
+            { value: '', label: '-- Sélectionner un projet --' },
+            ...projects.map(project => ({
+              value: project.id,
+              label: `${project.icon} ${project.name}`
+            }))
+          ]}
+          hint="💡 Les tâches et concepts de ce projet seront accessibles pendant le chat via un widget flottant."
+        />
+
+        {/* Icon & Color */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Icon */}
           <div>
-            <label htmlFor="course-description" className="text-sm text-zinc-400 mb-2 block">
-              Description (optionnel)
-            </label>
-            <textarea
-              id="course-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Promises, async/await, modules ES6..."
-              maxLength={200}
-              rows={2}
-              className="w-full bg-zinc-800/50 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none"
-            />
-          </div>
-
-          {/* Projet lié */}
-          <div>
-            <label htmlFor="linked-project" className="text-sm text-zinc-400 mb-2 block flex items-center gap-2">
-              <FolderKanban className="w-4 h-4" />
-              Projet lié <span className="text-rose-400">*</span>
-            </label>
-            <select
-              id="linked-project"
-              value={linkedProjectId}
-              onChange={(e) => setLinkedProjectId(e.target.value)}
-              required
-              className="w-full bg-zinc-800/50 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-            >
-              <option value="">-- Sélectionner un projet --</option>
-              {projects.map(project => (
-                <option key={project.id} value={project.id}>
-                  {project.icon} {project.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-zinc-600 mt-2 flex items-start gap-2">
-              <span>💡</span>
-              <span>Les tâches et concepts de ce projet seront accessibles pendant le chat via un widget flottant.</span>
-            </p>
-          </div>
-
-          {/* Icon & Color */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Icon */}
-            <div>
-              <label className="text-sm text-zinc-400 mb-2 block">Icône</label>
-              <div className="grid grid-cols-8 gap-1 p-2 bg-zinc-800/30 rounded-xl max-h-24 overflow-y-auto">
-                {COURSE_ICONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setIcon(emoji)}
-                    className={`p-1.5 rounded-lg text-lg transition-all ${
-                      icon === emoji
-                        ? `${COLOR_CLASSES[color].bg} ring-2 ${COLOR_CLASSES[color].border}`
-                        : 'hover:bg-zinc-700/50'
-                    }`}
-                    aria-label={`Icône ${emoji}`}
-                    aria-pressed={icon === emoji}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Color */}
-            <div>
-              <label className="text-sm text-zinc-400 mb-2 block">Couleur</label>
-              <div className="grid grid-cols-4 gap-2 p-2 bg-zinc-800/30 rounded-xl">
-                {COURSE_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    className={`w-full aspect-square rounded-xl transition-all ${COLOR_CLASSES[c].bg} ${
-                      color === c ? `ring-2 ${COLOR_CLASSES[c].border}` : ''
-                    }`}
-                    aria-label={`Couleur ${c}`}
-                    aria-pressed={color === c}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Level */}
-          <div>
-            <label className="text-sm text-zinc-400 mb-2 block">Niveau</label>
-            <div className="grid grid-cols-3 gap-2">
-              {COURSE_LEVELS.map((l) => (
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Icône</label>
+            <div className="grid grid-cols-8 gap-1 p-2 bg-zinc-800/30 rounded-xl max-h-24 overflow-y-auto">
+              {COURSE_ICONS.map((emoji) => (
                 <button
-                  key={l.value}
+                  key={emoji}
                   type="button"
-                  onClick={() => setLevel(l.value)}
-                  className={`p-3 rounded-xl text-center transition-all ${
-                    level === l.value
-                      ? `${COLOR_CLASSES[color].bg} ${COLOR_CLASSES[color].text} ring-1 ${COLOR_CLASSES[color].border}`
-                      : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800'
+                  onClick={() => setIcon(emoji)}
+                  className={`p-1.5 rounded-lg text-lg transition-[background-color] duration-200 ${
+                    icon === emoji
+                      ? `${COLOR_CLASSES[color].bg} ring-2 ${COLOR_CLASSES[color].border}`
+                      : 'hover:bg-zinc-700/50'
                   }`}
-                  aria-pressed={level === l.value}
+                  aria-label={`Icône ${emoji}`}
+                  aria-pressed={icon === emoji}
                 >
-                  <span className="text-xl block mb-1">{l.emoji}</span>
-                  <span className="text-xs">{l.label}</span>
+                  {emoji}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Programming Options */}
+          {/* Color */}
           <div>
-            <label className="flex items-center gap-3 p-4 bg-zinc-800/30 rounded-xl cursor-pointer hover:bg-zinc-800/50 transition-all">
-              <input
-                type="checkbox"
-                checked={isProgramming}
-                onChange={(e) => setIsProgramming(e.target.checked)}
-                className="w-4 h-4 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
-              />
-              <div className="flex-1">
-                <div className="text-sm text-zinc-200 font-medium flex items-center gap-2">
-                  💻 Cours de programmation
-                </div>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Active l'éditeur de code en split view
-                </p>
-              </div>
-            </label>
-
-            {isProgramming && (
-              <div className="mt-3 animate-fade-in">
-                <label htmlFor="programming-language" className="text-sm text-zinc-400 mb-2 block">
-                  Langage de programmation
-                </label>
-                <select
-                  id="programming-language"
-                  value={programmingLanguage}
-                  onChange={(e) => setProgrammingLanguage(e.target.value)}
-                  className="w-full bg-zinc-800/50 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                >
-                  {PROGRAMMING_LANGUAGES.map(lang => (
-                    <option key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-
-          {/* Advanced Options */}
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              {showAdvanced ? '▼' : '▶'} Options avancées
-            </button>
-
-            {showAdvanced && (
-              <div className="mt-3 animate-fade-in">
-                <label htmlFor="system-prompt" className="text-sm text-zinc-400 mb-2 block">
-                  Instructions pour l'IA (optionnel)
-                </label>
-                <textarea
-                  id="system-prompt"
-                  value={systemPrompt}
-                  onChange={(e) => setSystemPrompt(e.target.value)}
-                  placeholder="Ex: Je suis développeur junior, explique avec des analogies simples..."
-                  maxLength={500}
-                  rows={3}
-                  className="w-full bg-zinc-800/50 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none text-sm"
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Couleur</label>
+            <div className="grid grid-cols-4 gap-2 p-2 bg-zinc-800/30 rounded-xl">
+              {COURSE_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-full aspect-square rounded-xl transition-shadow duration-200 ${COLOR_CLASSES[c].bg} ${
+                    color === c ? `ring-2 ${COLOR_CLASSES[c].border}` : ''
+                  }`}
+                  aria-label={`Couleur ${c}`}
+                  aria-pressed={color === c}
                 />
-                <p className="text-xs text-zinc-600 mt-1">
-                  Ces instructions guideront l'IA pour adapter ses réponses à ton niveau et tes besoins.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 bg-zinc-800 text-zinc-400 rounded-xl hover:bg-zinc-700 transition-all"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all ${COLOR_CLASSES[color].bg} ${COLOR_CLASSES[color].text} hover:opacity-80`}
-            >
-              {isEditMode ? 'Enregistrer' : 'Créer le cours'}
-            </button>
-          </div>
-        </form>
-
-        {/* Preview */}
-        <div className="px-6 pb-6">
-          <p className="text-xs text-zinc-600 mb-2">Aperçu</p>
-          <div className={`p-3 rounded-xl ${COLOR_CLASSES[color].bg} flex items-center gap-3`}>
-            <span className="text-2xl">{icon}</span>
-            <div>
-              <p className={`font-medium ${COLOR_CLASSES[color].text}`}>
-                {name || 'Nom du cours'}
-              </p>
-              <p className="text-xs text-zinc-500">
-                {COURSE_LEVELS.find(l => l.value === level)?.label}
-              </p>
+              ))}
             </div>
           </div>
         </div>
+
+        {/* Level */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-300 mb-2">Niveau</label>
+          <div className="grid grid-cols-3 gap-2">
+            {COURSE_LEVELS.map((l) => (
+              <button
+                key={l.value}
+                type="button"
+                onClick={() => setLevel(l.value)}
+                className={`p-3 rounded-xl text-center transition-[background-color] duration-200 ${
+                  level === l.value
+                    ? `${COLOR_CLASSES[color].bg} ${COLOR_CLASSES[color].text} ring-1 ${COLOR_CLASSES[color].border}`
+                    : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800'
+                }`}
+                aria-pressed={level === l.value}
+              >
+                <span className="text-xl block mb-1">{l.emoji}</span>
+                <span className="text-xs">{l.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Programming Options */}
+        <div>
+          <label className="flex items-center gap-3 p-4 bg-zinc-800/30 rounded-xl cursor-pointer hover:bg-zinc-800/50 transition-[background-color] duration-200">
+            <input
+              type="checkbox"
+              checked={isProgramming}
+              onChange={(e) => setIsProgramming(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-800/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+            />
+            <div className="flex-1">
+              <div className="text-sm text-zinc-200 font-medium flex items-center gap-2">
+                💻 Cours de programmation
+              </div>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Active l'éditeur de code en split view
+              </p>
+            </div>
+          </label>
+
+          {isProgramming && (
+            <div className="mt-3 animate-fade-in">
+              <Select
+                label="Langage de programmation"
+                value={programmingLanguage}
+                onChange={(e) => setProgrammingLanguage(e.target.value)}
+                options={PROGRAMMING_LANGUAGES}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Advanced Options */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="text-sm text-zinc-500 hover:text-zinc-300 transition-[color] duration-200"
+          >
+            {showAdvanced ? '▼' : '▶'} Options avancées
+          </button>
+
+          {showAdvanced && (
+            <div className="mt-3 animate-fade-in">
+              <Textarea
+                label="Instructions pour l'IA (optionnel)"
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Ex: Je suis développeur junior, explique avec des analogies simples..."
+                maxLength={500}
+                rows={3}
+                hint="Ces instructions guideront l'IA pour adapter ses réponses à ton niveau et tes besoins."
+              />
+            </div>
+          )}
+        </div>
+      </form>
+
+      {/* Preview */}
+      <div className="mt-6 pt-4 border-t border-zinc-800/50">
+        <p className="text-xs text-zinc-600 mb-2">Aperçu</p>
+        <div className={`p-3 rounded-xl ${COLOR_CLASSES[color].bg} flex items-center gap-3`}>
+          <span className="text-2xl">{icon}</span>
+          <div>
+            <p className={`font-medium ${COLOR_CLASSES[color].text}`}>
+              {name || 'Nom du cours'}
+            </p>
+            <p className="text-xs text-zinc-500">
+              {COURSE_LEVELS.find(l => l.value === level)?.label}
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
+    </Modal>
   )
 }
-

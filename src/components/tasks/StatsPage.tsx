@@ -157,3 +157,4 @@ export function StatsPage({ onBack, tasks, last7DaysStats, completedToday }: Sta
   )
 }
 
+

@@ -59,7 +59,7 @@ export function PostItTaskCard({ task, index, onClick }: PostItTaskCardProps) {
           onClick={onClick}
           className={`
             group relative cursor-pointer
-            transition-all duration-300
+            transition-colors duration-300
             ${snapshot.isDragging ? 'scale-110 z-50' : 'hover:scale-105 hover:z-10'}
             ${task.completed ? 'opacity-60' : ''}
           `}
@@ -115,7 +115,7 @@ export function PostItTaskCard({ task, index, onClick }: PostItTaskCardProps) {
               <div className="flex items-start gap-2">
                 <button
                   onClick={handleToggle}
-                  className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-all ${
+                  className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-colors ${
                     task.completed
                       ? 'bg-black/80 border-black/80'
                       : 'border-black/30 hover:border-black/50'
@@ -213,4 +213,5 @@ export function PostItTaskCard({ task, index, onClick }: PostItTaskCardProps) {
     </Draggable>
   )
 }
+
 

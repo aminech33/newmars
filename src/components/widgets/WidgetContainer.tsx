@@ -28,7 +28,7 @@ const widgetTitles: Record<string, string> = {
   'quick-actions': 'Actions',
 }
 
-export function WidgetContainer({ id, title, widget, children, actions, currentSize, onClick }: WidgetContainerProps) {
+export function WidgetContainer({ id, title, widget, children, actions, onClick }: WidgetContainerProps) {
   const { isEditMode, removeWidget, updateWidget, accentTheme } = useStore()
   const [isClicked, setIsClicked] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
@@ -37,8 +37,6 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
   // Support both old API (id, title) and new API (widget)
   const widgetId = widget?.id || id || ''
   const widgetTitle = title || (widget?.type ? widgetTitles[widget.type] : '') || ''
-  // Taille unique, ignorée
-  const size = 'notification'
 
   const handleClick = () => {
     if (!isEditMode && onClick) {
@@ -79,22 +77,14 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
       const gridWidth = Math.max(1, Math.min(3, Math.round(newWidth / 200)))
       const gridHeight = Math.max(1, Math.min(3, Math.round(newHeight / 200)))
       
-      // Determine size based on dimensions
-      let newSize: 'small' | 'medium' | 'large' = 'small'
-      if (gridWidth >= 2 && gridHeight >= 2) {
-        newSize = 'large'
-      } else if (gridWidth >= 2 || gridHeight >= 2) {
-        newSize = 'medium'
-      }
-      
       // Update dimensions (max 2x2 pour compatibilité avec Widget type)
       const dimensions = {
         width: Math.min(gridWidth, 2) as 1 | 2,
         height: Math.min(gridHeight, 2) as 1 | 2
       }
       
-      if (size !== newSize || widget?.dimensions?.width !== gridWidth || widget?.dimensions?.height !== gridHeight) {
-        updateWidget(widgetId, { size: newSize, dimensions })
+      if (widget?.dimensions?.width !== gridWidth || widget?.dimensions?.height !== gridHeight) {
+        updateWidget(widgetId, { dimensions })
       }
     }
 
@@ -146,7 +136,7 @@ export function WidgetContainer({ id, title, widget, children, actions, currentS
             {isEditMode && (
               <button
                 onClick={(e) => { e.stopPropagation(); removeWidget(widgetId); }}
-                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-colors"
                 title="Supprimer"
               >
                 <X className="w-3.5 h-3.5" />

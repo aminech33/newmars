@@ -80,7 +80,7 @@ export function CorkBoardColumn({ status, title, icon, tasks, onTaskClick, onAdd
             {...provided.droppableProps}
             className={`
               flex-1 p-4 rounded-2xl relative overflow-hidden
-              transition-all duration-300
+              transition-colors duration-300
               ${snapshot.isDraggingOver ? 'ring-4 ring-amber-400/50' : ''}
             `}
             style={{
@@ -134,4 +134,5 @@ export function CorkBoardColumn({ status, title, icon, tasks, onTaskClick, onAdd
     </div>
   )
 }
+
 

@@ -31,7 +31,9 @@ import {
   getDaySchedule,
   analyzeProductivityPatterns
 } from '../../utils/pomodoroUtils'
-import { TimerState, TimerMode, PomodoroSettings } from '../../types/pomodoro'
+import { TimerState, PomodoroSettings } from '../../types/pomodoro'
+import { Course } from '../../types/learning'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 type TabView = 'timer' | 'stats' | 'history' | 'settings'
 
@@ -48,22 +50,41 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
   tickingSound: false
 }
 
+const STORAGE_KEY = 'pomodoro-settings'
+
+function loadSettings(): PomodoroSettings {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) }
+    }
+  } catch {
+    // Ignore parsing errors
+  }
+  return DEFAULT_SETTINGS
+}
+
 export function PomodoroPage() {
   const {
     tasks,
     projects,
     books,
-    courses,
+    learningCourses,
     pomodoroSessions,
     addPomodoroSession,
     updateBook,
     updateLearningCourse,
-    addToast,
-    setView
+    addToast
   } = useStore()
 
   const [activeTab, setActiveTab] = useState<TabView>('timer')
-  const [settings, setSettings] = useState<PomodoroSettings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = useState<PomodoroSettings>(loadSettings)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  
+  // Persist settings to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+  }, [settings])
   
   // Timer state
   const [timerState, setTimerState] = useState<TimerState>({
@@ -83,15 +104,12 @@ export function PomodoroPage() {
   const [selectedBookId, setSelectedBookId] = useState<string | undefined>()
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>()
   const [customDuration, setCustomDuration] = useState<number>(25)
-  const [showTaskSelector, setShowTaskSelector] = useState(false)
-  const [showProjectSelector, setShowProjectSelector] = useState(false)
-  const [showBookSelector, setShowBookSelector] = useState(false)
 
   // History view
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   // Timer interval ref
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const notificationShownRef = useRef(false)
 
   // Selected task & project & book & course
@@ -99,9 +117,9 @@ export function PomodoroPage() {
   const selectedProject = projects.find(p => p.id === selectedProjectId) || 
                           (selectedTask?.projectId ? projects.find(p => p.id === selectedTask.projectId) : undefined)
   const selectedBook = books.find(b => b.id === selectedBookId)
-  const selectedCourse = courses?.find(c => c.id === selectedCourseId)
+  const selectedCourse = learningCourses?.find((c: Course) => c.id === selectedCourseId)
   const readingBooks = books.filter(b => b.status === 'reading')
-  const activeCourses = courses?.filter(c => c.status === 'active') || []
+  const activeCourses = learningCourses?.filter((c: Course) => c.status === 'active') || []
   
   // Load preselected data from localStorage (from Learning page)
   useEffect(() => {
@@ -113,8 +131,8 @@ export function PomodoroPage() {
         if (data.courseId) setSelectedCourseId(data.courseId)
         localStorage.removeItem('pomodoro-preselect')
         addToast(`✅ Pomodoro configuré pour "${data.courseName || data.projectName}"`, 'success')
-      } catch (e) {
-        console.error('Error parsing preselect data:', e)
+      } catch {
+        // Ignore parsing errors
       }
     }
   }, [])
@@ -262,6 +280,15 @@ export function PomodoroPage() {
   }
 
   const resetTimer = () => {
+    // If timer is running or paused, ask for confirmation
+    if (timerState.status === 'running' || timerState.status === 'paused') {
+      setShowResetConfirm(true)
+      return
+    }
+    doReset()
+  }
+
+  const doReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current)
     
     const duration = timerState.mode === 'focus' 
@@ -274,6 +301,7 @@ export function PomodoroPage() {
       timeLeft: duration,
       totalTime: duration
     }))
+    setShowResetConfirm(false)
   }
 
   const playNotificationSound = () => {
@@ -299,6 +327,42 @@ export function PomodoroPage() {
       Notification.requestPermission()
     }
   }, [])
+
+  // Dynamic title with timer
+  useEffect(() => {
+    if (timerState.status === 'running' || timerState.status === 'paused') {
+      const mode = timerState.mode === 'focus' ? '🍅' : '☕'
+      document.title = `${mode} ${formatTime(timerState.timeLeft)} - Pomodoro`
+    } else {
+      document.title = 'Pomodoro - IKU'
+    }
+    return () => { document.title = 'IKU' }
+  }, [timerState.timeLeft, timerState.status, timerState.mode])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return
+      
+      if (e.code === 'Space' && activeTab === 'timer') {
+        e.preventDefault()
+        toggleTimer()
+      }
+      if (e.code === 'KeyR' && activeTab === 'timer' && timerState.status !== 'idle') {
+        e.preventDefault()
+        setShowResetConfirm(true)
+      }
+      // Tab navigation with 1-4
+      if (e.key === '1') setActiveTab('timer')
+      if (e.key === '2') setActiveTab('stats')
+      if (e.key === '3') setActiveTab('history')
+      if (e.key === '4') setActiveTab('settings')
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeTab, timerState.status])
 
   // Progress percentage
   const progress = ((timerState.totalTime - timerState.timeLeft) / timerState.totalTime) * 100
@@ -335,23 +399,29 @@ export function PomodoroPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-2 bg-zinc-800/50 rounded-xl p-1">
+            <div className="flex items-center gap-2 bg-zinc-800/50 rounded-xl p-1" role="tablist" aria-label="Navigation Pomodoro">
               {[
-                { id: 'timer' as const, label: 'Timer', icon: Timer },
-                { id: 'stats' as const, label: 'Stats', icon: TrendingUp },
-                { id: 'history' as const, label: 'History', icon: Calendar },
-                { id: 'settings' as const, label: 'Settings', icon: Settings }
+                { id: 'timer' as const, label: 'Timer', icon: Timer, shortcut: '1' },
+                { id: 'stats' as const, label: 'Stats', icon: TrendingUp, shortcut: '2' },
+                { id: 'history' as const, label: 'Historique', icon: Calendar, shortcut: '3' },
+                { id: 'settings' as const, label: 'Paramètres', icon: Settings, shortcut: '4' }
               ].map(tab => (
                 <button
                   key={tab.id}
+                  role="tab"
+                  id={`tab-${tab.id}`}
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`panel-${tab.id}`}
+                  tabIndex={activeTab === tab.id ? 0 : -1}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-[background-color] duration-200 flex items-center gap-2 ${
                     activeTab === tab.id
                       ? 'bg-zinc-700 text-zinc-100'
                       : 'text-zinc-400 hover:text-zinc-300'
                   }`}
+                  title={`${tab.label} (${tab.shortcut})`}
                 >
-                  <tab.icon className="w-4 h-4" />
+                  <tab.icon className="w-4 h-4" aria-hidden="true" />
                   {tab.label}
                 </button>
               ))}
@@ -364,7 +434,12 @@ export function PomodoroPage() {
         <div className="max-w-7xl mx-auto px-6 py-8">
           {/* TIMER TAB */}
         {activeTab === 'timer' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div 
+            role="tabpanel" 
+            id="panel-timer" 
+            aria-labelledby="tab-timer"
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+          >
             {/* Main Timer */}
             <div className="lg:col-span-2">
               <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-8">
@@ -435,11 +510,12 @@ export function PomodoroPage() {
                 <div className="flex items-center justify-center gap-4 mb-8">
                   <button
                     onClick={toggleTimer}
-                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-[background-color] duration-200 ${
                       timerState.mode === 'focus'
                         ? 'bg-red-500 hover:bg-red-600 text-white'
                         : 'bg-green-500 hover:bg-green-600 text-white'
                     }`}
+                    aria-label={timerState.status === 'running' ? 'Pause (Espace)' : 'Démarrer (Espace)'}
                   >
                     {timerState.status === 'running' ? (
                       <Pause className="w-8 h-8" />
@@ -450,7 +526,8 @@ export function PomodoroPage() {
 
                   <button
                     onClick={resetTimer}
-                    className="w-12 h-12 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors"
+                    className="w-12 h-12 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-[background-color] duration-200"
+                    aria-label="Réinitialiser (R)"
                   >
                     <RotateCcw className="w-5 h-5" />
                   </button>
@@ -460,8 +537,8 @@ export function PomodoroPage() {
                 {timerState.mode === 'focus' && (
                   <div className="space-y-3">
                     {selectedTask && (
-                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-                        <CheckSquare className="w-5 h-5 text-red-400" />
+                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
+                        <CheckSquare className="w-5 h-5 text-red-400" aria-hidden="true" />
                         <div className="flex-1">
                           <div className="text-sm text-zinc-400">Tâche en cours</div>
                           <div className="font-medium">{selectedTask.title}</div>
@@ -470,8 +547,8 @@ export function PomodoroPage() {
                     )}
 
                     {selectedProject && (
-                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-                        <Folder className="w-5 h-5" style={{ color: selectedProject.color }} />
+                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
+                        <Folder className="w-5 h-5" style={{ color: selectedProject.color }} aria-hidden="true" />
                         <div className="flex-1">
                           <div className="text-sm text-zinc-400">Projet</div>
                           <div className="font-medium">{selectedProject.name}</div>
@@ -480,8 +557,8 @@ export function PomodoroPage() {
                     )}
 
                     {selectedBook && (
-                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-                        <BookOpen className="w-5 h-5 text-amber-400" />
+                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
+                        <BookOpen className="w-5 h-5 text-amber-400" aria-hidden="true" />
                         <div className="flex-1">
                           <div className="text-sm text-zinc-400">Livre en lecture</div>
                           <div className="font-medium">{selectedBook.title}</div>
@@ -491,8 +568,8 @@ export function PomodoroPage() {
                     )}
 
                     {selectedCourse && (
-                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-                        <span className="text-xl">{selectedCourse.icon}</span>
+                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
+                        <span className="text-xl" aria-hidden="true">{selectedCourse.icon}</span>
                         <div className="flex-1">
                           <div className="text-sm text-zinc-400">Cours d'apprentissage</div>
                           <div className="font-medium">{selectedCourse.name}</div>
@@ -501,7 +578,7 @@ export function PomodoroPage() {
                       </div>
                     )}
 
-                    <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                    <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
                       <Award className="w-5 h-5 text-yellow-400" />
                       <div className="flex-1">
                         <div className="text-sm text-zinc-400">Sessions aujourd'hui</div>
@@ -534,7 +611,7 @@ export function PomodoroPage() {
                             totalTime: duration * 60
                           }))
                         }}
-                        className={`py-2 px-3 rounded-lg font-medium text-sm transition-all ${
+                        className={`py-2 px-3 rounded-lg font-medium text-sm transition-[background-color] duration-200 ${
                           customDuration === duration
                             ? 'bg-red-500 text-white'
                             : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
@@ -558,7 +635,7 @@ export function PomodoroPage() {
                     }}
                     min="1"
                     max="120"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
               )}
@@ -578,7 +655,7 @@ export function PomodoroPage() {
                         value={selectedTaskId || ''}
                         onChange={(e) => setSelectedTaskId(e.target.value || undefined)}
                         disabled={timerState.status !== 'idle'}
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
                       >
                         <option value="">Aucune tâche</option>
                         {incompleteTasks.map(task => (
@@ -593,7 +670,7 @@ export function PomodoroPage() {
                         value={selectedProjectId || ''}
                         onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
                         disabled={timerState.status !== 'idle'}
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
                       >
                         <option value="">Aucun projet</option>
                         {projects.map(project => (
@@ -611,7 +688,7 @@ export function PomodoroPage() {
                         value={selectedBookId || ''}
                         onChange={(e) => setSelectedBookId(e.target.value || undefined)}
                         disabled={timerState.status !== 'idle'}
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
                       >
                         <option value="">Aucun livre</option>
                         {readingBooks.map(book => (
@@ -628,7 +705,7 @@ export function PomodoroPage() {
                         value={selectedCourseId || ''}
                         onChange={(e) => setSelectedCourseId(e.target.value || undefined)}
                         disabled={timerState.status !== 'idle'}
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                       >
                         <option value="">Aucun cours</option>
                         {activeCourses.map(course => (
@@ -652,9 +729,16 @@ export function PomodoroPage() {
                       <span className="text-xs text-zinc-500">Sessions</span>
                       <span className="text-2xl font-bold">{stats.todaySessions}</span>
                     </div>
-                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-2 bg-zinc-800 rounded-full overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={stats.todaySessions}
+                      aria-valuemin={0}
+                      aria-valuemax={8}
+                      aria-label="Sessions aujourd'hui"
+                    >
                       <div 
-                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all"
+                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-[width] duration-300"
                         style={{ width: `${Math.min(100, (stats.todaySessions / 8) * 100)}%` }}
                       />
                     </div>
@@ -662,12 +746,19 @@ export function PomodoroPage() {
 
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-zinc-500">Focus time</span>
+                      <span className="text-xs text-zinc-500">Temps de focus</span>
                       <span className="text-2xl font-bold">{formatDuration(stats.todayMinutes)}</span>
                     </div>
-                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-2 bg-zinc-800 rounded-full overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={stats.todayMinutes}
+                      aria-valuemin={0}
+                      aria-valuemax={240}
+                      aria-label="Minutes de focus aujourd'hui"
+                    >
                       <div 
-                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all"
+                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-[width] duration-300"
                         style={{ width: `${Math.min(100, (stats.todayMinutes / 240) * 100)}%` }}
                       />
                     </div>
@@ -688,7 +779,12 @@ export function PomodoroPage() {
 
         {/* STATS TAB */}
         {activeTab === 'stats' && (
-          <div className="space-y-6">
+          <div 
+            role="tabpanel" 
+            id="panel-stats" 
+            aria-labelledby="tab-stats"
+            className="space-y-6"
+          >
             {/* Global stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6">
@@ -758,9 +854,16 @@ export function PomodoroPage() {
                           <span className="font-medium truncate">{proj.projectName}</span>
                           <span className="text-sm text-zinc-400">{formatDuration(proj.totalMinutes)}</span>
                         </div>
-                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div 
+                          className="h-2 bg-zinc-800 rounded-full overflow-hidden"
+                          role="progressbar"
+                          aria-valuenow={proj.totalMinutes}
+                          aria-valuemin={0}
+                          aria-valuemax={projectStats[0].totalMinutes}
+                          aria-label={`Temps sur ${proj.projectName}`}
+                        >
                           <div 
-                            className="h-full transition-all"
+                            className="h-full transition-[width] duration-300"
                             style={{ 
                               width: `${(proj.totalMinutes / projectStats[0].totalMinutes) * 100}%`,
                               backgroundColor: proj.projectColor
@@ -788,7 +891,7 @@ export function PomodoroPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {taskStats.slice(0, 10).map(task => (
-                    <div key={task.taskId} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                    <div key={task.taskId} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{task.taskTitle}</div>
@@ -807,9 +910,16 @@ export function PomodoroPage() {
                             <span>Progression</span>
                             <span>{task.progress}%</span>
                           </div>
-                          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                          <div 
+                            className="h-1.5 bg-zinc-800 rounded-full overflow-hidden"
+                            role="progressbar"
+                            aria-valuenow={task.progress}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`Progression de ${task.taskTitle}`}
+                          >
                             <div 
-                              className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all"
+                              className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-[width] duration-300"
                               style={{ width: `${Math.min(100, task.progress)}%` }}
                             />
                           </div>
@@ -842,7 +952,7 @@ export function PomodoroPage() {
                       className={`p-4 rounded-xl border ${
                         isBest 
                           ? 'bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20' 
-                          : 'bg-zinc-800/50 border-zinc-700/50'
+                          : 'bg-zinc-800/50 border-zinc-800/50'
                       }`}
                     >
                       <div className="text-3xl mb-2">{period.icon}</div>
@@ -862,14 +972,19 @@ export function PomodoroPage() {
 
         {/* HISTORY TAB */}
         {activeTab === 'history' && (
-          <div className="space-y-6">
+          <div 
+            role="tabpanel" 
+            id="panel-history" 
+            aria-labelledby="tab-history"
+            className="space-y-6"
+          >
             {/* Date navigation */}
             <div className="flex items-center justify-between">
               <button
                 onClick={() => navigateDate('prev')}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg flex items-center gap-2 transition-colors"
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg flex items-center gap-2 transition-[background-color] duration-200"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                 Jour précédent
               </button>
 
@@ -888,10 +1003,10 @@ export function PomodoroPage() {
               <button
                 onClick={() => navigateDate('next')}
                 disabled={isToday}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg flex items-center gap-2 transition-[background-color] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Jour suivant
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -1000,7 +1115,12 @@ export function PomodoroPage() {
 
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
-          <div className="max-w-2xl mx-auto space-y-6">
+          <div 
+            role="tabpanel" 
+            id="panel-settings" 
+            aria-labelledby="tab-settings"
+            className="max-w-2xl mx-auto space-y-6"
+          >
             <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
               <h3 className="text-sm font-semibold text-zinc-400 mb-6 flex items-center gap-2">
                 <Clock className="w-4 h-4" />
@@ -1015,7 +1135,7 @@ export function PomodoroPage() {
                     onChange={(e) => setSettings({ ...settings, defaultFocusDuration: parseInt(e.target.value) || 25 })}
                     min="1"
                     max="120"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
                 <div>
@@ -1026,7 +1146,7 @@ export function PomodoroPage() {
                     onChange={(e) => setSettings({ ...settings, defaultShortBreak: parseInt(e.target.value) || 5 })}
                     min="1"
                     max="30"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
                 <div>
@@ -1037,7 +1157,7 @@ export function PomodoroPage() {
                     onChange={(e) => setSettings({ ...settings, defaultLongBreak: parseInt(e.target.value) || 15 })}
                     min="1"
                     max="60"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
                 <div>
@@ -1048,7 +1168,7 @@ export function PomodoroPage() {
                     onChange={(e) => setSettings({ ...settings, longBreakInterval: parseInt(e.target.value) || 4 })}
                     min="2"
                     max="10"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
               </div>
@@ -1066,7 +1186,7 @@ export function PomodoroPage() {
                     type="checkbox"
                     checked={settings.autoStartBreaks}
                     onChange={(e) => setSettings({ ...settings, autoStartBreaks: e.target.checked })}
-                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-700 text-red-500 focus:ring-2 focus:ring-red-500"
+                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
                   />
                 </label>
                 <label className="flex items-center justify-between cursor-pointer">
@@ -1075,7 +1195,7 @@ export function PomodoroPage() {
                     type="checkbox"
                     checked={settings.autoStartPomodoros}
                     onChange={(e) => setSettings({ ...settings, autoStartPomodoros: e.target.checked })}
-                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-700 text-red-500 focus:ring-2 focus:ring-red-500"
+                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
                   />
                 </label>
               </div>
@@ -1093,7 +1213,7 @@ export function PomodoroPage() {
                     type="checkbox"
                     checked={settings.soundEnabled}
                     onChange={(e) => setSettings({ ...settings, soundEnabled: e.target.checked })}
-                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-700 text-red-500 focus:ring-2 focus:ring-red-500"
+                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
                   />
                 </label>
 
@@ -1117,7 +1237,7 @@ export function PomodoroPage() {
                     type="checkbox"
                     checked={settings.notificationsEnabled}
                     onChange={(e) => setSettings({ ...settings, notificationsEnabled: e.target.checked })}
-                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-700 text-red-500 focus:ring-2 focus:ring-red-500"
+                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
                   />
                 </label>
 
@@ -1127,7 +1247,7 @@ export function PomodoroPage() {
                     type="checkbox"
                     checked={settings.tickingSound}
                     onChange={(e) => setSettings({ ...settings, tickingSound: e.target.checked })}
-                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-700 text-red-500 focus:ring-2 focus:ring-red-500"
+                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
                   />
                 </label>
               </div>
@@ -1136,6 +1256,18 @@ export function PomodoroPage() {
         )}
         </div>
       </div>
+
+      {/* Reset confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={doReset}
+        title="Réinitialiser le timer ?"
+        message="Le temps écoulé ne sera pas enregistré. Voulez-vous vraiment réinitialiser ?"
+        confirmText="Réinitialiser"
+        cancelText="Annuler"
+        variant="warning"
+      />
     </div>
   )
 }

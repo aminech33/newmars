@@ -31,7 +31,7 @@ export const HealthFilters = memo(function HealthFilters({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Rechercher..."
-          className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+          className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-[background-color] duration-200"
           aria-label="Rechercher dans l'historique"
         />
       </div>
@@ -44,7 +44,7 @@ export const HealthFilters = memo(function HealthFilters({
             <button
               key={filter.value}
               onClick={() => onDateFilterChange(filter.value)}
-              className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
+              className={`px-3 py-1.5 text-xs rounded-lg transition-[background-color] duration-200 ${
                 dateFilter === filter.value
                   ? 'bg-indigo-500/20 text-indigo-400'
                   : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50'

@@ -205,7 +205,7 @@ export function WidgetGrid() {
             className={`
               ${isEditMode ? 'cursor-move focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-950 rounded-3xl' : ''} 
               ${draggedWidget === widget.id ? 'opacity-50 scale-95' : ''} 
-              transition-all duration-200
+              transition-colors duration-200
             `}
           >
             <MemoizedWidget 
@@ -222,7 +222,7 @@ export function WidgetGrid() {
             <p className="text-zinc-700 text-sm mb-4">Cliquez sur "Personnaliser" pour ajouter des widgets</p>
             <button
               onClick={() => resetWidgets()}
-              className="px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all"
+              className="px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
             >
               Charger les widgets par défaut
             </button>

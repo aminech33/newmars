@@ -40,11 +40,12 @@ export function ProgressBar({
       )}
       <div className={`w-full ${heightClasses[height]} bg-white/10 rounded-full overflow-hidden`}>
         <div 
-          className={`h-full bg-gradient-to-r ${gradientClasses[color]} transition-all duration-500`}
+          className={`h-full bg-gradient-to-r ${gradientClasses[color]} transition-[width] duration-500`}
           style={{ width: `${percentage}%` }}
         />
       </div>
     </div>
   )
 }
+
 

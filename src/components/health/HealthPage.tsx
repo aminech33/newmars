@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ArrowLeft, Heart, Scale, Apple } from 'lucide-react'
+import { ArrowLeft, Heart, Scale, Apple, Book } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { useHealthData, HealthTab } from '../../hooks/useHealthData'
 
@@ -15,6 +15,11 @@ import { MealModal } from './MealModal'
 import { HealthFAB } from './HealthFAB'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { UndoToast } from '../ui/UndoToast'
+import { FoodDatabaseViewer } from './FoodDatabaseViewer'
+import { DailyCalorieTracker } from './DailyCalorieTracker'
+import { SmartMealSuggestions } from './SmartMealSuggestions'
+import { MacrosCircularChart } from './MacrosCircularChart'
+import { WeeklyHistory } from './WeeklyHistory'
 
 const TABS: { id: HealthTab; label: string; icon: typeof Heart }[] = [
   { id: 'overview', label: "Vue d'ensemble", icon: Heart },
@@ -44,6 +49,7 @@ export function HealthPage() {
     filteredWeightEntries,
     filteredMealEntries,
     weightEntries,
+    mealEntries,
     handleAddWeight,
     handleAddMeal,
     deleteWeightEntry,
@@ -53,6 +59,7 @@ export function HealthPage() {
   // Modal states
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [showMealModal, setShowMealModal] = useState(false)
+  const [showFoodDatabase, setShowFoodDatabase] = useState(false)
   
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'weight' | 'meal'; id: string } | null>(null)
@@ -99,7 +106,18 @@ export function HealthPage() {
     return result
   }, [handleAddWeight])
 
-  const handleMealSubmit = useCallback((data: { name: string; calories: number; date: string; time: string; type: 'breakfast' | 'lunch' | 'dinner' | 'snack' }) => {
+  const handleMealSubmit = useCallback((data: { 
+    name: string
+    calories: number
+    protein: number
+    carbs: number
+    fat: number
+    fiber?: number
+    foods: any[]
+    date: string
+    time: string
+    type: 'breakfast' | 'lunch' | 'dinner' | 'snack' 
+  }) => {
     const result = handleAddMeal(data)
     if (result.success) {
       setToast({ message: 'Repas ajouté avec succès', type: 'success' })
@@ -114,6 +132,25 @@ export function HealthPage() {
 
   const handleDeleteMeal = useCallback((id: string) => {
     setDeleteConfirm({ type: 'meal', id })
+  }, [])
+
+  // Dupliquer un repas
+  const handleDuplicateMeal = useCallback((meal: any) => {
+    const result = handleAddMeal({
+      ...meal,
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toTimeString().slice(0, 5)
+    })
+    if (result.success) {
+      setToast({ message: 'Repas dupliqué avec succès', type: 'success' })
+      setTimeout(() => setToast(null), 3000)
+    }
+  }, [handleAddMeal])
+
+  // Ajouter un repas depuis suggestion
+  const handleSelectSuggestion = useCallback((_suggestion: any) => {
+    setShowMealModal(true)
+    // TODO: Pré-remplir le modal avec la suggestion
   }, [])
 
   const confirmDelete = useCallback(() => {
@@ -161,7 +198,7 @@ export function HealthPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setView('hub')}
-              className="p-2 hover:bg-zinc-900/50 rounded-xl transition-colors"
+              className="p-2 hover:bg-zinc-900/50 rounded-xl transition-[background-color] duration-200"
               aria-label="Retour au hub"
             >
               <ArrowLeft className="w-5 h-5 text-zinc-400" />
@@ -174,8 +211,17 @@ export function HealthPage() {
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowFoodDatabase(true)}
+              className="px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-xl hover:bg-cyan-500/30 transition-[background-color] duration-200 duration-300 flex items-center gap-2"
+              aria-label="Base de données alimentaire"
+              title="Voir tous les aliments disponibles"
+            >
+              <Book className="w-4 h-4" aria-hidden="true" />
+              <span className="text-sm hidden sm:inline">Base d'aliments</span>
+            </button>
+            <button
               onClick={() => setShowWeightModal(true)}
-              className="px-4 py-2 bg-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500/30 transition-all duration-300 flex items-center gap-2"
+              className="px-4 py-2 bg-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500/30 transition-[background-color] duration-200 duration-300 flex items-center gap-2"
               aria-label="Ajouter un poids (Ctrl+P)"
             >
               <Scale className="w-4 h-4" aria-hidden="true" />
@@ -183,7 +229,7 @@ export function HealthPage() {
             </button>
             <button
               onClick={() => setShowMealModal(true)}
-              className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/30 transition-all duration-300 flex items-center gap-2"
+              className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/30 transition-[background-color] duration-200 duration-300 flex items-center gap-2"
               aria-label="Ajouter un repas (Ctrl+M)"
             >
               <Apple className="w-4 h-4" aria-hidden="true" />
@@ -204,7 +250,7 @@ export function HealthPage() {
                 aria-selected={activeTab === tab.id}
                 aria-controls={`panel-${tab.id}`}
                 tabIndex={activeTab === tab.id ? 0 : -1}
-                className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
+                className={`px-4 py-2 rounded-xl transition-[background-color] duration-200 duration-300 flex items-center gap-2 whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-zinc-800 text-zinc-200'
                     : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/30'
@@ -228,6 +274,40 @@ export function HealthPage() {
               aria-labelledby="tab-overview"
               className="space-y-6 animate-fade-in"
             >
+              {/* Daily Calorie Tracker - NOUVEAU ! */}
+              <DailyCalorieTracker
+                todayMeals={filteredMealEntries.filter(m => m.date === new Date().toISOString().split('T')[0])}
+                targetCalories={targetCalories}
+                targetProtein={Math.round(targetCalories * 0.3 / 4)}
+                targetCarbs={Math.round(targetCalories * 0.4 / 4)}
+                targetFat={Math.round(targetCalories * 0.3 / 9)}
+              />
+
+              {/* Smart Meal Suggestions */}
+              <SmartMealSuggestions
+                caloriesRemaining={targetCalories - todayCalories}
+                onSelectSuggestion={handleSelectSuggestion}
+              />
+
+              {/* Macros Circular Chart + Weekly History */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-zinc-900/30 backdrop-blur-xl rounded-3xl p-6 border border-zinc-800/50 flex items-center justify-center">
+                  <div>
+                    <h3 className="text-center text-sm font-medium text-zinc-400 mb-6">Répartition macros aujourd'hui</h3>
+                    <MacrosCircularChart
+                      protein={filteredMealEntries.filter(m => m.date === new Date().toISOString().split('T')[0]).reduce((sum, m) => sum + (m.protein || 0), 0)}
+                      carbs={filteredMealEntries.filter(m => m.date === new Date().toISOString().split('T')[0]).reduce((sum, m) => sum + (m.carbs || 0), 0)}
+                      fat={filteredMealEntries.filter(m => m.date === new Date().toISOString().split('T')[0]).reduce((sum, m) => sum + (m.fat || 0), 0)}
+                    />
+                  </div>
+                </div>
+
+                <WeeklyHistory
+                  mealEntries={mealEntries}
+                  targetCalories={targetCalories}
+                />
+              </div>
+
               <HealthStats
                 latestWeight={latestWeight}
                 targetWeight={targetWeight}
@@ -283,6 +363,15 @@ export function HealthPage() {
               aria-labelledby="tab-nutrition"
               className="space-y-6 animate-fade-in"
             >
+              {/* Daily Tracker aussi dans l'onglet Nutrition */}
+              <DailyCalorieTracker
+                todayMeals={filteredMealEntries.filter(m => m.date === new Date().toISOString().split('T')[0])}
+                targetCalories={targetCalories}
+                targetProtein={Math.round(targetCalories * 0.3 / 4)}
+                targetCarbs={Math.round(targetCalories * 0.4 / 4)}
+                targetFat={Math.round(targetCalories * 0.3 / 9)}
+              />
+
               <div 
                 className="bg-zinc-900/30 backdrop-blur-xl rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
                 style={{ border: '1px solid rgba(255,255,255,0.08)' }}
@@ -299,6 +388,7 @@ export function HealthPage() {
                 <MealList 
                   entries={filteredMealEntries} 
                   onDelete={handleDeleteMeal}
+                  onDuplicate={handleDuplicateMeal}
                 />
               </div>
             </div>
@@ -359,6 +449,12 @@ export function HealthPage() {
       <HealthFAB
         onAddWeight={() => setShowWeightModal(true)}
         onAddMeal={() => setShowMealModal(true)}
+      />
+
+      {/* Food Database Viewer */}
+      <FoodDatabaseViewer
+        isOpen={showFoodDatabase}
+        onClose={() => setShowFoodDatabase(false)}
       />
     </div>
   )

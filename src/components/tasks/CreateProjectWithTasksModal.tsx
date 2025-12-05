@@ -1,15 +1,55 @@
-import { useState } from 'react'
-import { X, Plus, Trash2, Calendar, Clock } from 'lucide-react'
-import { PROJECT_COLORS, PROJECT_ICONS, TaskCategory, TaskPriority } from '../../store/useStore'
+import { useState, useRef } from 'react'
+import { Plus, Trash2, FolderPlus } from 'lucide-react'
+import { PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
+import { Modal } from '../ui/Modal'
+import { Button } from '../ui/Button'
 
-interface TaskTemplate {
+type DeadlineGroup = 'this-week' | 'next-week' | 'this-month' | 'no-deadline'
+
+interface TaskItem {
   id: string
   title: string
-  dueDate?: string
-  estimatedTime?: number
-  priority: TaskPriority
-  category: TaskCategory
+  group: DeadlineGroup
 }
+
+const deadlineGroups: { key: DeadlineGroup; label: string; emoji: string; getDate: () => string | undefined }[] = [
+  { 
+    key: 'this-week', 
+    label: 'Cette semaine', 
+    emoji: '🔥',
+    getDate: () => {
+      const d = new Date()
+      d.setDate(d.getDate() + (7 - d.getDay()))
+      return d.toISOString().split('T')[0]
+    }
+  },
+  { 
+    key: 'next-week', 
+    label: 'Semaine prochaine', 
+    emoji: '📅',
+    getDate: () => {
+      const d = new Date()
+      d.setDate(d.getDate() + (14 - d.getDay()))
+      return d.toISOString().split('T')[0]
+    }
+  },
+  { 
+    key: 'this-month', 
+    label: 'Ce mois', 
+    emoji: '📆',
+    getDate: () => {
+      const d = new Date()
+      d.setMonth(d.getMonth() + 1, 0)
+      return d.toISOString().split('T')[0]
+    }
+  },
+  { 
+    key: 'no-deadline', 
+    label: 'Sans deadline', 
+    emoji: '💭',
+    getDate: () => undefined
+  },
+]
 
 interface CreateProjectWithTasksModalProps {
   isOpen: boolean
@@ -18,7 +58,7 @@ interface CreateProjectWithTasksModalProps {
     name: string
     color: string
     icon: string
-    tasks: Omit<TaskTemplate, 'id'>[]
+    tasks: Array<{ title: string; dueDate?: string; priority: 'medium'; category: 'work' }>
   }) => void
 }
 
@@ -26,294 +66,230 @@ export function CreateProjectWithTasksModal({ isOpen, onClose, onCreate }: Creat
   const [projectName, setProjectName] = useState('')
   const [projectColor, setProjectColor] = useState(PROJECT_COLORS[0])
   const [projectIcon, setProjectIcon] = useState(PROJECT_ICONS[0])
-  const [tasks, setTasks] = useState<TaskTemplate[]>([])
-  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [tasks, setTasks] = useState<TaskItem[]>([])
+  const [activeGroup, setActiveGroup] = useState<DeadlineGroup>('this-week')
+  const [inputValue, setInputValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  if (!isOpen) return null
-
-  const addTask = () => {
-    if (!newTaskTitle.trim()) return
+  const handleAddTask = () => {
+    const title = inputValue.trim()
+    if (!title) return
     
-    const newTask: TaskTemplate = {
-      id: Math.random().toString(36).substring(2, 9),
-      title: newTaskTitle,
-      priority: 'medium',
-      category: 'work'
+    const newTask: TaskItem = {
+      id: Date.now().toString(),
+      title,
+      group: activeGroup
     }
     
     setTasks([...tasks, newTask])
-    setNewTaskTitle('')
+    setInputValue('')
+    inputRef.current?.focus()
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddTask()
+    }
   }
 
   const removeTask = (id: string) => {
     setTasks(tasks.filter(t => t.id !== id))
   }
 
-  const updateTask = (id: string, updates: Partial<TaskTemplate>) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t))
-  }
+  const getTasksByGroup = (group: DeadlineGroup) => tasks.filter(t => t.group === group)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = () => {
     if (!projectName.trim()) return
+
+    const tasksWithDates = tasks.map(task => {
+      const groupConfig = deadlineGroups.find(g => g.key === task.group)
+      return {
+        title: task.title,
+        dueDate: groupConfig?.getDate(),
+        priority: 'medium' as const,
+        category: 'work' as const
+      }
+    })
 
     onCreate({
       name: projectName,
       color: projectColor,
       icon: projectIcon,
-      tasks: tasks.map(({ id, ...task }) => task)
+      tasks: tasksWithDates
     })
 
-    // Reset form
+    // Reset
     setProjectName('')
     setProjectColor(PROJECT_COLORS[0])
     setProjectIcon(PROJECT_ICONS[0])
     setTasks([])
-    setNewTaskTitle('')
+    setInputValue('')
+    setActiveGroup('this-week')
   }
 
+  const totalTasks = tasks.length
+
+  if (!isOpen) return null
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="w-full max-w-3xl bg-zinc-900 border border-zinc-800 rounded-2xl p-6 my-8 animate-scale-in shadow-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 sticky top-0 bg-zinc-900 pb-4 border-b border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/20 rounded-xl">
-              <span className="text-2xl">{projectIcon}</span>
-            </div>
-            <h3 className="text-xl font-semibold text-zinc-200">
-              Créer un projet avec tâches
-            </h3>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      footer={
+        <div className="flex items-center justify-between w-full">
+          <p className="text-sm text-zinc-500">
+            {totalTasks} tâche{totalTasks !== 1 ? 's' : ''}
+          </p>
+          <div className="flex gap-3">
+            <Button variant="ghost" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button 
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={!projectName.trim()}
+            >
+              Créer le projet
+            </Button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-zinc-500" />
-          </button>
+        </div>
+      }
+    >
+      {/* Header - Project Name */}
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          type="button"
+          onClick={() => {
+            const currentIndex = PROJECT_ICONS.indexOf(projectIcon)
+            setProjectIcon(PROJECT_ICONS[(currentIndex + 1) % PROJECT_ICONS.length])
+          }}
+          className="p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+        >
+          <span className="text-2xl">{projectIcon}</span>
+        </button>
+        <div className="flex-1">
+          <input
+            type="text"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            placeholder="Nom du projet..."
+            className="w-full bg-transparent text-xl font-semibold text-white placeholder:text-zinc-600 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Color Picker */}
+      <div className="flex items-center gap-2 mb-6 pb-6 border-b border-white/5">
+        <span className="text-xs text-zinc-500">Couleur:</span>
+        <div className="flex gap-1.5">
+          {PROJECT_COLORS.map((color) => (
+            <button
+              key={color}
+              type="button"
+              onClick={() => setProjectColor(color)}
+              className={`w-6 h-6 rounded-full transition-transform ${
+                projectColor === color ? 'scale-125 ring-2 ring-white/30' : 'hover:scale-110'
+              }`}
+              style={{ backgroundColor: color }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Task Input - SIMPLE */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-zinc-300 mb-2">
+          Ajouter des tâches
+        </label>
+        
+        {/* Group selector */}
+        <div className="flex gap-2 mb-3">
+          {deadlineGroups.map((group) => (
+            <button
+              key={group.key}
+              type="button"
+              onClick={() => setActiveGroup(group.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                activeGroup === group.key
+                  ? 'bg-indigo-500/20 text-indigo-400'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              }`}
+            >
+              <span>{group.emoji}</span>
+              <span>{group.label}</span>
+            </button>
+          ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Project Info */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Informations du projet</h4>
-            
-            {/* Project Name */}
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">
-                Nom du projet
-              </label>
-              <input
-                type="text"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder="Ex: Application mobile, Site web..."
-                className="w-full bg-zinc-800 text-zinc-200 placeholder:text-zinc-600 px-4 py-3 rounded-lg border border-zinc-700 focus:outline-none focus:border-indigo-500 transition-colors"
-                autoFocus
-              />
-            </div>
+        {/* Input + Button */}
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={`Nouvelle tâche pour "${deadlineGroups.find(g => g.key === activeGroup)?.label}"...`}
+            className="flex-1 bg-white/5 text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none px-4 py-3 rounded-xl focus:bg-white/10 border border-white/5 focus:border-indigo-500/50"
+          />
+          <button
+            type="button"
+            onClick={handleAddTask}
+            disabled={!inputValue.trim()}
+            className="px-4 py-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-sm font-medium">Ajouter</span>
+          </button>
+        </div>
+      </div>
 
-            {/* Color & Icon */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Color Picker */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-3">
-                  Couleur
-                </label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {PROJECT_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setProjectColor(color)}
-                      className={`w-8 h-8 rounded-lg transition-all ${
-                        projectColor === color 
-                          ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900 scale-110' 
-                          : 'hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
-                  ))}
-                </div>
+      {/* Tasks List */}
+      <div className="space-y-4 max-h-[300px] overflow-y-auto">
+        {deadlineGroups.map((group) => {
+          const groupTasks = getTasksByGroup(group.key)
+          if (groupTasks.length === 0) return null
+          
+          return (
+            <div key={group.key}>
+              <div className="flex items-center gap-2 mb-2">
+                <span>{group.emoji}</span>
+                <span className="text-sm font-medium text-zinc-400">{group.label}</span>
+                <span className="text-xs text-zinc-600">({groupTasks.length})</span>
               </div>
-
-              {/* Icon Picker */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-3">
-                  Icône
-                </label>
-                <div className="grid grid-cols-6 gap-2">
-                  {PROJECT_ICONS.map((icon) => (
-                    <button
-                      key={icon}
-                      type="button"
-                      onClick={() => setProjectIcon(icon)}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg transition-all ${
-                        projectIcon === icon 
-                          ? 'bg-indigo-500/20 ring-2 ring-indigo-500 scale-110' 
-                          : 'bg-zinc-800 hover:bg-zinc-700'
-                      }`}
-                      title={icon}
-                    >
-                      {icon}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tasks */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Tâches du projet</h4>
-            
-            {/* Add Task */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTask())}
-                placeholder="Ajouter une tâche..."
-                className="flex-1 bg-zinc-800 text-zinc-200 placeholder:text-zinc-600 px-4 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-              <button
-                type="button"
-                onClick={addTask}
-                className="px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 transition-colors flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Ajouter
-              </button>
-            </div>
-
-            {/* Task List */}
-            {tasks.length === 0 ? (
-              <div className="text-center py-8 text-zinc-600">
-                <p className="text-sm">Aucune tâche ajoutée</p>
-                <p className="text-xs mt-1">Ajoutez des tâches avec leurs deadlines individuelles</p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                {tasks.map((task) => (
+              <div className="space-y-1 pl-6">
+                {groupTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 space-y-3"
+                    className="flex items-center gap-2 group py-1"
                   >
-                    {/* Task Title */}
-                    <div className="flex items-start justify-between gap-2">
-                      <input
-                        type="text"
-                        value={task.title}
-                        onChange={(e) => updateTask(task.id, { title: e.target.value })}
-                        className="flex-1 bg-transparent text-zinc-200 font-medium focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeTask(task.id)}
-                        className="p-1 text-zinc-500 hover:text-rose-400 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Task Details */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Due Date */}
-                      <div>
-                        <label className="block text-xs text-zinc-500 mb-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          Deadline
-                        </label>
-                        <input
-                          type="date"
-                          value={task.dueDate || ''}
-                          onChange={(e) => updateTask(task.id, { dueDate: e.target.value })}
-                          className="w-full bg-zinc-900 text-zinc-300 text-sm px-3 py-1.5 rounded border border-zinc-700 focus:outline-none focus:border-indigo-500"
-                        />
-                      </div>
-
-                      {/* Estimated Time */}
-                      <div>
-                        <label className="block text-xs text-zinc-500 mb-1 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          Durée estimée (min)
-                        </label>
-                        <input
-                          type="number"
-                          value={task.estimatedTime || ''}
-                          onChange={(e) => updateTask(task.id, { estimatedTime: parseInt(e.target.value) || undefined })}
-                          placeholder="30"
-                          className="w-full bg-zinc-900 text-zinc-300 text-sm px-3 py-1.5 rounded border border-zinc-700 focus:outline-none focus:border-indigo-500"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Priority & Category */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Priority */}
-                      <div>
-                        <label className="block text-xs text-zinc-500 mb-1">Priorité</label>
-                        <select
-                          value={task.priority}
-                          onChange={(e) => updateTask(task.id, { priority: e.target.value as TaskPriority })}
-                          className="w-full bg-zinc-900 text-zinc-300 text-sm px-3 py-1.5 rounded border border-zinc-700 focus:outline-none focus:border-indigo-500"
-                        >
-                          <option value="low">Basse</option>
-                          <option value="medium">Moyenne</option>
-                          <option value="high">Haute</option>
-                          <option value="urgent">Urgente</option>
-                        </select>
-                      </div>
-
-                      {/* Category */}
-                      <div>
-                        <label className="block text-xs text-zinc-500 mb-1">Catégorie</label>
-                        <select
-                          value={task.category}
-                          onChange={(e) => updateTask(task.id, { category: e.target.value as TaskCategory })}
-                          className="w-full bg-zinc-900 text-zinc-300 text-sm px-3 py-1.5 rounded border border-zinc-700 focus:outline-none focus:border-indigo-500"
-                        >
-                          <option value="dev">Dev</option>
-                          <option value="design">Design</option>
-                          <option value="work">Travail</option>
-                          <option value="personal">Perso</option>
-                          <option value="urgent">Urgent</option>
-                        </select>
-                      </div>
-                    </div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    <span className="flex-1 text-sm text-zinc-300">{task.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeTask(task.id)}
+                      className="p-1 text-zinc-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-between items-center pt-4 border-t border-zinc-800">
-            <p className="text-sm text-zinc-500">
-              {tasks.length} tâche{tasks.length > 1 ? 's' : ''} ajoutée{tasks.length > 1 ? 's' : ''}
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                disabled={!projectName.trim()}
-                className="flex items-center gap-2 px-6 py-2 text-sm bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Créer le projet
-              </button>
             </div>
-          </div>
-        </form>
+          )
+        })}
       </div>
-    </div>
+
+      {/* Empty state */}
+      {totalTasks === 0 && (
+        <div className="text-center py-8 bg-zinc-800/20 rounded-xl border border-dashed border-zinc-800">
+          <FolderPlus className="w-8 h-8 mx-auto mb-2 text-zinc-700" />
+          <p className="text-sm text-zinc-600">Aucune tâche ajoutée</p>
+          <p className="text-xs text-zinc-700 mt-1">Tapez ci-dessus et appuyez sur Entrée ou cliquez sur Ajouter</p>
+        </div>
+      )}
+    </Modal>
   )
 }
-

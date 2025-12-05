@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Search, FolderKanban, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Plus, FolderKanban, TrendingUp } from 'lucide-react'
 import { useStore, Task, TaskCategory, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { KanbanBoard } from './KanbanBoard'
 import { TaskDetails } from './TaskDetails'
-import { TaskFilters, TaskFilterState } from './TaskFilters'
-import { QuickFilters } from './QuickFilters'
+import { UnifiedFilters, TaskFilterState } from './UnifiedFilters'
 import { AddProjectModal } from './AddProjectModal'
 import { CreateProjectWithTasksModal } from './CreateProjectWithTasksModal'
 import { TaskQuotaDisplay } from './TaskQuotaDisplay'
@@ -24,20 +23,23 @@ import { useTaskStats } from '../../hooks/useTaskStats'
 import { useProjectManagement } from '../../hooks/useProjectManagement'
 import { autoCategorizeTasks, estimateTaskDuration, detectPriority } from '../../utils/taskIntelligence'
 
-const categories: { key: TaskCategory | 'all'; label: string; color: string }[] = [
-  { key: 'all', label: 'Toutes', color: 'text-zinc-400' },
-  { key: 'dev', label: 'Dev', color: 'text-indigo-400' },
-  { key: 'design', label: 'Design', color: 'text-cyan-400' },
-  { key: 'work', label: 'Travail', color: 'text-amber-400' },
-  { key: 'personal', label: 'Perso', color: 'text-emerald-400' },
-  { key: 'urgent', label: 'Urgent', color: 'text-rose-400' },
-]
-
 export function TasksPage() {
-  const { tasks, projects, addTask, addProject, deleteProject, deleteTask, setView } = useStore()
+  const { tasks, projects, addTask, addProject, deleteTask, setView, selectedTaskId, setSelectedTaskId } = useStore()
   
   // View & Selection States
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  
+  // Deep linking: ouvrir la tâche sélectionnée depuis la recherche
+  useEffect(() => {
+    if (selectedTaskId) {
+      const task = tasks.find(t => t.id === selectedTaskId)
+      if (task) {
+        setSelectedTask(task)
+      }
+      // Reset après utilisation
+      setSelectedTaskId(null)
+    }
+  }, [selectedTaskId, tasks, setSelectedTaskId])
   const [selectedStat, setSelectedStat] = useState<'total' | 'today' | 'completed' | 'productivity' | null>(null)
   const [showProjectsManagement, setShowProjectsManagement] = useState(false)
   const [showStatsPage, setShowStatsPage] = useState(false)
@@ -45,7 +47,6 @@ export function TasksPage() {
   const [showQuotaSettings, setShowQuotaSettings] = useState(false)
   
   // Filter States
-  const [selectedCategory, setSelectedCategory] = useState<TaskCategory | 'all'>('all')
   const [selectedProjectId, setSelectedProjectId] = useState<string | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
@@ -77,9 +78,8 @@ export function TasksPage() {
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
   
   // Custom Hooks
-  const { filteredTasks, activeFiltersCount } = useTaskFilters({
+  const { filteredTasks } = useTaskFilters({
     tasks,
-    selectedCategory,
     selectedProjectId,
     searchQuery: debouncedSearchQuery,
     quickFilter,
@@ -87,7 +87,7 @@ export function TasksPage() {
   })
   
   const { last7DaysStats, completedToday } = useTaskStats(tasks)
-  const { projectStats } = useProjectManagement(tasks, projects)
+  useProjectManagement(tasks, projects)
   
   // Keyboard Shortcuts
   useEffect(() => {
@@ -161,20 +161,19 @@ export function TasksPage() {
       category: any
     }>
   }) => {
-    // Create project first
-    const projectId = Math.random().toString(36).substring(2, 9)
-    addProject({
+    // Create project first and get its ID
+    const projectId = addProject({
       name: projectData.name,
       color: projectData.color,
       icon: projectData.icon
     })
     
-    // Then create all tasks with the project ID
+    // Then create all tasks with the correct project ID
     projectData.tasks.forEach((task) => {
       addTask({
         title: task.title,
-        category: task.category,
-        priority: task.priority,
+        category: task.category || 'work',
+        priority: task.priority || 'medium',
         estimatedTime: task.estimatedTime,
         dueDate: task.dueDate,
         completed: false,
@@ -205,7 +204,6 @@ export function TasksPage() {
   }
   
   const handleResetFilters = () => {
-    setSelectedCategory('all')
     setSelectedProjectId('all')
     setSearchQuery('')
     setQuickFilter('all')
@@ -252,29 +250,22 @@ export function TasksPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowStatsPage(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-2xl hover:bg-zinc-700/50 border border-white/10 transition-all duration-300"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-2xl hover:bg-zinc-700/50 border border-white/10 transition-colors duration-300"
           >
             <TrendingUp className="w-4 h-4" />
-            <span className="text-sm font-medium">Statistiques</span>
+            <span className="text-sm font-medium">Stats</span>
           </button>
           <button
             onClick={() => setShowProjectsManagement(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-2xl hover:bg-zinc-700/50 border border-white/10 transition-all duration-300"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-2xl hover:bg-zinc-700/50 border border-white/10 transition-colors duration-300"
           >
             <FolderKanban className="w-4 h-4" />
-            <span className="text-sm font-medium">Gérer projets</span>
-          </button>
-          <button
-            onClick={() => setShowCreateProjectWithTasks(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-2xl hover:bg-emerald-500/30 border border-emerald-500/20 transition-all duration-300"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Projet + Tâches</span>
+            <span className="text-sm font-medium">Projets</span>
           </button>
           <Tooltip content="Ctrl+N" side="bottom">
             <button
               onClick={() => setShowQuickAdd(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/30 shadow-[0_4px_16px_rgba(91,127,255,0.2)] transition-all duration-300"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/30 shadow-[0_4px_16px_rgba(91,127,255,0.2)] transition-colors duration-300"
             >
               <Plus className="w-4 h-4" />
               <span className="text-sm font-medium">Nouvelle tâche</span>
@@ -305,14 +296,6 @@ export function TasksPage() {
         )}
         
         
-        {/* Quick Filters */}
-        <QuickFilters
-          quickFilter={quickFilter}
-          onFilterChange={setQuickFilter}
-          activeFiltersCount={activeFiltersCount}
-          onResetFilters={handleResetFilters}
-        />
-        
         {/* Command Center - Vue prioritaire */}
         <CommandCenter
           tasks={tasks}
@@ -320,47 +303,20 @@ export function TasksPage() {
         />
         
         {/* Task Quota Display */}
-        <div className="mb-8">
+        <div className="mb-6">
           <TaskQuotaDisplay onSettingsClick={() => setShowQuotaSettings(true)} />
         </div>
         
-        {/* Filters & View Modes */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input
-                id="task-search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher... (Ctrl+F)"
-                className="pl-10 pr-4 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:bg-zinc-900 transition-colors w-64"
-                style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <TaskFilters onFilterChange={setAdvancedFilters} />
-              {categories.map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setSelectedCategory(cat.key)}
-                  className={`
-                    px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300
-                    ${selectedCategory === cat.key
-                      ? `${cat.color} bg-zinc-800/50 shadow-[0_2px_8px_rgba(0,0,0,0.2)]`
-                      : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/30'
-                    }
-                  `}
-                  style={selectedCategory === cat.key ? { border: '1px solid rgba(255,255,255,0.08)' } : {}}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Unified Filters */}
+        <UnifiedFilters
+          quickFilter={quickFilter}
+          onQuickFilterChange={setQuickFilter}
+          advancedFilters={advancedFilters}
+          onAdvancedFilterChange={setAdvancedFilters}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onReset={handleResetFilters}
+        />
         
         {/* Content */}
         <div className="h-[calc(100vh-400px)]">

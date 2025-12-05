@@ -15,12 +15,16 @@ interface UseCalendarEventsProps {
 }
 
 export function useCalendarEvents({ events, filters }: UseCalendarEventsProps) {
-  // Generate recurring instances
+  // Generate recurring instances only for visible range (3 months window)
   const allEventsWithRecurring = useMemo(() => {
     const expanded: Event[] = []
+    const now = new Date()
+    const rangeStart = new Date(now.getFullYear(), now.getMonth() - 1, 1) // 1 month before
+    const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0) // 2 months after
+    
     events.forEach(event => {
       if (event.isRecurring && event.recurrence) {
-        const instances = generateRecurringInstances(event)
+        const instances = generateRecurringInstances(event, rangeStart, rangeEnd)
         expanded.push(...instances)
       } else {
         expanded.push(event)

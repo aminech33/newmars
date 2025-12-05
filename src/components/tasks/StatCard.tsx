@@ -32,8 +32,8 @@ export function StatCard({
   return (
     <button
       onClick={onClick}
-      className={`p-4 bg-zinc-900/30 backdrop-blur-xl rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.2)] border border-zinc-800/50 transition-all duration-300 text-left w-full ${
-        onClick ? 'hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)] hover:border-zinc-700/50 hover:scale-[1.02] cursor-pointer' : ''
+      className={`p-4 bg-zinc-900/30 backdrop-blur-xl rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.2)] border border-zinc-800/50 transition-colors duration-300 text-left w-full ${
+        onClick ? 'hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)] hover:border-zinc-800/50 hover:scale-[1.02] cursor-pointer' : ''
       }`}
     >
       <div className="flex items-start justify-between mb-2">

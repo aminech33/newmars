@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react'
 import { Library, Target, Play } from 'lucide-react'
 import { useStore } from '../../store/useStore'
+import { useLibraryStats } from '../../hooks/useLibraryStats'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
 
@@ -13,13 +14,12 @@ export const LibraryWidget = memo(function LibraryWidget({ widget }: LibraryWidg
   const { 
     books, 
     setView, 
-    readingGoal, 
-    getReadingStats,
+    readingGoal,
     isReadingSession,
     startReadingSession
   } = useStore()
   
-  const stats = useMemo(() => getReadingStats(), [books, readingGoal])
+  const stats = useLibraryStats(books, readingGoal)
   const readingBooks = useMemo(() => books.filter(b => b.status === 'reading'), [books])
   const completedBooks = useMemo(() => books.filter(b => b.status === 'completed'), [books])
 
@@ -92,7 +92,7 @@ export const LibraryWidget = memo(function LibraryWidget({ widget }: LibraryWidg
                       <div className="flex items-center gap-1.5 mt-1">
                         <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-cyan-400 transition-all"
+                            className="h-full bg-cyan-400 transition-colors"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -126,7 +126,7 @@ export const LibraryWidget = memo(function LibraryWidget({ widget }: LibraryWidg
               </div>
               <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-colors duration-500"
                   style={{ width: `${Math.min(100, stats.goalProgress)}%` }}
                 />
               </div>

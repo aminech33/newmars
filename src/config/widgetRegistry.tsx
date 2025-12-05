@@ -54,7 +54,7 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
   journal: {
     type: 'journal',
     label: 'Journal',
-    description: 'Réflexion quotidienne',
+    description: 'Réflexion quotidienne → Ma Journée',
     icon: Book,
     component: JournalWidget,
     category: 'wellness',
@@ -63,7 +63,7 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
   habits: {
     type: 'habits',
     label: 'Habitudes',
-    description: "Suivi d'habitudes quotidiennes",
+    description: "Suivi d'habitudes → Ma Journée",
     icon: Flame,
     component: HabitsWidget,
     category: 'tracking',

@@ -170,7 +170,7 @@ export function FocusMode() {
             <button
               key={m}
               onClick={() => switchMode(m)}
-              className={`px-4 py-2 text-sm rounded-full transition-all ${
+              className={`px-4 py-2 text-sm rounded-full transition-colors ${
                 mode === m 
                   ? `bg-gradient-to-r ${modeColors[m]} text-white` 
                   : 'text-zinc-600 hover:text-zinc-400'
@@ -204,7 +204,7 @@ export function FocusMode() {
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 136}`}
               strokeDashoffset={`${2 * Math.PI * 136 * (1 - progress / 100)}`}
-              className="transition-all duration-1000"
+              className="transition-colors duration-1000"
             />
             <defs>
               <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -238,7 +238,7 @@ export function FocusMode() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className={`w-3 h-3 rounded-full transition-all ${
+              className={`w-3 h-3 rounded-full transition-colors ${
                 i <= (sessionsCompleted % 4 || (sessionsCompleted > 0 && sessionsCompleted % 4 === 0 ? 4 : 0))
                   ? 'bg-gradient-to-r from-indigo-500 to-violet-500'
                   : 'bg-zinc-800'
@@ -260,7 +260,7 @@ export function FocusMode() {
           
           <button
             onClick={() => setIsRunning(!isRunning)}
-            className={`w-16 h-16 bg-gradient-to-r ${modeColors[mode]} text-white rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg`}
+            className={`w-16 h-16 bg-gradient-to-r ${modeColors[mode]} text-white rounded-full flex items-center justify-center transition-colors hover:scale-110 active:scale-95 shadow-lg`}
           >
             {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
           </button>

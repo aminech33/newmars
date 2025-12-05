@@ -45,7 +45,7 @@ export function Toast({ message, type = 'info', duration = 4000, onClose, action
         flex items-center gap-3 px-4 py-3 
         bg-zinc-900 border ${colors[type]} 
         rounded-xl shadow-2xl
-        transition-all duration-300
+        transition-opacity duration-300
         ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
       `}
       role="alert"

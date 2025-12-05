@@ -78,7 +78,7 @@ export const ChatInput = memo(function ChatInput({
             <button
               key={item.label}
               onClick={() => handleQuickPrompt(item.prompt)}
-              className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-lg text-xs transition-all"
+              className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-lg text-xs transition-[background-color] duration-200"
             >
               {item.label}
             </button>
@@ -99,7 +99,7 @@ export const ChatInput = memo(function ChatInput({
             placeholder={placeholder}
             disabled={disabled}
             rows={1}
-            className="w-full resize-none bg-zinc-800/50 text-zinc-200 placeholder:text-zinc-600 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full resize-none bg-zinc-800/50 text-zinc-200 placeholder:text-zinc-600 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ minHeight: '48px', maxHeight: '200px' }}
             aria-label="Message"
           />
@@ -116,7 +116,7 @@ export const ChatInput = memo(function ChatInput({
         <button
           onClick={handleSend}
           disabled={!message.trim() || isTyping || disabled}
-          className={`p-3 rounded-xl transition-all ${
+          className={`p-3 rounded-xl transition-[background-color] duration-200 ${
             message.trim() && !isTyping && !disabled
               ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg shadow-indigo-500/20'
               : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
@@ -124,9 +124,9 @@ export const ChatInput = memo(function ChatInput({
           aria-label={isTyping ? 'En cours...' : 'Envoyer'}
         >
           {isTyping ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
           ) : (
-            <Send className="w-5 h-5" />
+            <Send className="w-5 h-5" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -144,7 +144,7 @@ export const ChatInput = memo(function ChatInput({
         
         {isTyping && (
           <div className="flex items-center gap-1.5 text-indigo-400">
-            <Sparkles className="w-3 h-3 animate-pulse" />
+            <Sparkles className="w-3 h-3 animate-pulse" aria-hidden="true" />
             <span>L'IA réfléchit...</span>
           </div>
         )}

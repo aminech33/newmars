@@ -3,7 +3,7 @@ import { Course } from '../../types/learning'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { CodeEditor } from './CodeEditor'
-import { Sparkles, Code, Lightbulb, Play } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 
 interface CourseChatProps {
   course: Course
@@ -60,7 +60,7 @@ export const CourseChat = memo(function CourseChat({
   return (
     <div className="flex h-full overflow-hidden">
       {/* Chat Area (left side or full width) */}
-      <div className={`flex flex-col ${showSplitView ? 'w-1/2 border-r border-zinc-800' : 'w-full'} h-full`}>
+      <div className={`flex flex-col ${showSplitView ? 'w-1/2 border-r border-zinc-800/50' : 'w-full'} h-full`}>
         {/* Messages Area */}
         <div 
           ref={containerRef}
@@ -73,7 +73,7 @@ export const CourseChat = memo(function CourseChat({
           // Empty State
           <div className="h-full flex flex-col items-center justify-center text-center px-4">
             <div className="p-4 bg-indigo-500/10 rounded-2xl mb-4">
-              <Sparkles className="w-10 h-10 text-indigo-400" />
+              <Sparkles className="w-10 h-10 text-indigo-400" aria-hidden="true" />
             </div>
             <h3 className="text-xl font-semibold text-zinc-200 mb-2">
               Bienvenue dans {course.name}
@@ -94,7 +94,7 @@ export const CourseChat = memo(function CourseChat({
                 <button
                   key={prompt}
                   onClick={() => onSendMessage(prompt)}
-                  className="px-4 py-2 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-xl text-sm transition-all border border-zinc-700/50 hover:border-zinc-600"
+                  className="px-4 py-2 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-xl text-sm transition-[background-color,border-color] duration-200 border border-zinc-800/50 hover:border-zinc-600"
                 >
                   {prompt}
                 </button>
@@ -120,7 +120,7 @@ export const CourseChat = memo(function CourseChat({
             {isTyping && (
               <div className="flex gap-3 animate-fade-in">
                 <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <Sparkles className="w-4 h-4 text-emerald-400" aria-hidden="true" />
                 </div>
                 <div className="bg-zinc-800/50 rounded-2xl rounded-tl-sm p-4">
                   <div className="flex gap-1.5">
@@ -138,15 +138,15 @@ export const CourseChat = memo(function CourseChat({
       </div>
 
         {/* Input */}
-        <div className="border-t border-zinc-800 bg-zinc-900/50">
+        <div className="border-t border-zinc-800/50 bg-zinc-900/50">
           {showSplitView && (
             <div className="px-4 pt-2 pb-1 flex items-center gap-2 text-xs">
-              <label className="flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-300 transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer text-zinc-400 hover:text-zinc-300 transition-[color] duration-200">
                 <input
                   type="checkbox"
                   checked={includeCode}
                   onChange={(e) => setIncludeCode(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+                  className="w-3.5 h-3.5 rounded border-zinc-800/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
                 />
                 📎 Inclure mon code dans les messages
               </label>

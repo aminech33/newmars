@@ -26,7 +26,6 @@ export function CodeEditor({
   onAskHelp,
   readOnly = false,
   showHeader = true,
-  courseName = 'Code',
   includeAI = false,
   isTyping = false
 }: CodeEditorProps) {
@@ -76,15 +75,15 @@ export function CodeEditor({
   }
 
   return (
-    <div className="border border-zinc-800 overflow-hidden bg-[#1e1e1e] shadow-xl h-full flex flex-col max-h-full">
+    <div className="border border-zinc-800/50 overflow-hidden bg-[#1e1e1e] shadow-xl h-full flex flex-col max-h-full">
       {/* VS Code Style Tabs */}
       <div className="flex items-center bg-[#1e1e1e] border-b border-[#2d2d30]">
         {/* Tab */}
-        <div className="group flex items-center gap-2 px-4 py-2 bg-[#1e1e1e] border-r border-[#2d2d30] min-w-[120px] hover:bg-[#2d2d30] transition-colors">
-          <Code className="w-3.5 h-3.5 text-[#858585]" />
+        <div className="group flex items-center gap-2 px-4 py-2 bg-[#1e1e1e] border-r border-[#2d2d30] min-w-[120px] hover:bg-[#2d2d30] transition-[background-color] duration-200">
+          <Code className="w-3.5 h-3.5 text-[#858585]" aria-hidden="true" />
           <span className="text-xs text-[#cccccc] font-medium">main.{fileExtension}</span>
-          <button className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-            <X className="w-3 h-3 text-[#858585] hover:text-[#cccccc]" />
+          <button className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Fermer">
+            <X className="w-3 h-3 text-[#858585] hover:text-[#cccccc]" aria-hidden="true" />
           </button>
         </div>
         
@@ -105,13 +104,13 @@ export function CodeEditor({
             {/* Copy Button */}
             <button
               onClick={handleCopy}
-              className="p-1.5 rounded hover:bg-[#2d2d30] text-[#858585] hover:text-[#cccccc] transition-colors"
+              className="p-1.5 rounded hover:bg-[#2d2d30] text-[#858585] hover:text-[#cccccc] transition-[background-color] duration-200"
               title="Copier le code"
             >
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-green-400" />
+                <Check className="w-3.5 h-3.5 text-green-400" aria-hidden="true" />
               ) : (
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-3.5 h-3.5" aria-hidden="true" />
               )}
             </button>
 
@@ -120,10 +119,10 @@ export function CodeEditor({
               <button
                 onClick={() => onAskHelp(code)}
                 disabled={isTyping}
-                className="px-2.5 py-1.5 rounded hover:bg-[#2d2d30] text-amber-400 hover:text-amber-300 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2.5 py-1.5 rounded hover:bg-[#2d2d30] text-amber-400 hover:text-amber-300 text-xs font-medium flex items-center gap-1.5 transition-[background-color] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Demander de l'aide à l'IA sur ton code"
               >
-                <Lightbulb className="w-3 h-3" />
+                <Lightbulb className="w-3 h-3" aria-hidden="true" />
                 <span>Aide</span>
               </button>
             )}
@@ -137,7 +136,7 @@ export function CodeEditor({
                   setOutput('Analyse en cours...')
                 }}
                 disabled={isTyping}
-                className="px-2.5 py-1.5 rounded hover:bg-[#2d2d30] text-green-400 hover:text-green-300 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2.5 py-1.5 rounded hover:bg-[#2d2d30] text-green-400 hover:text-green-300 text-xs font-medium flex items-center gap-1.5 transition-[background-color] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Exécuter et analyser le code"
               >
                 <Play className="w-3 h-3" />
@@ -235,14 +234,14 @@ export function CodeEditor({
                 <Terminal className="w-3.5 h-3.5" />
                 <span>OUTPUT</span>
               </button>
-              <button className="flex items-center gap-2 px-3 py-1 text-xs text-[#858585] hover:text-[#cccccc] transition-colors">
+              <button className="flex items-center gap-2 px-3 py-1 text-xs text-[#858585] hover:text-[#cccccc] transition-[background-color] duration-200">
                 <AlertCircle className="w-3.5 h-3.5" />
                 <span>PROBLÈMES</span>
               </button>
             </div>
             <button
               onClick={() => setShowOutput(false)}
-              className="p-1 rounded hover:bg-[#2d2d30] text-[#858585] hover:text-[#cccccc] transition-colors"
+              className="p-1 rounded hover:bg-[#2d2d30] text-[#858585] hover:text-[#cccccc] transition-[background-color] duration-200"
             >
               <ChevronDown className="w-4 h-4" />
             </button>
@@ -259,7 +258,7 @@ export function CodeEditor({
       {!showOutput && onRun && (
         <button
           onClick={() => setShowOutput(true)}
-          className="flex items-center gap-2 px-4 py-1.5 bg-[#252526] hover:bg-[#2d2d30] border-t border-[#2d2d30] text-xs text-[#858585] hover:text-[#cccccc] transition-colors"
+          className="flex items-center gap-2 px-4 py-1.5 bg-[#252526] hover:bg-[#2d2d30] border-t border-[#2d2d30] text-xs text-[#858585] hover:text-[#cccccc] transition-[background-color] duration-200"
         >
           <ChevronUp className="w-3.5 h-3.5" />
           <span>Afficher Output</span>

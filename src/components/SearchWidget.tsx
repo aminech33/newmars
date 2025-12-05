@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../store/useStore'
-import { Search, CheckSquare, Calendar, Heart, BookOpen, BookMarked, X, ArrowRight, Sparkles, Timer } from 'lucide-react'
+import { Search, CheckSquare, Calendar, Heart, BookOpen, BookMarked, X, ArrowRight, Sparkles, Timer, GraduationCap, BarChart3, Keyboard } from 'lucide-react'
 
 interface SearchResult {
   id: string
-  type: 'task' | 'event' | 'journal' | 'book' | 'note' | 'project' | 'page'
+  type: 'task' | 'event' | 'journal' | 'book' | 'note' | 'project' | 'page' | 'action'
   title: string
   subtitle?: string
   icon: any
@@ -22,7 +22,10 @@ export function SearchWidget() {
     books, 
     notes,
     projects,
-    setView 
+    setView,
+    setSelectedTaskId,
+    setSelectedEventId,
+    setSelectedBookId
   } = useStore()
   
   const [query, setQuery] = useState('')
@@ -32,19 +35,35 @@ export function SearchWidget() {
   // Fonction de recherche intelligente avec scoring
   const searchItems = (): SearchResult[] => {
     if (!query.trim()) {
-      // Si pas de recherche, montrer des suggestions récentes
+      // Si pas de recherche, montrer des suggestions récentes + actions rapides
       return [
-        ...tasks.slice(0, 3).map(task => ({
+        // Actions rapides
+        {
+          id: 'action-shortcuts',
+          type: 'action' as const,
+          title: 'Voir les raccourcis clavier',
+          subtitle: 'Appuyez sur ? pour afficher',
+          icon: Keyboard,
+          action: () => {
+            setSearchOpen(false)
+            // Simuler la touche ?
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))
+          }
+        },
+        // Tâches récentes
+        ...tasks.filter(t => !t.completed).slice(0, 3).map(task => ({
           id: `task-${task.id}`,
           type: 'task' as const,
           title: task.title,
           subtitle: `Tâche ${task.completed ? 'terminée' : 'en cours'}`,
           icon: CheckSquare,
           action: () => {
+            setSelectedTaskId(task.id)
             setView('tasks')
             setSearchOpen(false)
           }
         })),
+        // Événements à venir
         ...events.slice(0, 2).map(event => ({
           id: `event-${event.id}`,
           type: 'event' as const,
@@ -52,6 +71,7 @@ export function SearchWidget() {
           subtitle: `${event.startDate} ${event.startTime || ''}`,
           icon: Calendar,
           action: () => {
+            setSelectedEventId(event.id)
             setView('calendar')
             setSearchOpen(false)
           }
@@ -62,13 +82,18 @@ export function SearchWidget() {
     const results: SearchResult[] = []
     const lowerQuery = query.toLowerCase()
 
-    // Recherche dans les pages/fonctionnalités
+    // Recherche dans les pages/fonctionnalités (toutes les pages)
     const pages = [
-      { id: 'pomodoro', name: 'Pomodoro', desc: 'Timer & time tracking', icon: Timer, view: 'pomodoro' as const },
-      { id: 'tasks', name: 'Tâches', desc: 'Gestion des tâches', icon: CheckSquare, view: 'tasks' as const },
-      { id: 'calendar', name: 'Calendrier', desc: 'Événements', icon: Calendar, view: 'calendar' as const },
-      { id: 'journal', name: 'Journal', desc: 'Réflexion quotidienne', icon: BookOpen, view: 'journal' as const },
-      { id: 'library', name: 'Bibliothèque', desc: 'Lectures littéraires', icon: BookMarked, view: 'library' as const },
+      { id: 'hub', name: 'Hub', desc: 'Accueil, widgets', icon: Sparkles, view: 'hub' as const },
+      { id: 'tasks', name: 'Tâches', desc: 'Gestion des tâches, Kanban', icon: CheckSquare, view: 'tasks' as const },
+      { id: 'calendar', name: 'Calendrier', desc: 'Événements, planning', icon: Calendar, view: 'calendar' as const },
+      { id: 'myday', name: 'Ma Journée', desc: 'Habitudes, journal, réflexion, gratitude', icon: BookOpen, view: 'myday' as const },
+      { id: 'pomodoro', name: 'Pomodoro', desc: 'Timer, focus, productivité', icon: Timer, view: 'pomodoro' as const },
+      { id: 'library', name: 'Bibliothèque', desc: 'Lectures, livres, citations', icon: BookMarked, view: 'library' as const },
+      { id: 'health', name: 'Santé', desc: 'Poids, nutrition, bien-être', icon: Heart, view: 'health' as const },
+      { id: 'learning', name: 'Apprentissage', desc: 'Cours, IA, flashcards', icon: GraduationCap, view: 'learning' as const },
+      { id: 'ai', name: 'Assistant IA', desc: 'Chat avec Gemini', icon: Sparkles, view: 'ai' as const },
+      { id: 'dashboard', name: 'Dashboard', desc: 'Statistiques, productivité', icon: BarChart3, view: 'dashboard' as const },
     ]
 
     pages.forEach(page => {
@@ -88,7 +113,7 @@ export function SearchWidget() {
       }
     })
 
-    // Recherche dans les tâches
+    // Recherche dans les tâches - AVEC DEEP LINKING
     tasks.forEach(task => {
       if (task.title.toLowerCase().includes(lowerQuery) || 
           task.description?.toLowerCase().includes(lowerQuery)) {
@@ -97,9 +122,10 @@ export function SearchWidget() {
           id: `task-${task.id}`,
           type: 'task',
           title: task.title,
-          subtitle: project ? `${project.icon} ${project.name}` : 'Tâche',
+          subtitle: project ? `${project.icon} ${project.name}` : (task.completed ? '✓ Terminée' : 'En cours'),
           icon: CheckSquare,
           action: () => {
+            setSelectedTaskId(task.id) // Deep link!
             setView('tasks')
             setSearchOpen(false)
           }
@@ -107,7 +133,7 @@ export function SearchWidget() {
       }
     })
 
-    // Recherche dans les événements
+    // Recherche dans les événements - AVEC DEEP LINKING
     events.forEach(event => {
       if (event.title.toLowerCase().includes(lowerQuery) ||
           event.description?.toLowerCase().includes(lowerQuery)) {
@@ -118,6 +144,7 @@ export function SearchWidget() {
           subtitle: `${event.startDate} ${event.startTime || ''}`,
           icon: Calendar,
           action: () => {
+            setSelectedEventId(event.id) // Deep link!
             setView('calendar')
             setSearchOpen(false)
           }
@@ -127,23 +154,30 @@ export function SearchWidget() {
 
     // Recherche dans le journal
     journalEntries.forEach(entry => {
-      if (entry.title.toLowerCase().includes(lowerQuery) ||
-          entry.content.toLowerCase().includes(lowerQuery)) {
+      const searchableContent = [
+        entry.reflection,
+        entry.mainGoal,
+        entry.learned,
+        entry.victory,
+        ...(entry.gratitude || [])
+      ].filter(Boolean).join(' ').toLowerCase()
+      
+      if (searchableContent.includes(lowerQuery)) {
         results.push({
           id: `journal-${entry.id}`,
           type: 'journal',
-          title: entry.title,
+          title: entry.reflection?.slice(0, 50) || `Journal du ${entry.date}`,
           subtitle: new Date(entry.createdAt).toLocaleDateString('fr-FR'),
           icon: BookOpen,
           action: () => {
-            setView('journal')
+            setView('myday')
             setSearchOpen(false)
           }
         })
       }
     })
 
-    // Recherche dans les livres
+    // Recherche dans les livres - AVEC DEEP LINKING
     books.forEach(book => {
       if (book.title.toLowerCase().includes(lowerQuery) ||
           book.author.toLowerCase().includes(lowerQuery)) {
@@ -154,6 +188,7 @@ export function SearchWidget() {
           subtitle: `par ${book.author}`,
           icon: BookMarked,
           action: () => {
+            setSelectedBookId(book.id) // Deep link!
             setView('library')
             setSearchOpen(false)
           }
@@ -235,7 +270,7 @@ export function SearchWidget() {
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       onClick={() => setSearchOpen(false)}
     >
@@ -297,6 +332,8 @@ export function SearchWidget() {
                       ${result.type === 'book' ? 'bg-emerald-500/10 text-emerald-400' : ''}
                       ${result.type === 'note' ? 'bg-cyan-500/10 text-cyan-400' : ''}
                       ${result.type === 'project' ? 'bg-violet-500/10 text-violet-400' : ''}
+                      ${result.type === 'page' ? 'bg-indigo-500/10 text-indigo-400' : ''}
+                      ${result.type === 'action' ? 'bg-zinc-500/10 text-zinc-400' : ''}
                     `}>
                       <Icon className="w-4 h-4" />
                     </div>

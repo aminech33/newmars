@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, BookOpen, Star, Clock, Play, Quote, FileText } from 'lucide-react'
 import { Book, Quote as QuoteType, ReadingNote } from '../../../types/library'
 import { getBookProgress, formatReadingTimeDetailed, formatDateShort } from '../../../utils/libraryFormatters'
+import { Button } from '../../ui/Button'
+import { Textarea } from '../../ui/Input'
 
 type ModalTab = 'details' | 'quotes' | 'notes'
 
@@ -39,6 +41,9 @@ export function BookDetailModal({
   const [newQuotePage, setNewQuotePage] = useState('')
   const [newNote, setNewNote] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null)
+  const [editQuoteText, setEditQuoteText] = useState('')
+  const [editQuotePage, setEditQuotePage] = useState('')
   
   const modalRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -103,6 +108,30 @@ export function BookDetailModal({
     }
   }, [deleteConfirm, onDelete])
 
+  const handleStartEditQuote = useCallback((quoteId: string, text: string, page?: number) => {
+    setEditingQuoteId(quoteId)
+    setEditQuoteText(text)
+    setEditQuotePage(page ? page.toString() : '')
+  }, [])
+
+  const handleSaveEditQuote = useCallback(() => {
+    if (editingQuoteId && editQuoteText.trim()) {
+      onUpdateQuote(editingQuoteId, {
+        text: editQuoteText.trim(),
+        page: editQuotePage ? parseInt(editQuotePage, 10) : undefined
+      })
+      setEditingQuoteId(null)
+      setEditQuoteText('')
+      setEditQuotePage('')
+    }
+  }, [editingQuoteId, editQuoteText, editQuotePage, onUpdateQuote])
+
+  const handleCancelEditQuote = useCallback(() => {
+    setEditingQuoteId(null)
+    setEditQuoteText('')
+    setEditQuotePage('')
+  }, [])
+
   const tabs = [
     { id: 'details' as const, label: 'Détails', icon: BookOpen },
     { id: 'quotes' as const, label: `Citations (${book.quotes?.length || 0})`, icon: Quote },
@@ -111,15 +140,16 @@ export function BookDetailModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="book-detail-title"
+      data-modal="true"
     >
       <div 
         ref={modalRef}
-        className="relative w-full max-w-2xl max-h-[90vh] bg-mars-surface border border-zinc-800 rounded-2xl overflow-hidden animate-scale-in flex flex-col"
+        className="relative w-full max-w-2xl max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden animate-scale-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header coloré */}
@@ -147,14 +177,14 @@ export function BookDetailModal({
             </select>
             
             {book.status === 'reading' && !isReadingSession && (
-              <button
+              <Button
+                variant="warning"
+                size="sm"
+                icon={Play}
                 onClick={onStartReading}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-black rounded-full text-xs font-medium hover:bg-amber-400 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-300"
-                aria-label="Démarrer une session de lecture"
               >
-                <Play className="w-3 h-3 fill-black" aria-hidden="true" />
                 Lire
-              </button>
+              </Button>
             )}
           </div>
           
@@ -219,24 +249,18 @@ export function BookDetailModal({
                           type="number"
                           value={currentPage}
                           onChange={(e) => setCurrentPage(Math.min(book.pages!, Math.max(0, parseInt(e.target.value) || 0)))}
-                          className="w-20 px-2 py-1 text-sm bg-zinc-800 text-zinc-200 rounded border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          className="w-20 px-2 py-1 text-sm bg-zinc-800 text-zinc-200 rounded border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                           max={book.pages}
                           min={0}
                           aria-label="Page actuelle"
                         />
                         <span className="text-zinc-500 text-sm">/ {book.pages}</span>
-                        <button
-                          onClick={handleUpdateProgress}
-                          className="px-2 py-1 text-xs bg-amber-500/20 text-amber-400 rounded hover:bg-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        >
+                        <Button size="sm" variant="warning" onClick={handleUpdateProgress}>
                           OK
-                        </button>
-                        <button
-                          onClick={() => setIsEditingProgress(false)}
-                          className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300"
-                        >
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setIsEditingProgress(false)}>
                           Annuler
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <button 
@@ -256,7 +280,7 @@ export function BookDetailModal({
                     aria-label="Progression de lecture"
                   >
                     <div 
-                      className={`h-full bg-gradient-to-r ${book.coverColor} transition-all duration-500`}
+                      className={`h-full bg-gradient-to-r ${book.coverColor} transition-colors duration-500`}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -317,36 +341,32 @@ export function BookDetailModal({
               aria-labelledby="tab-quotes"
             >
               {/* Ajouter citation */}
-              <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-800/50">
-                <label htmlFor="new-quote" className="sr-only">Nouvelle citation</label>
-                <textarea
-                  id="new-quote"
+              <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-800">
+                <Textarea
                   value={newQuote}
                   onChange={(e) => setNewQuote(e.target.value)}
                   placeholder="Ajouter une citation..."
-                  className="w-full bg-transparent text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none text-sm"
                   rows={2}
                   maxLength={1000}
                 />
-                <div className="flex items-center justify-between mt-2">
-                  <label className="sr-only" htmlFor="quote-page">Page de la citation</label>
+                <div className="flex items-center justify-between mt-3">
                   <input
-                    id="quote-page"
                     type="number"
                     value={newQuotePage}
                     onChange={(e) => setNewQuotePage(e.target.value)}
                     placeholder="Page"
-                    className="w-20 px-2 py-1 text-xs bg-zinc-900 text-zinc-300 rounded border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-20 px-2 py-1 text-xs bg-zinc-900 text-zinc-300 rounded border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-violet-500"
                     min={1}
                     max={book.pages || 10000}
                   />
-                  <button
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={handleAddQuote}
                     disabled={!newQuote.trim()}
-                    className="px-3 py-1.5 text-xs bg-violet-500/20 text-violet-400 rounded-lg hover:bg-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-violet-500"
                   >
                     Ajouter
-                  </button>
+                  </Button>
                 </div>
               </div>
               
@@ -355,32 +375,74 @@ export function BookDetailModal({
                 {book.quotes?.map(quote => (
                   <div 
                     key={quote.id} 
-                    className="bg-zinc-900/50 rounded-xl p-4 border-l-2 border-violet-500/50 group"
+                    className="bg-zinc-800/50 rounded-xl p-4 border-l-2 border-violet-500/50 group"
                     role="listitem"
                   >
-                    <blockquote className="text-zinc-300 text-sm italic">"{quote.text}"</blockquote>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-zinc-600">
-                        {quote.page && `Page ${quote.page}`}
-                      </span>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => onUpdateQuote(quote.id, { isFavorite: !quote.isFavorite })}
-                          className={`p-1 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 ${quote.isFavorite ? 'text-amber-400' : 'text-zinc-600 hover:text-zinc-400'}`}
-                          aria-label={quote.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                          aria-pressed={quote.isFavorite}
-                        >
-                          <Star className={`w-3 h-3 ${quote.isFavorite ? 'fill-amber-400' : ''}`} aria-hidden="true" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteQuote(quote.id)}
-                          className="p-1 text-zinc-600 hover:text-rose-400 rounded focus:outline-none focus:ring-2 focus:ring-rose-500"
-                          aria-label="Supprimer cette citation"
-                        >
-                          <X className="w-3 h-3" aria-hidden="true" />
-                        </button>
+                    {editingQuoteId === quote.id ? (
+                      // Mode édition
+                      <div className="space-y-2">
+                        <textarea
+                          value={editQuoteText}
+                          onChange={(e) => setEditQuoteText(e.target.value)}
+                          className="w-full bg-zinc-800 text-zinc-200 px-3 py-2 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500"
+                          rows={3}
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-between">
+                          <input
+                            type="number"
+                            value={editQuotePage}
+                            onChange={(e) => setEditQuotePage(e.target.value)}
+                            placeholder="Page"
+                            className="w-20 px-2 py-1 text-xs bg-zinc-800 text-zinc-300 rounded border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            min={1}
+                            max={book.pages || 10000}
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="primary" onClick={handleSaveEditQuote}>
+                              Sauvegarder
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={handleCancelEditQuote}>
+                              Annuler
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      // Mode lecture
+                      <>
+                        <blockquote className="text-zinc-300 text-sm italic">"{quote.text}"</blockquote>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-zinc-600">
+                            {quote.page && `Page ${quote.page}`}
+                          </span>
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => onUpdateQuote(quote.id, { isFavorite: !quote.isFavorite })}
+                              className={`p-1 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 ${quote.isFavorite ? 'text-amber-400' : 'text-zinc-600 hover:text-zinc-400'}`}
+                              aria-label={quote.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                              aria-pressed={quote.isFavorite}
+                            >
+                              <Star className={`w-3 h-3 ${quote.isFavorite ? 'fill-amber-400' : ''}`} aria-hidden="true" />
+                            </button>
+                            <button
+                              onClick={() => handleStartEditQuote(quote.id, quote.text, quote.page)}
+                              className="p-1 text-zinc-600 hover:text-violet-400 rounded focus:outline-none focus:ring-2 focus:ring-violet-500"
+                              aria-label="Modifier cette citation"
+                            >
+                              <FileText className="w-3 h-3" aria-hidden="true" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteQuote(quote.id)}
+                              className="p-1 text-zinc-600 hover:text-rose-400 rounded focus:outline-none focus:ring-2 focus:ring-rose-500"
+                              aria-label="Supprimer cette citation"
+                            >
+                              <X className="w-3 h-3" aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
                 
@@ -402,25 +464,23 @@ export function BookDetailModal({
               aria-labelledby="tab-notes"
             >
               {/* Ajouter note */}
-              <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-800/50">
-                <label htmlFor="new-note" className="sr-only">Nouvelle note</label>
-                <textarea
-                  id="new-note"
+              <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-800">
+                <Textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
                   placeholder="Ajouter une note..."
-                  className="w-full bg-transparent text-zinc-200 placeholder:text-zinc-600 resize-none focus:outline-none text-sm"
                   rows={3}
                   maxLength={2000}
                 />
-                <div className="flex justify-end mt-2">
-                  <button
+                <div className="flex justify-end mt-3">
+                  <Button
+                    variant="success"
+                    size="sm"
                     onClick={handleAddNote}
                     disabled={!newNote.trim()}
-                    className="px-3 py-1.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     Ajouter
-                  </button>
+                  </Button>
                 </div>
               </div>
               
@@ -429,7 +489,7 @@ export function BookDetailModal({
                 {book.notes?.map(note => (
                   <div 
                     key={note.id} 
-                    className="bg-zinc-900/50 rounded-xl p-4 group"
+                    className="bg-zinc-800/50 rounded-xl p-4 group"
                     role="listitem"
                   >
                     <p className="text-zinc-300 text-sm whitespace-pre-wrap">{note.content}</p>
@@ -460,29 +520,23 @@ export function BookDetailModal({
 
         {/* Actions */}
         <div className="flex-shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-t border-zinc-800">
-          <button
+          <Button
+            variant={deleteConfirm ? 'danger' : 'ghost'}
+            size="sm"
             onClick={handleDelete}
-            className={`text-sm px-3 py-2 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 ${
-              deleteConfirm 
-                ? 'bg-rose-500/20 text-rose-400 font-medium' 
-                : 'text-rose-400 hover:text-rose-300'
-            }`}
           >
             {deleteConfirm ? 'Confirmer la suppression' : 'Supprimer'}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={book.isFavorite ? 'warning' : 'ghost'}
+            size="sm"
+            icon={Star}
             onClick={() => onUpdate({ isFavorite: !book.isFavorite })}
-            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-              book.isFavorite ? 'bg-amber-500/20 text-amber-400' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-            aria-pressed={book.isFavorite}
           >
-            <Star className={`w-4 h-4 ${book.isFavorite ? 'fill-amber-400' : ''}`} aria-hidden="true" />
             {book.isFavorite ? 'Favori' : 'Ajouter aux favoris'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   )
 }
-

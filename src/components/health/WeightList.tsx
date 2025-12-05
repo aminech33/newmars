@@ -24,7 +24,7 @@ export const WeightList = memo(function WeightList({ entries, onDelete }: Weight
       {entries.map((entry) => (
         <div 
           key={entry.id} 
-          className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-2xl hover:bg-zinc-800/50 transition-all group"
+          className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-2xl hover:bg-zinc-800/50 transition-[background-color] duration-200 group"
           role="listitem"
         >
           <div className="flex items-center gap-4">
@@ -50,10 +50,10 @@ export const WeightList = memo(function WeightList({ entries, onDelete }: Weight
           <Tooltip content="Supprimer cette entrée">
             <button
               onClick={() => onDelete(entry.id)}
-              className="p-2 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+              className="p-2 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-[background-color] duration-200"
               aria-label={`Supprimer l'entrée du ${new Date(entry.date).toLocaleDateString('fr-FR')}`}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
             </button>
           </Tooltip>
         </div>

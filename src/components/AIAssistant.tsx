@@ -188,7 +188,6 @@ Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitude
         }
       )
     } catch (error) {
-      console.error('Error sending message:', error)
       setMessages(prev => prev.map(m => 
         m.id === assistantMessageId 
           ? { ...m, content: `❌ Une erreur est survenue. ${error instanceof Error ? error.message : ''}` }
@@ -214,7 +213,7 @@ Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitude
           <div className="flex items-center gap-4">
             <button
               onClick={() => setView('hub')}
-              className="p-2 rounded-xl text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/50 transition-all duration-200"
+              className="p-2 rounded-xl text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/50 transition-colors duration-200"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -248,7 +247,16 @@ Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitude
                 ))
               }}
               onRegenerate={() => {
-                // TODO: Implement regenerate
+                // Régénération: récupérer le dernier message utilisateur et le renvoyer
+                const lastUserMessage = messages.filter(m => m.role === 'user').pop()
+                if (lastUserMessage) {
+                  setInput(lastUserMessage.content)
+                  // Trigger send on next tick after state update
+                  setTimeout(() => {
+                    const sendButton = document.querySelector('[data-send-button]') as HTMLButtonElement
+                    sendButton?.click()
+                  }, 0)
+                }
               }}
             />
           ))}
@@ -291,7 +299,7 @@ Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitude
               onKeyDown={handleKeyDown}
               placeholder="Posez votre question... (Shift+Enter pour nouvelle ligne)"
               rows={1}
-              className="w-full px-4 py-3 pr-12 bg-zinc-900/50 border border-zinc-800 rounded-xl text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent resize-none transition-all duration-200"
+              className="w-full px-4 py-3 pr-12 bg-zinc-900/50 border border-zinc-800 rounded-xl text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent resize-none transition-[border-color,box-shadow] duration-200"
               style={{
                 minHeight: '48px',
                 maxHeight: '200px',
@@ -302,7 +310,7 @@ Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitude
             <button
               onClick={handleSend}
               disabled={!input.trim() || isTyping}
-              className="absolute right-2 bottom-2 p-2 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg shadow-indigo-500/20"
+              className="absolute right-2 bottom-2 p-2 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-[background,transform,opacity] duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg shadow-indigo-500/20"
             >
               <Sparkles className="w-4 h-4" />
             </button>

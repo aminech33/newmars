@@ -2,6 +2,7 @@ interface SparklineProps {
   data: number[]
   color?: string
   className?: string
+  height?: number
 }
 
 export function Sparkline({ data, color = '#10b981', className = '' }: SparklineProps) {

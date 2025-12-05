@@ -1,949 +1,1197 @@
+/**
+ * Dashboard - Hub Central des Statistiques
+ * 
+ * Ce composant est le "Hub d'affichage" de la Maison Mère (useGlobalStats).
+ * Il affiche toutes les stats de l'application de manière centralisée.
+ */
+
+import { ArrowLeft, ChevronRight, Flame, Target, Clock, BookOpen, Brain, Heart, Zap, TrendingUp, TrendingDown, Award, Lightbulb, Sparkles, BarChart3, Activity, CheckCircle2, Timer, GraduationCap, BookMarked, Utensils, Scale, Smile, ListChecks, ExternalLink } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../store/useStore'
-import { useWeekStats, useCurrentStreak, useCompletedTasks, usePendingTasks, useTasksByCategory } from '../store/selectors'
-import { ArrowLeft, TrendingUp, TrendingDown, Target, Clock, Lightbulb, Calendar, Zap, Award, Flame, ChevronRight, Sparkles } from 'lucide-react'
-import { useMemo, useState, useEffect } from 'react'
-import {
-  calculateProductivityScore,
-  analyzeProductiveHours,
-  getPeakHours,
-  compareDays,
-  compareWeeks,
-  calculateWeeklyGoals,
-  generateInsights,
-  generateYearHeatmap,
-  formatDuration
-} from '../utils/productivityUtils'
+
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro'
+import { useGlobalStats } from '../hooks/useGlobalStats'
 import { Tooltip } from './ui/Tooltip'
 import { ScrollToTop } from './ui/ScrollToTop'
-import { MetricDetailModal } from './dashboard/MetricDetailModal'
-import { HourDetailModal } from './dashboard/HourDetailModal'
 import { Sparkline } from './ui/Sparkline'
 import { CountUp } from './ui/CountUp'
+import { formatDuration } from '../utils/productivityUtils'
 
-// Constantes
-const WORK_HOURS_START = 8
-const WORK_HOURS_END = 22
-const HEATMAP_DAYS = 365
+type TabType = 'overview' | 'tasks' | 'habits' | 'journal' | 'pomodoro' | 'health' | 'library' | 'learning' | 'correlations'
 
-type MetricType = 'tasks' | 'focus' | 'consistency' | 'efficiency'
 
-export function Dashboard() {
-  const { tasks, setView, dailyGoal, focusMinutes } = useStore()
-  const [activeTab, setActiveTab] = useState<'overview' | 'insights' | 'heatmap'>('overview')
-  const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null)
-  const [selectedHour, setSelectedHour] = useState<number | null>(null)
-
-  // Raccourcis clavier améliorés
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Tabs
-      if (e.key === '1' && !e.metaKey && !e.ctrlKey) setActiveTab('overview')
-      if (e.key === '2' && !e.metaKey && !e.ctrlKey) setActiveTab('insights')
-      if (e.key === '3' && !e.metaKey && !e.ctrlKey) setActiveTab('heatmap')
-      
-      // Navigation
-      if (e.key === 'Escape') setView('hub')
-      if (e.key === 'ArrowLeft' && e.metaKey) {
-        const tabs: Array<'overview' | 'insights' | 'heatmap'> = ['overview', 'insights', 'heatmap']
-        const currentIndex = tabs.indexOf(activeTab)
-        if (currentIndex > 0) setActiveTab(tabs[currentIndex - 1])
-      }
-      if (e.key === 'ArrowRight' && e.metaKey) {
-        const tabs: Array<'overview' | 'insights' | 'heatmap'> = ['overview', 'insights', 'heatmap']
-        const currentIndex = tabs.indexOf(activeTab)
-        if (currentIndex < tabs.length - 1) setActiveTab(tabs[currentIndex + 1])
-      }
-    }
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [activeTab, setView])
-
-  // Sélecteurs optimisés (mémorisés)
-  const weekStats = useWeekStats()
-  const streak = useCurrentStreak()
-  const completedTasks = useCompletedTasks()
-  const pendingTasks = usePendingTasks()
-  const tasksByCategory = useTasksByCategory()
-  
-  // Stats d'aujourd'hui et hier
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().split('T')[0]
-  
-  const todayTasks = completedTasks.filter(t => 
-    new Date(t.createdAt).toISOString().split('T')[0] === todayStr
-  ).length
-  
-  const yesterdayTasks = completedTasks.filter(t => 
-    new Date(t.createdAt).toISOString().split('T')[0] === yesterdayStr
-  ).length
-
-  // Calculs
-  const totalFocusMinutes = weekStats.reduce((acc, day) => acc + day.focusMinutes, 0)
-  const weekTasksCompleted = weekStats.reduce((acc, day) => acc + day.tasksCompleted, 0)
-  
-  // Score de productivité avec moyenne 30j
-  const productivityScore = useMemo(() => 
-    calculateProductivityScore(todayTasks, focusMinutes, streak, 1, dailyGoal),
-    [todayTasks, focusMinutes, streak, dailyGoal]
-  )
-  
-  // Moyenne sur 30 jours
-  const last30DaysScores = useMemo(() => {
-    const scores: number[] = []
-    for (let i = 0; i < 30; i++) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toISOString().split('T')[0]
-      const dayTasks = completedTasks.filter(t => 
-        new Date(t.createdAt).toISOString().split('T')[0] === dateStr
-      ).length
-      // Estimation simplifiée du score (on n'a pas l'historique complet de focusMinutes)
-      const dayScore = calculateProductivityScore(dayTasks, 0, streak, 1, dailyGoal)
-      scores.push(dayScore.score)
-    }
-    return scores
-  }, [completedTasks, streak, dailyGoal])
-  
-  const averageScore = Math.round(last30DaysScores.reduce((a, b) => a + b, 0) / last30DaysScores.length)
-  const scoreDiff = productivityScore.score - averageScore
-  const scorePercentile = Math.round((last30DaysScores.filter(s => s < productivityScore.score).length / last30DaysScores.length) * 100)
-
-  // Comparaison jour
-  const dayComparison = useMemo(() => 
-    compareDays(todayTasks, focusMinutes, yesterdayTasks, Math.floor(focusMinutes * 0.8)),
-    [todayTasks, focusMinutes, yesterdayTasks]
-  )
-
-  // Comparaison semaine
-  const weekComparison = useMemo(() => 
-    compareWeeks(weekTasksCompleted, totalFocusMinutes, Math.floor(weekTasksCompleted * 0.85), Math.floor(totalFocusMinutes * 0.9)),
-    [weekTasksCompleted, totalFocusMinutes]
-  )
-
-  // Heures productives
-  const hourlyData = useMemo(() => analyzeProductiveHours(tasks), [tasks])
-  const peakHours = useMemo(() => getPeakHours(hourlyData), [hourlyData])
-
-  // Objectifs hebdomadaires
-  const weeklyGoals = useMemo(() => 
-    calculateWeeklyGoals(weekTasksCompleted, totalFocusMinutes, streak),
-    [weekTasksCompleted, totalFocusMinutes, streak]
-  )
-
-  // Insights
-  const insights = useMemo(() => 
-    generateInsights(tasks, weekComparison, peakHours, streak, weeklyGoals),
-    [tasks, weekComparison, peakHours, streak, weeklyGoals]
-  )
-
-  // Heatmap
-  const heatmapData = useMemo(() => generateYearHeatmap(tasks), [tasks])
-
-  // Jours de la semaine
-  const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-  const todayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1
-
-  // Max pour les graphiques
-  const maxTasks = Math.max(...weekStats.map(d => d.tasksCompleted), 1)
-  const maxHourlyTasks = Math.max(...hourlyData.map(h => h.tasksCompleted), 1)
-
-  // Système de couleurs selon le score (JIT-safe)
-  const getScoreTheme = (score: number) => {
-    if (score >= 80) return {
-      gradient: 'from-emerald-400 via-emerald-500 to-emerald-600',
-      glow: 'shadow-emerald-500/20',
-      bg: 'from-emerald-500/10 via-emerald-500/5 to-transparent',
-      text: 'text-emerald-400',
-      bar: 'from-emerald-500 to-emerald-400',
-      barShadow: 'shadow-emerald-500/30'
-    }
-    if (score >= 60) return {
-      gradient: 'from-cyan-400 via-cyan-500 to-blue-500',
-      glow: 'shadow-cyan-500/20',
-      bg: 'from-cyan-500/10 via-cyan-500/5 to-transparent',
-      text: 'text-cyan-400',
-      bar: 'from-cyan-500 to-cyan-400',
-      barShadow: 'shadow-cyan-500/30'
-    }
-    if (score >= 40) return {
-      gradient: 'from-amber-400 via-amber-500 to-orange-500',
-      glow: 'shadow-amber-500/20',
-      bg: 'from-amber-500/10 via-amber-500/5 to-transparent',
-      text: 'text-amber-400',
-      bar: 'from-amber-500 to-amber-400',
-      barShadow: 'shadow-amber-500/30'
-    }
-    return {
-      gradient: 'from-rose-400 via-rose-500 to-red-500',
-      glow: 'shadow-rose-500/20',
-      bg: 'from-rose-500/10 via-rose-500/5 to-transparent',
-      text: 'text-rose-400',
-      bar: 'from-rose-500 to-rose-400',
-      barShadow: 'shadow-rose-500/30'
-    }
+// Composant StatCard réutilisable
+function StatCard({ 
+  icon, 
+  label, 
+  value, 
+  subValue, 
+  trend, 
+  color = 'zinc',
+  onClick 
+}: { 
+  icon: React.ReactNode
+  label: string
+  value: string | number
+  subValue?: string
+  trend?: { value: number; label: string }
+  color?: 'emerald' | 'cyan' | 'amber' | 'rose' | 'indigo' | 'violet' | 'orange' | 'zinc'
+  onClick?: () => void
+}) {
+  const colorClasses = {
+    emerald: 'from-emerald-500/10 to-transparent border-emerald-500/20 hover:border-emerald-500/40',
+    cyan: 'from-cyan-500/10 to-transparent border-cyan-500/20 hover:border-cyan-500/40',
+    amber: 'from-amber-500/10 to-transparent border-amber-500/20 hover:border-amber-500/40',
+    rose: 'from-rose-500/10 to-transparent border-rose-500/20 hover:border-rose-500/40',
+    indigo: 'from-indigo-500/10 to-transparent border-indigo-500/20 hover:border-indigo-500/40',
+    violet: 'from-violet-500/10 to-transparent border-violet-500/20 hover:border-violet-500/40',
+    orange: 'from-orange-500/10 to-transparent border-orange-500/20 hover:border-orange-500/40',
+    zinc: 'from-zinc-500/10 to-transparent border-zinc-800 hover:border-zinc-700'
   }
 
-  const scoreTheme = getScoreTheme(productivityScore.score)
-
-  // Données pour les modales de métriques
-  const metricDetails = {
-    tasks: {
-      label: 'Tâches',
-      value: productivityScore.breakdown.tasksCompleted,
-      max: 25,
-      icon: '✅',
-      description: 'Nombre de tâches complétées aujourd\'hui par rapport à votre objectif quotidien. Chaque tâche terminée vous rapproche de votre objectif de productivité.',
-      tips: [
-        'Décompose les grandes tâches en sous-tâches plus petites',
-        'Priorise 3 tâches importantes chaque matin',
-        'Utilise la technique Pomodoro pour rester concentré',
-        'Célèbre chaque tâche terminée pour maintenir la motivation'
-      ]
-    },
-    focus: {
-      label: 'Focus',
-      value: productivityScore.breakdown.focusTime,
-      max: 25,
-      icon: '🎯',
-      description: 'Temps passé en mode focus (sessions Pomodoro). Plus vous accumulez de temps de focus, plus votre score augmente.',
-      tips: [
-        'Bloque des plages horaires dédiées au travail profond',
-        'Élimine les distractions (notifications, téléphone)',
-        'Utilise le mode Pomodoro (25min focus + 5min pause)',
-        'Travaille sur une seule tâche à la fois'
-      ]
-    },
-    consistency: {
-      label: 'Régularité',
-      value: productivityScore.breakdown.consistency,
-      max: 25,
-      icon: '🔥',
-      description: 'Votre streak actuel (jours consécutifs d\'activité). La régularité est la clé du succès à long terme.',
-      tips: [
-        'Travaille un peu chaque jour plutôt que beaucoup d\'un coup',
-        'Fixe-toi un objectif minimum quotidien (ex: 1 tâche)',
-        'Utilise le dashboard pour suivre ton streak',
-        'Ne casse pas la chaîne !'
-      ]
-    },
-    efficiency: {
-      label: 'Efficacité',
-      value: productivityScore.breakdown.efficiency,
-      max: 25,
-      icon: '⚡',
-      description: 'Ratio entre le temps estimé et le temps réel passé sur les tâches. Une bonne efficacité signifie que tu es réaliste dans tes estimations.',
-      tips: [
-        'Estime le temps nécessaire avant de commencer une tâche',
-        'Compare tes estimations avec le temps réel',
-        'Apprends à dire non aux tâches non-prioritaires',
-        'Automatise les tâches répétitives'
-      ]
-    }
+  const iconColors = {
+    emerald: 'text-emerald-400',
+    cyan: 'text-cyan-400',
+    amber: 'text-amber-400',
+    rose: 'text-rose-400',
+    indigo: 'text-indigo-400',
+    violet: 'text-violet-400',
+    orange: 'text-orange-400',
+    zinc: 'text-zinc-400'
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col view-transition" role="main" aria-label="Dashboard de productivité">
-      {/* Header - Sticky avec Breadcrumb et Shortcuts */}
+    <button
+      onClick={onClick}
+      className={`text-left p-4 rounded-2xl bg-gradient-to-br ${colorClasses[color]} border transition-colors duration-200 group w-full`}
+      aria-label={`${label}: ${value}${subValue ? `, ${subValue}` : ''}`}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className={`p-2 rounded-xl bg-zinc-800/50 ${iconColors[color]}`}>
+          {icon}
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg ${
+            trend.value > 0 
+              ? 'bg-emerald-500/10 text-emerald-400' 
+              : trend.value < 0
+              ? 'bg-rose-500/10 text-rose-400'
+              : 'bg-zinc-800/50 text-zinc-400'
+          }`}>
+            {trend.value > 0 ? <TrendingUp className="w-3 h-3" /> : trend.value < 0 ? <TrendingDown className="w-3 h-3" /> : null}
+            {trend.label}
+          </div>
+        )}
+      </div>
+      <p className="text-2xl font-bold text-zinc-100 mb-1 group-hover:text-white transition-colors">
+        {typeof value === 'number' ? <CountUp end={value} duration={800} /> : value}
+      </p>
+      <p className="text-xs text-zinc-500 uppercase tracking-wider">{label}</p>
+      {subValue && <p className="text-sm text-zinc-400 mt-1">{subValue}</p>}
+    </button>
+  )
+}
+
+// Composant Section avec lien vers l'app
+function Section({ title, icon, children, color = 'zinc', viewLink, onNavigate }: { 
+  title: string
+  icon: React.ReactNode
+  children: React.ReactNode
+  color?: string
+  viewLink?: View
+  onNavigate?: (view: View) => void
+}) {
+  const bgColors: Record<string, string> = {
+    emerald: 'bg-emerald-500/10',
+    cyan: 'bg-cyan-500/10',
+    amber: 'bg-amber-500/10',
+    rose: 'bg-rose-500/10',
+    indigo: 'bg-indigo-500/10',
+    violet: 'bg-violet-500/10',
+    orange: 'bg-orange-500/10',
+    zinc: 'bg-zinc-800/50'
+  }
+
+  return (
+    <section className="mb-8" aria-labelledby={title.replace(/\s/g, '-').toLowerCase()}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-xl ${bgColors[color] || bgColors.zinc}`}>
+            {icon}
+          </div>
+          <h3 id={title.replace(/\s/g, '-').toLowerCase()} className="text-lg font-semibold text-zinc-200">{title}</h3>
+        </div>
+        {viewLink && onNavigate && (
+          <button
+            onClick={() => onNavigate(viewLink)}
+            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-zinc-800/50"
+          >
+            Voir l'app
+            <ExternalLink className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+// Composant ProgressBar avec accessibilité
+function ProgressBar({ value, max, color = 'indigo', label, ariaLabel }: {
+  value: number
+  max: number
+  color?: string
+  label?: string
+  ariaLabel?: string
+}) {
+  const percent = max > 0 ? Math.min((value / max) * 100, 100) : 0
+  
+  const gradients: Record<string, string> = {
+    emerald: 'from-emerald-500 to-emerald-400',
+    cyan: 'from-cyan-500 to-cyan-400',
+    amber: 'from-amber-500 to-amber-400',
+    rose: 'from-rose-500 to-rose-400',
+    indigo: 'from-indigo-500 to-indigo-400',
+    violet: 'from-violet-500 to-violet-400',
+    orange: 'from-orange-500 to-orange-400'
+  }
+
+  return (
+    <div>
+      {label && (
+        <div className="flex justify-between text-xs text-zinc-500 mb-1">
+          <span>{label}</span>
+          <span>{Math.round(percent)}%</span>
+        </div>
+      )}
+      <div 
+        className="h-2 bg-zinc-800 rounded-full overflow-hidden"
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={max}
+        aria-label={ariaLabel || label || `${value} sur ${max}`}
+      >
+        <div 
+          className={`h-full bg-gradient-to-r ${gradients[color] || gradients.indigo} rounded-full transition-[width] duration-500`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// Composant BarChart avec tooltips
+function BarChart({ 
+  data, 
+  getHeight, 
+  getLabel, 
+  getValue,
+  highlightLast = true,
+  color = 'emerald',
+  ariaLabel
+}: {
+  data: unknown[]
+  getHeight: (item: unknown, max: number) => number
+  getLabel: (item: unknown, index: number) => string
+  getValue: (item: unknown) => number
+  highlightLast?: boolean
+  color?: 'emerald' | 'rose' | 'orange' | 'amber'
+  ariaLabel: string
+}) {
+  const values = data.map(getValue)
+  const max = Math.max(...values, 1)
+  
+  const colorClasses = {
+    emerald: { gradient: 'from-emerald-600 to-emerald-400', shadow: 'shadow-emerald-500/30', text: 'text-emerald-400' },
+    rose: { gradient: 'from-rose-600 to-rose-400', shadow: 'shadow-rose-500/30', text: 'text-rose-400' },
+    orange: { gradient: 'from-orange-600 to-orange-400', shadow: 'shadow-orange-500/30', text: 'text-orange-400' },
+    amber: { gradient: 'from-amber-600 to-amber-400', shadow: 'shadow-amber-500/30', text: 'text-amber-400' }
+  }
+
+  return (
+    <div 
+      className="flex items-end justify-between h-32 gap-2" 
+      role="img" 
+      aria-label={ariaLabel}
+    >
+      {data.map((item, i) => {
+        const height = getHeight(item, max)
+        const isHighlighted = highlightLast && i === data.length - 1
+        const value = getValue(item)
+        const label = getLabel(item, i)
+        
+        return (
+          <Tooltip key={i} content={`${label}: ${value}`} side="top">
+            <div className="flex-1 flex flex-col items-center gap-2 group cursor-default">
+              <div className="w-full flex items-end justify-center h-24">
+                <div 
+                  className={`w-full rounded-t-lg transition-[height,background-color] duration-500 ${
+                    isHighlighted 
+                      ? `bg-gradient-to-t ${colorClasses[color].gradient} shadow-lg ${colorClasses[color].shadow}` 
+                      : 'bg-zinc-700 group-hover:bg-zinc-600'
+                  }`}
+                  style={{ height: `${Math.max(8, height)}%` }}
+                  role="presentation"
+                />
+              </div>
+              <span className={`text-xs ${isHighlighted ? `${colorClasses[color].text} font-medium` : 'text-zinc-500'}`}>
+                {label}
+              </span>
+            </div>
+          </Tooltip>
+        )
+      })}
+    </div>
+  )
+}
+
+export function Dashboard() {
+  const { setView } = useStore()
+  const stats = useGlobalStats()
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
+
+  // Raccourcis clavier
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setView('hub')
+      if (e.key === '1' && !e.metaKey && !e.ctrlKey) setActiveTab('overview')
+      if (e.key === '2' && !e.metaKey && !e.ctrlKey) setActiveTab('tasks')
+      if (e.key === '3' && !e.metaKey && !e.ctrlKey) setActiveTab('habits')
+      if (e.key === '4' && !e.metaKey && !e.ctrlKey) setActiveTab('journal')
+      if (e.key === '5' && !e.metaKey && !e.ctrlKey) setActiveTab('pomodoro')
+      if (e.key === '6' && !e.metaKey && !e.ctrlKey) setActiveTab('health')
+      if (e.key === '7' && !e.metaKey && !e.ctrlKey) setActiveTab('library')
+      if (e.key === '8' && !e.metaKey && !e.ctrlKey) setActiveTab('learning')
+      if (e.key === '9' && !e.metaKey && !e.ctrlKey) setActiveTab('correlations')
+    }
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [setView])
+
+  // Score global (moyenne pondérée) avec détails
+  const { globalScore, scoreDetails } = useMemo(() => {
+    const details = [
+      { label: 'Tâches', value: stats.tasks.completionRate, weight: 1 },
+      { label: 'Habitudes', value: stats.habits.todayRate, weight: 1 },
+      { label: 'Journal', value: stats.journal.hasTodayEntry ? 100 : 0, weight: 0.5 },
+      { label: 'Focus', value: stats.pomodoro.todaySessions > 0 ? Math.min(stats.pomodoro.todayMinutes / 60 * 100, 100) : 0, weight: 1 },
+      { label: 'Santé', value: stats.health.caloriesRate > 0 ? Math.min(stats.health.caloriesRate, 100) : 50, weight: 0.5 },
+      { label: 'Lecture', value: stats.library.goalProgress, weight: 0.5 },
+      { label: 'Cours', value: stats.learning.averageProgress, weight: 0.5 }
+    ]
+    const totalWeight = details.reduce((sum, d) => sum + d.weight, 0)
+    const weightedSum = details.reduce((sum, d) => sum + d.value * d.weight, 0)
+    return {
+      globalScore: Math.round(weightedSum / totalWeight),
+      scoreDetails: details
+    }
+  }, [stats])
+
+  const tabs: { id: TabType; label: string; key: string; icon: React.ReactNode; color: string }[] = [
+    { id: 'overview', label: 'Vue d\'ensemble', key: '1', icon: <BarChart3 className="w-4 h-4" />, color: 'indigo' },
+    { id: 'tasks', label: 'Tâches', key: '2', icon: <CheckCircle2 className="w-4 h-4" />, color: 'emerald' },
+    { id: 'habits', label: 'Habitudes', key: '3', icon: <Flame className="w-4 h-4" />, color: 'orange' },
+    { id: 'journal', label: 'Journal', key: '4', icon: <BookOpen className="w-4 h-4" />, color: 'violet' },
+    { id: 'pomodoro', label: 'Pomodoro', key: '5', icon: <Timer className="w-4 h-4" />, color: 'rose' },
+    { id: 'health', label: 'Santé', key: '6', icon: <Heart className="w-4 h-4" />, color: 'cyan' },
+    { id: 'library', label: 'Livres', key: '7', icon: <BookMarked className="w-4 h-4" />, color: 'amber' },
+    { id: 'learning', label: 'Cours', key: '8', icon: <GraduationCap className="w-4 h-4" />, color: 'indigo' },
+    { id: 'correlations', label: 'Corrélations', key: '9', icon: <Activity className="w-4 h-4" />, color: 'violet' },
+  ]
+
+  // Tooltip content pour le score global (texte simple car Tooltip n'accepte que string)
+  const scoreTooltipContent = scoreDetails.map(d => `${d.label}: ${Math.round(d.value)}%`).join(' • ')
+
+  return (
+    <div className="min-h-screen w-full flex flex-col view-transition" role="main" aria-label="Dashboard - Hub des Statistiques">
+      {/* Header */}
       <header className="sticky top-0 z-20 flex-shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50">
         <div className="max-w-7xl mx-auto">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-zinc-500 mb-3">
+          <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-zinc-500 mb-3">
             <button onClick={() => setView('hub')} className="hover:text-zinc-300 transition-colors">
               Hub
             </button>
-            <ChevronRight className="w-4 h-4" />
-            <span className="text-zinc-300 font-medium">Dashboard</span>
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
+            <span className="text-zinc-300 font-medium" aria-current="page">Statistiques</span>
             <div className="ml-auto flex items-center gap-2 text-xs">
-              <kbd className="px-2 py-1 bg-zinc-800/50 border border-zinc-700 rounded text-zinc-400">Esc</kbd>
+              <kbd className="px-2 py-1 bg-zinc-800/50 border border-zinc-800 rounded text-zinc-400">Esc</kbd>
               <span className="text-zinc-600">Retour</span>
             </div>
-          </div>
+          </nav>
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Tooltip content="Retour au Hub (Esc)" side="bottom">
                 <button
                   onClick={() => setView('hub')}
-                  className="p-2.5 -ml-2 text-zinc-400 hover:text-zinc-100 transition-all rounded-xl hover:bg-zinc-800/50 hover:scale-110"
+                  className="p-2.5 -ml-2 text-zinc-400 hover:text-zinc-100 transition-colors rounded-xl hover:bg-zinc-800/50 hover:scale-110"
+                  aria-label="Retour au Hub"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
               </Tooltip>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Dashboard</h1>
-                <p className="text-sm text-zinc-500">Analyse de ta productivité en temps réel</p>
+                <h1 className="text-2xl font-bold tracking-tight text-zinc-100">📊 Statistiques</h1>
+                <p className="text-sm text-zinc-500">Hub central de toutes tes données</p>
               </div>
             </div>
           
-            {/* Tabs avec raccourcis clavier visibles */}
-            <div className="flex items-center gap-1 bg-zinc-900/50 rounded-xl p-1 border border-zinc-800/50" role="tablist" aria-label="Sections du dashboard">
-            {[
-              { id: 'overview', label: 'Vue d\'ensemble', key: '1' },
-              { id: 'insights', label: 'Insights', key: '2' },
-              { id: 'heatmap', label: 'Activité', key: '3' },
-            ].map((tab) => (
-              <Tooltip key={tab.id} content={`Raccourci: ${tab.key} | Cmd+← / Cmd+→ pour naviguer`} side="bottom">
-                <button
-                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  role="tab"
-                  aria-selected={activeTab === tab.id}
-                  aria-controls={`${tab.id}-panel`}
-                  className={`group relative px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all ${
-                    activeTab === tab.id 
-                      ? 'bg-zinc-800 text-zinc-100 shadow-lg' 
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    {tab.label}
-                    <kbd className={`hidden sm:inline-block px-1.5 py-0.5 text-[10px] rounded border transition-colors ${
+            {/* Score Global avec tooltip explicatif */}
+            <Tooltip content={scoreTooltipContent} side="bottom">
+              <div className="hidden sm:flex items-center gap-3 bg-zinc-900/50 rounded-2xl px-4 py-2 border border-zinc-800/50 cursor-help">
+                <div className={`text-3xl font-bold ${
+                  globalScore >= 70 ? 'text-emerald-400' : 
+                  globalScore >= 40 ? 'text-amber-400' : 
+                  'text-rose-400'
+                }`}>
+                  {globalScore}
+                </div>
+                <div className="text-xs text-zinc-500">
+                  <div className="font-medium">Score Global</div>
+                  <div>/100</div>
+                </div>
+              </div>
+            </Tooltip>
+          </div>
+
+          {/* Tabs avec indicateur de scroll sur mobile */}
+          <div className="relative mt-4">
+            <div 
+              className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide" 
+              role="tablist"
+              aria-label="Sections des statistiques"
+            >
+              {tabs.map((tab) => (
+                <Tooltip key={tab.id} content={`Raccourci: ${tab.key}`} side="bottom">
+                  <button
+                    onClick={() => setActiveTab(tab.id)}
+                    role="tab"
+                    id={`tab-${tab.id}`}
+                    aria-selected={activeTab === tab.id}
+                    aria-controls={`panel-${tab.id}`}
+                    tabIndex={activeTab === tab.id ? 0 : -1}
+                    className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
+                      activeTab === tab.id 
+                        ? 'bg-zinc-800 text-zinc-100 shadow-lg' 
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <kbd className={`hidden lg:inline-block px-1.5 py-0.5 text-[10px] rounded border ${
                       activeTab === tab.id
                         ? 'bg-zinc-700 border-zinc-600 text-zinc-300'
-                        : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-600 group-hover:text-zinc-500'
+                        : 'bg-zinc-800/50 border-zinc-800/50 text-zinc-600'
                     }`}>
                       {tab.key}
                     </kbd>
-                  </span>
-                </button>
-              </Tooltip>
-            ))}
+                  </button>
+                </Tooltip>
+              ))}
             </div>
+            {/* Indicateur de scroll sur mobile */}
+            <div className="absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-zinc-950 to-transparent pointer-events-none sm:hidden" />
           </div>
         </div>
       </header>
 
-      <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-7xl mx-auto">
-          
-          {/* HERO: Score de Productivité */}
-          <section className="mb-8 sm:mb-12" aria-labelledby="productivity-score-heading">
-            <div className="relative group">
-              {/* Background gradient animé */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${scoreTheme.bg} rounded-3xl blur-3xl opacity-40 group-hover:opacity-60 transition-opacity duration-700 animate-pulse-slow`} />
-              
-              {/* Card principale avec glassmorphism */}
-              <div className="glass-widget relative p-8 sm:p-10 lg:p-12 overflow-hidden">
-                {/* Gradient border animé */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${scoreTheme.gradient} opacity-5 pointer-events-none`} />
-                
-                <div className="relative flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 sm:gap-10">
-                  {/* Score géant avec contexte */}
-                  <div className="flex-1 text-center lg:text-left space-y-4">
-                    <p id="productivity-score-heading" className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider">Score de Productivité</p>
-                    
-                    <div className="flex items-baseline justify-center lg:justify-start gap-4">
-                      <h2 className={`text-7xl sm:text-8xl lg:text-9xl font-mono-display font-bold bg-gradient-to-br ${scoreTheme.gradient} bg-clip-text text-transparent number-glow`}>
-                        <CountUp end={productivityScore.score} duration={1500} />
-                      </h2>
-                      <span className="text-3xl sm:text-4xl text-zinc-600 font-light">/100</span>
-                    </div>
-                    
-                    {/* Contexte et Tendances */}
-                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-                      {/* Tendance vs hier */}
-                      <Tooltip content="Évolution par rapport à hier" side="top">
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
-                          scoreDiff > 0 
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                            : scoreDiff < 0
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                            : 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50'
-                        }`}>
-                          {scoreDiff > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : scoreDiff < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : <Target className="w-3.5 h-3.5" />}
-                          <span>{scoreDiff > 0 ? '+' : ''}{scoreDiff} vs moyenne</span>
-                        </div>
-                      </Tooltip>
-                      
-                      {/* Percentile */}
-                      <Tooltip content={`Meilleur que ${scorePercentile}% de tes 30 derniers jours`} side="top">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                          <Award className="w-3.5 h-3.5" />
-                          <span>Top {100 - scorePercentile}%</span>
-                        </div>
-                      </Tooltip>
-                      
-                      {/* Streak */}
-                      {streak > 0 && (
-                        <Tooltip content={`${streak} jours consécutifs d'activité`} side="top">
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                            <Flame className="w-3.5 h-3.5" />
-                            <span>{streak} jours</span>
-                          </div>
-                        </Tooltip>
-                      )}
-                    </div>
-                    
-                    {/* Message motivant */}
-                    <p className="text-sm text-zinc-500">
-                      {productivityScore.score >= 80 ? (
-                        <span className="text-emerald-400">🎉 Excellente journée ! Continue comme ça !</span>
-                      ) : productivityScore.score >= 60 ? (
-                        <span className="text-cyan-400">💪 Bonne progression ! Encore un petit effort !</span>
-                      ) : productivityScore.score >= 40 ? (
-                        <span className="text-amber-400">⚡ Tu peux faire mieux ! Focus sur tes priorités.</span>
-                      ) : (
-                        <span className="text-rose-400">🚀 Démarre ta journée ! Chaque petite action compte.</span>
-                      )}
-                    </p>
-                  </div>
-                  
-                  {/* Breakdown avec animations - Cliquables */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                    {[
-                      { type: 'tasks' as MetricType, label: 'Tâches', value: productivityScore.breakdown.tasksCompleted, max: 25, icon: '✅', gradient: 'from-emerald-500 to-emerald-400', shadow: 'shadow-emerald-500/20' },
-                      { type: 'focus' as MetricType, label: 'Focus', value: productivityScore.breakdown.focusTime, max: 25, icon: '🎯', gradient: 'from-cyan-500 to-cyan-400', shadow: 'shadow-cyan-500/20' },
-                      { type: 'consistency' as MetricType, label: 'Régularité', value: productivityScore.breakdown.consistency, max: 25, icon: '🔥', gradient: 'from-orange-500 to-orange-400', shadow: 'shadow-orange-500/20' },
-                      { type: 'efficiency' as MetricType, label: 'Efficacité', value: productivityScore.breakdown.efficiency, max: 25, icon: '⚡', gradient: 'from-indigo-500 to-indigo-400', shadow: 'shadow-indigo-500/20' },
-                    ].map((item, index) => (
-                      <Tooltip key={item.label} content="Cliquer pour plus de détails" side="top">
-                        <button
-                          onClick={() => setSelectedMetric(item.type)}
-                          className={`text-center hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer group bg-zinc-900/30 backdrop-blur-sm rounded-2xl p-4 border border-zinc-800/50 hover:border-zinc-700 hover:${item.shadow}`}
-                          style={{ animationDelay: `${index * 100}ms` }}
-                        >
-                          <div className="text-3xl mb-3 group-hover:scale-110 transition-transform" role="img" aria-label={item.label}>{item.icon}</div>
-                          <div className="h-2.5 bg-zinc-800/50 rounded-full overflow-hidden mb-3 shadow-inner">
-                            <div 
-                              className={`h-full bg-gradient-to-r ${item.gradient} rounded-full transition-all duration-1000 ease-out shadow-lg ${item.shadow}`}
-                              style={{ width: `${(item.value / item.max) * 100}%` }}
-                              role="progressbar"
-                              aria-valuenow={item.value}
-                              aria-valuemin={0}
-                              aria-valuemax={item.max}
-                            />
-                          </div>
-                          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2 group-hover:text-zinc-400 transition-colors">{item.label}</p>
-                          <p className="text-xl font-mono-display font-bold text-zinc-200 group-hover:text-zinc-100 transition-colors">
-                            <CountUp end={item.value} duration={1200} />
-                            <span className="text-zinc-600 text-sm">/{item.max}</span>
-                          </p>
-                        </button>
-                      </Tooltip>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
 
-          {/* Badges de Gamification */}
-          {(streak >= 7 || todayTasks >= dailyGoal || productivityScore.score >= 90) && (
-            <section className="mb-8 sm:mb-12">
-              <div className="flex items-center gap-3 mb-4">
-                <Award className="w-5 h-5 text-amber-400" />
-                <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Réussites</h3>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {streak >= 7 && (
-                  <div className="glass-widget p-4 flex items-center gap-3 animate-scale-in">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/50">
-                      <Flame className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-zinc-200">Série de feu ! 🔥</p>
-                      <p className="text-xs text-zinc-500">{streak} jours consécutifs</p>
-                    </div>
-                  </div>
-                )}
-                {todayTasks >= dailyGoal && (
-                  <div className="glass-widget p-4 flex items-center gap-3 animate-scale-in">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/50">
-                      <Target className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-zinc-200">Objectif atteint ! 🎯</p>
-                      <p className="text-xs text-zinc-500">{todayTasks}/{dailyGoal} tâches</p>
-                    </div>
-                  </div>
-                )}
-                {productivityScore.score >= 90 && (
-                  <div className="glass-widget p-4 flex items-center gap-3 animate-scale-in">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/50">
-                      <Sparkles className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-zinc-200">Journée parfaite ! ✨</p>
-                      <p className="text-xs text-zinc-500">Score de {productivityScore.score}/100</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
+          {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
-            <div role="tabpanel" id="overview-panel" aria-labelledby="overview-tab">
-              {/* Comparaisons */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
-                {/* vs Hier */}
-                <div className="glass-widget p-6 group">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-base font-semibold text-zinc-300 flex items-center gap-2">
-                      <Zap className="w-5 h-5 text-indigo-400" aria-hidden="true" />
-                      Aujourd'hui vs Hier
-                    </h3>
-                    {/* Sparkline des 7 derniers jours */}
-                    <div className="w-24">
-                      <Sparkline 
-                        data={weekStats.map(d => d.tasksCompleted)} 
-                        color="rgb(99, 102, 241)"
-                        height={24}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-500 font-medium">Tâches</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-light text-zinc-100">{dayComparison.today.tasks}</span>
-                        {dayComparison.tasksDiff !== 0 && (
-                          <span className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${
-                            dayComparison.tasksDiff > 0 
-                              ? 'bg-emerald-500/10 text-emerald-400' 
-                              : 'bg-rose-500/10 text-rose-400'
-                          }`}>
-                            {dayComparison.tasksDiff > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                            {dayComparison.tasksDiff > 0 ? '+' : ''}{dayComparison.tasksDiff}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-500 font-medium">Focus</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-light text-zinc-100">{formatDuration(dayComparison.today.focus)}</span>
-                        {dayComparison.focusDiff !== 0 && (
-                          <span className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${
-                            dayComparison.focusDiff > 0 
-                              ? 'bg-emerald-500/10 text-emerald-400' 
-                              : 'bg-rose-500/10 text-rose-400'
-                          }`}>
-                            {dayComparison.focusDiff > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                            {dayComparison.focusDiff > 0 ? '+' : ''}{dayComparison.focusDiff}m
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* vs Semaine dernière */}
-                <div className="glass-widget p-6 group">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-base font-semibold text-zinc-300 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-cyan-400" aria-hidden="true" />
-                      Cette semaine vs Semaine dernière
-                    </h3>
-                    {/* Sparkline de la semaine */}
-                    <div className="w-24">
-                      <Sparkline 
-                        data={weekStats.map(d => d.focusMinutes)} 
-                        color="rgb(34, 211, 238)"
-                        height={24}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-500 font-medium">Tâches</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-light text-zinc-100">{weekComparison.thisWeek.tasks}</span>
-                        {weekComparison.tasksPercent !== 0 && (
-                          <span className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${
-                            weekComparison.tasksPercent > 0 
-                              ? 'bg-emerald-500/10 text-emerald-400' 
-                              : 'bg-rose-500/10 text-rose-400'
-                          }`}>
-                            {weekComparison.tasksPercent > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                            {weekComparison.tasksPercent > 0 ? '+' : ''}{weekComparison.tasksPercent}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-500 font-medium">Focus</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-light text-zinc-100">{formatDuration(weekComparison.thisWeek.focus)}</span>
-                        {weekComparison.focusPercent !== 0 && (
-                          <span className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${
-                            weekComparison.focusPercent > 0 
-                              ? 'bg-emerald-500/10 text-emerald-400' 
-                              : 'bg-rose-500/10 text-rose-400'
-                          }`}>
-                            {weekComparison.focusPercent > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                            {weekComparison.focusPercent > 0 ? '+' : ''}{weekComparison.focusPercent}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div 
+              role="tabpanel" 
+              id="panel-overview" 
+              aria-labelledby="tab-overview"
+              className="space-y-8"
+            >
+              {/* Hero Stats - Résumé rapide - Responsive amélioré */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+                <StatCard
+                  icon={<CheckCircle2 className="w-5 h-5" />}
+                  label="Tâches"
+                  value={stats.tasks.todayCompleted}
+                  subValue={`${stats.tasks.completionRate}% complétées`}
+                  color="emerald"
+                  onClick={() => setActiveTab('tasks')}
+                />
+                <StatCard
+                  icon={<Flame className="w-5 h-5" />}
+                  label="Habitudes"
+                  value={`${stats.habits.todayRate}%`}
+                  subValue={`${stats.habits.todayCompleted}/${stats.habits.total} aujourd'hui`}
+                  color="orange"
+                  onClick={() => setActiveTab('habits')}
+                />
+                <StatCard
+                  icon={<Smile className="w-5 h-5" />}
+                  label="Humeur"
+                  value={stats.journal.averageMood.toFixed(1)}
+                  subValue={stats.journal.hasTodayEntry ? '✓ Entrée du jour' : 'Pas d\'entrée'}
+                  color="violet"
+                  onClick={() => setActiveTab('journal')}
+                />
+                <StatCard
+                  icon={<Timer className="w-5 h-5" />}
+                  label="Focus"
+                  value={formatDuration(stats.pomodoro.todayMinutes)}
+                  subValue={`${stats.pomodoro.todaySessions} sessions`}
+                  color="rose"
+                  onClick={() => setActiveTab('pomodoro')}
+                />
+                <StatCard
+                  icon={<Utensils className="w-5 h-5" />}
+                  label="Calories"
+                  value={stats.health.todayCalories}
+                  subValue={`/${stats.health.targetCalories} kcal`}
+                  color="cyan"
+                  onClick={() => setActiveTab('health')}
+                />
+                <StatCard
+                  icon={<BookMarked className="w-5 h-5" />}
+                  label="Livres"
+                  value={stats.library.completedThisYear}
+                  subValue={`${stats.library.goalProgress}% objectif`}
+                  color="amber"
+                  onClick={() => setActiveTab('library')}
+                />
+                <StatCard
+                  icon={<GraduationCap className="w-5 h-5" />}
+                  label="Cours"
+                  value={stats.learning.activeCourses}
+                  subValue={`${stats.learning.averageProgress}% progression`}
+                  color="indigo"
+                  onClick={() => setActiveTab('learning')}
+                />
               </div>
 
-              {/* Objectifs Hebdomadaires */}
-              <section className="glass-widget p-6 sm:p-8 mb-8 sm:mb-12 group" aria-labelledby="weekly-goals-heading">
-                <div className="flex items-center gap-3 mb-6 sm:mb-8">
-                  <div className="p-2 bg-cyan-500/10 rounded-xl">
-                    <Target className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" aria-hidden="true" />
-                  </div>
-                  <h3 id="weekly-goals-heading" className="text-base sm:text-lg font-semibold text-zinc-200">Objectifs de la semaine</h3>
-                </div>
-                <div className="space-y-6">
+              {/* Streaks */}
+              <Section title="🔥 Séries en cours" icon={<Flame className="w-5 h-5 text-orange-400" />} color="orange">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   {[
-                    { label: 'Tâches complétées', ...weeklyGoals.tasks, icon: '✅', gradient: 'from-emerald-500 to-emerald-400', shadow: 'shadow-emerald-500/30', format: undefined },
-                    { label: 'Temps de focus', ...weeklyGoals.focus, icon: '🎯', gradient: 'from-indigo-500 to-indigo-400', shadow: 'shadow-indigo-500/30', format: (v: number) => formatDuration(v) },
-                    { label: 'Jours de streak', ...weeklyGoals.streak, icon: '🔥', gradient: 'from-orange-500 to-orange-400', shadow: 'shadow-orange-500/30', format: undefined },
-                  ].map((goal) => {
-                    const isNearComplete = goal.percent >= 90 && goal.percent < 100
-                    const isComplete = goal.percent >= 100
-                    
-                    return (
-                      <div key={goal.label} className="relative">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <span className={`text-2xl ${isComplete ? 'animate-bounce' : ''}`} role="img" aria-label={goal.label}>{goal.icon}</span>
-                            <span className="text-sm font-medium text-zinc-400">{goal.label}</span>
-                            {/* Notification badge */}
-                            {isComplete && (
-                              <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-500/20 text-emerald-400 rounded-full animate-pulse">
-                                Atteint !
-                              </span>
-                            )}
-                            {isNearComplete && (
-                              <span className="px-2 py-0.5 text-xs font-semibold bg-amber-500/20 text-amber-400 rounded-full">
-                                Presque !
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-sm font-semibold text-zinc-300">
-                            {goal.format ? goal.format(goal.current) : goal.current} / {goal.format ? goal.format(goal.target) : goal.target}
-                          </span>
-                        </div>
-                        <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden">
-                          <div 
-                            className={`absolute inset-y-0 left-0 bg-gradient-to-r ${goal.gradient} rounded-full transition-all duration-1000 ease-out shadow-lg ${goal.shadow} motion-reduce:transition-none`}
-                            style={{ width: `${Math.min(goal.percent, 100)}%` }}
-                            role="progressbar"
-                            aria-valuenow={goal.current}
-                            aria-valuemin={0}
-                            aria-valuemax={goal.target}
-                            aria-label={`${goal.label}: ${goal.percent}% complété`}
-                          />
-                        </div>
+                    { label: 'Tâches', value: stats.tasks.streak, color: 'emerald' },
+                    { label: 'Habitudes', value: stats.habits.globalStreak, color: 'orange' },
+                    { label: 'Journal', value: stats.journal.currentStreak, color: 'violet' },
+                    { label: 'Pomodoro', value: stats.pomodoro.currentStreak, color: 'rose' },
+                    { label: 'Santé', value: stats.health.streak, color: 'cyan' },
+                    { label: 'Lecture', value: stats.library.currentStreak, color: 'amber' },
+                  ].map((streak) => (
+                    <div key={streak.label} className="glass-widget p-4 text-center">
+                      <p className="text-3xl font-bold text-zinc-100 mb-1">
+                        <CountUp end={streak.value} duration={600} />
+                      </p>
+                      <p className="text-xs text-zinc-500">{streak.label}</p>
+                      <div className="mt-2 flex justify-center" aria-hidden="true">
+                        {streak.value >= 7 && <span className="text-xl">🔥</span>}
+                        {streak.value >= 30 && <span className="text-xl">⚡</span>}
+                        {streak.value >= 100 && <span className="text-xl">🏆</span>}
                       </div>
-                    )
-                  })}
-                </div>
-              </section>
-
-              {/* Heures Productives */}
-              <section className="glass-widget p-6 sm:p-8 mb-8 sm:mb-12 group" aria-labelledby="productive-hours-heading">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/10 rounded-xl">
-                      <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" aria-hidden="true" />
                     </div>
-                    <h3 id="productive-hours-heading" className="text-base sm:text-lg font-semibold text-zinc-200">Heures les plus productives</h3>
-                  </div>
-                  {peakHours[0]?.peak > 0 && (
-                    <span className="text-sm font-medium text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-lg">
-                      Peak: {peakHours[0].label}
-                    </span>
-                  )}
+                  ))}
                 </div>
-                <div className="flex items-end justify-between h-32 gap-1 sm:gap-1.5 overflow-x-auto">
-                  {hourlyData.filter(h => h.hour >= WORK_HOURS_START && h.hour <= WORK_HOURS_END).map((hour) => {
-                    const height = maxHourlyTasks > 0 ? (hour.tasksCompleted / maxHourlyTasks) * 100 : 0
-                    const isPeak = peakHours[0]?.label === hour.label
-                    return (
-                      <button
-                        key={hour.hour}
-                        onClick={() => setSelectedHour(hour.hour)}
-                        className="flex-1 flex flex-col items-center gap-2 group cursor-pointer"
-                      >
-                        <div className="w-full flex items-end justify-center h-24 relative">
-                          {/* Tooltip */}
-                          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                            <div className="bg-zinc-800 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap shadow-xl">
-                              {hour.tasksCompleted} tâches - Cliquer pour détails
-                            </div>
-                          </div>
-                          
-                          <div 
-                            className={`w-full rounded-t-lg transition-all duration-500 group-hover:scale-110 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
-                              isPeak 
-                                ? 'bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-lg shadow-indigo-500/50' 
-                                : 'bg-zinc-700 group-hover:bg-zinc-600'
-                            }`}
-                            style={{ height: `${Math.max(8, height)}%` }}
-                            role="presentation"
-                          />
-                        </div>
-                        <span className={`text-[10px] font-medium ${isPeak ? 'text-indigo-400' : 'text-zinc-600'} group-hover:text-zinc-400 transition-colors`}>
-                          {hour.hour}h
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </section>
+              </Section>
 
-              {/* Graphiques */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {/* Tâches hebdo */}
-                <div className="glass-widget p-6 group">
-                  <h3 className="text-base font-semibold text-zinc-300 mb-6">Tâches cette semaine</h3>
-                  <div className="flex items-end justify-between h-40 gap-3">
-                    {weekStats.map((day, i) => {
-                      const height = (day.tasksCompleted / maxTasks) * 100
-                      const isToday = i === todayIndex
-                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
-                          <div className="w-full flex items-end justify-center h-32 relative">
-                            {/* Tooltip */}
-                            <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                              <div className="bg-zinc-800 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap shadow-xl">
-                                {day.tasksCompleted} tâches
-                              </div>
-                            </div>
-                            
-                            <div 
-                              className={`w-full rounded-t-xl transition-all duration-700 hover:scale-105 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
-                                isToday 
-                                  ? 'bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-lg shadow-indigo-500/30' 
-                                  : 'bg-zinc-700 hover:bg-zinc-600'
-                              }`}
-                              style={{ height: `${Math.max(8, height)}%` }}
-                              role="presentation"
-                            />
-                          </div>
-                          <span className={`text-xs font-medium ${isToday ? 'text-indigo-400' : 'text-zinc-600'}`}>
-                            {weekDays[i]}
+              {/* Graphiques 7 jours */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Section 
+                  title="📈 Tâches (7 jours)" 
+                  icon={<BarChart3 className="w-5 h-5 text-emerald-400" />} 
+                  color="emerald"
+                  viewLink="tasks"
+                  onNavigate={setView}
+                >
+                  <div className="glass-widget p-6">
+                    <BarChart
+                      data={stats.tasks.last7Days}
+                      getHeight={(item, max) => ((item as { completed: number }).completed / max) * 100}
+                      getLabel={(item) => new Date((item as { date: string }).date).toLocaleDateString('fr', { weekday: 'short' }).slice(0, 3)}
+                      getValue={(item) => (item as { completed: number }).completed}
+                      color="emerald"
+                      ariaLabel="Graphique des tâches complétées sur les 7 derniers jours"
+                    />
+                  </div>
+                </Section>
+
+                <Section 
+                  title="🍅 Focus (7 jours)" 
+                  icon={<Timer className="w-5 h-5 text-rose-400" />} 
+                  color="rose"
+                  viewLink="pomodoro"
+                  onNavigate={setView}
+                >
+                  <div className="glass-widget p-6">
+                    <BarChart
+                      data={stats.pomodoro.last7Days}
+                      getHeight={(item, max) => ((item as { minutes: number }).minutes / max) * 100}
+                      getLabel={(item) => new Date((item as { date: string }).date).toLocaleDateString('fr', { weekday: 'short' }).slice(0, 3)}
+                      getValue={(item) => (item as { minutes: number }).minutes}
+                      color="rose"
+                      ariaLabel="Graphique du temps de focus sur les 7 derniers jours"
+                    />
+                  </div>
+                </Section>
+              </div>
+
+              {/* Corrélations rapides */}
+              {(stats.correlations.moodVsHabitsRate !== null || stats.correlations.productivityVsPomodoro !== null) && (
+                <Section title="🔗 Corrélations" icon={<Activity className="w-5 h-5 text-violet-400" />} color="violet">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {stats.correlations.moodVsHabitsRate !== null && (
+                      <div className="glass-widget p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-zinc-400">Humeur ↔ Habitudes</span>
+                          <span className={`text-lg font-bold ${
+                            stats.correlations.moodVsHabitsRate > 0.5 ? 'text-emerald-400' :
+                            stats.correlations.moodVsHabitsRate > 0 ? 'text-amber-400' :
+                            'text-rose-400'
+                          }`}>
+                            {stats.correlations.moodVsHabitsRate > 0 ? '+' : ''}{stats.correlations.moodVsHabitsRate.toFixed(2)}
                           </span>
                         </div>
-                      )
-                    })}
+                        <p className="text-xs text-zinc-500">
+                          {stats.correlations.moodVsHabitsRate > 0.5 
+                            ? '🎯 Forte corrélation ! Tes habitudes améliorent ton humeur.'
+                            : stats.correlations.moodVsHabitsRate > 0
+                            ? '📊 Corrélation positive modérée.'
+                            : '⚠️ Pas de corrélation claire.'}
+                        </p>
+                      </div>
+                    )}
+                    {stats.correlations.productivityVsPomodoro !== null && (
+                      <div className="glass-widget p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-zinc-400">Productivité ↔ Pomodoro</span>
+                          <span className={`text-lg font-bold ${
+                            stats.correlations.productivityVsPomodoro > 0.5 ? 'text-emerald-400' :
+                            stats.correlations.productivityVsPomodoro > 0 ? 'text-amber-400' :
+                            'text-rose-400'
+                          }`}>
+                            {stats.correlations.productivityVsPomodoro > 0 ? '+' : ''}{stats.correlations.productivityVsPomodoro.toFixed(2)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-500">
+                          {stats.correlations.productivityVsPomodoro > 0.5 
+                            ? '🍅 Le Pomodoro booste ta productivité !'
+                            : stats.correlations.productivityVsPomodoro > 0
+                            ? '📊 Impact positif modéré du Pomodoro.'
+                            : '⚠️ Essaie plus de sessions Pomodoro.'}
+                        </p>
+                      </div>
+                    )}
                   </div>
+                </Section>
+              )}
+            </div>
+          )}
+
+          {/* TASKS TAB */}
+          {activeTab === 'tasks' && (
+            <div 
+              role="tabpanel" 
+              id="panel-tasks" 
+              aria-labelledby="tab-tasks"
+              className="space-y-8"
+            >
+              <Section 
+                title="✅ Statistiques des Tâches" 
+                icon={<CheckCircle2 className="w-5 h-5 text-emerald-400" />} 
+                color="emerald"
+                viewLink="tasks"
+                onNavigate={setView}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <StatCard icon={<ListChecks className="w-5 h-5" />} label="Total" value={stats.tasks.total} color="zinc" />
+                  <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Complétées" value={stats.tasks.completed} color="emerald" />
+                  <StatCard icon={<Clock className="w-5 h-5" />} label="En attente" value={stats.tasks.pending} color="amber" />
+                  <StatCard icon={<Zap className="w-5 h-5" />} label="En retard" value={stats.tasks.overdue} color="rose" />
                 </div>
 
-                {/* Par catégorie */}
-                <div className="glass-widget p-6 group">
-                  <h3 className="text-base font-semibold text-zinc-300 mb-6">Par catégorie</h3>
-                  <div className="space-y-4">
-                    {[
-                      { key: 'dev', label: 'Développement', color: 'bg-indigo-500' },
-                      { key: 'design', label: 'Design', color: 'bg-cyan-500' },
-                      { key: 'work', label: 'Travail', color: 'bg-amber-500' },
-                      { key: 'personal', label: 'Personnel', color: 'bg-emerald-500' },
-                      { key: 'urgent', label: 'Urgent', color: 'bg-rose-500' },
-                    ].map((cat) => {
-                      const count = tasksByCategory[cat.key] || 0
-                      const percent = pendingTasks.length > 0 ? (count / pendingTasks.length) * 100 : 0
-                      return (
-                        <div key={cat.key} className="flex items-center gap-4">
-                          <span className={`w-3 h-3 rounded-full ${cat.color} shadow-lg`} role="presentation" />
-                          <span className="text-sm text-zinc-400 font-medium w-28">{cat.label}</span>
-                          <div className="flex-1 h-2.5 bg-zinc-800 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${cat.color} rounded-full transition-all duration-1000 ease-out shadow-lg motion-reduce:transition-none`}
-                              style={{ width: `${percent}%` }}
-                              role="progressbar"
-                              aria-valuenow={count}
-                              aria-valuemin={0}
-                              aria-valuemax={pendingTasks.length}
-                              aria-label={`${cat.label}: ${count} tâches`}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Par catégorie */}
+                  <div className="glass-widget p-6">
+                    <h4 className="text-sm font-semibold text-zinc-300 mb-4">Par catégorie</h4>
+                    <div className="space-y-3">
+                      {[
+                        { key: 'dev', label: 'Développement', color: 'indigo' },
+                        { key: 'design', label: 'Design', color: 'cyan' },
+                        { key: 'work', label: 'Travail', color: 'amber' },
+                        { key: 'personal', label: 'Personnel', color: 'emerald' },
+                        { key: 'urgent', label: 'Urgent', color: 'rose' },
+                      ].map((cat) => (
+                        <div key={cat.key} className="flex items-center gap-3">
+                          <span className="text-xs text-zinc-400 w-24">{cat.label}</span>
+                          <div className="flex-1">
+                            <ProgressBar 
+                              value={stats.tasks.byCategory[cat.key as keyof typeof stats.tasks.byCategory] || 0} 
+                              max={stats.tasks.total || 1} 
+                              color={cat.color}
+                              ariaLabel={`${cat.label}: ${stats.tasks.byCategory[cat.key as keyof typeof stats.tasks.byCategory] || 0} tâches`}
                             />
                           </div>
-                          <span className="text-sm text-zinc-400 font-semibold w-8 text-right">{count}</span>
+                          <span className="text-sm font-medium text-zinc-300 w-8 text-right">
+                            {stats.tasks.byCategory[cat.key as keyof typeof stats.tasks.byCategory] || 0}
+                          </span>
                         </div>
-                      )
-                    })}
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Par priorité */}
+                  <div className="glass-widget p-6">
+                    <h4 className="text-sm font-semibold text-zinc-300 mb-4">Par priorité</h4>
+                    <div className="space-y-3">
+                      {[
+                        { key: 'urgent', label: 'Urgente', color: 'rose' },
+                        { key: 'high', label: 'Haute', color: 'orange' },
+                        { key: 'medium', label: 'Moyenne', color: 'amber' },
+                        { key: 'low', label: 'Basse', color: 'emerald' },
+                      ].map((priority) => (
+                        <div key={priority.key} className="flex items-center gap-3">
+                          <span className="text-xs text-zinc-400 w-24">{priority.label}</span>
+                          <div className="flex-1">
+                            <ProgressBar 
+                              value={stats.tasks.byPriority[priority.key as keyof typeof stats.tasks.byPriority] || 0} 
+                              max={stats.tasks.total || 1} 
+                              color={priority.color}
+                              ariaLabel={`Priorité ${priority.label}: ${stats.tasks.byPriority[priority.key as keyof typeof stats.tasks.byPriority] || 0} tâches`}
+                            />
+                          </div>
+                          <span className="text-sm font-medium text-zinc-300 w-8 text-right">
+                            {stats.tasks.byPriority[priority.key as keyof typeof stats.tasks.byPriority] || 0}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
+              </Section>
+
+              {/* Stats supplémentaires */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatCard 
+                  icon={<Flame className="w-5 h-5" />} 
+                  label="Série actuelle" 
+                  value={`${stats.tasks.streak}j`} 
+                  color="orange" 
+                />
+                <StatCard 
+                  icon={<TrendingUp className="w-5 h-5" />} 
+                  label="Taux de complétion" 
+                  value={`${stats.tasks.completionRate}%`} 
+                  color="emerald" 
+                />
+                <StatCard 
+                  icon={<Clock className="w-5 h-5" />} 
+                  label="Temps moyen" 
+                  value={formatDuration(stats.tasks.averageCompletionTime)} 
+                  color="cyan" 
+                />
+                <StatCard 
+                  icon={<Target className="w-5 h-5" />} 
+                  label="Tâches/jour" 
+                  value={stats.tasks.tasksPerDay.toFixed(1)} 
+                  color="indigo" 
+                />
               </div>
             </div>
           )}
 
-          {activeTab === 'insights' && (
-            <div role="tabpanel" id="insights-panel" aria-labelledby="insights-tab" className="space-y-6">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="p-2 bg-amber-500/10 rounded-xl">
-                  <Lightbulb className="w-6 h-6 text-amber-400" />
+          {/* HABITS TAB */}
+          {activeTab === 'habits' && (
+            <div 
+              role="tabpanel" 
+              id="panel-habits" 
+              aria-labelledby="tab-habits"
+              className="space-y-8"
+            >
+              <Section 
+                title="🔥 Statistiques des Habitudes" 
+                icon={<Flame className="w-5 h-5 text-orange-400" />} 
+                color="orange"
+                viewLink="myday"
+                onNavigate={setView}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <StatCard icon={<ListChecks className="w-5 h-5" />} label="Total habitudes" value={stats.habits.total} color="zinc" />
+                  <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Aujourd'hui" value={`${stats.habits.todayCompleted}/${stats.habits.total}`} color="emerald" />
+                  <StatCard icon={<Flame className="w-5 h-5" />} label="Série globale" value={`${stats.habits.globalStreak}j`} color="orange" />
+                  <StatCard icon={<Award className="w-5 h-5" />} label="Record" value={`${stats.habits.longestStreak}j`} color="amber" />
                 </div>
-                <h2 className="text-xl font-semibold text-zinc-100">Insights Personnalisés</h2>
-              </div>
-              
-              {insights.length > 0 ? (
-                <div className="space-y-4">
-                  {insights.map((insight, i) => {
-                    const colors = {
-                      positive: { bg: 'from-emerald-500/10 to-transparent', border: 'border-emerald-500/30', icon: 'bg-gradient-to-br from-emerald-500 to-emerald-600', text: 'text-emerald-400' },
-                      warning: { bg: 'from-amber-500/10 to-transparent', border: 'border-amber-500/30', icon: 'bg-gradient-to-br from-amber-500 to-amber-600', text: 'text-amber-400' },
-                      tip: { bg: 'from-indigo-500/10 to-transparent', border: 'border-indigo-500/30', icon: 'bg-gradient-to-br from-indigo-500 to-indigo-600', text: 'text-indigo-400' }
-                    }[insight.type]
-                    
-                    return (
-                      <div key={i} className="relative group">
-                        {/* Icon circulaire */}
-                        <div className={`absolute -left-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full ${colors.icon} flex items-center justify-center shadow-xl z-10`}>
-                          <span className="text-2xl">{insight.icon}</span>
-                        </div>
-                        
-                        {/* Card avec actions */}
-                        <div className={`ml-6 pl-8 border-l-2 ${colors.border} bg-gradient-to-r ${colors.bg} rounded-r-2xl p-5 hover:shadow-lg transition-all duration-300`}>
-                          <div className="flex items-start justify-between gap-4">
-                            <p className={`text-sm ${colors.text} font-medium leading-relaxed flex-1`}>{insight.message}</p>
-                            
-                            {/* Actions rapides */}
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {insight.type === 'tip' && (
-                                <Tooltip content="Créer une tâche pour ça" side="top">
-                                  <button
-                                    onClick={() => setView('tasks')}
-                                    className="p-2 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 transition-colors"
-                                  >
-                                    <Target className="w-4 h-4" />
-                                  </button>
-                                </Tooltip>
-                              )}
-                              {insight.type === 'warning' && peakHours[0] && (
-                                <Tooltip content="Planifier une session" side="top">
-                                  <button
-                                    onClick={() => setView('pomodoro')}
-                                    className="p-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 transition-colors"
-                                  >
-                                    <Clock className="w-4 h-4" />
-                                  </button>
-                                </Tooltip>
-                              )}
-                              <Tooltip content="Voir les détails" side="top">
-                                <button
-                                  onClick={() => setActiveTab('overview')}
-                                  className={`p-2 rounded-lg ${colors.icon} bg-opacity-20 hover:bg-opacity-30 ${colors.text} transition-colors`}
-                                >
-                                  <Sparkles className="w-4 h-4" />
-                                </button>
-                              </Tooltip>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+
+                {/* Graphique 7 jours */}
+                <div className="glass-widget p-6">
+                  <h4 className="text-sm font-semibold text-zinc-300 mb-4">Complétion (7 jours)</h4>
+                  <BarChart
+                    data={stats.habits.last7Days}
+                    getHeight={(item) => {
+                      const day = item as { completed: number; total: number }
+                      return day.total > 0 ? (day.completed / day.total) * 100 : 0
+                    }}
+                    getLabel={(item) => new Date((item as { date: string }).date).toLocaleDateString('fr', { weekday: 'short' }).slice(0, 3)}
+                    getValue={(item) => {
+                      const day = item as { completed: number; total: number }
+                      return day.total > 0 ? Math.round((day.completed / day.total) * 100) : 0
+                    }}
+                    color="orange"
+                    ariaLabel="Graphique du taux de complétion des habitudes sur les 7 derniers jours"
+                  />
                 </div>
-              ) : (
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center">
-                    <Lightbulb className="w-10 h-10 text-amber-400/60" />
+              </Section>
+
+              {/* Habitude la plus consistante */}
+              {stats.habits.mostConsistentHabit && (
+                <div className="glass-widget p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="text-4xl" aria-hidden="true">🏆</div>
+                    <div>
+                      <p className="text-lg font-semibold text-zinc-200">{stats.habits.mostConsistentHabit.name}</p>
+                      <p className="text-sm text-zinc-500">
+                        Habitude la plus consistante • {stats.habits.mostConsistentHabit.completedDates.length} completions
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-zinc-400 mb-2">Pas assez de données pour générer des insights.</p>
-                  <p className="text-zinc-600 text-sm">Continue à utiliser l'app pour obtenir des conseils personnalisés !</p>
                 </div>
               )}
             </div>
           )}
 
-          {activeTab === 'heatmap' && (
-            <div role="tabpanel" id="heatmap-panel" aria-labelledby="heatmap-tab">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="p-2 bg-emerald-500/10 rounded-xl">
-                  <Calendar className="w-6 h-6 text-emerald-400" />
+          {/* JOURNAL TAB */}
+          {activeTab === 'journal' && (
+            <div 
+              role="tabpanel" 
+              id="panel-journal" 
+              aria-labelledby="tab-journal"
+              className="space-y-8"
+            >
+              <Section 
+                title="📝 Statistiques du Journal" 
+                icon={<BookOpen className="w-5 h-5 text-violet-400" />} 
+                color="violet"
+                viewLink="myday"
+                onNavigate={setView}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <StatCard icon={<BookOpen className="w-5 h-5" />} label="Total entrées" value={stats.journal.totalEntries} color="violet" />
+                  <StatCard icon={<Flame className="w-5 h-5" />} label="Série actuelle" value={`${stats.journal.currentStreak}j`} color="orange" />
+                  <StatCard icon={<Award className="w-5 h-5" />} label="Record" value={`${stats.journal.longestStreak}j`} color="amber" />
+                  <StatCard icon={<Smile className="w-5 h-5" />} label="Humeur moyenne" value={stats.journal.averageMood.toFixed(1)} color="cyan" />
                 </div>
-                <h2 className="text-xl font-semibold text-zinc-100">Activité sur l'année</h2>
-              </div>
-              
-              <div className="glass-widget p-8 group">
-                {/* Heatmap Grid */}
-                <div className="overflow-x-auto pb-4">
-                  <div className="flex flex-wrap gap-1 sm:gap-1.5 min-w-[280px]">
-                    {heatmapData.slice(-HEATMAP_DAYS).map((day, i) => {
-                      const levelColors = [
-                        'bg-zinc-800 hover:bg-zinc-700',
-                        'bg-emerald-900/50 hover:bg-emerald-900/70',
-                        'bg-emerald-700/60 hover:bg-emerald-700/80',
-                        'bg-emerald-500/70 hover:bg-emerald-500/90',
-                        'bg-emerald-400 hover:bg-emerald-300',
-                      ]
-                      return (
-                        <div
-                          key={i}
-                          className={`w-3.5 h-3.5 rounded-sm ${levelColors[day.level]} transition-all duration-200 hover:scale-125 hover:ring-2 hover:ring-emerald-400/50 hover:shadow-lg hover:shadow-emerald-400/30 cursor-pointer`}
-                          title={`${day.date}: ${day.count} tâche(s)`}
-                        />
-                      )
-                    })}
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Tendance humeur */}
+                  <div className="glass-widget p-6">
+                    <h4 className="text-sm font-semibold text-zinc-300 mb-4">Tendance de l'humeur (14 jours)</h4>
+                    <div className="h-24">
+                      <Sparkline 
+                        data={stats.journal.moodTrend.filter(m => m > 0)} 
+                        color="rgb(139, 92, 246)"
+                        height={96}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Top tags */}
+                  <div className="glass-widget p-6">
+                    <h4 className="text-sm font-semibold text-zinc-300 mb-4">Tags les plus utilisés</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {stats.journal.topTags.length > 0 ? (
+                        stats.journal.topTags.map((tag) => (
+                          <span key={tag.tag} className="px-3 py-1.5 bg-violet-500/10 text-violet-400 rounded-full text-sm">
+                            #{tag.tag} <span className="text-violet-400/60">({tag.count})</span>
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-zinc-500 text-sm">Aucun tag utilisé</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-                
-                {/* Légende */}
-                <div className="flex items-center justify-end gap-2 mt-6 pt-6 border-t border-zinc-800">
-                  <span className="text-xs font-medium text-zinc-600">Moins</span>
-                  {[0, 1, 2, 3, 4].map((level) => {
-                    const levelColors = [
-                      'bg-zinc-800',
-                      'bg-emerald-900/50',
-                      'bg-emerald-700/60',
-                      'bg-emerald-500/70',
-                      'bg-emerald-400',
-                    ]
-                    return (
-                      <div key={level} className={`w-4 h-4 rounded-sm ${levelColors[level]}`} />
-                    )
-                  })}
-                  <span className="text-xs font-medium text-zinc-600">Plus</span>
+              </Section>
+            </div>
+          )}
+
+          {/* POMODORO TAB */}
+          {activeTab === 'pomodoro' && (
+            <div 
+              role="tabpanel" 
+              id="panel-pomodoro" 
+              aria-labelledby="tab-pomodoro"
+              className="space-y-8"
+            >
+              <Section 
+                title="🍅 Statistiques Pomodoro" 
+                icon={<Timer className="w-5 h-5 text-rose-400" />} 
+                color="rose"
+                viewLink="pomodoro"
+                onNavigate={setView}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <StatCard icon={<Timer className="w-5 h-5" />} label="Sessions totales" value={stats.pomodoro.totalSessions} color="rose" />
+                  <StatCard icon={<Clock className="w-5 h-5" />} label="Temps total" value={formatDuration(stats.pomodoro.totalMinutes)} color="cyan" />
+                  <StatCard icon={<Flame className="w-5 h-5" />} label="Série actuelle" value={`${stats.pomodoro.currentStreak}j`} color="orange" />
+                  <StatCard icon={<Target className="w-5 h-5" />} label="Durée moyenne" value={`${stats.pomodoro.averageSessionLength}min`} color="indigo" />
                 </div>
-                
-                {/* Stats résumé */}
-                <div className="grid grid-cols-3 gap-6 mt-8 pt-8 border-t border-zinc-800">
-                  <div className="text-center">
-                    <p className="text-3xl font-light text-zinc-100 mb-1">{completedTasks.length}</p>
-                    <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Tâches totales</p>
+
+                {/* Par projet */}
+                {Object.keys(stats.pomodoro.byProject).length > 0 && (
+                  <div className="glass-widget p-6">
+                    <h4 className="text-sm font-semibold text-zinc-300 mb-4">Sessions par projet</h4>
+                    <div className="space-y-3">
+                      {Object.entries(stats.pomodoro.byProject)
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 5)
+                        .map(([project, count]) => (
+                          <div key={project} className="flex items-center gap-3">
+                            <span className="text-xs text-zinc-400 flex-1 truncate">{project}</span>
+                            <div className="w-32">
+                              <ProgressBar 
+                                value={count} 
+                                max={Math.max(...Object.values(stats.pomodoro.byProject))} 
+                                color="rose"
+                                ariaLabel={`${project}: ${count} sessions`}
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-zinc-300 w-8 text-right">{count}</span>
+                          </div>
+                        ))}
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-light text-zinc-100 mb-1">{streak}</p>
-                    <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Streak actuel</p>
+                )}
+              </Section>
+            </div>
+          )}
+
+          {/* HEALTH TAB */}
+          {activeTab === 'health' && (
+            <div 
+              role="tabpanel" 
+              id="panel-health" 
+              aria-labelledby="tab-health"
+              className="space-y-8"
+            >
+              <Section 
+                title="💚 Statistiques Santé" 
+                icon={<Heart className="w-5 h-5 text-cyan-400" />} 
+                color="cyan"
+                viewLink="health"
+                onNavigate={setView}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <StatCard 
+                    icon={<Scale className="w-5 h-5" />} 
+                    label="Poids actuel" 
+                    value={stats.health.latestWeight > 0 ? `${stats.health.latestWeight}kg` : '-'} 
+                    trend={stats.health.weeklyWeightChange !== 0 ? { 
+                      value: -stats.health.weeklyWeightChange,
+                      label: `${stats.health.weeklyWeightChange > 0 ? '+' : ''}${stats.health.weeklyWeightChange}kg/sem`
+                    } : undefined}
+                    color="cyan" 
+                  />
+                  <StatCard 
+                    icon={<Target className="w-5 h-5" />} 
+                    label="IMC" 
+                    value={stats.health.bmi > 0 ? stats.health.bmi.toFixed(1) : '-'} 
+                    subValue={stats.health.bmiCategory || ''}
+                    color={stats.health.bmiCategory === 'normal' ? 'emerald' : stats.health.bmiCategory === 'overweight' ? 'amber' : 'zinc'} 
+                  />
+                  <StatCard 
+                    icon={<Utensils className="w-5 h-5" />} 
+                    label="Calories aujourd'hui" 
+                    value={stats.health.todayCalories} 
+                    subValue={`/${stats.health.targetCalories} kcal`}
+                    color="amber" 
+                  />
+                  <StatCard 
+                    icon={<Flame className="w-5 h-5" />} 
+                    label="Série suivi" 
+                    value={`${stats.health.streak}j`} 
+                    color="orange" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Poids 7 jours */}
+                  <div className="glass-widget p-6">
+                    <h4 className="text-sm font-semibold text-zinc-300 mb-4">Évolution du poids (7 jours)</h4>
+                    <div className="h-24">
+                      <Sparkline 
+                        data={stats.health.last7DaysWeight.filter(w => w > 0)} 
+                        color="rgb(34, 211, 238)"
+                        height={96}
+                      />
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-light text-zinc-100 mb-1">
-                      {heatmapData.filter(d => d.count > 0).length}
-                    </p>
-                    <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Jours actifs</p>
+
+                  {/* Calories 7 jours */}
+                  <div className="glass-widget p-6">
+                    <h4 className="text-sm font-semibold text-zinc-300 mb-4">Calories (7 jours)</h4>
+                    <div className="h-24">
+                      <Sparkline 
+                        data={stats.health.last7DaysCalories} 
+                        color="rgb(251, 191, 36)"
+                        height={96}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Section>
+            </div>
+          )}
+
+          {/* LIBRARY TAB */}
+          {activeTab === 'library' && (
+            <div 
+              role="tabpanel" 
+              id="panel-library" 
+              aria-labelledby="tab-library"
+              className="space-y-8"
+            >
+              <Section 
+                title="📚 Statistiques Bibliothèque" 
+                icon={<BookMarked className="w-5 h-5 text-amber-400" />} 
+                color="amber"
+                viewLink="library"
+                onNavigate={setView}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <StatCard icon={<BookMarked className="w-5 h-5" />} label="Livres totaux" value={stats.library.totalBooks} color="amber" />
+                  <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Terminés" value={stats.library.completedBooks} color="emerald" />
+                  <StatCard icon={<BookOpen className="w-5 h-5" />} label="En lecture" value={stats.library.currentlyReading} color="cyan" />
+                  <StatCard icon={<Target className="w-5 h-5" />} label="Objectif annuel" value={`${stats.library.goalProgress}%`} color="indigo" />
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <StatCard icon={<Clock className="w-5 h-5" />} label="Temps de lecture" value={formatDuration(stats.library.totalReadingTime)} color="zinc" />
+                  <StatCard icon={<Award className="w-5 h-5" />} label="Note moyenne" value={stats.library.averageRating > 0 ? `${stats.library.averageRating}★` : '-'} color="amber" />
+                  <StatCard icon={<Flame className="w-5 h-5" />} label="Série lecture" value={`${stats.library.currentStreak}j`} color="orange" />
+                  <StatCard icon={<BookOpen className="w-5 h-5" />} label="Genre favori" value={stats.library.favoriteGenre || '-'} color="violet" />
+                </div>
+
+                {/* Livres par mois - Responsive : 6 mois sur mobile, 12 sur desktop */}
+                <div className="glass-widget p-6">
+                  <h4 className="text-sm font-semibold text-zinc-300 mb-4">
+                    Livres terminés par mois 
+                    <span className="sm:hidden"> (6 derniers mois)</span>
+                    <span className="hidden sm:inline"> (12 mois)</span>
+                  </h4>
+                  {/* Version mobile : 6 mois */}
+                  <div className="sm:hidden">
+                    <BarChart
+                      data={stats.library.booksPerMonth.slice(-6)}
+                      getHeight={(item, max) => ((item as number) / max) * 100}
+                      getLabel={(_, i) => {
+                        const monthName = new Date(new Date().setMonth(new Date().getMonth() - (5 - i))).toLocaleDateString('fr', { month: 'short' })
+                        return monthName.slice(0, 3)
+                      }}
+                      getValue={(item) => item as number}
+                      color="amber"
+                      ariaLabel="Graphique des livres terminés par mois sur les 6 derniers mois"
+                    />
+                  </div>
+                  {/* Version desktop : 12 mois */}
+                  <div className="hidden sm:block">
+                    <BarChart
+                      data={stats.library.booksPerMonth}
+                      getHeight={(item, max) => ((item as number) / max) * 100}
+                      getLabel={(_, i) => {
+                        const monthName = new Date(new Date().setMonth(new Date().getMonth() - (11 - i))).toLocaleDateString('fr', { month: 'short' })
+                        return monthName.slice(0, 3)
+                      }}
+                      getValue={(item) => item as number}
+                      color="amber"
+                      ariaLabel="Graphique des livres terminés par mois sur les 12 derniers mois"
+                    />
+                  </div>
+                </div>
+              </Section>
+            </div>
+          )}
+
+          {/* LEARNING TAB */}
+          {activeTab === 'learning' && (
+            <div 
+              role="tabpanel" 
+              id="panel-learning" 
+              aria-labelledby="tab-learning"
+              className="space-y-8"
+            >
+              <Section 
+                title="🎓 Statistiques Apprentissage" 
+                icon={<GraduationCap className="w-5 h-5 text-indigo-400" />} 
+                color="indigo"
+                viewLink="learning"
+                onNavigate={setView}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <StatCard icon={<GraduationCap className="w-5 h-5" />} label="Cours totaux" value={stats.learning.totalCourses} color="indigo" />
+                  <StatCard icon={<Zap className="w-5 h-5" />} label="Cours actifs" value={stats.learning.activeCourses} color="amber" />
+                  <StatCard icon={<CheckCircle2 className="w-5 h-5" />} label="Terminés" value={stats.learning.completedCourses} color="emerald" />
+                  <StatCard icon={<Target className="w-5 h-5" />} label="Progression moy." value={`${stats.learning.averageProgress}%`} color="cyan" />
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <StatCard icon={<Brain className="w-5 h-5" />} label="Flashcards" value={stats.learning.totalFlashcards} color="violet" />
+                  <StatCard icon={<BookOpen className="w-5 h-5" />} label="Notes" value={stats.learning.totalNotes} color="zinc" />
+                  <StatCard icon={<Clock className="w-5 h-5" />} label="Temps d'étude" value={formatDuration(stats.learning.totalStudyTime)} color="rose" />
+                </div>
+              </Section>
+            </div>
+          )}
+
+          {/* CORRELATIONS TAB */}
+          {activeTab === 'correlations' && (
+            <div 
+              role="tabpanel" 
+              id="panel-correlations" 
+              aria-labelledby="tab-correlations"
+              className="space-y-8"
+            >
+              <Section title="🔗 Corrélations entre tes données" icon={<Activity className="w-5 h-5 text-violet-400" />} color="violet">
+                <div className="glass-widget p-6 mb-6">
+                  <p className="text-sm text-zinc-400 mb-4">
+                    Les corrélations mesurent la relation entre deux variables. Une valeur proche de <strong className="text-emerald-400">+1</strong> indique une forte corrélation positive, 
+                    proche de <strong className="text-rose-400">-1</strong> une corrélation négative, et proche de <strong className="text-zinc-400">0</strong> aucune corrélation.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Humeur vs Habitudes */}
+                  <div className="glass-widget p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Smile className="w-5 h-5 text-violet-400" aria-hidden="true" />
+                        <span className="text-sm text-zinc-400">Humeur</span>
+                      </div>
+                      <Activity className="w-4 h-4 text-zinc-600" aria-hidden="true" />
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-orange-400" aria-hidden="true" />
+                        <span className="text-sm text-zinc-400">Habitudes</span>
+                      </div>
+                    </div>
+                    
+                    {stats.correlations.moodVsHabitsRate !== null ? (
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-4xl font-bold text-zinc-100">
+                            {stats.correlations.moodVsHabitsRate > 0 ? '+' : ''}{stats.correlations.moodVsHabitsRate.toFixed(2)}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            stats.correlations.moodVsHabitsRate > 0.5 ? 'bg-emerald-500/20 text-emerald-400' :
+                            stats.correlations.moodVsHabitsRate > 0 ? 'bg-amber-500/20 text-amber-400' :
+                            stats.correlations.moodVsHabitsRate > -0.5 ? 'bg-zinc-500/20 text-zinc-400' :
+                            'bg-rose-500/20 text-rose-400'
+                          }`}>
+                            {stats.correlations.moodVsHabitsRate > 0.5 ? 'Forte' :
+                             stats.correlations.moodVsHabitsRate > 0 ? 'Modérée' :
+                             stats.correlations.moodVsHabitsRate > -0.5 ? 'Faible' : 'Négative'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-zinc-500">
+                          {stats.correlations.moodVsHabitsRate > 0.5 
+                            ? '🎯 Tes habitudes ont un impact très positif sur ton humeur ! Continue comme ça.'
+                            : stats.correlations.moodVsHabitsRate > 0
+                            ? '📊 Il y a une corrélation positive. Plus tu complètes tes habitudes, meilleure est ton humeur.'
+                            : '⚠️ Pas de corrélation claire. Continue à collecter des données.'}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-zinc-500">
+                        📊 Pas assez de données. Continue à utiliser le journal et les habitudes pour voir les corrélations.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Productivité vs Pomodoro */}
+                  <div className="glass-widget p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400" aria-hidden="true" />
+                        <span className="text-sm text-zinc-400">Productivité</span>
+                      </div>
+                      <Activity className="w-4 h-4 text-zinc-600" aria-hidden="true" />
+                      <div className="flex items-center gap-2">
+                        <Timer className="w-5 h-5 text-rose-400" aria-hidden="true" />
+                        <span className="text-sm text-zinc-400">Pomodoro</span>
+                      </div>
+                    </div>
+                    
+                    {stats.correlations.productivityVsPomodoro !== null ? (
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-4xl font-bold text-zinc-100">
+                            {stats.correlations.productivityVsPomodoro > 0 ? '+' : ''}{stats.correlations.productivityVsPomodoro.toFixed(2)}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            stats.correlations.productivityVsPomodoro > 0.5 ? 'bg-emerald-500/20 text-emerald-400' :
+                            stats.correlations.productivityVsPomodoro > 0 ? 'bg-amber-500/20 text-amber-400' :
+                            stats.correlations.productivityVsPomodoro > -0.5 ? 'bg-zinc-500/20 text-zinc-400' :
+                            'bg-rose-500/20 text-rose-400'
+                          }`}>
+                            {stats.correlations.productivityVsPomodoro > 0.5 ? 'Forte' :
+                             stats.correlations.productivityVsPomodoro > 0 ? 'Modérée' :
+                             stats.correlations.productivityVsPomodoro > -0.5 ? 'Faible' : 'Négative'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-zinc-500">
+                          {stats.correlations.productivityVsPomodoro > 0.5 
+                            ? '🍅 Le Pomodoro booste significativement ta productivité ! Utilise-le plus souvent.'
+                            : stats.correlations.productivityVsPomodoro > 0
+                            ? '📊 Le Pomodoro a un impact positif. Les jours avec plus de sessions = plus de tâches.'
+                            : '⚠️ Pas de corrélation claire. Essaie d\'utiliser le Pomodoro plus régulièrement.'}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-zinc-500">
+                        📊 Pas assez de données. Utilise le Pomodoro et complète des tâches pour voir les corrélations.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Insights basés sur les corrélations */}
+                <div className="glass-widget p-6 mt-6">
+                  <h4 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                    Insights
+                  </h4>
+                  <div className="space-y-3">
+                    {stats.correlations.moodVsHabitsRate !== null && stats.correlations.moodVsHabitsRate > 0.3 && (
+                      <div className="flex items-start gap-3 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                        <Sparkles className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                        <p className="text-sm text-emerald-400">
+                          Tes habitudes sont liées à ton bien-être ! Les jours où tu complètes tes habitudes, tu te sens mieux.
+                        </p>
+                      </div>
+                    )}
+                    {stats.correlations.productivityVsPomodoro !== null && stats.correlations.productivityVsPomodoro > 0.3 && (
+                      <div className="flex items-start gap-3 p-3 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                        <Sparkles className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                        <p className="text-sm text-rose-400">
+                          Le Pomodoro améliore ta productivité ! Planifie des sessions régulières pour maximiser ton efficacité.
+                        </p>
+                      </div>
+                    )}
+                    {(stats.correlations.moodVsHabitsRate === null || stats.correlations.productivityVsPomodoro === null) && (
+                      <div className="flex items-start gap-3 p-3 bg-zinc-500/10 rounded-xl border border-zinc-500/20">
+                        <Lightbulb className="w-5 h-5 text-zinc-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                        <p className="text-sm text-zinc-400">
+                          Continue à utiliser l'app quotidiennement pour découvrir les patterns entre tes différentes activités.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Section>
             </div>
           )}
 
         </div>
       </div>
 
-      {/* Scroll to top button */}
       <ScrollToTop />
-
-      {/* Metric detail modal */}
-      {selectedMetric && (
-        <MetricDetailModal
-          isOpen={!!selectedMetric}
-          onClose={() => setSelectedMetric(null)}
-          metric={metricDetails[selectedMetric]}
-        />
-      )}
-
-      {/* Hour detail modal */}
-      {selectedHour !== null && (
-        <HourDetailModal
-          isOpen={selectedHour !== null}
-          onClose={() => setSelectedHour(null)}
-          hour={selectedHour}
-          tasks={completedTasks.filter(t => {
-            const taskHour = new Date(t.createdAt).getHours()
-            return taskHour === selectedHour
-          })}
-        />
-      )}
     </div>
   )
 }

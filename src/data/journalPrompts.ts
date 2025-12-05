@@ -52,3 +52,4 @@ export const getDailyPrompt = (): JournalPrompt => {
   return JOURNAL_PROMPTS[index]
 }
 
+

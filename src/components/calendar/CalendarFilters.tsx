@@ -96,10 +96,10 @@ export function CalendarFilters({ onFilterChange }: CalendarFiltersProps) {
     <div className="relative">
       <button
         onClick={() => setShowFilters(!showFilters)}
-        className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-xl transition-all ${
+        className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-xl transition-colors ${
           activeFiltersCount > 0
             ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-            : 'text-zinc-500 hover:text-zinc-300 border border-zinc-800 hover:border-zinc-700'
+            : 'text-zinc-500 hover:text-zinc-300 border border-zinc-800 hover:border-zinc-800'
         }`}
       >
         <Filter className="w-3.5 h-3.5" />
@@ -142,10 +142,10 @@ export function CalendarFilters({ onFilterChange }: CalendarFiltersProps) {
                   <button
                     key={option.value}
                     onClick={() => handleToggleType(option.value)}
-                    className={`px-2 py-1 text-xs rounded-lg border transition-all ${
+                    className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
                       filters.types.includes(option.value)
                         ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
-                        : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-700'
+                        : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-800'
                     }`}
                   >
                     {option.icon} {option.label}
@@ -162,10 +162,10 @@ export function CalendarFilters({ onFilterChange }: CalendarFiltersProps) {
                   <button
                     key={option.value}
                     onClick={() => handleToggleCategory(option.value)}
-                    className={`px-2 py-1 text-xs rounded-lg border transition-all ${
+                    className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
                       filters.categories.includes(option.value)
                         ? option.color
-                        : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-700'
+                        : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-800'
                     }`}
                   >
                     {option.label}
@@ -182,10 +182,10 @@ export function CalendarFilters({ onFilterChange }: CalendarFiltersProps) {
                   <button
                     key={option.value}
                     onClick={() => handleTogglePriority(option.value)}
-                    className={`px-2 py-1 text-xs rounded-lg border transition-all ${
+                    className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
                       filters.priorities.includes(option.value)
                         ? option.color
-                        : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-700'
+                        : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-800'
                     }`}
                   >
                     {option.label}

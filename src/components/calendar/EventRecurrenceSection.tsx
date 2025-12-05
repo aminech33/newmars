@@ -85,7 +85,7 @@ export function EventRecurrenceSection({
                 <button
                   key={opt.value}
                   onClick={() => handleFrequencyChange(opt.value)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
                     recurrence.frequency === opt.value
                       ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
                       : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent'
@@ -129,7 +129,7 @@ export function EventRecurrenceSection({
                   <button
                     key={day.value}
                     onClick={() => handleDayToggle(day.value)}
-                    className={`w-9 h-9 rounded-lg text-xs font-medium transition-all ${
+                    className={`w-9 h-9 rounded-lg text-xs font-medium transition-colors ${
                       recurrence.daysOfWeek?.includes(day.value)
                         ? 'bg-indigo-500 text-white'
                         : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300'

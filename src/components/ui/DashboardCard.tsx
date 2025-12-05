@@ -22,7 +22,7 @@ export function DashboardCard({
 }: DashboardCardProps) {
   return (
     <section 
-      className={`bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 motion-reduce:transition-none ${onClick ? 'cursor-pointer hover:shadow-xl' : ''} ${className}`}
+      className={`bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-zinc-800/50 hover:border-zinc-800/50 transition-[border-color,box-shadow] duration-300 motion-reduce:transition-none ${onClick ? 'cursor-pointer hover:shadow-xl' : ''} ${className}`}
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-6 sm:mb-8">

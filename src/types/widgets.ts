@@ -12,13 +12,14 @@ export type WidgetType =
   | 'health'
   | 'journal'
   | 'learning'
+  | 'library'
 
 // Taille unique pour tous les widgets dans le centre de notifications
 export type WidgetSize = 'notification'
 
 export interface WidgetDimensions {
-  width: 1  // Toujours 1 colonne
-  height: 1 // Toujours 1 ligne
+  width: 1 | 2  // 1 ou 2 colonnes
+  height: 1 | 2 // 1 ou 2 lignes
 }
 
 export interface WidgetPosition {
@@ -59,6 +60,7 @@ export interface Habit {
   name: string
   streak: number
   completedDates: string[]
+  archived?: boolean
 }
 
 export interface QuickNote {

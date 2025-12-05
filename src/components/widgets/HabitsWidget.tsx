@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { Flame, Check, CheckCircle2 } from 'lucide-react'
+import { Flame, Check } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -58,7 +58,7 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
   }, [habits])
 
   return (
-    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('hub')}>
+    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('myday')}>
       <div className="h-full flex flex-col p-5 gap-2.5">
         {/* Header compact */}
         <div className="flex items-center justify-between">
@@ -85,7 +85,7 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <div 
-                    className={`w-full rounded-t transition-all hover:scale-105 ${
+                    className={`w-full rounded-t transition-colors hover:scale-105 ${
                       isToday 
                         ? 'chart-bar-amber' 
                         : 'bg-amber-500/50'
@@ -121,7 +121,7 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
                              hover:bg-white/5 transition-colors group"
                 >
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center
-                                   transition-all flex-shrink-0
+                                   transition-colors flex-shrink-0
                                    ${isCompleted 
                                      ? 'bg-amber-400 border-amber-400' 
                                      : 'border-zinc-600 group-hover:border-amber-400'
@@ -156,7 +156,7 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
             </div>
             <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-colors duration-500"
                 style={{ width: `${(todayCompleted / habits.length) * 100}%` }}
               />
             </div>

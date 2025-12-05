@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
-import { ArrowLeft, BookOpen, Clock, Star, TrendingUp, Award, Calendar, Target } from 'lucide-react'
+import { ArrowLeft, BookOpen, Clock, Star, TrendingUp, Award, Calendar } from 'lucide-react'
 import { Book } from '../../../types/library'
 import { ReadingChart } from './ReadingChart'
-import { formatReadingTime } from '../../../utils/libraryFormatters'
 
 interface LibraryStatsPageProps {
   books: Book[]
@@ -165,7 +164,7 @@ export function LibraryStatsPage({ books, onBack }: LibraryStatsPageProps) {
                 </div>
                 <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-amber-400 transition-all"
+                    className="h-full bg-amber-400 transition-colors"
                     style={{ width: `${Math.min(100, (yearStats.currentYearBooks / 50) * 100)}%` }}
                   />
                 </div>
@@ -178,7 +177,7 @@ export function LibraryStatsPage({ books, onBack }: LibraryStatsPageProps) {
                 </div>
                 <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-zinc-600 transition-all"
+                    className="h-full bg-zinc-600 transition-colors"
                     style={{ width: `${Math.min(100, (yearStats.lastYearBooks / 50) * 100)}%` }}
                   />
                 </div>
@@ -248,7 +247,7 @@ export function LibraryStatsPage({ books, onBack }: LibraryStatsPageProps) {
               <p className="text-sm text-zinc-600 text-center py-8">Aucune note</p>
             ) : (
               <div className="space-y-3">
-                {topBooks.map((book, index) => (
+                {topBooks.map((book) => (
                   <div key={book.id} className="flex items-start gap-3">
                     <div 
                       className={`w-6 h-8 rounded-sm bg-gradient-to-br ${book.coverColor} flex-shrink-0 shadow-md`}
@@ -301,4 +300,5 @@ export function LibraryStatsPage({ books, onBack }: LibraryStatsPageProps) {
     </div>
   )
 }
+
 

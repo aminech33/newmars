@@ -79,7 +79,7 @@ export function MetricDetailModal({ isOpen, onClose, metric }: MetricDetailModal
             {/* Progress bar */}
             <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-1000 ease-out"
+                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-colors duration-1000 ease-out"
                 style={{ width: `${percent}%` }}
               />
             </div>

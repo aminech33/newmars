@@ -1,11 +1,14 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { ArrowLeft, Plus, BookOpen, Search, Filter, Target, Trophy, TrendingUp } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { ArrowLeft, Plus, BookOpen, Search, Filter, Target, Trophy, TrendingUp, Download, Upload, FileText } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { Book } from '../../types/library'
 import { formatReadingTime } from '../../utils/libraryFormatters'
+import { useLibraryStats } from '../../hooks/useLibraryStats'
+import { useReadingSessionPersistence } from '../../hooks/useReadingSessionPersistence'
+import { useDebounce } from '../../hooks/useDebounce'
+import { exportLibrary, importLibrary, exportQuotesAsMarkdown } from '../../utils/libraryImportExport'
 import {
   Bookshelf,
-  StatsCards,
   ReadingSessionBar,
   BookDetailModal,
   AddBookModal,
@@ -14,14 +17,16 @@ import {
 } from './components'
 
 type FilterStatus = 'all' | 'reading' | 'completed' | 'to-read'
+type SortOption = 'recent' | 'title' | 'author' | 'rating' | 'progress' | 'pages'
 
 export function LibraryPage() {
   const { 
     books, addBook, updateBook, deleteBook, setView,
-    readingGoal, setReadingGoal, getReadingStats,
+    readingGoal, setReadingGoal,
     isReadingSession, currentReadingBookId, readingSessionStart,
     startReadingSession, endReadingSession, cancelReadingSession,
-    addQuote, deleteQuote, updateQuote, addBookNote, deleteBookNote
+    addQuote, deleteQuote, updateQuote, addBookNote, deleteBookNote,
+    selectedBookId, setSelectedBookId
   } = useStore()
   
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
@@ -30,10 +35,37 @@ export function LibraryPage() {
   const [showStatsPage, setShowStatsPage] = useState(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('recent')
   const [sessionTime, setSessionTime] = useState(0)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Deep linking: ouvrir le livre sélectionné depuis la recherche
+  useEffect(() => {
+    if (selectedBookId) {
+      const book = books.find(b => b.id === selectedBookId)
+      if (book) {
+        setSelectedBook(book)
+      }
+      // Reset après utilisation
+      setSelectedBookId(null)
+    }
+  }, [selectedBookId, books, setSelectedBookId])
 
-  // Mémorisation des stats
-  const stats = useMemo(() => getReadingStats(), [books, readingGoal])
+  // Debounce de la recherche pour optimiser les performances
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
+
+  // Stats optimisées avec cache
+  const stats = useLibraryStats(books, readingGoal)
+  
+  // Persister les sessions de lecture
+  useReadingSessionPersistence(
+    isReadingSession,
+    currentReadingBookId,
+    readingSessionStart,
+    startReadingSession,
+    endReadingSession
+  )
   
   // Timer pour la session de lecture
   useEffect(() => {
@@ -48,16 +80,39 @@ export function LibraryPage() {
     return () => clearInterval(interval)
   }, [isReadingSession, readingSessionStart])
 
-  // Filtrage mémorisé
-  const filteredBooks = useMemo(() => {
-    return books.filter(book => {
+  // Filtrage et tri mémorisés
+  const filteredAndSortedBooks = useMemo(() => {
+    // Filtrage
+    let filtered = books.filter(book => {
       const matchesStatus = filterStatus === 'all' || book.status === filterStatus
-      const matchesSearch = searchQuery === '' || 
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesSearch = debouncedSearchQuery === '' || 
+        book.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        book.author.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        (book.genre && book.genre.toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
       return matchesStatus && matchesSearch
     })
-  }, [books, filterStatus, searchQuery])
+    
+    // Tri
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'title':
+          return a.title.localeCompare(b.title)
+        case 'author':
+          return a.author.localeCompare(b.author)
+        case 'rating':
+          return (b.rating || 0) - (a.rating || 0)
+        case 'progress':
+          const progressA = a.pages ? ((a.currentPage || 0) / a.pages) : 0
+          const progressB = b.pages ? ((b.currentPage || 0) / b.pages) : 0
+          return progressB - progressA
+        case 'pages':
+          return (b.pages || 0) - (a.pages || 0)
+        case 'recent':
+        default:
+          return b.updatedAt - a.updatedAt
+      }
+    })
+  }, [books, filterStatus, debouncedSearchQuery, sortBy])
 
   // Stats de page mémorisées
   const pageStats = useMemo(() => ({
@@ -107,6 +162,50 @@ export function LibraryPage() {
     setShowGoalModal(false)
   }, [setReadingGoal])
 
+  const handleExport = useCallback(() => {
+    exportLibrary(books)
+    setShowExportMenu(false)
+  }, [books])
+
+  const handleExportQuotes = useCallback(() => {
+    exportQuotesAsMarkdown(books)
+    setShowExportMenu(false)
+  }, [books])
+
+  const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const importedBooks = await importLibrary(file)
+      // Ajouter les livres importés
+      importedBooks.forEach(book => {
+        addBook({
+          title: book.title,
+          author: book.author,
+          coverColor: book.coverColor,
+          coverUrl: book.coverUrl,
+          status: book.status,
+          pages: book.pages,
+          currentPage: book.currentPage,
+          genre: book.genre,
+          rating: book.rating,
+          startedAt: book.startedAt,
+          finishedAt: book.finishedAt,
+          isFavorite: book.isFavorite
+        })
+      })
+      alert(`${importedBooks.length} livre(s) importé(s) avec succès !`)
+    } catch (error) {
+      alert(`Erreur lors de l'import: ${error}`)
+    }
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [addBook])
+
   const filters: { status: FilterStatus; label: string }[] = [
     { status: 'all', label: `Tous (${pageStats.total})` },
     { status: 'reading', label: `En cours (${pageStats.reading})` },
@@ -144,6 +243,52 @@ export function LibraryPage() {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Import/Export */}
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <Download className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+              
+              {showExportMenu && (
+                <div className="absolute right-0 top-12 z-50 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl p-2 animate-scale-in">
+                  <button
+                    onClick={handleExport}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Exporter JSON
+                  </button>
+                  <button
+                    onClick={handleExportQuotes}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Exporter citations
+                  </button>
+                  <hr className="my-2 border-zinc-800" />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Importer JSON
+                  </button>
+                </div>
+              )}
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+              />
+            </div>
+            
             <button
               onClick={() => setShowStatsPage(true)}
               className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -177,7 +322,7 @@ export function LibraryPage() {
         <div className="max-w-6xl mx-auto">
           <button
             onClick={handleOpenGoalModal}
-            className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50 hover:border-zinc-700/50 transition-colors group focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50 hover:border-zinc-800/50 transition-colors group focus:outline-none focus:ring-2 focus:ring-amber-500"
             aria-label={`Objectif ${readingGoal?.year || new Date().getFullYear()}: ${stats.completedThisYear} sur ${readingGoal?.targetBooks || 12} livres, ${stats.goalProgress}%`}
           >
             <div className="flex items-center gap-4">
@@ -207,7 +352,7 @@ export function LibraryPage() {
                 aria-valuemax={100}
               >
                 <div 
-                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-colors duration-500"
                   style={{ width: `${Math.min(100, stats.goalProgress)}%` }}
                 />
               </div>
@@ -255,28 +400,49 @@ export function LibraryPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher un livre ou auteur..."
-              className="w-full bg-zinc-900/50 text-zinc-300 placeholder:text-zinc-700 pl-10 pr-4 py-2 rounded-xl border border-zinc-800 focus:outline-none focus:border-zinc-700 focus:ring-2 focus:ring-zinc-700/50"
+              className="w-full bg-zinc-900/50 text-zinc-300 placeholder:text-zinc-700 pl-10 pr-4 py-2 rounded-xl border border-zinc-800 focus:outline-none focus:border-zinc-800 focus:ring-2 focus:ring-zinc-700/50"
             />
           </div>
           
-          {/* Filtres statut - scrollable sur mobile */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
-            <Filter className="w-4 h-4 text-zinc-600 flex-shrink-0" aria-hidden="true" />
-            <div role="group" aria-label="Filtrer par statut" className="flex gap-2">
-              {filters.map(({ status, label }) => (
-                <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
-                  className={`px-3 py-1.5 text-xs rounded-lg transition-colors whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                    filterStatus === status
-                      ? 'bg-zinc-800 text-zinc-200'
-                      : 'text-zinc-600 hover:text-zinc-400'
-                  }`}
-                  aria-pressed={filterStatus === status}
-                >
-                  {label}
-                </button>
-              ))}
+          {/* Filtres et tri */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            {/* Filtres statut */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+              <Filter className="w-4 h-4 text-zinc-600 flex-shrink-0" aria-hidden="true" />
+              <div role="group" aria-label="Filtrer par statut" className="flex gap-2">
+                {filters.map(({ status, label }) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status)}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                      filterStatus === status
+                        ? 'bg-zinc-800 text-zinc-200'
+                        : 'text-zinc-600 hover:text-zinc-400'
+                    }`}
+                    aria-pressed={filterStatus === status}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Tri */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="sort-select" className="text-xs text-zinc-600 whitespace-nowrap">Trier par:</label>
+              <select
+                id="sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-300 border border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="recent">Récent</option>
+                <option value="title">Titre</option>
+                <option value="author">Auteur</option>
+                <option value="rating">Note</option>
+                <option value="progress">Progression</option>
+                <option value="pages">Pages</option>
+              </select>
             </div>
           </div>
         </div>
@@ -320,7 +486,7 @@ export function LibraryPage() {
                  filterStatus === 'completed' ? 'Terminés' : 'À lire'}
               </h2>
               <Bookshelf 
-                books={filteredBooks} 
+                books={filteredAndSortedBooks} 
                 onSelectBook={handleSelectBook}
                 onStartReading={startReadingSession}
                 isReadingSession={isReadingSession}
@@ -330,7 +496,7 @@ export function LibraryPage() {
           </div>
 
           {/* État vide */}
-          {filteredBooks.length === 0 && (
+          {filteredAndSortedBooks.length === 0 && (
             <div className="text-center py-16" role="status">
               <BookOpen className="w-12 h-12 text-zinc-700 mx-auto mb-4" aria-hidden="true" />
               <p className="text-zinc-600">Aucun livre trouvé</p>

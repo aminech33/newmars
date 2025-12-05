@@ -6,11 +6,11 @@ interface HabitCardProps {
   today: string
   onToggle: (id: string) => void
   onDelete: () => void
-  isSelected: boolean
-  onSelect: () => void
+  isSelected?: boolean
+  onSelect?: () => void
 }
 
-export function HabitCard({ habit, today, onToggle, onDelete, isSelected, onSelect }: HabitCardProps) {
+export function HabitCard({ habit, today, onToggle, onDelete }: HabitCardProps) {
   const isCompletedToday = habit.completedDates.includes(today)
   
   // Calculate current streak correctly
@@ -43,7 +43,7 @@ export function HabitCard({ habit, today, onToggle, onDelete, isSelected, onSele
   return (
     <div
       onClick={() => onToggle(habit.id)}
-      className={`group relative p-6 rounded-2xl border transition-all cursor-pointer ${
+      className={`group relative p-6 rounded-2xl border transition-colors cursor-pointer ${
         isCompletedToday
           ? 'bg-amber-500/10 border-amber-500/30 shadow-lg shadow-amber-500/10'
           : 'bg-white/5 border-white/10 hover:border-white/20'
@@ -54,7 +54,7 @@ export function HabitCard({ habit, today, onToggle, onDelete, isSelected, onSele
         <div className="flex items-center gap-4 flex-1">
           <button
             onClick={(e) => { e.stopPropagation(); onToggle(habit.id); }}
-            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
+            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${
               isCompletedToday
                 ? 'bg-amber-500 border-amber-500'
                 : 'border-amber-400 hover:border-amber-300'
@@ -90,13 +90,13 @@ export function HabitCard({ habit, today, onToggle, onDelete, isSelected, onSele
         {/* Right: Last 7 Days Visualization */}
         <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
-            {last7Days.map((date, i) => {
+            {last7Days.map((date) => {
               const isCompleted = habit.completedDates.includes(date)
               const isToday = date === today
               return (
                 <div
                   key={date}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-all ${
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors ${
                     isCompleted
                       ? 'bg-amber-500 text-white'
                       : isToday
@@ -113,7 +113,7 @@ export function HabitCard({ habit, today, onToggle, onDelete, isSelected, onSele
 
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-2 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+            className="p-2 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -122,4 +122,5 @@ export function HabitCard({ habit, today, onToggle, onDelete, isSelected, onSele
     </div>
   )
 }
+
 

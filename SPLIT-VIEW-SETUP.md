@@ -191,3 +191,4 @@ if (includeCode && showSplitView) {
 **Status** : ✅ Fonctionnel  
 **Impact UX** : L'éditeur et les projets ne sont plus en conflit - l'éditeur est intégré au chat
 
+

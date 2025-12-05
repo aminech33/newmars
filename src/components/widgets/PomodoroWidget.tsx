@@ -16,7 +16,7 @@ export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroW
   const [isRunning, setIsRunning] = useState(false)
   const [timeLeft, setTimeLeft] = useState(25 * 60)
   const [totalTime] = useState(25 * 60)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const incompleteTasks = tasks.filter(t => !t.completed)
   const nextTask = incompleteTasks[0]
@@ -24,7 +24,7 @@ export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroW
   // Stats du jour
   const today = new Date().toISOString().split('T')[0]
   const todaySessions = pomodoroSessions?.filter(s => {
-    const sessionDate = new Date(s.startedAt).toISOString().split('T')[0]
+    const sessionDate = s.startedAt ? new Date(s.startedAt).toISOString().split('T')[0] : s.date
     return sessionDate === today && s.type === 'focus'
   }) || []
   
@@ -102,7 +102,7 @@ export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroW
           {/* Progress bar */}
           <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-2">
             <div 
-              className="h-full bg-gradient-to-r from-rose-500 to-orange-500 transition-all duration-1000"
+              className="h-full bg-gradient-to-r from-rose-500 to-orange-500 transition-colors duration-1000"
               style={{ width: `${progress}%` }}
             />
           </div>

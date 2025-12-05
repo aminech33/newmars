@@ -83,9 +83,9 @@ export const MessageBubble = memo(function MessageBubble({
           : 'bg-emerald-500/20 text-emerald-400'
       }`}>
         {isUser ? (
-          <User className="w-4 h-4" />
+          <User className="w-4 h-4" aria-hidden="true" />
         ) : (
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-4 h-4" aria-hidden="true" />
         )}
       </div>
 
@@ -118,17 +118,17 @@ export const MessageBubble = memo(function MessageBubble({
               <Tooltip content={copied ? 'Copié !' : 'Copier'}>
                 <button
                   onClick={handleCopy}
-                  className="p-1 text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-all"
+                  className="p-1 text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-[background-color,color] duration-200"
                   aria-label="Copier le message"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
                 </button>
               </Tooltip>
 
               <Tooltip content={message.liked ? 'Retirer le like' : 'Aimer'}>
                 <button
                   onClick={onLike}
-                  className={`p-1 rounded transition-all ${
+                  className={`p-1 rounded transition-[background-color,color] duration-200 ${
                     message.liked 
                       ? 'text-rose-400 bg-rose-500/10' 
                       : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
@@ -136,28 +136,28 @@ export const MessageBubble = memo(function MessageBubble({
                   aria-label={message.liked ? 'Retirer le like' : 'Aimer'}
                   aria-pressed={message.liked}
                 >
-                  <ThumbsUp className="w-3.5 h-3.5" />
+                  <ThumbsUp className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </Tooltip>
 
               <Tooltip content="Sauvegarder en note">
                 <button
                   onClick={onSaveAsNote}
-                  className={`p-1 rounded transition-all ${
+                  className={`p-1 rounded transition-[background-color,color] duration-200 ${
                     message.savedAsNote 
                       ? 'text-amber-400 bg-amber-500/10' 
                       : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
                   }`}
                   aria-label="Sauvegarder en note"
                 >
-                  <Bookmark className="w-3.5 h-3.5" />
+                  <Bookmark className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </Tooltip>
 
               <Tooltip content="Créer une flashcard">
                 <button
                   onClick={onCreateFlashcard}
-                  className={`p-1 rounded transition-all ${
+                  className={`p-1 rounded transition-[background-color,color] duration-200 ${
                     message.flashcardCreated 
                       ? 'text-cyan-400 bg-cyan-500/10' 
                       : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
@@ -176,10 +176,10 @@ export const MessageBubble = memo(function MessageBubble({
               <Tooltip content="Supprimer">
                 <button
                   onClick={onDelete}
-                  className="p-1 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-all"
+                  className="p-1 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-[background-color,color] duration-200"
                   aria-label="Supprimer le message"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </Tooltip>
             </div>

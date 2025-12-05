@@ -159,10 +159,15 @@ export function useHealthData() {
   }, [addWeightEntry])
 
   const handleAddMeal = useCallback((data: { 
-    name: string; 
-    calories: number; 
-    date: string; 
-    time: string; 
+    name: string
+    calories: number
+    protein: number
+    carbs: number
+    fat: number
+    fiber?: number
+    foods?: any[]
+    date: string
+    time: string
     type: 'breakfast' | 'lunch' | 'dinner' | 'snack' 
   }) => {
     if (!data.name.trim()) {

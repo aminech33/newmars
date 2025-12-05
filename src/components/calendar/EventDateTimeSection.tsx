@@ -34,7 +34,7 @@ export function EventDateTimeSection({
             type="date"
             value={startDate}
             onChange={(e) => onStartDateChange(e.target.value)}
-            className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
           />
         </div>
@@ -48,7 +48,7 @@ export function EventDateTimeSection({
             value={endDate}
             onChange={(e) => onEndDateChange(e.target.value)}
             min={startDate}
-            className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
           />
         </div>
@@ -65,7 +65,7 @@ export function EventDateTimeSection({
             type="time"
             value={startTime}
             onChange={(e) => onStartTimeChange(e.target.value)}
-            className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
           />
         </div>
@@ -78,7 +78,7 @@ export function EventDateTimeSection({
             type="time"
             value={endTime}
             onChange={(e) => onEndTimeChange(e.target.value)}
-            className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+            className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
           />
         </div>

@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useEffect, useState } from 'react'
 import { Clock, Plus } from 'lucide-react'
-import { Event } from '../../store/useStore'
-import { formatTime } from '../../utils/dateUtils'
+import { Event } from '../../types/calendar'
 
 interface DayViewProps {
   date: Date
@@ -12,37 +11,56 @@ interface DayViewProps {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const HOUR_HEIGHT = 60 // pixels per hour
+const VISIBLE_BUFFER = 3 // Number of hours to render above/below viewport
 
 export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayViewProps) {
   const dateStr = date.toISOString().split('T')[0]
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 24 })
+  
+  // Auto-scroll to current hour on mount
+  useEffect(() => {
+    const now = new Date()
+    const isToday = now.toISOString().split('T')[0] === dateStr
+    if (isToday && scrollContainerRef.current) {
+      const currentHour = now.getHours()
+      const scrollTop = Math.max(0, (currentHour - 2) * HOUR_HEIGHT)
+      scrollContainerRef.current.scrollTop = scrollTop
+    }
+  }, [dateStr])
+  
+  // Virtual scrolling: calculate visible hours
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!scrollContainerRef.current) return
+      
+      const scrollTop = scrollContainerRef.current.scrollTop
+      const viewportHeight = scrollContainerRef.current.clientHeight
+      
+      const startHour = Math.max(0, Math.floor(scrollTop / HOUR_HEIGHT) - VISIBLE_BUFFER)
+      const endHour = Math.min(24, Math.ceil((scrollTop + viewportHeight) / HOUR_HEIGHT) + VISIBLE_BUFFER)
+      
+      setVisibleRange({ start: startHour, end: endHour })
+    }
+    
+    const container = scrollContainerRef.current
+    if (container) {
+      handleScroll() // Initial calculation
+      container.addEventListener('scroll', handleScroll, { passive: true })
+      return () => container.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
   
   // Filter events for this day and sort by time
   const dayEvents = useMemo(() => {
     return events
       .filter(e => e.startDate === dateStr)
       .sort((a, b) => {
-        const timeA = a.time || '00:00'
-        const timeB = b.time || '00:00'
+        const timeA = a.startTime || '00:00'
+        const timeB = b.startTime || '00:00'
         return timeA.localeCompare(timeB)
       })
   }, [events, dateStr])
-
-  // Group events by hour for positioning
-  const eventsByHour = useMemo(() => {
-    const grouped: Record<number, Event[]> = {}
-    dayEvents.forEach(event => {
-      if (event.time) {
-        const hour = parseInt(event.time.split(':')[0])
-        if (!grouped[hour]) grouped[hour] = []
-        grouped[hour].push(event)
-      } else {
-        // All-day events go in hour 0
-        if (!grouped[0]) grouped[0] = []
-        grouped[0].push(event)
-      }
-    })
-    return grouped
-  }, [dayEvents])
 
   const eventTypeColors = {
     task: 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300',
@@ -63,10 +81,12 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
     return now.getMinutes()
   }
 
+  const visibleHours = HOURS.filter(h => h >= visibleRange.start && h < visibleRange.end)
+  
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-200px)]">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4">
+      <div className="flex-shrink-0 bg-zinc-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-2xl font-bold text-white">
@@ -84,32 +104,34 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="relative">
-        <div className="flex">
-          {/* Time labels */}
-          <div className="w-20 flex-shrink-0 border-r border-white/10">
-            {HOURS.map(hour => (
-              <div
-                key={hour}
-                className="relative"
-                style={{ height: `${HOUR_HEIGHT}px` }}
-              >
-                <div className="absolute -top-2 right-4 text-xs font-medium text-zinc-600">
-                  {hour.toString().padStart(2, '0')}:00
+      {/* Timeline with virtual scrolling */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
+        {/* Total height container for proper scrolling */}
+        <div style={{ height: `${24 * HOUR_HEIGHT}px` }} className="relative">
+          <div className="flex absolute inset-0">
+            {/* Time labels */}
+            <div className="w-20 flex-shrink-0 border-r border-white/10">
+              {visibleHours.map(hour => (
+                <div
+                  key={hour}
+                  className="absolute w-full"
+                  style={{ top: `${hour * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
+                >
+                  <div className="absolute -top-2 right-4 text-xs font-medium text-zinc-600">
+                    {hour.toString().padStart(2, '0')}:00
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* Events area */}
-          <div className="flex-1 relative">
-            {/* Hour grid lines */}
-            {HOURS.map(hour => (
+            {/* Events area */}
+            <div className="flex-1 relative">
+              {/* Hour grid lines */}
+              {visibleHours.map(hour => (
               <div
                 key={hour}
-                className="border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer group"
-                style={{ height: `${HOUR_HEIGHT}px` }}
+                className="absolute w-full border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer group"
+                style={{ top: `${hour * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
                 onClick={() => onTimeSlotClick(hour)}
               >
                 {/* Current time indicator */}
@@ -129,43 +151,49 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
                   </button>
                 </div>
               </div>
-            ))}
+              ))}
 
-            {/* Events */}
-            {dayEvents.map(event => {
-              const hour = event.time ? parseInt(event.time.split(':')[0]) : 0
-              const minute = event.time ? parseInt(event.time.split(':')[1]) : 0
-              const top = hour * HOUR_HEIGHT + (minute / 60) * HOUR_HEIGHT
-              
-              // Estimate height based on duration (default 1 hour if no duration)
-              const duration = event.duration || 60
-              const height = Math.max(30, (duration / 60) * HOUR_HEIGHT)
-              
-              const colors = eventTypeColors[event.type] || eventTypeColors.other
+              {/* Events - render all (they're already positioned absolutely) */}
+              {dayEvents.map(event => {
+                const hour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 0
+                const minute = event.startTime ? parseInt(event.startTime.split(':')[1]) : 0
+                const top = hour * HOUR_HEIGHT + (minute / 60) * HOUR_HEIGHT
+                
+                // Calculate duration from start and end time
+                let duration = 60 // default 1 hour
+                if (event.startTime && event.endTime) {
+                  const [startH, startM] = event.startTime.split(':').map(Number)
+                  const [endH, endM] = event.endTime.split(':').map(Number)
+                  duration = (endH * 60 + endM) - (startH * 60 + startM)
+                }
+                const height = Math.max(30, (duration / 60) * HOUR_HEIGHT)
+                
+                const colors = eventTypeColors[event.type as keyof typeof eventTypeColors] || eventTypeColors.other
 
-              return (
-                <div
-                  key={event.id}
-                  onClick={() => onEventClick(event.id)}
-                  className={`absolute left-4 right-4 rounded-lg border p-3 cursor-pointer hover:shadow-lg transition-all z-10 ${colors}`}
-                  style={{
-                    top: `${top}px`,
-                    height: `${height}px`,
-                    minHeight: '40px'
-                  }}
-                >
+                return (
+                  <div
+                    key={event.id}
+                    onClick={() => onEventClick(event.id)}
+                    className={`absolute left-4 right-4 rounded-lg border p-3 cursor-pointer hover:shadow-lg transition-colors z-10 ${colors}`}
+                    style={{
+                      top: `${top}px`,
+                      height: `${height}px`,
+                      minHeight: '40px'
+                    }}
+                  >
                   <div className="flex items-start gap-2">
-                    {event.time && (
+                    {event.startTime && (
                       <Clock className="w-3 h-3 mt-0.5 flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">
                         {event.title}
                       </div>
-                      {event.time && (
+                      {event.startTime && (
                         <div className="text-xs opacity-75 mt-0.5">
-                          {event.time}
-                          {event.duration && ` • ${event.duration}min`}
+                          {event.startTime}
+                          {event.endTime && ` - ${event.endTime}`}
+                          {duration && ` • ${duration}min`}
                         </div>
                       )}
                       {event.description && height > 60 && (
@@ -176,12 +204,14 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
                     </div>
                   </div>
                 </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
     </div>
   )
 }
+
 
