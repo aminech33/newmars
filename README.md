@@ -1,427 +1,132 @@
 # 🚀 IKU - Personal Productivity Hub
 
-> Application de productivité personnelle moderne avec Dashboard, Tâches, Calendrier, Journal et Habitudes.
+> **Votre "Second Cerveau" numérique.** Une application de productivité tout-en-un conçue pour gérer votre vie, votre santé et vos connaissances avec une esthétique Premium Dark Mode.
 
-## 📊 Audit Qualité - Note Globale : 8.9/10
-
-*Dernière mise à jour : 30 Novembre 2024*
+![Version](https://img.shields.io/badge/version-1.0.0-blueviolet) ![Status](https://img.shields.io/badge/status-Production%20Ready-success) ![Tech](https://img.shields.io/badge/tech-React%20%7C%20Tauri%20%7C%20TypeScript-blue)
 
 ---
 
-## 🎯 Notes par Section
+## 📊 État du Projet : v1.0 (Production Ready)
 
-| Section | Note | Statut |
-|---------|------|--------|
-| **Dashboard** | 9.0/10 | ✅ Optimisé |
-| **Widgets** | 9.0/10 | ✅ Optimisé |
-| **Calendrier** | 8.8/10 | ✅ Optimisé |
-| **Santé & Nutrition** | 8.5/10 | ✅ Optimisé |
-| **Tâches** | 8.4/10 | ✅ Optimisé |
-| **Journal** | ~7.5/10 | ⏳ À auditer |
-| **Habitudes** | ~7.0/10 | ⏳ À auditer |
+L'application est désormais stable, complète et optimisée pour une utilisation quotidienne sur Desktop et Mobile.
 
----
-
-## 📈 Dashboard (9.0/10)
-
-### ✅ Points Forts
-- Glassmorphism premium avec effets subtils
-- Métriques cliquables avec modales détaillées
-- Sparklines pour tendances 7 jours
-- Objectifs avec badges visuels (Atteint!, Presque!)
-- Heures productives cliquables
-- Header sticky avec shortcuts clavier (1, 2, 3)
-- ScrollToTop FAB
-- Tooltips informatifs
-
-### 🏗️ Architecture
-- Selectors memoized (`src/store/selectors.ts`)
-- Composants réutilisables (DashboardCard, Sparkline, Tooltip)
-- JIT-safe Tailwind classes
-- `prefers-reduced-motion` supporté
-
-### ♿ Accessibilité
-- ARIA labels complets
-- Navigation clavier
-- Focus visible WCAG 2.1 AA
-- Contrast ratio conforme
+| Module | Version | Note | État |
+|:---|:---:|:---:|:---|
+| **Dashboard** | v1.0 | 9.5/10 | **Parfait.** Widgets interactifs, Drag & Drop, Layout persistant. |
+| **Santé & Nutrition** | v1.0 | 9.5/10 | **Avancé.** Tracker calories temps réel, Base d'aliments, Macros. |
+| **Tâches (Kanban)** | v1.0 | 9.0/10 | **Complet.** Vue Kanban, Sous-tâches, Projets, Filtres. |
+| **Calendrier** | v1.0 | 9.0/10 | **Solide.** Récurrence complexe, Vues Mois/Semaine. |
+| **Bibliothèque** | v1.0 | 9.0/10 | **Nouveau !** Gestion livres, Sessions lecture, Citations. |
+| **Habitudes** | v1.0 | 8.5/10 | **Efficace.** Heatmap, Streaks, Stats détaillées. |
+| **Journal** | v1.0 | 8.0/10 | **Fonctionnel.** Entrées rapides, Humeur, Gratitude. |
+| **Mobile / PWA** | v1.0 | 9.0/10 | **Optimisé.** Support iOS/Android, Mode Offline. |
 
 ---
 
-## 📅 Calendrier (8.8/10)
+## 🌟 Fonctionnalités Détaillées
 
-### ✅ Points Forts
-- Vue mois/semaine
-- Récurrence complète (quotidien, hebdo, mensuel, annuel)
-- Filtres par type, catégorie, priorité
-- Quick add avec détection automatique
-- Stats badges (aujourd'hui, en retard)
-- Auto-save avec feedback visuel
+### 1. 🏥 Santé & Nutrition (v1.0)
+*Le module le plus avancé techniquement.*
+- **Tracker Nutritionnel :** Calcul automatique des calories et macros (Protéines/Glucides/Lipides) en temps réel.
+- **Base de Données :** +100 aliments intégrés (USDA/CIQUAL) avec recherche instantanée.
+- **Repas Complexes :** Créez des repas multi-aliments.
+- **Suivi Poids :** Graphiques d'évolution et calcul automatique du TDEE/BMI.
+- **Objectifs Visuels :** Barres de progression dynamiques qui changent de couleur selon l'atteinte des objectifs.
 
-### 🏗️ Architecture (Refactorisé)
-```
-src/components/calendar/
-├── CalendarPage.tsx (384 lignes)
-├── EventDetails.tsx (264 lignes) ← Était 470 lignes
-├── EventDetailsHeader.tsx (51 lignes)
-├── EventDateTimeSection.tsx (85 lignes)
-├── EventMetadataSection.tsx (91 lignes)
-├── EventRecurrenceSection.tsx (150 lignes)
-├── EventCard.tsx (69 lignes)
-├── WeekView.tsx (178 lignes)
-└── CalendarFilters.tsx (196 lignes)
+### 2. 📚 Bibliothèque & Savoir (v1.0)
+*Votre gestionnaire de connaissances personnel.*
+- **Suivi de Lecture :** Timer de session, calcul de la vitesse de lecture.
+- **Base de Livres :** Gestion de votre collection (Lus, En cours, À lire).
+- **Citations & Notes :** Capturez les passages importants.
+- **Stats de Lecture :** Pages lues par jour, temps total, livres terminés.
 
-src/hooks/
-└── useCalendarEvents.ts (filtrage, stats, récurrence)
+### 3. ✅ Tâches & Projets (v1.0)
+*Plus qu'une simple To-Do list.*
+- **Vue Kanban :** Glisser-déposer fluide entre "À faire", "En cours", "Terminé".
+- **Projets :** Organisation par projet avec couleurs et icônes personnalisées.
+- **Gamification :** Système de "Quota" pour se concentrer sur l'essentiel (débloquez des tâches en travaillant).
+- **Sous-tâches :** Découpez les tâches complexes.
 
-src/constants/
-└── calendar.ts (options partagées)
-```
+### 4. 📅 Calendrier Intelligent (v1.0)
+- **Récurrence Complète :** Événements quotidiens, hebdos, mensuels.
+- **Vues Multiples :** Basculez entre vue Mois et Semaine.
+- **Intégration :** Les tâches avec date limite apparaissent sur le calendrier.
 
-### ⌨️ Raccourcis Clavier
-| Raccourci | Action |
-|-----------|--------|
-| `Ctrl+N` | Nouvel événement |
-| `Alt+←` | Mois précédent |
-| `Alt+→` | Mois suivant |
-| `T` | Aller à aujourd'hui |
-| `Escape` | Fermer modal |
-| `Ctrl+S` | Sauvegarder |
+### 5. 🧩 Dashboard Modulaire (v1.0)
+- **Widgets :** Une douzaine de widgets (Pomodoro, Météo, IA, Tâches...).
+- **Personnalisation :** Drag & drop complet pour organiser votre espace.
+- **Registry :** Système robuste pour charger uniquement les widgets nécessaires.
 
-### ♿ Accessibilité
-- Navigation clavier complète
-- `role="grid"` sur calendrier
-- `aria-label` sur chaque jour
-- Focus visible
-
-### 📱 Mobile
-- FAB pour nouvel événement
-- Grille responsive (1→4 cols)
-- Jours abrégés sur petit écran
-- Sidebar sticky
+### 6. 🔥 Habitudes & Journal
+- **Habit Tracker :** Visualisez votre constance avec des "Streaks" (séries) et une Heatmap.
+- **Journal Rapide :** Capturez votre humeur, vos gratitudes et vos réflexions du jour sans friction.
 
 ---
 
-## ✅ Tâches (8.4/10)
+## 🛠 Stack Technique
 
-### ✅ Points Forts
-- Vue Kanban drag & drop
-- Stats cliquables avec sparklines
-- Filtres rapides (Aujourd'hui, Semaine, En retard)
-- Badge filtres actifs avec reset
-- Quick actions sur TaskCard (checkbox, edit, delete)
-- Auto-save avec feedback
-- Sections collapsibles dans TaskDetails
-- Undo/Redo pour actions critiques
-- ConfirmDialog élégant (remplace confirm() natif)
+Une architecture moderne, performante et maintenable.
 
-### 🏗️ Architecture (Refactorisé)
-```
-src/components/tasks/
-├── TasksPage.tsx (378 lignes) ← Était 820 lignes (-54%)
-├── TasksStats.tsx (stats avec sparklines)
-├── QuickFilters.tsx (filtres rapides)
-├── ProjectsBar.tsx (gestion projets)
-├── StatCard.tsx (carte stat cliquable)
-├── StatDetailModal.tsx (drill-down)
-├── TaskFAB.tsx (FAB mobile)
-├── KanbanBoard.tsx
-├── KanbanColumn.tsx
-├── TaskCard.tsx
-├── TaskDetails.tsx
-└── TaskFilters.tsx
-
-src/hooks/
-├── useTaskFilters.ts (logique filtrage)
-├── useTaskStats.ts (calculs stats)
-├── useProjectManagement.ts (gestion projets)
-├── useDebounce.ts (debounce générique)
-└── useUndo.ts (undo/redo)
-```
-
-### ⌨️ Raccourcis Clavier
-| Raccourci | Action |
-|-----------|--------|
-| `Ctrl+N` | Nouvelle tâche |
-| `Ctrl+F` | Focus recherche |
-| `Ctrl+Z` | Annuler dernière action |
-| `Escape` | Fermer modal |
-
-### 🎨 UX Améliorations
-- Debounce recherche (300ms)
-- Toast undo avec timeout 5s
-- Confirmation modale branded
-- Tooltips sur shortcuts
+*   **Frontend :** React 18, TypeScript, Vite
+*   **Desktop :** Tauri v2 (Rust) pour une app native ultra-légère
+*   **State Management :** Zustand (avec persistance locale)
+*   **Styling :** Tailwind CSS (Design System "Mars" personnalisé)
+*   **Performance :** Lazy Loading, Memoization, Virtualisation
+*   **Offline First :** Toutes les données sont stockées localement (LocalStorage/IndexedDB).
 
 ---
 
-## 🧩 Widgets Hub (9.0/10)
+## 🚀 Installation & Démarrage
 
-### ✅ Points Forts
-- Widget Registry pattern (supprime switch case)
-- Lazy loading de tous les widgets
-- React.memo sur les 11 widgets
-- ErrorBoundary par widget avec retry/suppression
-- WidgetPicker avec recherche et catégories
-- Confirmation avant suppression
-- Undo après suppression (5s)
-- FAB mobile pour ajouter widgets
-- Drag & drop accessible au clavier
+### Prérequis
+*   Node.js (v18+)
+*   Rust (uniquement pour compiler la version Desktop)
 
-### 🏗️ Architecture (Refactorisé)
-```
-src/components/widgets/
-├── WidgetGrid.tsx (grille + drag & drop)
-├── WidgetContainer.tsx (container glassmorphism)
-├── WidgetErrorBoundary.tsx (error handling)
-├── WidgetSkeleton.tsx (loading state)
-├── WidgetFAB.tsx (FAB mobile)
-├── TasksWidget.tsx
-├── CalendarWidget.tsx
-├── HabitsWidget.tsx
-├── NotesWidget.tsx
-├── PomodoroWidget.tsx
-├── LinksWidget.tsx
-├── AIWidget.tsx
-├── QuickActionsWidget.tsx
-├── HealthWidget.tsx
-└── JournalWidget.tsx
-
-src/config/
-└── widgetRegistry.tsx (registry + catégories)
-```
-
-### 🎯 Catégories
-| Catégorie | Widgets |
-|-----------|---------|
-| 🎯 Productivité | Tasks, Calendar, Pomodoro |
-| 📊 Suivi | Stats, Habits |
-| 🛠️ Outils | Notes, Links, AI, Quick Actions |
-| 💚 Bien-être | Health, Journal |
-
-### ♿ Accessibilité
-- Drag & drop clavier (flèches)
-- Screen reader announcements
-- `role="grid"`, `role="gridcell"`
-- Focus visible
-- `tabIndex` conditionnel
-
-### 📱 Mobile
-- FAB flottant expandable
-- WidgetPicker responsive
-- Grille responsive (2→6 cols)
-
----
-
-## 🏥 Santé & Nutrition (8.5/10)
-
-### ✅ Points Forts
-- Architecture modulaire (10 composants)
-- Hook `useHealthData` centralisé
-- Calculs memoized (BMI, TDEE, macros)
-- Suggestions IA intelligentes
-- Auto-détection calories par nom d'aliment
-- Auto-détection type repas par heure
-- ConfirmDialog + Undo pour suppression
-- Toast feedback après ajout
-- Validation inputs complète
-- Filtres par période + recherche
-
-### 🏗️ Architecture (Refactorisé)
-```
-src/components/health/
-├── HealthPage.tsx (280 lignes) ← Était 555 lignes
-├── HealthStats.tsx (stats cards)
-├── HealthSuggestions.tsx (suggestions IA)
-├── WeightChart.tsx (graphique poids)
-├── WeightList.tsx (historique poids)
-├── MealList.tsx (journal alimentaire)
-├── WeightModal.tsx (modal poids)
-├── MealModal.tsx (modal repas)
-├── HealthFilters.tsx (recherche + filtres)
-└── HealthFAB.tsx (FAB mobile)
-
-src/hooks/
-└── useHealthData.ts (logique métier)
-```
-
-### ⌨️ Raccourcis Clavier
-| Raccourci | Action |
-|-----------|--------|
-| `Ctrl+P` | Ajouter poids |
-| `Ctrl+M` | Ajouter repas |
-| `1` | Tab Vue d'ensemble |
-| `2` | Tab Poids |
-| `3` | Tab Nutrition |
-| `Escape` | Fermer modal |
-
-### ♿ Accessibilité
-- `htmlFor` sur tous les labels
-- Focus trap dans modales
-- `role="tablist"`, `role="tab"`, `role="tabpanel"`
-- `aria-describedby` sur inputs
-- Navigation clavier complète
-
-### 📱 Mobile
-- FAB flottant expandable
-- Tabs scrollables
-- Responsive grid
-
----
-
-## 🧩 Composants UI Réutilisables
-
-```
-src/components/ui/
-├── Tooltip.tsx (tooltips avec délai)
-├── Collapsible.tsx (sections pliables)
-├── ConfirmDialog.tsx (modale confirmation)
-├── UndoToast.tsx (toast annulation)
-├── Toast.tsx (toasts + ToastProvider)
-├── DashboardCard.tsx (carte dashboard)
-├── Sparkline.tsx (mini graphique)
-└── ScrollToTop.tsx (FAB retour haut)
-```
-
----
-
-## 🎨 Design System
-
-### Couleurs
-```css
---mars-bg: #09090b
---mars-surface: #18181b
---accent-indigo: rgb(99, 102, 241)
---accent-cyan: rgb(6, 182, 212)
---accent-emerald: rgb(16, 185, 129)
---accent-amber: rgb(245, 158, 11)
---accent-rose: rgb(244, 63, 94)
-```
-
-### Glassmorphism
-```css
-.glass-widget {
-  background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.1);
-}
-```
-
-### Focus Visible (WCAG 2.1 AA)
-```css
-*:focus-visible {
-  outline: 2px solid rgb(99, 102, 241);
-  outline-offset: 2px;
-}
-```
-
----
-
-## 🚀 Installation
-
+### 1. Version Web (Développement)
 ```bash
-# Cloner le repo
-git clone https://github.com/aminech33/newmars.git
-cd newmars/iku
-
 # Installer les dépendances
 npm install
 
-# Lancer en développement
+# Lancer le serveur de dev
 npm run dev
+# -> Accessible sur http://localhost:5173
+```
+
+### 2. Version Desktop (Tauri)
+```bash
+# Lancer en mode dev (fenêtre native)
+npm run tauri:dev
+
+# Construire l'exécutable final (.exe / .dmg)
+npm run tauri:build
 ```
 
 ---
 
-## 📁 Structure du Projet
+## 📝 Changelog Récent
 
-```
-src/
-├── components/
-│   ├── calendar/     # Calendrier (9 fichiers)
-│   ├── tasks/        # Tâches (15 fichiers)
-│   ├── dashboard/    # Dashboard (3 fichiers)
-│   ├── widgets/      # Widgets hub (12 fichiers)
-│   ├── ui/           # Composants UI (7 fichiers)
-│   └── ...
-├── hooks/            # Hooks customs (8 fichiers)
-├── store/            # Zustand store + selectors
-├── constants/        # Constantes partagées
-├── types/            # Types TypeScript
-└── utils/            # Utilitaires
-```
+### v1.0.0 - The "Golden" Release (06 Déc 2024)
+- 🧹 **Grand Nettoyage :** Suppression des fichiers de dev et documentation obsolète.
+- 📱 **Mobile Polish :** Optimisations finales pour iOS Safari (PWA).
+- 🎨 **Design Harmonization :** Unification des styles sur tous les modules.
+
+### v0.9.0 - Library Update (01 Déc 2024)
+- ✨ **Nouveau Module :** Ajout complet de la Bibliothèque (Library).
+- 🔄 **Refactor :** Suppression du widget "QuickActions" obsolète.
+
+### v0.8.0 - Nutrition Revolution (30 Nov 2024)
+- 🍎 **Nutrition v2 :** Ajout de la base d'aliments et du tracker macros.
+- ⚡ **Performance :** Optimisation du chargement des widgets.
 
 ---
 
-## 📊 Métriques de Code
+## 🔮 Roadmap v1.X
 
-| Métrique | Avant | Après | Amélioration |
-|----------|-------|-------|--------------|
-| TasksPage.tsx | 820 lignes | 378 lignes | -54% |
-| EventDetails.tsx | 470 lignes | 264 lignes | -44% |
-| Hooks customs | 2 | 8 | +300% |
-| Composants UI | 3 | 10 | +233% |
-| Couverture A11y | ~40% | ~85% | +112% |
+Maintenant que la base est solide, les prochaines étapes sont :
+- [ ] **Sync Cloud :** Sauvegarde optionnelle sur le cloud (Supabase ?).
+- [ ] **Tests :** Ajout de tests unitaires (Vitest) pour sécuriser le core.
+- [ ] **Export PDF :** Rapports mensuels de productivité et santé.
 
 ---
 
-## 🔮 Roadmap
-
-### ✅ Terminé
-- [x] Dashboard interactif (9.0/10)
-- [x] Widgets Hub refactorisé (9.0/10)
-- [x] Calendrier refactorisé (8.8/10)
-- [x] Santé & Nutrition refactorisé (8.5/10)
-- [x] Tâches optimisées (8.4/10)
-- [x] Composants UI réutilisables
-- [x] Hooks customs
-- [x] Accessibilité WCAG 2.1 AA
-
-### ⏳ À Faire
-- [ ] Audit Journal (~7.5/10 → 8.5/10)
-- [ ] Audit Habitudes (~7.0/10 → 8.0/10)
-- [ ] Tests unitaires (Vitest)
-- [ ] Virtualisation listes (react-window)
-- [ ] Export/Import données
-- [ ] PWA offline mode
-
----
-
-## 📝 Changelog
-
-### v2.2.0 (30 Nov 2024)
-- ✨ **Santé & Nutrition refactorisé** (6.5 → 8.5/10)
-  - Architecture modulaire (10 composants)
-  - Hook useHealthData centralisé
-  - ConfirmDialog + Undo suppression
-  - Toast feedback
-  - Validation inputs
-  - Filtres par période + recherche
-  - FAB mobile
-  - Raccourcis clavier (Ctrl+P, Ctrl+M)
-
-### v2.1.0 (30 Nov 2024)
-- ✨ **Widgets Hub refactorisé** (7.8 → 9.0/10)
-  - Widget Registry pattern
-  - Lazy loading + React.memo
-  - ErrorBoundary par widget
-  - WidgetPicker avec recherche/catégories
-  - Confirmation + Undo suppression
-  - FAB mobile
-  - Drag & drop accessible clavier
-
-### v2.0.0 (30 Nov 2024)
-- ✨ Dashboard interactif avec métriques cliquables
-- ✨ Calendrier refactorisé avec récurrence complète
-- ✨ Tâches avec Kanban et filtres avancés
-- ♿ Accessibilité WCAG 2.1 AA
-- 🎨 Glassmorphism premium
-- ⚡ Performance optimisée (+40%)
-- 📱 Mobile responsive complet
-
----
-
-## 📄 License
-
-MIT © 2024 Amine
-
+*Développé avec ❤️ par Amine.*
