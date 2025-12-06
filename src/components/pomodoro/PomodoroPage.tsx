@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Timer,
   Award,
+  ArrowLeft,
   Flame,
   Activity,
   BookOpen
@@ -382,56 +383,52 @@ export function PomodoroPage() {
 
   const isToday = selectedDate === new Date().toISOString().split('T')[0]
 
-  return (
-    <div className="h-full w-full flex flex-col bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-100">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center">
-                <Timer className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-zinc-100">Pomodoro</h1>
-                <p className="text-sm text-zinc-500">Time tracking & focus sessions</p>
-              </div>
-            </div>
+  const { setView } = useStore()
 
-            {/* Tabs */}
-            <div className="flex items-center gap-2 bg-zinc-800/50 rounded-xl p-1" role="tablist" aria-label="Navigation Pomodoro">
-              {[
-                { id: 'timer' as const, label: 'Timer', icon: Timer, shortcut: '1' },
-                { id: 'stats' as const, label: 'Stats', icon: TrendingUp, shortcut: '2' },
-                { id: 'history' as const, label: 'Historique', icon: Calendar, shortcut: '3' },
-                { id: 'settings' as const, label: 'Paramètres', icon: Settings, shortcut: '4' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  role="tab"
-                  id={`tab-${tab.id}`}
-                  aria-selected={activeTab === tab.id}
-                  aria-controls={`panel-${tab.id}`}
-                  tabIndex={activeTab === tab.id ? 0 : -1}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-[background-color] duration-200 flex items-center gap-2 ${
-                    activeTab === tab.id
-                      ? 'bg-zinc-700 text-zinc-100'
-                      : 'text-zinc-400 hover:text-zinc-300'
-                  }`}
-                  title={`${tab.label} (${tab.shortcut})`}
-                >
-                  <tab.icon className="w-4 h-4" aria-hidden="true" />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+  return (
+    <div className="h-screen w-full flex flex-col overflow-hidden text-zinc-100">
+      {/* Header - Standard */}
+      <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setView('hub')}
+              className="p-1.5 hover:bg-zinc-800/50 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 text-zinc-400" />
+            </button>
+            <Timer className="w-4 h-4 text-red-400" />
+            <h1 className="text-lg font-semibold text-zinc-200">Pomodoro</h1>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-0.5" role="tablist">
+            {[
+              { id: 'timer' as const, label: 'Timer', icon: Timer },
+              { id: 'stats' as const, label: 'Stats', icon: TrendingUp },
+              { id: 'history' as const, label: 'Historique', icon: Calendar },
+              { id: 'settings' as const, label: 'Paramètres', icon: Settings }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                role="tab"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  activeTab === tab.id
+                    ? 'bg-zinc-700 text-zinc-100'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <tab.icon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-3">
           {/* TIMER TAB */}
         {activeTab === 'timer' && (
           <div 
@@ -442,28 +439,28 @@ export function PomodoroPage() {
           >
             {/* Main Timer */}
             <div className="lg:col-span-2">
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-8">
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
                 {/* Mode indicator */}
-                <div className="flex items-center justify-center gap-3 mb-8">
+                <div className="flex items-center justify-center gap-2 mb-4">
                   {timerState.mode === 'focus' ? (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full">
-                      <Zap className="w-4 h-4 text-red-400" />
-                      <span className="text-sm font-medium text-red-400">Focus Session</span>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full">
+                      <Zap className="w-3 h-3 text-red-400" />
+                      <span className="text-xs font-medium text-red-400">Focus</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full">
-                      <Coffee className="w-4 h-4 text-green-400" />
-                      <span className="text-sm font-medium text-green-400">
-                        {timerState.mode === 'longBreak' ? 'Long Break' : 'Short Break'}
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full">
+                      <Coffee className="w-3 h-3 text-green-400" />
+                      <span className="text-xs font-medium text-green-400">
+                        {timerState.mode === 'longBreak' ? 'Long Break' : 'Break'}
                       </span>
                     </div>
                   )}
                 </div>
 
                 {/* Timer display */}
-                <div className="relative mb-12">
+                <div className="relative mb-6">
                   {/* Circular progress */}
-                  <svg className="w-full max-w-md mx-auto" viewBox="0 0 200 200">
+                  <svg className="w-full max-w-[220px] mx-auto" viewBox="0 0 200 200">
                     <circle
                       cx="100"
                       cy="100"
@@ -495,111 +492,84 @@ export function PomodoroPage() {
                   {/* Time text */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-7xl font-bold mb-2">{formatTime(timerState.timeLeft)}</div>
-                      <div className="text-zinc-500 text-sm">
-                        {timerState.status === 'running' && '⏱️ En cours...'}
-                        {timerState.status === 'paused' && '⏸️ En pause'}
-                        {timerState.status === 'idle' && '▶️ Prêt à démarrer'}
-                        {timerState.status === 'completed' && '✅ Terminé !'}
+                      <div className="text-5xl font-bold mb-1">{formatTime(timerState.timeLeft)}</div>
+                      <div className="text-zinc-500 text-xs">
+                        {timerState.status === 'running' && 'En cours...'}
+                        {timerState.status === 'paused' && 'En pause'}
+                        {timerState.status === 'idle' && 'Prêt'}
+                        {timerState.status === 'completed' && 'Terminé !'}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center justify-center gap-4 mb-8">
+                <div className="flex items-center justify-center gap-3 mb-4">
                   <button
                     onClick={toggleTimer}
-                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-[background-color] duration-200 ${
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
                       timerState.mode === 'focus'
                         ? 'bg-red-500 hover:bg-red-600 text-white'
                         : 'bg-green-500 hover:bg-green-600 text-white'
                     }`}
-                    aria-label={timerState.status === 'running' ? 'Pause (Espace)' : 'Démarrer (Espace)'}
                   >
                     {timerState.status === 'running' ? (
-                      <Pause className="w-8 h-8" />
+                      <Pause className="w-6 h-6" />
                     ) : (
-                      <Play className="w-8 h-8 ml-1" />
+                      <Play className="w-6 h-6 ml-0.5" />
                     )}
                   </button>
 
                   <button
                     onClick={resetTimer}
-                    className="w-12 h-12 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-[background-color] duration-200"
-                    aria-label="Réinitialiser (R)"
+                    className="w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors"
                   >
-                    <RotateCcw className="w-5 h-5" />
+                    <RotateCcw className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Session info */}
-                {timerState.mode === 'focus' && (
-                  <div className="space-y-3">
+                {/* Session info - Compact */}
+                {timerState.mode === 'focus' && (selectedTask || selectedProject || selectedBook || selectedCourse) && (
+                  <div className="flex flex-wrap gap-2 justify-center">
                     {selectedTask && (
-                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
-                        <CheckSquare className="w-5 h-5 text-red-400" aria-hidden="true" />
-                        <div className="flex-1">
-                          <div className="text-sm text-zinc-400">Tâche en cours</div>
-                          <div className="font-medium">{selectedTask.title}</div>
-                        </div>
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-800/50 rounded-lg text-xs">
+                        <CheckSquare className="w-3 h-3 text-red-400" />
+                        <span className="text-zinc-300 truncate max-w-[120px]">{selectedTask.title}</span>
                       </div>
                     )}
-
                     {selectedProject && (
-                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
-                        <Folder className="w-5 h-5" style={{ color: selectedProject.color }} aria-hidden="true" />
-                        <div className="flex-1">
-                          <div className="text-sm text-zinc-400">Projet</div>
-                          <div className="font-medium">{selectedProject.name}</div>
-                        </div>
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-800/50 rounded-lg text-xs">
+                        <Folder className="w-3 h-3" style={{ color: selectedProject.color }} />
+                        <span className="text-zinc-300">{selectedProject.name}</span>
                       </div>
                     )}
-
                     {selectedBook && (
-                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
-                        <BookOpen className="w-5 h-5 text-amber-400" aria-hidden="true" />
-                        <div className="flex-1">
-                          <div className="text-sm text-zinc-400">Livre en lecture</div>
-                          <div className="font-medium">{selectedBook.title}</div>
-                          <div className="text-xs text-zinc-600">{selectedBook.author}</div>
-                        </div>
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-800/50 rounded-lg text-xs">
+                        <BookOpen className="w-3 h-3 text-amber-400" />
+                        <span className="text-zinc-300 truncate max-w-[120px]">{selectedBook.title}</span>
                       </div>
                     )}
-
                     {selectedCourse && (
-                      <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
-                        <span className="text-xl" aria-hidden="true">{selectedCourse.icon}</span>
-                        <div className="flex-1">
-                          <div className="text-sm text-zinc-400">Cours d'apprentissage</div>
-                          <div className="font-medium">{selectedCourse.name}</div>
-                          <div className="text-xs text-zinc-600">{selectedCourse.totalTimeSpent}min étudiées</div>
-                        </div>
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-800/50 rounded-lg text-xs">
+                        <span className="text-sm">{selectedCourse.icon}</span>
+                        <span className="text-zinc-300 truncate max-w-[120px]">{selectedCourse.name}</span>
                       </div>
                     )}
-
-                    <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
-                      <Award className="w-5 h-5 text-yellow-400" />
-                      <div className="flex-1">
-                        <div className="text-sm text-zinc-400">Sessions aujourd'hui</div>
-                        <div className="font-medium">{stats.todaySessions} sessions • {formatDuration(stats.todayMinutes)}</div>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
+            {/* Sidebar - Compact */}
+            <div className="space-y-3">
               {/* Duration presets */}
               {timerState.status === 'idle' && timerState.mode === 'focus' && (
-                <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-                  <h3 className="text-sm font-semibold text-zinc-400 mb-4 flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
+                <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
+                  <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
+                    <Clock className="w-3 h-3" />
                     DURÉE
                   </h3>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="grid grid-cols-5 gap-1.5 mb-2">
                     {presetDurations.map(duration => (
                       <button
                         key={duration}
@@ -611,165 +581,97 @@ export function PomodoroPage() {
                             totalTime: duration * 60
                           }))
                         }}
-                        className={`py-2 px-3 rounded-lg font-medium text-sm transition-[background-color] duration-200 ${
+                        className={`py-1.5 px-2 rounded-md font-medium text-xs transition-colors ${
                           customDuration === duration
                             ? 'bg-red-500 text-white'
                             : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                         }`}
                       >
-                        {duration}min
+                        {duration}
                       </button>
                     ))}
                   </div>
-                  <input
-                    type="number"
-                    value={customDuration}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value) || 25
-                      setCustomDuration(val)
-                      setTimerState(prev => ({
-                        ...prev,
-                        timeLeft: val * 60,
-                        totalTime: val * 60
-                      }))
-                    }}
-                    min="1"
-                    max="120"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  />
                 </div>
               )}
 
-              {/* Task selector */}
+              {/* Task selector - Compact */}
               {timerState.mode === 'focus' && (
-                <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-                  <h3 className="text-sm font-semibold text-zinc-400 mb-4 flex items-center gap-2">
-                    <Target className="w-4 h-4" />
+                <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
+                  <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
+                    <Target className="w-3 h-3" />
                     ASSOCIER
                   </h3>
                   
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs text-zinc-500 mb-2 block">Tâche</label>
-                      <select
-                        value={selectedTaskId || ''}
-                        onChange={(e) => setSelectedTaskId(e.target.value || undefined)}
-                        disabled={timerState.status !== 'idle'}
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
-                      >
-                        <option value="">Aucune tâche</option>
-                        {incompleteTasks.map(task => (
-                          <option key={task.id} value={task.id}>{task.title}</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="space-y-2">
+                    <select
+                      value={selectedTaskId || ''}
+                      onChange={(e) => setSelectedTaskId(e.target.value || undefined)}
+                      disabled={timerState.status !== 'idle'}
+                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+                    >
+                      <option value="">Tâche...</option>
+                      {incompleteTasks.map(task => (
+                        <option key={task.id} value={task.id}>{task.title}</option>
+                      ))}
+                    </select>
 
-                    <div>
-                      <label className="text-xs text-zinc-500 mb-2 block">Projet</label>
-                      <select
-                        value={selectedProjectId || ''}
-                        onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
-                        disabled={timerState.status !== 'idle'}
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
-                      >
-                        <option value="">Aucun projet</option>
-                        {projects.map(project => (
-                          <option key={project.id} value={project.id}>{project.icon} {project.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <select
+                      value={selectedProjectId || ''}
+                      onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
+                      disabled={timerState.status !== 'idle'}
+                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+                    >
+                      <option value="">Projet...</option>
+                      {projects.map(project => (
+                        <option key={project.id} value={project.id}>{project.icon} {project.name}</option>
+                      ))}
+                    </select>
 
-                    <div>
-                      <label className="text-xs text-zinc-500 mb-2 block flex items-center gap-2">
-                        <BookOpen className="w-3 h-3 text-amber-400" />
-                        Livre (lecture)
-                      </label>
-                      <select
-                        value={selectedBookId || ''}
-                        onChange={(e) => setSelectedBookId(e.target.value || undefined)}
-                        disabled={timerState.status !== 'idle'}
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
-                      >
-                        <option value="">Aucun livre</option>
-                        {readingBooks.map(book => (
-                          <option key={book.id} value={book.id}>📖 {book.title}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <select
+                      value={selectedBookId || ''}
+                      onChange={(e) => setSelectedBookId(e.target.value || undefined)}
+                      disabled={timerState.status !== 'idle'}
+                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-50"
+                    >
+                      <option value="">📖 Livre...</option>
+                      {readingBooks.map(book => (
+                        <option key={book.id} value={book.id}>{book.title}</option>
+                      ))}
+                    </select>
 
-                    <div>
-                      <label className="text-xs text-zinc-500 mb-2 block flex items-center gap-2">
-                        🎓 Cours (apprentissage)
-                      </label>
-                      <select
-                        value={selectedCourseId || ''}
-                        onChange={(e) => setSelectedCourseId(e.target.value || undefined)}
-                        disabled={timerState.status !== 'idle'}
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                      >
-                        <option value="">Aucun cours</option>
-                        {activeCourses.map(course => (
-                          <option key={course.id} value={course.id}>{course.icon} {course.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <select
+                      value={selectedCourseId || ''}
+                      onChange={(e) => setSelectedCourseId(e.target.value || undefined)}
+                      disabled={timerState.status !== 'idle'}
+                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                    >
+                      <option value="">🎓 Cours...</option>
+                      {activeCourses.map(course => (
+                        <option key={course.id} value={course.id}>{course.icon} {course.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}
 
-              {/* Quick stats */}
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-                <h3 className="text-sm font-semibold text-zinc-400 mb-4 flex items-center gap-2">
-                  <Activity className="w-4 h-4" />
+              {/* Quick stats - Compact */}
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
+                <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
+                  <Activity className="w-3 h-3" />
                   AUJOURD'HUI
                 </h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-zinc-500">Sessions</span>
-                      <span className="text-2xl font-bold">{stats.todaySessions}</span>
-                    </div>
-                    <div 
-                      className="h-2 bg-zinc-800 rounded-full overflow-hidden"
-                      role="progressbar"
-                      aria-valuenow={stats.todaySessions}
-                      aria-valuemin={0}
-                      aria-valuemax={8}
-                      aria-label="Sessions aujourd'hui"
-                    >
-                      <div 
-                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-[width] duration-300"
-                        style={{ width: `${Math.min(100, (stats.todaySessions / 8) * 100)}%` }}
-                      />
-                    </div>
+                    <div className="text-xl font-bold">{stats.todaySessions}</div>
+                    <div className="text-[10px] text-zinc-500">Sessions</div>
                   </div>
-
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-zinc-500">Temps de focus</span>
-                      <span className="text-2xl font-bold">{formatDuration(stats.todayMinutes)}</span>
-                    </div>
-                    <div 
-                      className="h-2 bg-zinc-800 rounded-full overflow-hidden"
-                      role="progressbar"
-                      aria-valuenow={stats.todayMinutes}
-                      aria-valuemin={0}
-                      aria-valuemax={240}
-                      aria-label="Minutes de focus aujourd'hui"
-                    >
-                      <div 
-                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-[width] duration-300"
-                        style={{ width: `${Math.min(100, (stats.todayMinutes / 240) * 100)}%` }}
-                      />
-                    </div>
+                    <div className="text-xl font-bold text-red-400">{formatDuration(stats.todayMinutes)}</div>
+                    <div className="text-[10px] text-zinc-500">Focus</div>
                   </div>
-
-                  <div className="pt-4 border-t border-zinc-800">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Flame className="w-4 h-4 text-orange-400" />
-                      <span className="text-xs text-zinc-500">Streak actuel</span>
-                    </div>
-                    <div className="text-3xl font-bold text-orange-400">{stats.currentStreak} jours</div>
+                  <div>
+                    <div className="text-xl font-bold text-orange-400">{stats.currentStreak}</div>
+                    <div className="text-[10px] text-zinc-500">🔥 Streak</div>
                   </div>
                 </div>
               </div>
@@ -783,98 +685,73 @@ export function PomodoroPage() {
             role="tabpanel" 
             id="panel-stats" 
             aria-labelledby="tab-stats"
-            className="space-y-6"
+            className="space-y-4"
           >
-            {/* Global stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-                    <Timer className="w-5 h-5 text-red-400" />
-                  </div>
+            {/* Global stats - Compact */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Timer className="w-4 h-4 text-red-400" />
                   <div>
-                    <div className="text-xs text-zinc-500">Total sessions</div>
-                    <div className="text-2xl font-bold">{stats.totalSessions}</div>
+                    <div className="text-[10px] text-zinc-500">Sessions</div>
+                    <div className="text-lg font-bold">{stats.totalSessions}</div>
                   </div>
                 </div>
               </div>
-
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-blue-400" />
-                  </div>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-400" />
                   <div>
-                    <div className="text-xs text-zinc-500">Total time</div>
-                    <div className="text-2xl font-bold">{formatDuration(stats.totalMinutes)}</div>
+                    <div className="text-[10px] text-zinc-500">Total</div>
+                    <div className="text-lg font-bold">{formatDuration(stats.totalMinutes)}</div>
                   </div>
                 </div>
               </div>
-
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                    <Target className="w-5 h-5 text-green-400" />
-                  </div>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-green-400" />
                   <div>
-                    <div className="text-xs text-zinc-500">Taux de complétion</div>
-                    <div className="text-2xl font-bold">{stats.completionRate}%</div>
+                    <div className="text-[10px] text-zinc-500">Complétion</div>
+                    <div className="text-lg font-bold">{stats.completionRate}%</div>
                   </div>
                 </div>
               </div>
-
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                    <Flame className="w-5 h-5 text-orange-400" />
-                  </div>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-orange-400" />
                   <div>
-                    <div className="text-xs text-zinc-500">Record streak</div>
-                    <div className="text-2xl font-bold">{stats.longestStreak} jours</div>
+                    <div className="text-[10px] text-zinc-500">Record</div>
+                    <div className="text-lg font-bold">{stats.longestStreak}j</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Project breakdown */}
+            {/* Project breakdown - Compact */}
             {projectStats.length > 0 && (
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-                <h3 className="text-sm font-semibold text-zinc-400 mb-6 flex items-center gap-2">
-                  <Folder className="w-4 h-4" />
-                  TEMPS PAR PROJET
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
+                <h3 className="text-xs font-semibold text-zinc-500 mb-3 flex items-center gap-1.5">
+                  <Folder className="w-3 h-3" />
+                  PAR PROJET
                 </h3>
-                <div className="space-y-4">
-                  {projectStats.slice(0, 10).map(proj => (
-                    <div key={proj.projectId} className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: proj.projectColor + '20' }}>
-                        <span className="text-xl">{proj.projectIcon || '📁'}</span>
-                      </div>
+                <div className="space-y-2">
+                  {projectStats.slice(0, 5).map(proj => (
+                    <div key={proj.projectId} className="flex items-center gap-2">
+                      <span className="text-sm">{proj.projectIcon || '📁'}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium truncate">{proj.projectName}</span>
-                          <span className="text-sm text-zinc-400">{formatDuration(proj.totalMinutes)}</span>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="truncate text-zinc-300">{proj.projectName}</span>
+                          <span className="text-zinc-500">{formatDuration(proj.totalMinutes)}</span>
                         </div>
-                        <div 
-                          className="h-2 bg-zinc-800 rounded-full overflow-hidden"
-                          role="progressbar"
-                          aria-valuenow={proj.totalMinutes}
-                          aria-valuemin={0}
-                          aria-valuemax={projectStats[0].totalMinutes}
-                          aria-label={`Temps sur ${proj.projectName}`}
-                        >
+                        <div className="h-1 bg-zinc-800 rounded-full overflow-hidden mt-1">
                           <div 
-                            className="h-full transition-[width] duration-300"
+                            className="h-full"
                             style={{ 
                               width: `${(proj.totalMinutes / projectStats[0].totalMinutes) * 100}%`,
                               backgroundColor: proj.projectColor
                             }}
                           />
                         </div>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-zinc-500">
-                          <span>{proj.totalSessions} sessions</span>
-                          <span>Moy: {Math.round(proj.avgSessionDuration)}min</span>
-                          <span>{proj.completionRate}% complété</span>
-                        </div>
                       </div>
                     </div>
                   ))}
@@ -882,86 +759,49 @@ export function PomodoroPage() {
               </div>
             )}
 
-            {/* Task breakdown */}
+            {/* Task breakdown - Compact */}
             {taskStats.length > 0 && (
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-                <h3 className="text-sm font-semibold text-zinc-400 mb-6 flex items-center gap-2">
-                  <CheckSquare className="w-4 h-4" />
-                  TEMPS PAR TÂCHE
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
+                <h3 className="text-xs font-semibold text-zinc-500 mb-3 flex items-center gap-1.5">
+                  <CheckSquare className="w-3 h-3" />
+                  PAR TÂCHE
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {taskStats.slice(0, 10).map(task => (
-                    <div key={task.taskId} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-800/50">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{task.taskTitle}</div>
-                          {task.projectName && (
-                            <div className="text-xs text-zinc-500">{task.projectName}</div>
-                          )}
-                        </div>
-                        <div className="text-right ml-3">
-                          <div className="font-bold text-red-400">{formatDuration(task.totalMinutes)}</div>
-                          <div className="text-xs text-zinc-500">{task.totalSessions} sessions</div>
-                        </div>
-                      </div>
-                      {task.estimatedTime && (
-                        <div>
-                          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-                            <span>Progression</span>
-                            <span>{task.progress}%</span>
-                          </div>
-                          <div 
-                            className="h-1.5 bg-zinc-800 rounded-full overflow-hidden"
-                            role="progressbar"
-                            aria-valuenow={task.progress}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-label={`Progression de ${task.taskTitle}`}
-                          >
-                            <div 
-                              className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-[width] duration-300"
-                              style={{ width: `${Math.min(100, task.progress)}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {taskStats.slice(0, 6).map(task => (
+                    <div key={task.taskId} className="p-2 bg-zinc-800/50 rounded-lg flex items-center justify-between">
+                      <span className="text-xs text-zinc-300 truncate flex-1">{task.taskTitle}</span>
+                      <span className="text-xs font-medium text-red-400 ml-2">{formatDuration(task.totalMinutes)}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Productivity patterns */}
-            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-              <h3 className="text-sm font-semibold text-zinc-400 mb-6 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                PATTERNS DE PRODUCTIVITÉ
+            {/* Productivity patterns - Compact */}
+            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
+              <h3 className="text-xs font-semibold text-zinc-500 mb-3 flex items-center gap-1.5">
+                <BarChart3 className="w-3 h-3" />
+                PATTERNS
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-2">
                 {[
-                  { key: 'morning', label: 'Matin', icon: '🌅', time: '6h-12h' },
-                  { key: 'afternoon', label: 'Après-midi', icon: '☀️', time: '12h-18h' },
-                  { key: 'evening', label: 'Soir', icon: '🌆', time: '18h-22h' },
-                  { key: 'night', label: 'Nuit', icon: '🌙', time: '22h-6h' }
+                  { key: 'morning', icon: '🌅' },
+                  { key: 'afternoon', icon: '☀️' },
+                  { key: 'evening', icon: '🌆' },
+                  { key: 'night', icon: '🌙' }
                 ].map(period => {
                   const minutes = patterns[period.key as keyof typeof patterns] as number
                   const isBest = patterns.bestTime === period.key
                   return (
                     <div 
                       key={period.key} 
-                      className={`p-4 rounded-xl border ${
-                        isBest 
-                          ? 'bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20' 
-                          : 'bg-zinc-800/50 border-zinc-800/50'
+                      className={`p-2 rounded-lg text-center ${
+                        isBest ? 'bg-red-500/10 border border-red-500/20' : 'bg-zinc-800/50'
                       }`}
                     >
-                      <div className="text-3xl mb-2">{period.icon}</div>
-                      <div className="font-medium mb-1">{period.label}</div>
-                      <div className="text-xs text-zinc-500 mb-2">{period.time}</div>
-                      <div className="text-2xl font-bold text-red-400">{formatDuration(minutes)}</div>
-                      {isBest && (
-                        <div className="mt-2 text-xs text-red-400 font-medium">⭐ Meilleure période</div>
-                      )}
+                      <div className="text-lg mb-1">{period.icon}</div>
+                      <div className="text-sm font-bold text-red-400">{formatDuration(minutes)}</div>
+                      {isBest && <div className="text-[9px] text-red-400">⭐ Best</div>}
                     </div>
                   )
                 })}
@@ -976,138 +816,92 @@ export function PomodoroPage() {
             role="tabpanel" 
             id="panel-history" 
             aria-labelledby="tab-history"
-            className="space-y-6"
+            className="space-y-4"
           >
-            {/* Date navigation */}
-            <div className="flex items-center justify-between">
+            {/* Date navigation - Compact */}
+            <div className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2">
               <button
                 onClick={() => navigateDate('prev')}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg flex items-center gap-2 transition-[background-color] duration-200"
+                className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-                Jour précédent
+                <ChevronLeft className="w-4 h-4" />
               </button>
 
               <div className="text-center">
-                <div className="text-2xl font-bold">
+                <div className="text-sm font-medium">
                   {isToday ? 'Aujourd\'hui' : new Date(selectedDate).toLocaleDateString('fr-FR', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                    weekday: 'short', 
+                    day: 'numeric',
+                    month: 'short'
                   })}
                 </div>
-                <div className="text-sm text-zinc-500">{selectedDate}</div>
               </div>
 
               <button
                 onClick={() => navigateDate('next')}
                 disabled={isToday}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg flex items-center gap-2 transition-[background-color] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-30"
               >
-                Jour suivant
-                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Day stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
-                <div className="text-xs text-zinc-500 mb-1">Sessions</div>
-                <div className="text-3xl font-bold">{daySchedule.totalSessions}</div>
+            {/* Day stats - Compact */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
+                <div className="text-lg font-bold">{daySchedule.totalSessions}</div>
+                <div className="text-[10px] text-zinc-500">Sessions</div>
               </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
-                <div className="text-xs text-zinc-500 mb-1">Focus time</div>
-                <div className="text-3xl font-bold text-red-400">{formatDuration(daySchedule.totalFocusMinutes)}</div>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
+                <div className="text-lg font-bold text-red-400">{formatDuration(daySchedule.totalFocusMinutes)}</div>
+                <div className="text-[10px] text-zinc-500">Focus</div>
               </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
-                <div className="text-xs text-zinc-500 mb-1">Break time</div>
-                <div className="text-3xl font-bold text-green-400">{formatDuration(daySchedule.totalBreakMinutes)}</div>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
+                <div className="text-lg font-bold text-green-400">{formatDuration(daySchedule.totalBreakMinutes)}</div>
+                <div className="text-[10px] text-zinc-500">Pause</div>
               </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
-                <div className="text-xs text-zinc-500 mb-1">Productivité</div>
-                <div className="text-3xl font-bold text-orange-400">{daySchedule.productivityScore}%</div>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
+                <div className="text-lg font-bold text-orange-400">{daySchedule.productivityScore}%</div>
+                <div className="text-[10px] text-zinc-500">Score</div>
               </div>
             </div>
 
-            {/* Timeline */}
+            {/* Timeline - Compact */}
             {daySchedule.sessions.length > 0 ? (
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-                <h3 className="text-sm font-semibold text-zinc-400 mb-6 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
+                <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" />
                   TIMELINE
                 </h3>
-                <div className="space-y-3">
-                  {daySchedule.sessions.map((session, idx) => (
-                    <div key={session.id} className="flex items-start gap-4">
-                      {/* Time */}
-                      <div className="text-sm text-zinc-500 w-20 pt-1">
-                        {new Date(session.completedAt).toLocaleTimeString('fr-FR', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </div>
-
-                      {/* Timeline dot */}
-                      <div className="relative">
-                        <div className={`w-3 h-3 rounded-full ${
-                          session.type === 'focus' ? 'bg-red-500' : 'bg-green-500'
-                        }`} />
-                        {idx < daySchedule.sessions.length - 1 && (
-                          <div className="absolute left-1/2 top-3 w-px h-12 bg-zinc-800 -translate-x-1/2" />
+                <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
+                  {daySchedule.sessions.map((session) => (
+                    <div 
+                      key={session.id} 
+                      className={`p-2 rounded-lg flex items-center justify-between text-xs ${
+                        session.type === 'focus' ? 'bg-red-500/5' : 'bg-green-500/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {session.type === 'focus' ? (
+                          <Zap className="w-3 h-3 text-red-400" />
+                        ) : (
+                          <Coffee className="w-3 h-3 text-green-400" />
                         )}
+                        <span className="font-medium">{session.actualDuration || session.duration}min</span>
+                        <span className="text-zinc-500">
+                          {new Date(session.completedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {session.taskTitle && <span className="text-zinc-400 truncate max-w-[100px]">📋 {session.taskTitle}</span>}
                       </div>
-
-                      {/* Session info */}
-                      <div className="flex-1 pb-12">
-                        <div className={`p-4 rounded-xl border ${
-                          session.type === 'focus'
-                            ? 'bg-red-500/5 border-red-500/20'
-                            : 'bg-green-500/5 border-green-500/20'
-                        }`}>
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              {session.type === 'focus' ? (
-                                <Zap className="w-4 h-4 text-red-400" />
-                              ) : (
-                                <Coffee className="w-4 h-4 text-green-400" />
-                              )}
-                              <span className="font-medium">
-                                {session.type === 'focus' ? 'Session de focus' : 'Pause'}
-                              </span>
-                            </div>
-                            <span className="text-sm text-zinc-400">
-                              {session.actualDuration || session.duration} min
-                            </span>
-                          </div>
-
-                          {session.taskTitle && (
-                            <div className="text-sm text-zinc-400 mb-1">
-                              📋 {session.taskTitle}
-                            </div>
-                          )}
-
-                          {session.projectName && (
-                            <div className="text-sm text-zinc-400">
-                              📁 {session.projectName}
-                            </div>
-                          )}
-
-                          {session.interrupted && (
-                            <div className="mt-2 text-xs text-orange-400 flex items-center gap-1">
-                              ⚠️ Session interrompue
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      {session.interrupted && <span className="text-orange-400">⚠️</span>}
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-12 text-center">
-                <Clock className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                <p className="text-zinc-500">Aucune session ce jour-là</p>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6 text-center">
+                <Clock className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
+                <p className="text-xs text-zinc-500">Aucune session</p>
               </div>
             )}
           </div>

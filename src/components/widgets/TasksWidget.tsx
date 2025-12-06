@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { AlertCircle, Circle, CheckSquare, CheckCircle2, Plus } from 'lucide-react'
+import { AlertCircle, Clock, Zap, CheckSquare, CheckCircle2 } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { WidgetContainer } from './WidgetContainer'
 import { Widget } from '../../types/widgets'
@@ -13,141 +13,160 @@ export const TasksWidget = memo(function TasksWidget({ widget }: TasksWidgetProp
   const { tasks, setView, toggleTask } = useStore()
   
   const pendingTasks = useMemo(() => tasks.filter(t => !t.completed), [tasks])
-  const urgentTasks = useMemo(() => pendingTasks.filter(t => t.priority === 'urgent'), [pendingTasks])
   
-  // Top tasks for display
-  
-  const handleQuickAdd = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setView('tasks')
-  }
-
-  // Format date/time pour affichage
-  const formatDueDate = (dueDate: string | undefined) => {
-    if (!dueDate) return null
-    const date = new Date(dueDate)
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    
-    const isToday = date.toDateString() === today.toDateString()
-    const isTomorrow = date.toDateString() === tomorrow.toDateString()
-    
-    if (isToday) return "Aujourd'hui"
-    if (isTomorrow) return "Demain"
-    
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-  }
-
-  // Top 3 tâches pour affichage
-  const topTasks = useMemo(() => {
-    return pendingTasks.slice(0, 3)
+  // Command Center Logic
+  const urgentTasks = useMemo(() => {
+    const now = new Date()
+    return pendingTasks.filter(t => {
+      if (t.priority === 'urgent') return true
+      if (t.dueDate) {
+        const due = new Date(t.dueDate)
+        const hoursUntil = (due.getTime() - now.getTime()) / (1000 * 60 * 60)
+        return hoursUntil > 0 && hoursUntil < 3
+      }
+      return false
+    }).slice(0, 2)
   }, [pendingTasks])
+  
+  const quickWins = useMemo(() => {
+    return pendingTasks
+      .filter(t => t.estimatedTime && t.estimatedTime <= 15 && t.priority !== 'urgent')
+      .slice(0, 2)
+  }, [pendingTasks])
+  
+  const todayTasks = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return pendingTasks
+      .filter(t => t.dueDate && t.dueDate.startsWith(today) && t.priority !== 'urgent')
+      .slice(0, 2)
+  }, [pendingTasks])
+  
+  const overdueTasks = useMemo(() => {
+    const now = new Date()
+    return pendingTasks
+      .filter(t => t.dueDate && new Date(t.dueDate) < now)
+      .slice(0, 2)
+  }, [pendingTasks])
+
+  const hasCommandCenter = urgentTasks.length > 0 || quickWins.length > 0 || todayTasks.length > 0 || overdueTasks.length > 0
 
   return (
     <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('tasks')}>
-      <div className="h-full flex flex-col p-5 gap-2.5 relative">
-        {/* Header avec badge urgent proéminent */}
+      <div className="h-full flex flex-col p-4 gap-2 relative">
+        {/* Header compact */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckSquare className="w-6 h-6 text-emerald-400 hover-glow" strokeWidth={1.5} />
-            <div className="text-3xl font-bold text-white tabular-nums leading-none font-mono-display number-glow">
+            <CheckSquare className="w-5 h-5 text-emerald-400" strokeWidth={1.5} />
+            <div className="text-2xl font-bold text-white tabular-nums leading-none">
               {pendingTasks.length}
             </div>
             <div className="text-[10px] text-emerald-400/80 uppercase tracking-wider font-semibold">
               TÂCHES
             </div>
           </div>
-          {urgentTasks.length > 0 && (
-            <div className="relative">
-              <div className="absolute inset-0 bg-rose-500 rounded-full blur-md opacity-50 animate-pulse" />
-              <div className="relative px-2.5 py-1 bg-gradient-to-br from-rose-500 to-rose-600 rounded-full shadow-lg shadow-rose-500/50 border border-rose-400/30">
-                <span className="text-xs font-bold text-white flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {urgentTasks.length}
-                </span>
+        </div>
+
+        {/* Command Center - Priorités */}
+        {hasCommandCenter ? (
+          <div className="flex-1 space-y-2 overflow-hidden">
+            {/* Urgences */}
+            {urgentTasks.length > 0 && (
+              <div className="p-2 rounded-lg bg-rose-500/10 border-l-2 border-rose-500">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <AlertCircle className="w-3 h-3 text-rose-400" />
+                  <span className="text-[10px] font-bold text-rose-400 uppercase">{urgentTasks.length} Urgent</span>
+                </div>
+                {urgentTasks.map(task => (
+                  <button
+                    key={task.id}
+                    onClick={(e) => { e.stopPropagation(); toggleTask(task.id) }}
+                    className="w-full text-left text-xs text-rose-200 hover:text-white truncate py-0.5"
+                  >
+                    • {task.title}
+                  </button>
+                ))}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Task List - 3 tâches */}
-        <div className="flex-1 space-y-1.5 overflow-hidden">
-          {topTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center h-full">
-              <CheckCircle2 className="w-10 h-10 text-emerald-600 mb-2" />
-              <span className="text-sm text-zinc-500">Tout est fait !</span>
-            </div>
-          ) : (
-            topTasks.map((task) => {
-              const isUrgent = task.priority === 'urgent'
-              return (
-                <button
-                  key={task.id}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleTask(task.id)
-                  }}
-                  className={`flex items-start gap-2 w-full text-left rounded-lg
-                             hover:bg-white/5 transition-colors group relative
-                             ${isUrgent 
-                               ? 'p-2.5 bg-gradient-to-r from-rose-500/10 to-transparent border-l-2 border-rose-500 shadow-lg shadow-rose-500/10' 
-                               : 'p-2'
-                             }`}
-                >
-                  {isUrgent && (
-                    <div className="absolute inset-0 bg-rose-500/5 rounded-lg animate-pulse" />
-                  )}
-                  <Circle className={`flex-shrink-0 mt-0.5 transition-colors ${
-                    isUrgent 
-                      ? 'w-4 h-4 text-rose-400 group-hover:text-rose-300' 
-                      : 'w-3.5 h-3.5 text-emerald-400 group-hover:text-emerald-300'
-                  }`} />
-                  <div className="flex-1 min-w-0 relative z-10">
-                    <p className={`transition-colors line-clamp-1 ${
-                      isUrgent 
-                        ? 'text-sm font-bold text-rose-100 group-hover:text-white' 
-                        : 'text-xs font-medium text-zinc-300 group-hover:text-white'
-                    }`}>
-                      {task.title}
-                    </p>
-                    {task.dueDate && (
-                      <p className={`mt-0.5 ${
-                        isUrgent 
-                          ? 'text-[10px] text-rose-300/80 font-medium' 
-                          : 'text-[10px] text-zinc-500'
-                      }`}>
-                        {formatDueDate(task.dueDate)}
-                      </p>
-                    )}
-                  </div>
-                  {isUrgent && (
-                    <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5 animate-pulse" />
-                  )}
-                </button>
-              )
-            })
-          )}
-        </div>
-
-        {/* Footer Stats */}
-        {pendingTasks.length > 0 && (
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-            <span className="text-[10px] text-zinc-600">
-              {pendingTasks.filter(t => t.dueDate).length} avec échéance
+            )}
+            
+            {/* En retard */}
+            {overdueTasks.length > 0 && (
+              <div className="p-2 rounded-lg bg-amber-500/10 border-l-2 border-amber-500">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <AlertCircle className="w-3 h-3 text-amber-400" />
+                  <span className="text-[10px] font-bold text-amber-400 uppercase">{overdueTasks.length} En retard</span>
+                </div>
+                {overdueTasks.map(task => (
+                  <button
+                    key={task.id}
+                    onClick={(e) => { e.stopPropagation(); toggleTask(task.id) }}
+                    className="w-full text-left text-xs text-amber-200 hover:text-white truncate py-0.5"
+                  >
+                    • {task.title}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {/* Quick Wins */}
+            {quickWins.length > 0 && (
+              <div className="p-2 rounded-lg bg-emerald-500/10 border-l-2 border-emerald-500">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Zap className="w-3 h-3 text-emerald-400" />
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase">{quickWins.length} Quick Win</span>
+                  <span className="text-[9px] text-zinc-500">(&lt;15min)</span>
+                </div>
+                {quickWins.map(task => (
+                  <button
+                    key={task.id}
+                    onClick={(e) => { e.stopPropagation(); toggleTask(task.id) }}
+                    className="w-full text-left text-xs text-emerald-200 hover:text-white truncate py-0.5"
+                  >
+                    • {task.title}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {/* Aujourd'hui */}
+            {todayTasks.length > 0 && (
+              <div className="p-2 rounded-lg bg-cyan-500/10 border-l-2 border-cyan-500">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Clock className="w-3 h-3 text-cyan-400" />
+                  <span className="text-[10px] font-bold text-cyan-400 uppercase">{todayTasks.length} Aujourd'hui</span>
+                </div>
+                {todayTasks.map(task => (
+                  <button
+                    key={task.id}
+                    onClick={(e) => { e.stopPropagation(); toggleTask(task.id) }}
+                    className="w-full text-left text-xs text-cyan-200 hover:text-white truncate py-0.5"
+                  >
+                    • {task.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          // Pas de priorités = tout est fait ou pas de tâches urgentes
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600 mb-2" />
+            <span className="text-sm text-zinc-500">
+              {pendingTasks.length === 0 ? 'Tout est fait !' : 'Aucune urgence'}
             </span>
-            <button
-              onClick={handleQuickAdd}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg
-                         bg-emerald-500/10 hover:bg-emerald-500/20
-                         text-emerald-400 hover:text-emerald-300
-                         transition-colors duration-200 group"
-            >
-              <Plus className="w-3 h-3" strokeWidth={2.5} />
-              <span className="text-[10px] font-semibold">Ajouter</span>
-            </button>
+            {pendingTasks.length > 0 && (
+              <span className="text-xs text-zinc-600 mt-1">
+                {pendingTasks.length} tâche{pendingTasks.length > 1 ? 's' : ''} en cours
+              </span>
+            )}
           </div>
         )}
+
+        {/* Footer */}
+        <div className="pt-2 border-t border-white/10 flex items-center justify-center">
+          <span className="text-[10px] text-zinc-500">
+            Cliquer pour voir toutes les tâches →
+          </span>
+        </div>
       </div>
     </WidgetContainer>
   )

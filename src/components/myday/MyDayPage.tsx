@@ -249,46 +249,35 @@ export function MyDayPage() {
   })
 
   return (
-    <div className="min-h-screen w-full bg-mars-bg noise-bg overflow-y-auto">
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+    <div className="h-screen w-full flex flex-col overflow-hidden">
+      {/* Header - Compact */}
+      <div className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setView('hub')}
-              className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-              title="Retour"
+              className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-zinc-400" />
+              <ArrowLeft className="w-4 h-4 text-zinc-400" />
             </button>
-            <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <span className="text-4xl">📅</span>
-                Ma Journée
-              </h1>
-              <p className="text-zinc-500 mt-1 capitalize">{formattedDate}</p>
-            </div>
+            <h1 className="text-lg font-semibold text-white">📅 Ma Journée</h1>
+            <span className="text-xs text-zinc-500 capitalize">{formattedDate}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Global Streak Badge */}
+          <div className="flex items-center gap-2">
             {globalStreak > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full shadow-lg shadow-amber-500/30">
-                <Flame className="w-5 h-5 text-white" />
-                <div className="text-center">
-                  <div className="text-lg font-bold text-white leading-none">{globalStreak}</div>
-                  <div className="text-[10px] text-white/80 uppercase tracking-wide">jours</div>
-                </div>
+              <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full text-xs">
+                <Flame className="w-3 h-3 text-white" />
+                <span className="font-bold text-white">{globalStreak}j</span>
               </div>
             )}
 
-            {/* Tabs */}
-            <div className="flex gap-1 bg-white/5 backdrop-blur-sm rounded-xl p-1 border border-white/10">
+            <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5">
               <button
                 onClick={() => setActiveTab('today')}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   activeTab === 'today'
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -296,9 +285,9 @@ export function MyDayPage() {
               </button>
               <button
                 onClick={() => setActiveTab('history')}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   activeTab === 'history'
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -307,82 +296,62 @@ export function MyDayPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-4 py-3">
 
         {activeTab === 'today' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             {/* Colonne principale */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Section Habitudes */}
-              <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 backdrop-blur-sm rounded-3xl p-6 border border-amber-500/20">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Flame className="w-6 h-6 text-amber-400" />
-                    <h2 className="text-xl font-semibold text-white">Mes Habitudes</h2>
-                    <span className="text-sm text-zinc-500">
-                      {todayCompleted}/{habits.length} · {completionRate}%
+            <div className="lg:col-span-2 space-y-3">
+              {/* Section Habitudes - Compact */}
+              <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl p-3 border border-amber-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-amber-400" />
+                    <h2 className="text-sm font-semibold text-white">Habitudes</h2>
+                    <span className="text-xs text-zinc-500">
+                      {todayCompleted}/{habits.length}
                     </span>
                   </div>
                   <button
                     onClick={() => setShowAddHabitModal(true)}
-                    className="p-2 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors"
-                    title="Ajouter une habitude"
+                    className="p-1 text-amber-400 hover:bg-amber-500/20 rounded-md transition-colors"
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
 
                 {habits.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Flame className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-                    <p className="text-zinc-500 text-sm">Aucune habitude</p>
-                    <button
-                      onClick={() => setShowAddHabitModal(true)}
-                      className="mt-3 text-amber-400 text-sm hover:underline"
-                    >
-                      + Créer ma première habitude
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowAddHabitModal(true)}
+                    className="w-full py-2 text-amber-400 text-xs hover:bg-amber-500/10 rounded-lg transition-colors"
+                  >
+                    + Créer une habitude
+                  </button>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     {habits.map((habit) => {
                       const isCompleted = habit.completedDates.includes(today)
                       return (
                         <div
                           key={habit.id}
-                          className={`
-                            group flex items-center gap-3 p-3 rounded-xl
-                            transition-colors cursor-pointer
-                            ${isCompleted 
+                          className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isCompleted 
                               ? 'bg-amber-500/20 border border-amber-500/30' 
                               : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                            }
-                          `}
+                          }`}
                           onClick={() => handleToggleHabit(habit.id)}
                         >
-                          <button
-                            className={`
-                              w-6 h-6 rounded-full flex items-center justify-center
-                              transition-colors
-                              ${isCompleted 
-                                ? 'bg-amber-500 text-white' 
-                                : 'border-2 border-zinc-600 hover:border-amber-400'
-                              }
-                            `}
-                          >
-                            {isCompleted && <Check className="w-4 h-4" />}
-                          </button>
-                          <span className={`flex-1 ${isCompleted ? 'text-amber-200' : 'text-white'}`}>
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isCompleted ? 'bg-amber-500 text-white' : 'border border-zinc-600'
+                          }`}>
+                            {isCompleted && <Check className="w-2.5 h-2.5" />}
+                          </div>
+                          <span className={`text-xs truncate ${isCompleted ? 'text-amber-200' : 'text-white'}`}>
                             {habit.name}
                           </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setConfirmDelete(habit.id)
-                            }}
-                            className="p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            ×
-                          </button>
                         </div>
                       )
                     })}
@@ -390,484 +359,302 @@ export function MyDayPage() {
                 )}
               </div>
 
-              {/* Prompt du jour */}
-              <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-3xl p-6 border border-purple-500/20">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 text-purple-400" />
-                    <h2 className="text-lg font-semibold text-white">Prompt du jour</h2>
-                  </div>
-                  <button
-                    onClick={() => setCurrentPrompt(getRandomPrompt())}
-                    className="p-2 hover:bg-purple-500/10 rounded-lg transition-colors group"
-                    title="Changer de prompt"
-                  >
-                    <RefreshCw className="w-4 h-4 text-purple-400 group-hover:rotate-180 transition-transform duration-300" />
-                  </button>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">{currentPrompt.icon}</span>
-                  <p className="text-purple-200 text-base italic leading-relaxed">
-                    {currentPrompt.question}
-                  </p>
-                </div>
-              </div>
-
-              {/* Comment tu te sens ? */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                <div className="flex items-center gap-3 mb-4">
-                  <Smile className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-xl font-semibold text-white">Comment te sens-tu ?</h2>
-                </div>
-                <div className="flex gap-4 justify-between">
-                  {moods.map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setMood(m)}
-                      className={`text-5xl transition-transform hover:scale-110 ${
-                        mood === m ? 'scale-125 drop-shadow-2xl' : 'opacity-50 hover:opacity-100'
-                      }`}
-                    >
-                      {m}
+              {/* Prompt + Mood + Goal - Combined Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Prompt */}
+                <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl p-3 border border-purple-500/20">
+                  <div className="flex items-center justify-between mb-1">
+                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    <button onClick={() => setCurrentPrompt(getRandomPrompt())} className="p-1 hover:bg-purple-500/10 rounded">
+                      <RefreshCw className="w-3 h-3 text-purple-400" />
                     </button>
-                  ))}
+                  </div>
+                  <p className="text-purple-200 text-xs italic line-clamp-2">{currentPrompt.icon} {currentPrompt.question}</p>
+                </div>
+
+                {/* Mood */}
+                <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Smile className="w-3 h-3 text-purple-400" />
+                    <span className="text-xs text-zinc-400">Humeur</span>
+                  </div>
+                  <div className="flex gap-2 justify-between">
+                    {moods.map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setMood(m)}
+                        className={`text-2xl transition-transform hover:scale-110 ${
+                          mood === m ? 'scale-125' : 'opacity-40 hover:opacity-100'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Goal */}
+                <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Target className="w-3 h-3 text-blue-400" />
+                    <span className="text-xs text-zinc-400">Objectif</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={mainGoal}
+                    onChange={(e) => setMainGoal(e.target.value)}
+                    placeholder="Objectif du jour..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                  />
                 </div>
               </div>
 
-              {/* Objectif du jour */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                <div className="flex items-center gap-3 mb-4">
-                  <Target className="w-5 h-5 text-blue-400" />
-                  <h2 className="text-xl font-semibold text-white">Objectif principal</h2>
+              {/* Gratitudes - Compact */}
+              <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="w-3 h-3 text-pink-400" />
+                  <h2 className="text-xs font-semibold text-white">3 gratitudes</h2>
                 </div>
-                <input
-                  type="text"
-                  value={mainGoal}
-                  onChange={(e) => setMainGoal(e.target.value)}
-                  placeholder="Quel est ton objectif principal aujourd'hui ?"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-[border-color,box-shadow]"
-                />
-              </div>
-
-              {/* Gratitudes */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                <div className="flex items-center gap-3 mb-4">
-                  <Heart className="w-5 h-5 text-pink-400" />
-                  <h2 className="text-xl font-semibold text-white">3 gratitudes</h2>
-                </div>
-                <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: gratitude1, setter: setGratitude1, placeholder: '1. Je suis reconnaissant pour...' },
-                    { value: gratitude2, setter: setGratitude2, placeholder: '2. Je suis reconnaissant pour...' },
-                    { value: gratitude3, setter: setGratitude3, placeholder: '3. Je suis reconnaissant pour...' }
+                    { value: gratitude1, setter: setGratitude1 },
+                    { value: gratitude2, setter: setGratitude2 },
+                    { value: gratitude3, setter: setGratitude3 }
                   ].map((g, i) => (
                     <input
                       key={i}
                       type="text"
                       value={g.value}
                       onChange={(e) => g.setter(e.target.value)}
-                      placeholder={g.placeholder}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-[border-color,box-shadow]"
+                      placeholder={`${i + 1}. ...`}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-pink-500/50"
                     />
                   ))}
                 </div>
               </div>
 
-              {/* Réflexion */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                <div className="flex items-center gap-3 mb-4">
-                  <BookOpen className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-xl font-semibold text-white">Réflexion libre</h2>
+              {/* Réflexion - Compact */}
+              <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="w-3 h-3 text-purple-400" />
+                  <h2 className="text-xs font-semibold text-white">Réflexion</h2>
                 </div>
                 <textarea
                   value={reflection}
                   onChange={(e) => setReflection(e.target.value)}
-                  placeholder="Écris librement tes pensées, tes émotions, tes expériences du jour..."
-                  rows={5}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-[border-color,box-shadow] resize-none"
+                  placeholder="Pensées, émotions, expériences..."
+                  rows={3}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50 resize-none"
                 />
               </div>
 
-              {/* Appris & Victoire */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Lightbulb className="w-5 h-5 text-yellow-400" />
-                    <h2 className="text-lg font-semibold text-white">J'ai appris</h2>
+              {/* Appris & Victoire - Compact */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="w-3 h-3 text-yellow-400" />
+                    <h2 className="text-xs font-semibold text-white">Appris</h2>
                   </div>
                   <textarea
                     value={learned}
                     onChange={(e) => setLearned(e.target.value)}
-                    placeholder="Quelle leçon as-tu apprise ?"
-                    rows={3}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 transition-[border-color,box-shadow] resize-none"
+                    placeholder="Leçon du jour..."
+                    rows={2}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-yellow-500/50 resize-none"
                   />
                 </div>
 
-                <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Trophy className="w-5 h-5 text-green-400" />
-                    <h2 className="text-lg font-semibold text-white">Victoire du jour</h2>
+                <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Trophy className="w-3 h-3 text-green-400" />
+                    <h2 className="text-xs font-semibold text-white">Victoire</h2>
                   </div>
                   <textarea
                     value={victory}
                     onChange={(e) => setVictory(e.target.value)}
-                    placeholder="Quelle est ta victoire ?"
-                    rows={3}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-[border-color,box-shadow] resize-none"
+                    placeholder="Ta victoire..."
+                    rows={2}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-green-500/50 resize-none"
                   />
                 </div>
               </div>
 
-              {/* Tags */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xl">🏷️</span>
-                  <h2 className="text-xl font-semibold text-white">Tags</h2>
+              {/* Tags + Save - Compact */}
+              <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm">🏷️</span>
+                  <h2 className="text-xs font-semibold text-white">Tags</h2>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div className="flex flex-wrap gap-1 mb-2">
                   {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-sm text-purple-300"
-                    >
+                    <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 rounded-full text-[10px] text-purple-300">
                       #{tag}
-                      <button
-                        onClick={() => handleRemoveTag(tag)}
-                        className="hover:text-red-400 transition-colors"
-                      >
-                        ×
-                      </button>
+                      <button onClick={() => handleRemoveTag(tag)} className="hover:text-red-400">×</button>
                     </span>
                   ))}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <input
                     type="text"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                    placeholder="Ajouter un tag"
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    placeholder="Tag..."
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none"
                   />
-                  <button
-                    onClick={handleAddTag}
-                    className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-300 rounded-xl hover:bg-purple-500/30 transition-colors"
-                  >
-                    Ajouter
-                  </button>
+                  <button onClick={handleAddTag} className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-xs hover:bg-purple-500/30">+</button>
                 </div>
-                {allTags.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs text-zinc-500 mb-2">Tags populaires :</p>
-                    <div className="flex flex-wrap gap-2">
-                      {allTags.slice(0, 8).map((tag) => (
-                        <button
-                          key={tag}
-                          onClick={() => !tags.includes(tag) && setTags([...tags, tag])}
-                          disabled={tags.includes(tag)}
-                          className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                            tags.includes(tag)
-                              ? 'bg-purple-500/10 text-purple-500/50 cursor-not-allowed'
-                              : 'bg-white/5 text-zinc-400 hover:bg-purple-500/10 hover:text-purple-300'
-                          }`}
-                        >
-                          #{tag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Bouton Sauvegarder */}
-              <div className="space-y-3">
-                <button
-                  onClick={handleSave}
-                  disabled={!canSave || isSaving}
-                  className={`w-full font-semibold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 ${
-                    canSave && !isSaving
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:scale-[1.02]'
-                      : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                  }`}
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Sauvegarde...
-                    </>
-                  ) : hasChanges ? (
-                    <>
-                      <Save className="w-5 h-5" />
-                      Sauvegarder
-                    </>
-                  ) : (
-                    <>✓ Sauvegardé</>
-                  )}
-                </button>
-                
-                {lastSaved && !hasChanges && (
-                  <div className="text-center">
-                    <span className="text-xs text-zinc-500">
-                      Dernière sauvegarde : {lastSaved.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                )}
-
-                {hasChanges && canSave && (
-                  <div className="text-center">
-                    <span className="text-xs text-zinc-500">
-                      ✨ Sauvegarde automatique dans 3s...
-                    </span>
-                  </div>
-                )}
-
-                {!canSave && reflection.trim().length === 0 && (
-                  <div className="text-center">
-                    <span className="text-xs text-red-400">
-                      ⚠️ La réflexion est requise pour sauvegarder
-                    </span>
-                  </div>
-                )}
-              </div>
+              {/* Bouton Sauvegarder - Compact */}
+              <button
+                onClick={handleSave}
+                disabled={!canSave || isSaving}
+                className={`w-full font-medium py-2 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm ${
+                  canSave && !isSaving
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                }`}
+              >
+                {isSaving ? 'Sauvegarde...' : hasChanges ? <><Save className="w-4 h-4" /> Sauvegarder</> : '✓ Sauvegardé'}
+              </button>
+              {hasChanges && canSave && <p className="text-[10px] text-zinc-500 text-center">Auto-save 3s...</p>}
             </div>
 
-            {/* Sidebar Stats */}
-            <div className="space-y-6">
-              {/* Streak Journal */}
-              <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm rounded-3xl p-6 border border-orange-500/30">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="text-4xl">🔥</div>
-                  <div>
-                    <p className="text-zinc-400 text-sm">Série journal</p>
-                    <p className="text-3xl font-bold text-white">{stats.currentStreak} jours</p>
-                  </div>
+            {/* Sidebar Stats - Compact */}
+            <div className="space-y-3">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl p-3 border border-orange-500/30 text-center">
+                  <div className="text-2xl mb-1">🔥</div>
+                  <div className="text-xl font-bold text-white">{stats.currentStreak}</div>
+                  <div className="text-[10px] text-zinc-400">jours streak</div>
                 </div>
-                <div className="text-sm text-zinc-300">
-                  Record: {stats.longestStreak} jours
+                <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10 text-center">
+                  <div className="text-2xl mb-1">{moodLevelToEmoji(Math.round(stats.averageMood) as any)}</div>
+                  <div className="text-xl font-bold text-white">{stats.averageMood.toFixed(1)}</div>
+                  <div className="text-[10px] text-zinc-400">humeur moy.</div>
                 </div>
-              </div>
-
-              {/* Stats */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                <div className="flex items-center gap-3 mb-4">
-                  <TrendingUp className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-lg font-semibold text-white">Statistiques</h3>
+                <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10 text-center">
+                  <div className="text-xl font-bold text-white">{stats.totalEntries}</div>
+                  <div className="text-[10px] text-zinc-400">entrées</div>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-400 text-sm">Entrées journal</span>
-                    <span className="text-white font-semibold">{stats.totalEntries}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-400 text-sm">Humeur moyenne</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-semibold">{stats.averageMood.toFixed(1)}/10</span>
-                      <span className="text-xl">{moodLevelToEmoji(Math.round(stats.averageMood) as any)}</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-400 text-sm">Habitudes actives</span>
-                    <span className="text-white font-semibold">{habits.length}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-400 text-sm">Favoris</span>
-                    <span className="text-white font-semibold">{stats.favoriteCount}</span>
-                  </div>
+                <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10 text-center">
+                  <div className="text-xl font-bold text-white">{habits.length}</div>
+                  <div className="text-[10px] text-zinc-400">habitudes</div>
                 </div>
               </div>
 
-              {/* Corrélation Mood / Habits */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                <h3 className="text-lg font-semibold text-white mb-4">Corrélation</h3>
-                <div className="text-center py-4">
-                  <div className="text-5xl mb-2">{mood}</div>
-                  <p className="text-sm text-zinc-400">
-                    {completionRate >= 80 
-                      ? '🎉 Excellente journée !' 
-                      : completionRate >= 50 
-                        ? '💪 Continue comme ça !' 
-                        : '🌱 Chaque petit pas compte'}
-                  </p>
-                  <div className="mt-3 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
-                      style={{ width: `${completionRate}%` }}
+              {/* Corrélation */}
+              <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-3xl">{mood}</span>
+                  <span className="text-xs text-zinc-400">
+                    {completionRate >= 80 ? '🎉 Super !' : completionRate >= 50 ? '💪 Bien !' : '🌱 Continue'}
+                  </span>
+                </div>
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-amber-500 to-orange-500" style={{ width: `${completionRate}%` }} />
+                </div>
+                <p className="text-[10px] text-zinc-500 mt-1">{completionRate}% habitudes</p>
+              </div>
+
+              {/* Évolution humeur - Mini */}
+              <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+                <h3 className="text-xs font-semibold text-white mb-2">Évolution</h3>
+                <div className="h-12 flex items-end justify-between gap-0.5">
+                  {entriesByMonth.slice(-14).map((entry, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-gradient-to-t from-purple-500 to-pink-500 rounded-t"
+                      style={{ height: `${((entry.mood || 5) / 10) * 100}%` }}
                     />
-                  </div>
-                  <p className="text-xs text-zinc-500 mt-2">
-                    {completionRate}% des habitudes complétées
-                  </p>
-                </div>
-              </div>
-
-              {/* Évolution humeur */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-                <h3 className="text-lg font-semibold text-white mb-4">Évolution humeur</h3>
-                <div className="h-24 flex items-end justify-between gap-1">
-                  {entriesByMonth.slice(-14).map((entry, i) => {
-                    const height = ((entry.mood || 5) / 10) * 100
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 bg-gradient-to-t from-purple-500 to-pink-500 rounded-t-lg transition-opacity hover:opacity-80"
-                        style={{ height: `${height}%` }}
-                        title={`${entry.date}: ${entry.mood}/10`}
-                      />
-                    )
-                  })}
+                  ))}
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          /* Historique */
-          <div className="bg-white/[0.03] backdrop-blur-sm rounded-3xl p-6 border border-white/10">
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-xl font-semibold text-white">Historique</h2>
-                </div>
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                />
-              </div>
-
-              {/* Search */}
+          /* Historique - Compact */
+          <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
+            {/* Header + Filters */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Calendar className="w-4 h-4 text-purple-400" />
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
+              />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="🔍 Rechercher dans vos entrées..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                placeholder="🔍 Rechercher..."
+                className="flex-1 min-w-[120px] bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none"
               />
-
-              {/* Filters */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-1">
                 {moods.map((m) => (
                   <button
                     key={m}
                     onClick={() => setFilterMood(filterMood === m ? null : m)}
-                    className={`text-2xl transition-transform hover:scale-110 ${
-                      filterMood === m ? 'scale-125 drop-shadow-2xl' : 'opacity-40 hover:opacity-100'
-                    }`}
-                    title={`Filtrer par humeur ${m}`}
+                    className={`text-lg transition-transform ${filterMood === m ? 'scale-110' : 'opacity-40 hover:opacity-100'}`}
                   >
                     {m}
                   </button>
                 ))}
-
-                <button
-                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                    showFavoritesOnly
-                      ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                      : 'bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <Star className={`w-4 h-4 inline ${showFavoritesOnly ? 'fill-yellow-400' : ''}`} /> Favoris
-                </button>
-
-                {(searchQuery || filterMood || showFavoritesOnly) && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery('')
-                      setFilterMood(null)
-                      setShowFavoritesOnly(false)
-                    }}
-                    className="px-3 py-1 rounded-full text-sm bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-colors"
-                  >
-                    ✕ Réinitialiser
-                  </button>
-                )}
               </div>
-
+              <button
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                className={`p-1 rounded-lg ${showFavoritesOnly ? 'bg-yellow-500/20' : 'bg-white/5'}`}
+              >
+                <Star className={`w-3 h-3 ${showFavoritesOnly ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-400'}`} />
+              </button>
               {(searchQuery || filterMood || showFavoritesOnly) && (
-                <p className="text-xs text-zinc-500">
-                  {filteredEntries.length} résultat{filteredEntries.length > 1 ? 's' : ''} trouvé{filteredEntries.length > 1 ? 's' : ''}
-                </p>
+                <button
+                  onClick={() => { setSearchQuery(''); setFilterMood(null); setShowFavoritesOnly(false) }}
+                  className="text-xs text-red-400 hover:underline"
+                >
+                  ✕
+                </button>
               )}
             </div>
 
-            {/* Memory from years ago */}
+            {/* Memory */}
             {memory && (
-              <div className="mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm text-purple-300 font-medium">
-                    Souvenir d'il y a {new Date().getFullYear() - new Date(memory.date).getFullYear()} an(s)
-                  </span>
-                </div>
-                <p className="text-white text-sm">{memory.reflection}</p>
-                <p className="text-zinc-400 text-xs mt-2">{formatRelativeDate(memory.date)}</p>
+              <div className="mb-3 bg-purple-500/10 border border-purple-500/20 rounded-lg p-2 flex items-center gap-2">
+                <Star className="w-3 h-3 text-purple-400 flex-shrink-0" />
+                <p className="text-xs text-purple-200 line-clamp-1">{memory.reflection}</p>
               </div>
             )}
 
-            {/* Entries */}
-            <div className="space-y-4">
+            {/* Entries - Compact Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
               {filteredEntries.length === 0 ? (
-                <div className="text-center py-12">
-                  <BookOpen className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-                  <p className="text-zinc-400">
-                    {searchQuery || filterMood || showFavoritesOnly
-                      ? 'Aucun résultat trouvé'
-                      : 'Aucune entrée pour ce mois'}
-                  </p>
+                <div className="col-span-2 text-center py-8">
+                  <BookOpen className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                  <p className="text-xs text-zinc-400">Aucune entrée</p>
                 </div>
               ) : (
                 filteredEntries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-purple-500/30 transition-colors group"
+                    className="bg-white/5 border border-white/10 rounded-lg p-2 hover:border-purple-500/30 transition-colors group"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">{entry.moodEmoji}</span>
-                        <div>
-                          <p className="text-white font-medium">{formatRelativeDate(entry.date)}</p>
-                          <p className="text-zinc-400 text-sm">{entry.date}</p>
-                        </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{entry.moodEmoji}</span>
+                        <span className="text-xs text-white">{formatRelativeDate(entry.date)}</span>
                       </div>
-                      <button
-                        onClick={() => toggleJournalFavorite(entry.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Star
-                          className={`w-5 h-5 ${
-                            entry.isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-500'
-                          }`}
-                        />
+                      <button onClick={() => toggleJournalFavorite(entry.id)} className="opacity-0 group-hover:opacity-100">
+                        <Star className={`w-3 h-3 ${entry.isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-500'}`} />
                       </button>
                     </div>
-
-                    {entry.mainGoal && (
-                      <div className="mb-2">
-                        <span className="text-blue-400 text-sm font-medium">🎯 Objectif: </span>
-                        <span className="text-white text-sm">{entry.mainGoal}</span>
-                      </div>
-                    )}
-
-                    <p className="text-zinc-300 text-sm line-clamp-3">{entry.reflection}</p>
-
-                    {entry.victory && (
-                      <div className="mt-2 text-green-400 text-sm">
-                        🏆 {entry.victory}
-                      </div>
-                    )}
-
+                    <p className="text-zinc-300 text-xs line-clamp-2">{entry.reflection}</p>
                     {entry.tags && entry.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {entry.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-400 rounded-full border border-purple-500/20"
-                          >
-                            #{tag}
-                          </span>
+                      <div className="mt-1 flex flex-wrap gap-0.5">
+                        {entry.tags.slice(0, 3).map((tag) => (
+                          <span key={tag} className="px-1 text-[9px] bg-purple-500/10 text-purple-400 rounded">#{tag}</span>
                         ))}
                       </div>
                     )}
@@ -877,6 +664,7 @@ export function MyDayPage() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Modals */}

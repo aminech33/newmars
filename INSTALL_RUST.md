@@ -97,3 +97,6 @@ Rust = Langage de programmation
 
 **Une fois Rust installé → `npm run tauri:dev` et c'est parti ! 🚀**
 
+
+
+

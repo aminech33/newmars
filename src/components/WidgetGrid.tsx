@@ -184,8 +184,8 @@ export function WidgetGrid() {
   return (
     <>
       <div 
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        style={{ gridAutoRows: '350px', gridTemplateRows: 'repeat(2, 350px)' }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"
+        style={{ gridAutoRows: 'minmax(280px, auto)' }}
         role="grid"
         aria-label="Grille de widgets"
       >

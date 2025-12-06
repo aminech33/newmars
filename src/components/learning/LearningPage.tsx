@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { ArrowLeft, GraduationCap } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { useLearningData } from '../../hooks/useLearningData'
 import { CourseList } from './CourseList'
@@ -238,9 +239,26 @@ Réponds de manière pédagogique et claire. Adapte-toi au niveau de l'élève.`
   }, [showToast])
 
   return (
-    <div className="h-screen flex bg-zinc-950">
-      {/* Sidebar - Course List */}
-      <CourseList
+    <div className="h-screen w-full flex flex-col overflow-hidden">
+      {/* Header - Standard */}
+      <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setView('hub')}
+            className="p-1.5 hover:bg-zinc-800/50 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-zinc-400" />
+          </button>
+          <GraduationCap className="w-4 h-4 text-purple-400" />
+          <h1 className="text-lg font-semibold text-zinc-200">Apprentissage</h1>
+          <span className="text-xs text-zinc-500">{courses.length} cours</span>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar - Course List */}
+        <CourseList
         courses={filteredCourses}
         activeCourseId={uiState.activeCourseId}
         searchQuery={uiState.searchQuery}
@@ -293,13 +311,7 @@ Réponds de manière pédagogique et claire. Adapte-toi au niveau de l'élève.`
           <EmptyState onCreateCourse={() => setShowCourseModal(true)} />
         )}
       </main>
-
-      {/* Mobile FAB */}
-      <LearningFAB
-        onNewCourse={() => setShowCourseModal(true)}
-        onQuickChat={handleQuickChat}
-        onFlashcards={handleFlashcards}
-      />
+      </div>
 
       {/* Course Modal */}
       <CourseModal

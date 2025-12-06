@@ -9,9 +9,10 @@ interface WeightChartProps {
     trend: 'increasing' | 'decreasing' | 'stable'
     weeklyChange: number
   }
+  compact?: boolean
 }
 
-export const WeightChart = memo(function WeightChart({ entries, trend }: WeightChartProps) {
+export const WeightChart = memo(function WeightChart({ entries, trend, compact = false }: WeightChartProps) {
   const chartData = useMemo(() => {
     if (entries.length === 0) return []
     

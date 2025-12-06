@@ -3,16 +3,19 @@
   "short_name": "IKU",
   "description": "Your personal productivity hub with tasks, calendar, journal, habits and more",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0A0A0B",
-  "theme_color": "#6366F1",
-  "orientation": "portrait-primary",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "any",
+  "id": "iku-productivity-hub",
   "icons": [
     {
       "src": "/mars.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/pwa-192x192.png",
@@ -25,28 +28,53 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon-180x180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "categories": ["productivity", "lifestyle"],
+  "categories": ["productivity", "lifestyle", "utilities"],
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Add Task",
-      "short_name": "Task",
-      "description": "Quick add a new task",
+      "name": "Ajouter une tâche",
+      "short_name": "Tâche",
+      "description": "Ajouter rapidement une nouvelle tâche",
       "url": "/?action=add-task",
-      "icons": [{ "src": "/mars.svg", "sizes": "96x96" }]
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "View Dashboard",
-      "short_name": "Dashboard",
-      "description": "View your productivity dashboard",
-      "url": "/?view=dashboard",
-      "icons": [{ "src": "/mars.svg", "sizes": "96x96" }]
+      "name": "Ma Journée",
+      "short_name": "Journée",
+      "description": "Voir la vue Ma Journée",
+      "url": "/?view=myday",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Pomodoro",
+      "short_name": "Focus",
+      "description": "Lancer une session Pomodoro",
+      "url": "/?view=pomodoro",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }
+
+
+
 
 

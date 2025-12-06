@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, FolderKanban, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Plus, FolderKanban, BarChart3 } from 'lucide-react'
 import { useStore, Task, TaskCategory, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { KanbanBoard } from './KanbanBoard'
 import { TaskDetails } from './TaskDetails'
@@ -9,13 +9,11 @@ import { CreateProjectWithTasksModal } from './CreateProjectWithTasksModal'
 import { TaskQuotaDisplay } from './TaskQuotaDisplay'
 import { TaskQuotaSettings } from './TaskQuotaSettings'
 import { ProjectsManagementPage } from './ProjectsManagementPage'
-import { StatsPage } from './StatsPage'
 import { StatDetailModal } from './StatDetailModal'
 import { TaskFAB } from './TaskFAB'
 import { UndoToast } from '../ui/UndoToast'
 import { Tooltip } from '../ui/Tooltip'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { CommandCenter } from './CommandCenter'
 import { useUndo } from '../../hooks/useUndo'
 import { useDebounce } from '../../hooks/useDebounce'
 import { useTaskFilters, QuickFilter } from '../../hooks/useTaskFilters'
@@ -42,7 +40,6 @@ export function TasksPage() {
   }, [selectedTaskId, tasks, setSelectedTaskId])
   const [selectedStat, setSelectedStat] = useState<'total' | 'today' | 'completed' | 'productivity' | null>(null)
   const [showProjectsManagement, setShowProjectsManagement] = useState(false)
-  const [showStatsPage, setShowStatsPage] = useState(false)
   const [showCreateProjectWithTasks, setShowCreateProjectWithTasks] = useState(false)
   const [showQuotaSettings, setShowQuotaSettings] = useState(false)
   
@@ -222,64 +219,52 @@ export function TasksPage() {
     return <ProjectsManagementPage onBack={() => setShowProjectsManagement(false)} />
   }
 
-  if (showStatsPage) {
-    return (
-      <StatsPage 
-        onBack={() => setShowStatsPage(false)}
-        tasks={tasks}
-        last7DaysStats={last7DaysStats}
-        completedToday={completedToday}
-      />
-    )
-  }
-
   return (
-    <div className="h-full flex flex-col bg-mars-surface">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-        <div className="flex items-center gap-4">
+    <div className="h-screen w-full flex flex-col overflow-hidden bg-mars-surface">
+      {/* Header - Compact */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/50">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setView('hub')}
-            className="p-2 text-zinc-600 hover:text-zinc-400 transition-colors rounded-xl hover:bg-zinc-800/50"
+            className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-zinc-800/50"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="text-2xl font-bold text-zinc-200">Tâches</h1>
+          <h1 className="text-lg font-semibold text-zinc-200">Tâches</h1>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowStatsPage(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-2xl hover:bg-zinc-700/50 border border-white/10 transition-colors duration-300"
+            onClick={() => setView('dashboard')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-zinc-800/50 transition-colors"
+            title="Voir les statistiques dans le Dashboard"
           >
-            <TrendingUp className="w-4 h-4" />
-            <span className="text-sm font-medium">Stats</span>
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">Dashboard</span>
           </button>
           <button
             onClick={() => setShowProjectsManagement(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-2xl hover:bg-zinc-700/50 border border-white/10 transition-colors duration-300"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-zinc-800/50 transition-colors"
           >
-            <FolderKanban className="w-4 h-4" />
-            <span className="text-sm font-medium">Projets</span>
+            <FolderKanban className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">Projets</span>
           </button>
           <Tooltip content="Ctrl+N" side="bottom">
             <button
               onClick={() => setShowQuickAdd(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/30 shadow-[0_4px_16px_rgba(91,127,255,0.2)] transition-colors duration-300"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 transition-colors"
             >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm font-medium">Nouvelle tâche</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span className="text-xs font-medium">Nouvelle</span>
             </button>
           </Tooltip>
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-4 py-3">
         {/* Quick Add */}
         {showQuickAdd && (
-          <div className="mb-4 p-4 bg-zinc-900/50 rounded-2xl backdrop-blur-xl animate-slide-up"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
+          <div className="mb-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
             <input
               type="text"
               value={newTaskTitle}
@@ -289,21 +274,14 @@ export function TasksPage() {
                 if (e.key === 'Escape') setShowQuickAdd(false)
               }}
               placeholder="Titre de la tâche..."
-              className="w-full bg-transparent text-zinc-300 placeholder:text-zinc-700 focus:outline-none text-sm"
+              className="w-full bg-transparent text-zinc-300 placeholder:text-zinc-600 focus:outline-none text-sm"
               autoFocus
             />
           </div>
         )}
         
-        
-        {/* Command Center - Vue prioritaire */}
-        <CommandCenter
-          tasks={tasks}
-          onTaskClick={(task) => setSelectedTask(task)}
-        />
-        
         {/* Task Quota Display */}
-        <div className="mb-6">
+        <div className="mb-3">
           <TaskQuotaDisplay onSettingsClick={() => setShowQuotaSettings(true)} />
         </div>
         
@@ -318,8 +296,8 @@ export function TasksPage() {
           onReset={handleResetFilters}
         />
         
-        {/* Content */}
-        <div className="h-[calc(100vh-400px)]">
+        {/* Content - Kanban prend tout l'espace restant */}
+        <div className="h-[calc(100vh-280px)]">
           <KanbanBoard
             tasks={filteredTasks}
             onTaskClick={setSelectedTask}

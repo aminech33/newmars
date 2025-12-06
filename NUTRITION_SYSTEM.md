@@ -220,3 +220,6 @@ foodDatabase.min.js.gz       : ~5 KB
 
 Système complet, testé, sans erreurs TypeScript/Lint.
 
+
+
+

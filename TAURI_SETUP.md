@@ -91,3 +91,6 @@ src-tauri/target/release/IKU.exe
 1. Vérifie que Rust est installé
 2. Lance `npm run tauri:dev`
 
+
+
+

@@ -192,3 +192,6 @@ if (includeCode && showSplitView) {
 **Impact UX** : L'éditeur et les projets ne sont plus en conflit - l'éditeur est intégré au chat
 
 
+
+
+

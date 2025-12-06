@@ -6,9 +6,10 @@ import { Tooltip } from '../ui/Tooltip'
 interface WeightListProps {
   entries: WeightEntry[]
   onDelete: (id: string) => void
+  compact?: boolean
 }
 
-export const WeightList = memo(function WeightList({ entries, onDelete }: WeightListProps) {
+export const WeightList = memo(function WeightList({ entries, onDelete, compact = false }: WeightListProps) {
   if (entries.length === 0) {
     return (
       <div className="text-center py-12">

@@ -304,101 +304,58 @@ export function Dashboard() {
   const scoreTooltipContent = scoreDetails.map(d => `${d.label}: ${Math.round(d.value)}%`).join(' • ')
 
   return (
-    <div className="min-h-screen w-full flex flex-col view-transition" role="main" aria-label="Dashboard - Hub des Statistiques">
-      {/* Header */}
-      <header className="sticky top-0 z-20 flex-shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50">
-        <div className="max-w-7xl mx-auto">
-          {/* Breadcrumb */}
-          <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-zinc-500 mb-3">
-            <button onClick={() => setView('hub')} className="hover:text-zinc-300 transition-colors">
-              Hub
+    <div className="h-screen w-full flex flex-col view-transition overflow-hidden" role="main" aria-label="Dashboard - Hub des Statistiques">
+      {/* Header - Standard */}
+      <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setView('hub')}
+              className="p-1.5 hover:bg-zinc-800/50 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 text-zinc-400" />
             </button>
-            <ChevronRight className="w-4 h-4" aria-hidden="true" />
-            <span className="text-zinc-300 font-medium" aria-current="page">Statistiques</span>
-            <div className="ml-auto flex items-center gap-2 text-xs">
-              <kbd className="px-2 py-1 bg-zinc-800/50 border border-zinc-800 rounded text-zinc-400">Esc</kbd>
-              <span className="text-zinc-600">Retour</span>
-            </div>
-          </nav>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Tooltip content="Retour au Hub (Esc)" side="bottom">
-                <button
-                  onClick={() => setView('hub')}
-                  className="p-2.5 -ml-2 text-zinc-400 hover:text-zinc-100 transition-colors rounded-xl hover:bg-zinc-800/50 hover:scale-110"
-                  aria-label="Retour au Hub"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-              </Tooltip>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-zinc-100">📊 Statistiques</h1>
-                <p className="text-sm text-zinc-500">Hub central de toutes tes données</p>
-              </div>
-            </div>
-          
-            {/* Score Global avec tooltip explicatif */}
+            <BarChart3 className="w-4 h-4 text-indigo-400" />
+            <h1 className="text-lg font-semibold text-zinc-200">Dashboard</h1>
+            
+            {/* Score Global inline */}
             <Tooltip content={scoreTooltipContent} side="bottom">
-              <div className="hidden sm:flex items-center gap-3 bg-zinc-900/50 rounded-2xl px-4 py-2 border border-zinc-800/50 cursor-help">
-                <div className={`text-3xl font-bold ${
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-800/50 rounded-lg cursor-help ml-2">
+                <div className={`text-sm font-bold ${
                   globalScore >= 70 ? 'text-emerald-400' : 
                   globalScore >= 40 ? 'text-amber-400' : 
                   'text-rose-400'
                 }`}>
                   {globalScore}
                 </div>
-                <div className="text-xs text-zinc-500">
-                  <div className="font-medium">Score Global</div>
-                  <div>/100</div>
-                </div>
+                <span className="text-[10px] text-zinc-500">/100</span>
               </div>
             </Tooltip>
           </div>
 
-          {/* Tabs avec indicateur de scroll sur mobile */}
-          <div className="relative mt-4">
-            <div 
-              className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide" 
-              role="tablist"
-              aria-label="Sections des statistiques"
-            >
-              {tabs.map((tab) => (
-                <Tooltip key={tab.id} content={`Raccourci: ${tab.key}`} side="bottom">
-                  <button
-                    onClick={() => setActiveTab(tab.id)}
-                    role="tab"
-                    id={`tab-${tab.id}`}
-                    aria-selected={activeTab === tab.id}
-                    aria-controls={`panel-${tab.id}`}
-                    tabIndex={activeTab === tab.id ? 0 : -1}
-                    className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
-                      activeTab === tab.id 
-                        ? 'bg-zinc-800 text-zinc-100 shadow-lg' 
-                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'
-                    }`}
-                  >
-                    {tab.icon}
-                    <span className="hidden sm:inline">{tab.label}</span>
-                    <kbd className={`hidden lg:inline-block px-1.5 py-0.5 text-[10px] rounded border ${
-                      activeTab === tab.id
-                        ? 'bg-zinc-700 border-zinc-600 text-zinc-300'
-                        : 'bg-zinc-800/50 border-zinc-800/50 text-zinc-600'
-                    }`}>
-                      {tab.key}
-                    </kbd>
-                  </button>
-                </Tooltip>
-              ))}
-            </div>
-            {/* Indicateur de scroll sur mobile */}
-            <div className="absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-zinc-950 to-transparent pointer-events-none sm:hidden" />
+          {/* Tabs inline */}
+          <div className="flex items-center gap-0.5 bg-zinc-800/50 rounded-lg p-0.5 overflow-x-auto scrollbar-hide" role="tablist">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`px-2 py-1 rounded-md text-xs flex items-center gap-1 transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </header>
 
-      <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="flex-1 overflow-auto px-4 py-3">
 
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
@@ -406,7 +363,7 @@ export function Dashboard() {
               role="tabpanel" 
               id="panel-overview" 
               aria-labelledby="tab-overview"
-              className="space-y-8"
+              className="space-y-4"
             >
               {/* Hero Stats - Résumé rapide - Responsive amélioré */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
@@ -1188,7 +1145,6 @@ export function Dashboard() {
             </div>
           )}
 
-        </div>
       </div>
 
       <ScrollToTop />

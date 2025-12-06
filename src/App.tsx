@@ -15,6 +15,7 @@ const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ defau
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m => ({ default: m.LibraryPage })))
 const PomodoroPage = lazy(() => import('./components/pomodoro/PomodoroPage').then(m => ({ default: m.PomodoroPage })))
+const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
@@ -83,6 +84,7 @@ function AppContent() {
             {currentView === 'learning' && <LearningPage />}
             {currentView === 'library' && <LibraryPage />}
             {currentView === 'pomodoro' && <PomodoroPage />}
+            {currentView === 'settings' && <SettingsPage />}
           </>
         )}
       </Suspense>

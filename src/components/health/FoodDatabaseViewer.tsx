@@ -182,3 +182,6 @@ export function FoodDatabaseViewer({ isOpen, onClose, onSelectFood }: FoodDataba
   )
 }
 
+
+
+

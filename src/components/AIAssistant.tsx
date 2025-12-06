@@ -206,33 +206,25 @@ Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitude
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-zinc-950">
-      {/* Premium Header */}
-      <header className="flex-shrink-0 px-6 py-4 border-b border-zinc-900/50 backdrop-blur-sm bg-zinc-950/80">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setView('hub')}
-              className="p-2 rounded-xl text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/50 transition-colors duration-200"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-zinc-100">AI Assistant</h1>
-                <p className="text-xs text-zinc-500">Propulsé par Gemini 2.5 Flash ⚡</p>
-              </div>
-            </div>
-          </div>
+    <div className="h-screen w-full flex flex-col overflow-hidden">
+      {/* Header - Standard */}
+      <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setView('hub')}
+            className="p-1.5 hover:bg-zinc-800/50 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-zinc-400" />
+          </button>
+          <Sparkles className="w-4 h-4 text-indigo-400" />
+          <h1 className="text-lg font-semibold text-zinc-200">Assistant IA</h1>
+          <span className="text-xs text-zinc-500">Gemini 2.5 Flash</span>
         </div>
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-auto px-6 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex-1 overflow-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto space-y-4">
           {messages.map((message) => (
             <MessageBubble
               key={message.id}
@@ -269,9 +261,9 @@ Tu as aussi accès aux données personnelles de l'utilisateur (tâches, habitude
 
       {/* Suggestions (only show if less than 2 messages) */}
       {messages.length <= 1 && (
-        <div className="flex-shrink-0 px-6 pb-6">
+        <div className="flex-shrink-0 px-4 pb-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-sm font-medium text-zinc-400 mb-3">💡 Suggestions</h2>
+            <h2 className="text-xs font-medium text-zinc-400 mb-2">💡 Suggestions</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {suggestions.map((suggestion, index) => (
                 <SuggestionCard

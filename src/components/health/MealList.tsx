@@ -7,6 +7,7 @@ interface MealListProps {
   entries: MealEntry[]
   onDelete: (id: string) => void
   onDuplicate?: (meal: MealEntry) => void
+  compact?: boolean
 }
 
 const MEAL_EMOJIS = {
@@ -23,7 +24,7 @@ const MEAL_LABELS = {
   snack: 'Collation'
 }
 
-export const MealList = memo(function MealList({ entries, onDelete, onDuplicate }: MealListProps) {
+export const MealList = memo(function MealList({ entries, onDelete, onDuplicate, compact = false }: MealListProps) {
   if (entries.length === 0) {
     return (
       <div className="text-center py-12">
