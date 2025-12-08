@@ -1,27 +1,27 @@
 import { EventType, EventCategory, EventPriority, Recurrence } from '../types/calendar'
 
-export const TYPE_OPTIONS: { value: EventType; label: string; icon: string }[] = [
-  { value: 'meeting', label: 'Réunion', icon: '🗓️' },
-  { value: 'deadline', label: 'Deadline', icon: '⏰' },
-  { value: 'reminder', label: 'Rappel', icon: '🔔' },
-  { value: 'birthday', label: 'Anniversaire', icon: '🎂' },
-  { value: 'holiday', label: 'Vacances', icon: '🎉' },
-  { value: 'custom', label: 'Personnalisé', icon: '📌' },
+export const TYPE_OPTIONS: { value: EventType; label: string; icon: string; description: string }[] = [
+  { value: 'meeting', label: 'Réunion', icon: '🗓️', description: 'Rencontre, rendez-vous' },
+  { value: 'deadline', label: 'Deadline', icon: '⏰', description: 'Échéance, date limite' },
+  { value: 'reminder', label: 'Rappel', icon: '🔔', description: 'Pense-bête, notification' },
+  { value: 'birthday', label: 'Anniversaire', icon: '🎂', description: 'Date de naissance' },
+  { value: 'holiday', label: 'Vacances', icon: '🎉', description: 'Congés, jour férié' },
+  { value: 'custom', label: 'Autre', icon: '📌', description: 'Événement personnalisé' },
 ]
 
-export const CATEGORY_OPTIONS: { value: EventCategory; label: string; color: string }[] = [
-  { value: 'work', label: 'Travail', color: 'text-amber-400' },
-  { value: 'personal', label: 'Personnel', color: 'text-emerald-400' },
-  { value: 'health', label: 'Santé', color: 'text-rose-400' },
-  { value: 'social', label: 'Social', color: 'text-cyan-400' },
-  { value: 'learning', label: 'Formation', color: 'text-violet-400' },
+export const CATEGORY_OPTIONS: { value: EventCategory; label: string; icon: string; color: string; description: string }[] = [
+  { value: 'work', label: 'Travail', icon: '💼', color: 'text-amber-400', description: 'Contexte professionnel' },
+  { value: 'personal', label: 'Personnel', icon: '🏠', color: 'text-emerald-400', description: 'Vie privée, famille' },
+  { value: 'health', label: 'Santé', icon: '💚', color: 'text-rose-400', description: 'Médical, sport, bien-être' },
+  { value: 'social', label: 'Social', icon: '👥', color: 'text-cyan-400', description: 'Amis, sorties, loisirs' },
+  { value: 'learning', label: 'Formation', icon: '📚', color: 'text-violet-400', description: 'Études, apprentissage' },
 ]
 
 export const PRIORITY_OPTIONS: { value: EventPriority; label: string; color: string }[] = [
   { value: 'low', label: 'Basse', color: 'text-zinc-500' },
-  { value: 'medium', label: 'Moyenne', color: 'text-indigo-500' },
-  { value: 'high', label: 'Haute', color: 'text-amber-500' },
-  { value: 'urgent', label: 'Urgent', color: 'text-rose-500' },
+  { value: 'medium', label: 'Moyenne', color: 'text-indigo-400' },
+  { value: 'high', label: 'Haute', color: 'text-amber-400' },
+  { value: 'urgent', label: 'Urgent', color: 'text-rose-400' },
 ]
 
 export const FREQUENCY_OPTIONS: { value: Recurrence['frequency']; label: string }[] = [

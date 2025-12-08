@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { Check, Play, Pause, Calendar, ListChecks } from 'lucide-react'
 import { Task, useStore } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
@@ -17,8 +18,12 @@ const priorityColors = {
 }
 
 export function TaskCard({ task, index, onClick }: TaskCardProps) {
-  const { projects, toggleTask, moveTask } = useStore()
+  const { projects, toggleTask, moveTask, updateTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
+  
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editedTitle, setEditedTitle] = useState(task.title)
+  const inputRef = useRef<HTMLInputElement>(null)
   
   const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
   const totalSubtasks = task.subtasks?.length || 0
@@ -27,6 +32,14 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
   const isDueToday = task.dueDate && new Date(task.dueDate).toDateString() === new Date().toDateString()
   
   const priorityColor = priorityColors[task.priority]
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingTitle && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditingTitle])
 
   // Actions
   const handleStartTask = (e: React.MouseEvent) => {
@@ -52,6 +65,34 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
     moveTask(task.id, 'todo')
     if (task.completed) {
       toggleTask(task.id)
+    }
+  }
+
+  const handleTitleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsEditingTitle(true)
+  }
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedTitle(e.target.value)
+  }
+
+  const handleTitleBlur = () => {
+    if (editedTitle.trim() && editedTitle !== task.title) {
+      updateTask(task.id, { title: editedTitle.trim() })
+    } else {
+      setEditedTitle(task.title)
+    }
+    setIsEditingTitle(false)
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleTitleBlur()
+    } else if (e.key === 'Escape') {
+      setEditedTitle(task.title)
+      setIsEditingTitle(false)
     }
   }
 
@@ -143,15 +184,32 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
             {/* Content */}
             <div className="flex-1 min-w-0">
               {/* Title */}
-              <h3 className={`
-                text-[13px] font-medium leading-relaxed
-                ${task.status === 'done'
-                  ? 'text-white/30 line-through' 
-                  : 'text-white/90'
-                }
-              `}>
-                {task.title}
-              </h3>
+              {isEditingTitle ? (
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={editedTitle}
+                  onChange={handleTitleChange}
+                  onBlur={handleTitleBlur}
+                  onKeyDown={handleTitleKeyDown}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full text-[13px] font-medium leading-relaxed bg-zinc-900/80 text-white/90 px-2 py-1 rounded border border-indigo-500/50 focus:outline-none focus:border-indigo-500"
+                />
+              ) : (
+                <h3 
+                  onDoubleClick={handleTitleDoubleClick}
+                  className={`
+                    text-[13px] font-medium leading-relaxed
+                    ${task.status === 'done'
+                      ? 'text-white/30 line-through' 
+                      : 'text-white/90'
+                    }
+                  `}
+                  title="Double-clic pour éditer"
+                >
+                  {task.title}
+                </h3>
+              )}
               
               {/* Metadata */}
               {(project || task.dueDate || totalSubtasks > 0) && (
@@ -207,6 +265,37 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
               <div className="w-2 h-2 rounded-full bg-rose-500/80 animate-pulse" />
             )}
           </div>
+
+          {/* Subtasks as mini cards */}
+          {task.subtasks && task.subtasks.length > 0 && (
+            <div className="mt-3 pl-11 space-y-1.5">
+              {task.subtasks.map((subtask) => (
+                <div
+                  key={subtask.id}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={subtask.completed}
+                    onChange={(e) => {
+                      e.stopPropagation()
+                      const { toggleSubtask } = useStore.getState()
+                      toggleSubtask(task.id, subtask.id)
+                    }}
+                    className="w-3 h-3 rounded accent-indigo-500 cursor-pointer"
+                  />
+                  <span className={`text-[11px] flex-1 ${
+                    subtask.completed 
+                      ? 'text-zinc-600 line-through' 
+                      : 'text-zinc-400'
+                  }`}>
+                    {subtask.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </Draggable>

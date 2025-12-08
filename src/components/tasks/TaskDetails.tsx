@@ -1,6 +1,6 @@
-import { X, Calendar, Clock, Tag, CheckSquare, Plus, Trash2, Flag, Link as LinkIcon, FolderKanban, Check } from 'lucide-react'
+import { X, Calendar, Clock, CheckSquare, Plus, Trash2, Flag, Link as LinkIcon, FolderKanban, Check } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { Task, TaskPriority, TaskCategory, useStore } from '../../store/useStore'
+import { Task, TaskPriority, useStore } from '../../store/useStore'
 import { Collapsible } from '../ui/Collapsible'
 
 interface TaskDetailsProps {
@@ -15,18 +15,11 @@ const priorities: { value: TaskPriority; label: string; color: string }[] = [
   { value: 'urgent', label: 'Urgente', color: 'text-rose-400' }
 ]
 
-const categories: { value: TaskCategory; label: string; color: string }[] = [
-  { value: 'dev', label: 'Dev', color: 'text-indigo-400' },
-  { value: 'design', label: 'Design', color: 'text-cyan-400' },
-  { value: 'work', label: 'Travail', color: 'text-amber-400' },
-  { value: 'personal', label: 'Perso', color: 'text-emerald-400' },
-  { value: 'urgent', label: 'Urgent', color: 'text-rose-400' }
-]
-
 export function TaskDetails({ task, onClose }: TaskDetailsProps) {
   const { updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, addEvent, events, projects } = useStore()
   const [newSubtask, setNewSubtask] = useState('')
   const [isEditingDescription, setIsEditingDescription] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [description, setDescription] = useState(task.description || '')
   const [showSaved, setShowSaved] = useState(false)
 
@@ -41,6 +34,22 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
   const handleUpdate = (updates: Partial<Task>) => {
     updateTask(task.id, updates)
     setShowSaved(true)
+  }
+
+  const handleTitleDoubleClick = () => {
+    setIsEditingTitle(true)
+  }
+
+  const handleTitleBlur = () => {
+    setIsEditingTitle(false)
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setIsEditingTitle(false)
+    } else if (e.key === 'Escape') {
+      setIsEditingTitle(false)
+    }
   }
   
   const handleAddSubtask = () => {
@@ -101,13 +110,26 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
         <div className="sticky top-0 z-10 backdrop-blur-xl bg-mars-surface/80 border-b border-zinc-800 p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <input
-                type="text"
-                value={task.title}
-                onChange={(e) => handleUpdate({ title: e.target.value })}
-                className="w-full text-xl font-semibold text-zinc-200 bg-transparent border-none focus:outline-none"
-              />
-              <div className="flex items-center gap-3 mt-1">
+              {isEditingTitle ? (
+                <input
+                  type="text"
+                  value={task.title}
+                  onChange={(e) => handleUpdate({ title: e.target.value })}
+                  onBlur={handleTitleBlur}
+                  onKeyDown={handleTitleKeyDown}
+                  autoFocus
+                  className="w-full text-xl font-semibold text-zinc-200 bg-zinc-900/50 px-3 py-2 rounded-xl border border-indigo-500/50 focus:outline-none focus:border-indigo-500"
+                />
+              ) : (
+                <h1 
+                  onDoubleClick={handleTitleDoubleClick}
+                  className="w-full text-xl font-semibold text-zinc-200 cursor-pointer hover:text-zinc-100 transition-colors px-3 py-2"
+                  title="Double-clic pour éditer"
+                >
+                  {task.title}
+                </h1>
+              )}
+              <div className="flex items-center gap-3 mt-1 px-3">
                 <p className="text-sm text-zinc-600">
                   Créée le {new Date(task.createdAt).toLocaleDateString('fr-FR')}
                 </p>
@@ -165,76 +187,23 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
             </div>
           </Collapsible>
           
-          {/* Priority & Category */}
-          <Collapsible title="Priorité & Catégorie" icon={<Flag className="w-4 h-4 text-zinc-500" />} defaultOpen={true}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
-                  <Flag className="w-3.5 h-3.5" />
-                  Priorité
-                </label>
-                <select
-                  value={task.priority}
-                  onChange={(e) => handleUpdate({ priority: e.target.value as TaskPriority })}
-                  className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:bg-zinc-900 transition-colors"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  {priorities.map(p => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
-                  <Tag className="w-3.5 h-3.5" />
-                  Catégorie
-                </label>
-                <select
-                  value={task.category}
-                  onChange={(e) => handleUpdate({ category: e.target.value as TaskCategory })}
-                  className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:bg-zinc-900 transition-colors"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  {categories.map(c => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </Collapsible>
-          
-          {/* Due Date & Estimated Time */}
-          <Collapsible title="Planning" icon={<Calendar className="w-4 h-4 text-zinc-500" />} defaultOpen={true}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
-                  <Calendar className="w-3.5 h-3.5" />
-                  Date d'échéance
-                </label>
-                <input
-                  type="date"
-                  value={task.dueDate || ''}
-                  onChange={(e) => handleUpdate({ dueDate: e.target.value })}
-                  className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:bg-zinc-900 transition-colors"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                />
-              </div>
-              
-              <div>
-                <label className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
-                  <Clock className="w-3.5 h-3.5" />
-                  Temps estimé (min)
-                </label>
-                <input
-                  type="number"
-                  value={task.estimatedTime || ''}
-                  onChange={(e) => handleUpdate({ estimatedTime: parseInt(e.target.value) || undefined })}
-                  placeholder="30"
-                  className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:bg-zinc-900 transition-colors"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                />
-              </div>
+          {/* Priority */}
+          <Collapsible title="Priorité" icon={<Flag className="w-4 h-4 text-zinc-500" />} defaultOpen={true}>
+            <div>
+              <label className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
+                <Flag className="w-3.5 h-3.5" />
+                Priorité
+              </label>
+              <select
+                value={task.priority}
+                onChange={(e) => handleUpdate({ priority: e.target.value as TaskPriority })}
+                className="w-full px-3 py-2 bg-zinc-900/50 rounded-xl text-sm text-zinc-300 focus:outline-none focus:bg-zinc-900 transition-colors"
+                style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                {priorities.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
             </div>
           </Collapsible>
           

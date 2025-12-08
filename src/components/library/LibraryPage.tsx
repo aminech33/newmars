@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { ArrowLeft, Plus, BookOpen, Search, Filter, Target, Trophy, BarChart3, Download, Upload, FileText } from 'lucide-react'
+import { ArrowLeft, Plus, BookOpen, Search, Target, Trophy, BarChart3, Download, Upload, FileText } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { Book } from '../../types/library'
-import { formatReadingTime } from '../../utils/libraryFormatters'
 import { useLibraryStats } from '../../hooks/useLibraryStats'
 import { useReadingSessionPersistence } from '../../hooks/useReadingSessionPersistence'
 import { useDebounce } from '../../hooks/useDebounce'
@@ -12,8 +11,11 @@ import {
   ReadingSessionBar,
   BookDetailModal,
   AddBookModal,
-  GoalModal
+  GoalModal,
+  QuotesLibraryPage,
+  GenreBadge
 } from './components'
+import { BOOK_GENRES } from '../../constants/bookGenres'
 
 type FilterStatus = 'all' | 'reading' | 'completed' | 'to-read'
 type SortOption = 'recent' | 'title' | 'author' | 'rating' | 'progress' | 'pages'
@@ -31,7 +33,9 @@ export function LibraryPage() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showGoalModal, setShowGoalModal] = useState(false)
+  const [showQuotesLibrary, setShowQuotesLibrary] = useState(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const [filterGenre, setFilterGenre] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('recent')
   const [sessionTime, setSessionTime] = useState(0)
@@ -83,11 +87,12 @@ export function LibraryPage() {
     // Filtrage
     let filtered = books.filter(book => {
       const matchesStatus = filterStatus === 'all' || book.status === filterStatus
+      const matchesGenre = !filterGenre || book.genre === filterGenre
       const matchesSearch = debouncedSearchQuery === '' || 
         book.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
         book.author.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
         (book.genre && book.genre.toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
-      return matchesStatus && matchesSearch
+      return matchesStatus && matchesGenre && matchesSearch
     })
     
     // Tri
@@ -110,7 +115,18 @@ export function LibraryPage() {
           return b.updatedAt - a.updatedAt
       }
     })
-  }, [books, filterStatus, debouncedSearchQuery, sortBy])
+  }, [books, filterStatus, filterGenre, debouncedSearchQuery, sortBy])
+
+  // Compter les livres par genre
+  const genreCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    books.forEach(book => {
+      if (book.genre) {
+        counts[book.genre] = (counts[book.genre] || 0) + 1
+      }
+    })
+    return counts
+  }, [books])
 
   // Stats de page mémorisées
   const pageStats = useMemo(() => ({
@@ -255,6 +271,13 @@ export function LibraryPage() {
             </div>
             
             <button
+              onClick={() => setShowQuotesLibrary(true)}
+              className="p-1.5 bg-zinc-800/50 text-zinc-400 rounded-lg hover:bg-zinc-700/50 transition-colors"
+              title="Bibliothèque de citations"
+            >
+              <FileText className="w-3.5 h-3.5" />
+            </button>
+            <button
               onClick={() => setView('dashboard')}
               className="p-1.5 bg-zinc-800/50 text-zinc-400 rounded-lg hover:bg-zinc-700/50 transition-colors"
               title="Voir les statistiques dans le Dashboard"
@@ -327,6 +350,38 @@ export function LibraryPage() {
               </button>
             ))}
           </div>
+
+          {/* Filtres par genre */}
+          {Object.keys(genreCounts).length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap max-w-md">
+              <button
+                onClick={() => setFilterGenre(null)}
+                className={`px-2 py-1 text-[10px] rounded-md transition-colors ${
+                  !filterGenre ? 'bg-zinc-800 text-zinc-200' : 'text-zinc-600 hover:text-zinc-400'
+                }`}
+              >
+                Tous genres
+              </button>
+              {BOOK_GENRES
+                .filter(genre => genreCounts[genre.id] > 0)
+                .slice(0, 5) // Montrer les 5 premiers genres avec des livres
+                .map((genre) => (
+                  <button
+                    key={genre.id}
+                    onClick={() => setFilterGenre(genre.id)}
+                    className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border transition-all ${
+                      filterGenre === genre.id
+                        ? genre.color
+                        : 'text-zinc-600 border-transparent hover:text-zinc-400'
+                    }`}
+                    title={genre.label}
+                  >
+                    <span>{genre.emoji}</span>
+                    <span>{genreCounts[genre.id]}</span>
+                  </button>
+                ))}
+            </div>
+          )}
           
           {/* Tri */}
           <select
@@ -441,6 +496,16 @@ export function LibraryPage() {
           completedThisYear={stats.completedThisYear}
           onClose={handleCloseGoalModal}
           onSave={handleSaveGoal}
+        />
+      )}
+
+      {showQuotesLibrary && (
+        <QuotesLibraryPage
+          books={books}
+          onBack={() => setShowQuotesLibrary(false)}
+          onAddQuote={addQuote}
+          onUpdateQuote={updateQuote}
+          onDeleteQuote={deleteQuote}
         />
       )}
     </div>

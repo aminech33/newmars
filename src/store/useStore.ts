@@ -7,10 +7,28 @@ import { JournalEntry } from '../types/journal'
 import { TaskRelation } from '../types/taskRelation'
 import { Course, Message, Flashcard, Note as LearningNote } from '../types/learning'
 import { Book, DEMO_BOOKS, Quote, ReadingNote, ReadingSession, ReadingGoal } from '../types/library'
+import { TestResult } from '../types/testing'
 
-export type TaskCategory = 'dev' | 'design' | 'personal' | 'work' | 'urgent'
+export type TaskCategory = string // Changé pour accepter n'importe quelle string
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+
+// Interface pour les catégories personnalisées
+export interface CustomCategory {
+  id: string
+  label: string
+  emoji: string
+  createdAt: number
+}
+
+// Catégories par défaut
+export const DEFAULT_CATEGORIES: CustomCategory[] = [
+  { id: 'dev', label: 'Dev', emoji: '💻', createdAt: 0 },
+  { id: 'design', label: 'Design', emoji: '🎨', createdAt: 0 },
+  { id: 'work', label: 'Travail', emoji: '💼', createdAt: 0 },
+  { id: 'personal', label: 'Personnel', emoji: '🏠', createdAt: 0 },
+  { id: 'urgent', label: 'Urgent', emoji: '🚨', createdAt: 0 }
+]
 
 export interface SubTask {
   id: string
@@ -112,7 +130,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro' | 'settings'
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro' | 'settings' | 'test-lab'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
@@ -150,6 +168,13 @@ interface AppState {
   addSubtask: (taskId: string, subtaskTitle: string) => void
   toggleSubtask: (taskId: string, subtaskId: string) => void
   deleteSubtask: (taskId: string, subtaskId: string) => void
+  
+  // Custom Categories
+  customCategories: CustomCategory[]
+  addCategory: (label: string, emoji: string) => string
+  updateCategory: (id: string, label: string, emoji: string) => void
+  deleteCategory: (id: string) => void
+  getAllCategories: () => CustomCategory[]
   
   // Notes
   notes: Note[]
@@ -333,6 +358,12 @@ interface AppState {
     averageRating: number
     goalProgress: number
   }
+  
+  // 🛡️ Test Lab Results - Backup persistant dans Zustand
+  testResults: Record<string, TestResult>
+  setTestResults: (results: Record<string, TestResult>) => void
+  updateTestResult: (testId: string, result: TestResult) => void
+  clearTestResults: () => void
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
@@ -579,6 +610,45 @@ export const useStore = create<AppState>()(
               : t
           )
         }))
+      },
+      
+      // Custom Categories
+      customCategories: [],
+      addCategory: (label, emoji) => {
+        const newCategory: CustomCategory = {
+          id: generateId(),
+          label,
+          emoji,
+          createdAt: Date.now()
+        }
+        set((state) => ({
+          customCategories: [...state.customCategories, newCategory]
+        }))
+        get().addToast('Catégorie créée', 'success')
+        return newCategory.id
+      },
+      updateCategory: (id, label, emoji) => {
+        set((state) => ({
+          customCategories: state.customCategories.map((cat) =>
+            cat.id === id ? { ...cat, label, emoji } : cat
+          )
+        }))
+        get().addToast('Catégorie mise à jour', 'success')
+      },
+      deleteCategory: (id) => {
+        // Check if category is used
+        const tasksWithCategory = get().tasks.filter(t => t.category === id)
+        if (tasksWithCategory.length > 0) {
+          get().addToast(`Impossible: ${tasksWithCategory.length} tâche(s) utilise(nt) cette catégorie`, 'error')
+          return
+        }
+        set((state) => ({
+          customCategories: state.customCategories.filter((cat) => cat.id !== id)
+        }))
+        get().addToast('Catégorie supprimée', 'success')
+      },
+      getAllCategories: () => {
+        return [...DEFAULT_CATEGORIES, ...get().customCategories]
       },
       
       // Task Quota System
@@ -1402,6 +1472,19 @@ export const useStore = create<AppState>()(
           goalProgress
         }
       },
+      
+      // 🛡️ Test Lab Results - Backup dans Zustand pour ne jamais perdre les données
+      testResults: {},
+      setTestResults: (results) => set({ testResults: results }),
+      updateTestResult: (testId, result) => {
+        set((state) => ({
+          testResults: {
+            ...state.testResults,
+            [testId]: result
+          }
+        }))
+      },
+      clearTestResults: () => set({ testResults: {} }),
     }),
     {
       name: 'newmars-storage',
@@ -1431,6 +1514,7 @@ export const useStore = create<AppState>()(
         books: state.books,
         readingSessions: state.readingSessions,
         readingGoal: state.readingGoal,
+        testResults: state.testResults, // 🛡️ Backup des résultats de tests
       })
     }
   )
@@ -1521,6 +1605,14 @@ const migrateBooksData = () => {
           sessionsCount: book.sessionsCount || 0
         }))
         useStore.setState({ books: migratedBooks })
+      }
+      
+      // Migration des genres (texte libre → IDs)
+      const { migrateAllBooksGenres } = require('../utils/genreMigration')
+      const migratedGenreBooks = migrateAllBooksGenres(state.books)
+      if (JSON.stringify(migratedGenreBooks) !== JSON.stringify(state.books)) {
+        console.log('📚 Migration des genres effectuée')
+        useStore.setState({ books: migratedGenreBooks })
       }
     }
     

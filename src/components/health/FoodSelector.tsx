@@ -196,23 +196,23 @@ export function FoodSelector({ selectedFoods, onChange }: FoodSelectorProps) {
             <h4 className="text-sm font-medium text-zinc-300 mb-2">Total du repas</h4>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="text-center">
-                <p className="text-lg font-bold text-orange-400">{totalNutrition.calories}</p>
+                <p className="text-lg font-bold text-orange-400">{Math.round(totalNutrition.calories)}</p>
                 <p className="text-xs text-zinc-500">Calories</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-rose-400">{totalNutrition.protein}g</p>
+                <p className="text-lg font-bold text-rose-400">{Math.round(totalNutrition.protein * 10) / 10}g</p>
                 <p className="text-xs text-zinc-500">Protéines</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-amber-400">{totalNutrition.carbs}g</p>
+                <p className="text-lg font-bold text-amber-400">{Math.round(totalNutrition.carbs * 10) / 10}g</p>
                 <p className="text-xs text-zinc-500">Glucides</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-yellow-400">{totalNutrition.fat}g</p>
+                <p className="text-lg font-bold text-yellow-400">{Math.round(totalNutrition.fat * 10) / 10}g</p>
                 <p className="text-xs text-zinc-500">Lipides</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-emerald-400">{totalNutrition.fiber}g</p>
+                <p className="text-lg font-bold text-emerald-400">{Math.round(totalNutrition.fiber * 10) / 10}g</p>
                 <p className="text-xs text-zinc-500">Fibres</p>
               </div>
             </div>

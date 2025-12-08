@@ -174,7 +174,7 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
             </Collapsible>
 
             {/* Type, Category, Priority */}
-            <Collapsible title="Type et catégorie" defaultOpen={true}>
+            <Collapsible title="Classification" defaultOpen={true}>
               <EventMetadataSection
                 type={editType}
                 category={editCategory}

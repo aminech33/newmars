@@ -7,4 +7,7 @@ export { AddBookModal } from './AddBookModal'
 export { GoalModal } from './GoalModal'
 export { ReadingChart } from './ReadingChart'
 export { LibraryStatsPage } from './LibraryStatsPage'
+export { QuotesLibraryPage } from './QuotesLibraryPage'
+export { GenreSelector } from './GenreSelector'
+export { GenreBadge } from './GenreBadge'
 

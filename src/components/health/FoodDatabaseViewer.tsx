@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Search, Book, X } from 'lucide-react'
 import { FOOD_DATABASE, FOOD_CATEGORIES, FoodItem } from '../../utils/foodDatabase'
+import { FoodDetailModal } from './FoodDetailModal'
 
 interface FoodDatabaseViewerProps {
   isOpen: boolean
@@ -11,10 +12,18 @@ interface FoodDatabaseViewerProps {
 export function FoodDatabaseViewer({ isOpen, onClose, onSelectFood }: FoodDatabaseViewerProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [customFoods, setCustomFoods] = useState<Record<string, FoodItem>>({})
+
+  // Merge base database avec les aliments modifiés
+  const foodDatabase = useMemo(() => {
+    return FOOD_DATABASE.map(food => customFoods[food.id] || food)
+  }, [customFoods])
 
   // Filtrer les aliments
   const filteredFoods = useMemo(() => {
-    let foods = FOOD_DATABASE
+    let foods = foodDatabase
 
     // Filtre par catégorie
     if (selectedCategory !== 'all') {
@@ -31,18 +40,31 @@ export function FoodDatabaseViewer({ isOpen, onClose, onSelectFood }: FoodDataba
     }
 
     return foods
-  }, [searchQuery, selectedCategory])
+  }, [searchQuery, selectedCategory, foodDatabase])
 
   // Stats
   const stats = useMemo(() => {
     return {
-      total: FOOD_DATABASE.length,
+      total: foodDatabase.length,
       byCategory: FOOD_CATEGORIES.map(cat => ({
         ...cat,
-        count: FOOD_DATABASE.filter(f => f.category === cat.value).length
+        count: foodDatabase.filter(f => f.category === cat.value).length
       }))
     }
-  }, [])
+  }, [foodDatabase])
+
+  const handleFoodClick = (food: FoodItem) => {
+    setSelectedFood(food)
+    setShowDetailModal(true)
+  }
+
+  const handleUpdateFood = (updatedFood: FoodItem) => {
+    setCustomFoods(prev => ({
+      ...prev,
+      [updatedFood.id]: updatedFood
+    }))
+    setShowDetailModal(false)
+  }
 
   if (!isOpen) return null
 
@@ -129,7 +151,7 @@ export function FoodDatabaseViewer({ isOpen, onClose, onSelectFood }: FoodDataba
                   <div
                     key={food.id}
                     className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-800/50 hover:border-zinc-700 transition-[background-color] duration-200 group cursor-pointer"
-                    onClick={() => onSelectFood?.(food)}
+                    onClick={() => handleFoodClick(food)}
                   >
                     <div className="flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">{categoryInfo?.emoji}</span>
@@ -140,19 +162,19 @@ export function FoodDatabaseViewer({ isOpen, onClose, onSelectFood }: FoodDataba
                         <div className="grid grid-cols-4 gap-2 mb-2">
                           <div>
                             <p className="text-xs text-zinc-600">Calories</p>
-                            <p className="text-sm font-bold text-orange-400">{food.caloriesPer100g}</p>
+                            <p className="text-sm font-bold text-orange-400">{Math.round(food.caloriesPer100g)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-zinc-600">Protéines</p>
-                            <p className="text-sm font-bold text-rose-400">{food.proteinPer100g}g</p>
+                            <p className="text-sm font-bold text-rose-400">{Math.round(food.proteinPer100g * 10) / 10}g</p>
                           </div>
                           <div>
                             <p className="text-xs text-zinc-600">Glucides</p>
-                            <p className="text-sm font-bold text-amber-400">{food.carbsPer100g}g</p>
+                            <p className="text-sm font-bold text-amber-400">{Math.round(food.carbsPer100g * 10) / 10}g</p>
                           </div>
                           <div>
                             <p className="text-xs text-zinc-600">Lipides</p>
-                            <p className="text-sm font-bold text-yellow-400">{food.fatPer100g}g</p>
+                            <p className="text-sm font-bold text-yellow-400">{Math.round(food.fatPer100g * 10) / 10}g</p>
                           </div>
                         </div>
 
@@ -178,6 +200,14 @@ export function FoodDatabaseViewer({ isOpen, onClose, onSelectFood }: FoodDataba
           </p>
         </div>
       </div>
+
+      {/* Detail Modal */}
+      <FoodDetailModal
+        food={selectedFood}
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        onUpdate={handleUpdateFood}
+      />
     </div>
   )
 }

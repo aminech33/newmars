@@ -125,6 +125,7 @@ export function Modal({
         tabIndex={-1}
         className={`
           relative w-full ${sizeClasses[size]}
+          max-h-[90vh] flex flex-col
           bg-zinc-900 rounded-2xl border border-zinc-800
           shadow-2xl animate-scale-in
           outline-none
@@ -133,7 +134,7 @@ export function Modal({
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-zinc-800">
             <div>
               {title && (
                 <h2 id="modal-title" className="text-lg font-semibold text-zinc-100">
@@ -159,13 +160,13 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-800 bg-zinc-900/50">
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-800 bg-zinc-900/50">
             {footer}
           </div>
         )}

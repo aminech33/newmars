@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { Clock, Check, Calendar } from 'lucide-react'
 import { Task, useStore } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
@@ -33,17 +34,57 @@ const postItColors = {
 }
 
 export function PostItTaskCard({ task, index, onClick }: PostItTaskCardProps) {
-  const { toggleTask, projects } = useStore()
+  const { toggleTask, projects, updateTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
   const colors = postItColors[task.priority]
+  
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editedTitle, setEditedTitle] = useState(task.title)
+  const inputRef = useRef<HTMLInputElement>(null)
   
   const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0
   const totalSubtasks = task.subtasks?.length || 0
   const isOverdue = task.dueDate && new Date(task.dueDate).getTime() < Date.now()
 
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingTitle && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditingTitle])
+
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation()
     toggleTask(task.id)
+  }
+
+  const handleTitleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsEditingTitle(true)
+  }
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedTitle(e.target.value)
+  }
+
+  const handleTitleBlur = () => {
+    if (editedTitle.trim() && editedTitle !== task.title) {
+      updateTask(task.id, { title: editedTitle.trim() })
+    } else {
+      setEditedTitle(task.title)
+    }
+    setIsEditingTitle(false)
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleTitleBlur()
+    } else if (e.key === 'Escape') {
+      setEditedTitle(task.title)
+      setIsEditingTitle(false)
+    }
   }
 
   // Rotation aléatoire mais stable (basée sur l'ID)
@@ -125,17 +166,38 @@ export function PostItTaskCard({ task, index, onClick }: PostItTaskCardProps) {
                   {task.completed && <Check className="w-4 h-4 text-white" />}
                 </button>
                 
-                <p 
-                  className={`text-sm font-medium leading-snug ${
-                    task.completed ? 'line-through opacity-60' : ''
-                  }`}
-                  style={{ 
-                    color: colors.text,
-                    fontFamily: '"Indie Flower", "Comic Sans MS", cursive'
-                  }}
-                >
-                  {task.title}
-                </p>
+                {isEditingTitle ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={editedTitle}
+                    onChange={handleTitleChange}
+                    onBlur={handleTitleBlur}
+                    onKeyDown={handleTitleKeyDown}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex-1 text-sm font-medium leading-snug px-2 py-1 rounded border-2 focus:outline-none"
+                    style={{ 
+                      color: colors.text,
+                      fontFamily: '"Indie Flower", "Comic Sans MS", cursive',
+                      borderColor: colors.text,
+                      backgroundColor: 'rgba(255, 255, 255, 0.8)'
+                    }}
+                  />
+                ) : (
+                  <p 
+                    onDoubleClick={handleTitleDoubleClick}
+                    className={`text-sm font-medium leading-snug ${
+                      task.completed ? 'line-through opacity-60' : ''
+                    }`}
+                    style={{ 
+                      color: colors.text,
+                      fontFamily: '"Indie Flower", "Comic Sans MS", cursive'
+                    }}
+                    title="Double-clic pour éditer"
+                  >
+                    {task.title}
+                  </p>
+                )}
               </div>
 
               {/* Métadonnées */}

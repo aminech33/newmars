@@ -108,26 +108,32 @@ export const analyzeWeightTrend = (entries: WeightEntry[]): {
     new Date(a.date).getTime() - new Date(b.date).getTime()
   )
 
-  const firstWeight = sortedEntries[0].weight
-  const lastWeight = sortedEntries[sortedEntries.length - 1].weight
+  // Use last 14 entries or all if less
+  const recentEntries = sortedEntries.slice(-14)
+  
+  const firstWeight = recentEntries[0].weight
+  const lastWeight = recentEntries[recentEntries.length - 1].weight
   const totalChange = lastWeight - firstWeight
 
-  const firstDate = new Date(sortedEntries[0].date)
-  const lastDate = new Date(sortedEntries[sortedEntries.length - 1].date)
+  const firstDate = new Date(recentEntries[0].date)
+  const lastDate = new Date(recentEntries[recentEntries.length - 1].date)
   const daysDiff = Math.max(1, (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24))
   
-  const avgChange = totalChange / daysDiff
-  const weeklyChange = avgChange * 7
+  // Calculate weekly change
+  const weeklyChange = daysDiff >= 7 
+    ? (totalChange / daysDiff) * 7 
+    : totalChange // If less than a week, show total change
 
+  // Determine trend (threshold: 0.1 kg/week)
   let trend: 'increasing' | 'decreasing' | 'stable' = 'stable'
-  if (Math.abs(weeklyChange) > 0.2) {
+  if (Math.abs(weeklyChange) > 0.1) {
     trend = weeklyChange > 0 ? 'increasing' : 'decreasing'
   }
 
   return {
     trend,
-    avgChange: Number(avgChange.toFixed(2)),
-    weeklyChange: Number(weeklyChange.toFixed(2))
+    avgChange: totalChange / daysDiff,
+    weeklyChange: Number(weeklyChange.toFixed(1))
   }
 }
 

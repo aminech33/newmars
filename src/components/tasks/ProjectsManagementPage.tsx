@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, TrendingUp, Link, ListPlus } from 'lucide-react'
 import { useStore, Project, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { AddProjectModal } from './AddProjectModal'
-import { CreateProjectWithTasksModal } from './CreateProjectWithTasksModal'
+import { CreateProjectWithTasksPage } from './CreateProjectWithTasksPage'
 import { AssignTasksToProjectModal } from './AssignTasksToProjectModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 
@@ -303,8 +303,8 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         onCreate={handleCreateOrUpdate}
       />
 
-      {/* Create Project With Tasks Modal */}
-      <CreateProjectWithTasksModal
+      {/* Create Project With Tasks Page */}
+      <CreateProjectWithTasksPage
         isOpen={showCreateWithTasks}
         onClose={() => setShowCreateWithTasks(false)}
         onCreate={handleCreateProjectWithTasks}

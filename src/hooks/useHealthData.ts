@@ -10,7 +10,7 @@ import {
   generateHealthSuggestions
 } from '../utils/healthIntelligence'
 
-export type HealthTab = 'overview' | 'weight' | 'nutrition'
+export type HealthTab = 'nutrition' | 'weight'
 
 export function useHealthData() {
   const { 
@@ -24,7 +24,7 @@ export function useHealthData() {
     deleteMealEntry
   } = useStore()
 
-  const [activeTab, setActiveTab] = useState<HealthTab>('overview')
+  const [activeTab, setActiveTab] = useState<HealthTab>('nutrition')
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month' | 'year'>('all')
 

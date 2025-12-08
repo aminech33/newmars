@@ -31,36 +31,71 @@ export const BookCover = memo(function BookCover({ book, onClick }: BookCoverPro
           border border-white/10
         `}
       >
-        {/* Effet brillance */}
-        <div 
-          className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/20"
-        />
-        
-        {/* Titre & Auteur */}
-        <div className="absolute inset-0 p-4 flex flex-col justify-between">
-          <div className="text-center">
-            <h3 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-3 drop-shadow-lg">
-              {book.title}
-            </h3>
-            <p className="text-xs text-white/80 mt-2 line-clamp-2 drop-shadow">
-              {book.author}
-            </p>
-          </div>
-
-          {/* Bottom info */}
-          <div className="flex items-center justify-between">
-            {book.pages && (
-              <span className="text-xs text-white/70 bg-black/20 backdrop-blur-sm px-2 py-1 rounded">
-                {book.pages}p
-              </span>
-            )}
-            {book.status === 'reading' && (
-              <div className="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center animate-pulse">
-                <BookOpen className="w-3 h-3 text-white" />
+        {/* Image de couverture si disponible */}
+        {book.coverUrl ? (
+          <>
+            <img 
+              src={book.coverUrl} 
+              alt={`Couverture de ${book.title}`}
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              loading="lazy"
+              onError={(e) => {
+                // Fallback au gradient si l'image ne charge pas
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+            
+            {/* Léger overlay pour que les badges restent visibles */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+            
+            {/* Infos minimales en bas uniquement pour les livres avec couverture */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
+              {book.pages && (
+                <span className="text-xs text-white/90 bg-black/40 backdrop-blur-sm px-2 py-1 rounded">
+                  {book.pages}p
+                </span>
+              )}
+              {book.status === 'reading' && (
+                <div className="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center animate-pulse">
+                  <BookOpen className="w-3 h-3 text-white" />
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Effet brillance pour gradient */}
+            <div 
+              className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/20"
+            />
+            
+            {/* Titre & Auteur (uniquement si pas de coverUrl) */}
+            <div className="absolute inset-0 p-4 flex flex-col justify-between">
+              <div className="text-center">
+                <h3 className="text-sm md:text-base font-bold text-white leading-tight line-clamp-3 drop-shadow-lg">
+                  {book.title}
+                </h3>
+                <p className="text-xs text-white/80 mt-2 line-clamp-2 drop-shadow">
+                  {book.author}
+                </p>
               </div>
-            )}
-          </div>
-        </div>
+
+              {/* Bottom info */}
+              <div className="flex items-center justify-between">
+                {book.pages && (
+                  <span className="text-xs text-white/70 bg-black/20 backdrop-blur-sm px-2 py-1 rounded">
+                    {book.pages}p
+                  </span>
+                )}
+                {book.status === 'reading' && (
+                  <div className="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center animate-pulse">
+                    <BookOpen className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Progress bar si en cours */}
         {book.status === 'reading' && progress > 0 && (

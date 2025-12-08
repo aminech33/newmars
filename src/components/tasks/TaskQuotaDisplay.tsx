@@ -14,9 +14,12 @@ export function TaskQuotaDisplay({ onSettingsClick }: TaskQuotaDisplayProps) {
   const visibleCount = visibleTasks.length
   const hiddenCount = hiddenTasks.length
   
-  const progress = taskQuota > 0 ? (visibleCount / taskQuota) * 100 : 0
+  // Debug: vérifier les tâches visibles vs quota
+  const progress = taskQuota > 0 ? Math.min((visibleCount / taskQuota) * 100, 100) : 0
   const isFull = visibleCount >= taskQuota
   const isEmpty = visibleCount === 0 && hiddenCount === 0
+  
+  console.log('TaskQuota Debug:', { visibleCount, hiddenCount, taskQuota, progress, isFull })
 
   // Ne rien afficher si pas de tâches
   if (isEmpty) {

@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ArrowLeft, GraduationCap } from 'lucide-react'
+import { ArrowLeft, GraduationCap, Clock, BookOpen, Flame, Timer, Settings, Archive, Trash2, PanelLeft, PanelLeftClose } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { useLearningData } from '../../hooks/useLearningData'
 import { CourseList } from './CourseList'
 import { CourseChat } from './CourseChat'
-import { CourseHeader } from './CourseHeader'
 import { CourseModal } from './CourseModal'
 import { EmptyState } from './EmptyState'
 import { LearningFAB } from './LearningFAB'
@@ -32,7 +31,7 @@ function useLocalToast() {
 // REMOVED: Simulated AI Response - Now using real Gemini API
 
 export function LearningPage() {
-  const setView = useStore(state => state.setView)
+  const { setView, projects, addToast } = useStore()
   
   const {
     uiState,
@@ -240,18 +239,137 @@ Réponds de manière pédagogique et claire. Adapte-toi au niveau de l'élève.`
 
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden">
-      {/* Header - Standard */}
-      <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setView('hub')}
-            className="p-1.5 hover:bg-zinc-800/50 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 text-zinc-400" />
-          </button>
-          <GraduationCap className="w-4 h-4 text-purple-400" />
-          <h1 className="text-lg font-semibold text-zinc-200">Apprentissage</h1>
-          <span className="text-xs text-zinc-500">{courses.length} cours</span>
+      {/* Header - Unified */}
+      <header className="flex-shrink-0 px-4 py-1.5 border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: Navigation + Course Info */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <button
+              onClick={() => activeCourse ? setActiveCourse(null) : setView('hub')}
+              className="p-1.5 hover:bg-zinc-800/50 rounded-lg transition-colors flex-shrink-0"
+              aria-label={activeCourse ? 'Retour aux cours' : 'Retour au hub'}
+            >
+              <ArrowLeft className="w-4 h-4 text-zinc-400" />
+            </button>
+            
+            {!activeCourse ? (
+              <>
+                <GraduationCap className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                <h1 className="text-base font-semibold text-zinc-200">Apprentissage</h1>
+                <span className="text-xs text-zinc-500">{filteredCourses.length} cours</span>
+              </>
+            ) : (
+              <>
+                {/* Toggle Sidebar Button */}
+                <button
+                  onClick={toggleSidebar}
+                  className="hidden lg:flex p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-lg transition-[background-color] duration-200 flex-shrink-0"
+                  aria-label={uiState.sidebarCollapsed ? 'Ouvrir la sidebar' : 'Réduire la sidebar'}
+                >
+                  {uiState.sidebarCollapsed ? (
+                    <PanelLeft className="w-4 h-4" />
+                  ) : (
+                    <PanelLeftClose className="w-4 h-4" />
+                  )}
+                </button>
+                
+                {/* Course Icon & Name */}
+                <div className={`p-1.5 rounded-lg flex-shrink-0 ${
+                  activeCourse.color === 'indigo' ? 'bg-indigo-500/20 text-indigo-400' :
+                  activeCourse.color === 'emerald' ? 'bg-emerald-500/20 text-emerald-400' :
+                  activeCourse.color === 'rose' ? 'bg-rose-500/20 text-rose-400' :
+                  activeCourse.color === 'amber' ? 'bg-amber-500/20 text-amber-400' :
+                  activeCourse.color === 'cyan' ? 'bg-cyan-500/20 text-cyan-400' :
+                  activeCourse.color === 'violet' ? 'bg-violet-500/20 text-violet-400' :
+                  activeCourse.color === 'orange' ? 'bg-orange-500/20 text-orange-400' :
+                  'bg-teal-500/20 text-teal-400'
+                }`}>
+                  <span className="text-base">{activeCourse.icon}</span>
+                </div>
+                <h1 className="text-sm font-semibold text-zinc-100 truncate">{activeCourse.name}</h1>
+                
+                {/* Progress indicator */}
+                {activeCourse.progress > 0 && (
+                  <span className="text-xs text-zinc-500 flex-shrink-0">{activeCourse.progress}%</span>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Right: Stats + Actions (only when course is active) */}
+          {activeCourse && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Stats (hidden on mobile) */}
+              <div className="hidden md:flex items-center gap-2 text-xs text-zinc-500">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{Math.floor(activeCourse.totalTimeSpent / 60) > 0 ? `${Math.floor(activeCourse.totalTimeSpent / 60)}h` : `${activeCourse.totalTimeSpent}min`}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{activeCourse.messagesCount}</span>
+                </div>
+                {activeCourse.streak > 0 && (
+                  <div className="flex items-center gap-1 text-amber-400">
+                    <Flame className="w-3.5 h-3.5" />
+                    <span className="font-medium">{activeCourse.streak}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="hidden md:block w-px h-4 bg-zinc-800" />
+
+              {/* Actions */}
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => {
+                    const linkedProject = projects.find(p => p.id === activeCourse.linkedProjectId)
+                    if (!linkedProject) {
+                      addToast('⚠️ Aucun projet lié à ce cours', 'warning')
+                      return
+                    }
+                    localStorage.setItem('pomodoro-preselect', JSON.stringify({
+                      projectId: activeCourse.linkedProjectId,
+                      projectName: linkedProject.name,
+                      taskTitle: `Étudier ${activeCourse.name}`,
+                      courseId: activeCourse.id,
+                      courseName: activeCourse.name
+                    }))
+                    addToast(`🍅 Pomodoro prêt pour "${activeCourse.name}"`, 'success')
+                    setView('pomodoro')
+                  }}
+                  className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-[background-color,color] duration-200"
+                  aria-label="Démarrer un Pomodoro"
+                >
+                  <Timer className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  onClick={handleSettingsCourse}
+                  className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-lg transition-[background-color,color] duration-200"
+                  aria-label="Paramètres"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  onClick={handleArchiveCourse}
+                  className="p-1.5 text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-[background-color,color] duration-200"
+                  aria-label="Archiver"
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  onClick={() => handleDeleteCourse(activeCourse.id)}
+                  className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-[background-color,color] duration-200"
+                  aria-label="Supprimer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -280,17 +398,6 @@ Réponds de manière pédagogique et claire. Adapte-toi au niveau de l'élève.`
       <main className="flex-1 flex flex-col h-full">
         {activeCourse ? (
           <>
-            {/* Course Header */}
-            <CourseHeader
-              course={activeCourse}
-              onBack={() => setActiveCourse(null)}
-              onSettings={handleSettingsCourse}
-              onArchive={handleArchiveCourse}
-              onDelete={() => handleDeleteCourse(activeCourse.id)}
-              onToggleSidebar={toggleSidebar}
-              sidebarCollapsed={uiState.sidebarCollapsed}
-            />
-
             {/* Chat Area */}
             <CourseChat
               course={activeCourse}

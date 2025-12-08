@@ -17,6 +17,7 @@ const shortcutGroups = [
       { keys: ['⌘', 'J'], description: 'Aller au Journal' },
       { keys: ['⌘', 'L'], description: 'Aller à la Bibliothèque' },
       { keys: ['⌘', 'P'], description: 'Aller au Pomodoro' },
+      { keys: ['⌘', 'E'], description: 'Aller au Test Lab' },
       { keys: ['⌘', 'I'], description: 'Aller à l\'IA' },
       { keys: ['Esc'], description: 'Retour / Fermer modal' },
     ]

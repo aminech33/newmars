@@ -105,16 +105,36 @@ export function layoutEvents(events: Event[], hourHeight: number = 80): Position
       columnIndex = columns.length - 1
     }
     
-    // Calculer le nombre total de colonnes pour les événements qui se chevauchent
-    const overlappingEvents = sortedEvents.filter(e => eventsOverlap(e, event))
-    const totalColumns = Math.max(1, overlappingEvents.length)
-    
     positioned.push({
       event,
       column: columnIndex,
-      totalColumns,
+      totalColumns: 1, // Will be updated in second pass
       ...getEventPosition(event.startTime, event.endTime, hourHeight)
     })
+  }
+  
+  // Second pass: calculer le nombre réel de colonnes pour chaque groupe d'événements qui se chevauchent
+  for (let i = 0; i < positioned.length; i++) {
+    const current = positioned[i]
+    if (!current.event.startTime) continue
+    
+    // Trouver tous les événements qui se chevauchent avec celui-ci
+    let maxColumns = 1
+    for (let j = 0; j < positioned.length; j++) {
+      if (i === j || !positioned[j].event.startTime) continue
+      
+      if (eventsOverlap(current.event, positioned[j].event)) {
+        maxColumns = Math.max(maxColumns, positioned[j].column + 1)
+      }
+    }
+    
+    // Mettre à jour le totalColumns pour tous les événements qui se chevauchent
+    current.totalColumns = maxColumns
+    for (let j = 0; j < positioned.length; j++) {
+      if (i !== j && positioned[j].event.startTime && eventsOverlap(current.event, positioned[j].event)) {
+        positioned[j].totalColumns = maxColumns
+      }
+    }
   }
   
   return positioned
@@ -127,13 +147,14 @@ export function getEventStyle(positioned: PositionedEvent): React.CSSProperties 
   const { column, totalColumns, top, height } = positioned
   const columnWidth = 100 / totalColumns
   const left = column * columnWidth
+  const gap = 0.5 // 0.5% gap between columns
   
   return {
     position: 'absolute',
     top: `${top}px`,
     height: `${height}px`,
     left: `${left}%`,
-    width: `${columnWidth - 1}%`, // -1% for gap
+    width: `${columnWidth - gap}%`,
     minHeight: '40px'
   }
 }

@@ -654,27 +654,6 @@ export function PomodoroPage() {
                 </div>
               )}
 
-              {/* Quick stats - Compact */}
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
-                <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
-                  <Activity className="w-3 h-3" />
-                  AUJOURD'HUI
-                </h3>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <div className="text-xl font-bold">{stats.todaySessions}</div>
-                    <div className="text-[10px] text-zinc-500">Sessions</div>
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold text-red-400">{formatDuration(stats.todayMinutes)}</div>
-                    <div className="text-[10px] text-zinc-500">Focus</div>
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold text-orange-400">{stats.currentStreak}</div>
-                    <div className="text-[10px] text-zinc-500">🔥 Streak</div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}

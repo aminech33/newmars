@@ -60,6 +60,10 @@ export function KeyboardShortcuts() {
             e.preventDefault()
             setView('pomodoro')
             break
+          case 'e':
+            e.preventDefault()
+            setView('test-lab')
+            break
           case 'z':
             e.preventDefault()
             if (e.shiftKey) {
@@ -69,6 +73,13 @@ export function KeyboardShortcuts() {
             }
             break
         }
+      }
+
+      // Test Lab: Ctrl+Shift+T (raccourci caché pour développeurs)
+      if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+        e.preventDefault()
+        setView('test-lab')
+        return
       }
 
       // Escape - Intelligent behavior

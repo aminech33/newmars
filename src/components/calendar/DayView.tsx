@@ -1,6 +1,8 @@
 import { useMemo, useRef, useEffect, useState } from 'react'
 import { Clock, Plus } from 'lucide-react'
 import { Event } from '../../types/calendar'
+import { layoutEvents, getEventStyle } from '../../utils/eventLayoutUtils'
+import { isEventActiveOnDate } from '../../utils/dateUtils'
 
 interface DayViewProps {
   date: Date
@@ -17,7 +19,6 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
   const dateStr = date.toISOString().split('T')[0]
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 24 })
-  
   // Auto-scroll to current hour on mount
   useEffect(() => {
     const now = new Date()
@@ -51,15 +52,17 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
     }
   }, [])
   
-  // Filter events for this day and sort by time
-  const dayEvents = useMemo(() => {
-    return events
-      .filter(e => e.startDate === dateStr)
+  // Filter events for this day and use layout algorithm for overlapping events
+  const positionedEvents = useMemo(() => {
+    const eventsForDay = events
+      .filter(e => isEventActiveOnDate(e, dateStr))
       .sort((a, b) => {
         const timeA = a.startTime || '00:00'
         const timeB = b.startTime || '00:00'
         return timeA.localeCompare(timeB)
       })
+    
+    return layoutEvents(eventsForDay, HOUR_HEIGHT)
   }, [events, dateStr])
 
   const eventTypeColors = {
@@ -98,7 +101,7 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
           </div>
           <div className="text-right">
             <div className="text-sm text-zinc-500">
-              {dayEvents.length} événement{dayEvents.length > 1 ? 's' : ''}
+              {positionedEvents.length} événement{positionedEvents.length > 1 ? 's' : ''}
             </div>
           </div>
         </div>
@@ -153,20 +156,10 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
               </div>
               ))}
 
-              {/* Events - render all (they're already positioned absolutely) */}
-              {dayEvents.map(event => {
-                const hour = event.startTime ? parseInt(event.startTime.split(':')[0]) : 0
-                const minute = event.startTime ? parseInt(event.startTime.split(':')[1]) : 0
-                const top = hour * HOUR_HEIGHT + (minute / 60) * HOUR_HEIGHT
-                
-                // Calculate duration from start and end time
-                let duration = 60 // default 1 hour
-                if (event.startTime && event.endTime) {
-                  const [startH, startM] = event.startTime.split(':').map(Number)
-                  const [endH, endM] = event.endTime.split(':').map(Number)
-                  duration = (endH * 60 + endM) - (startH * 60 + startM)
-                }
-                const height = Math.max(30, (duration / 60) * HOUR_HEIGHT)
+              {/* Events - positioned with smart layout for overlaps */}
+              {positionedEvents.map(positioned => {
+                const { event, column, totalColumns } = positioned
+                const style = getEventStyle(positioned)
                 
                 const colors = eventTypeColors[event.type as keyof typeof eventTypeColors] || eventTypeColors.other
 
@@ -174,12 +167,8 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
                   <div
                     key={event.id}
                     onClick={() => onEventClick(event.id)}
-                    className={`absolute left-4 right-4 rounded-lg border p-3 cursor-pointer hover:shadow-lg transition-colors z-10 ${colors}`}
-                    style={{
-                      top: `${top}px`,
-                      height: `${height}px`,
-                      minHeight: '40px'
-                    }}
+                    className={`absolute rounded-lg border p-3 cursor-pointer hover:shadow-lg transition-all z-10 ${colors}`}
+                    style={style}
                   >
                   <div className="flex items-start gap-2">
                     {event.startTime && (
@@ -193,10 +182,15 @@ export function DayView({ date, events, onEventClick, onTimeSlotClick }: DayView
                         <div className="text-xs opacity-75 mt-0.5">
                           {event.startTime}
                           {event.endTime && ` - ${event.endTime}`}
-                          {duration && ` • ${duration}min`}
+                          {event.startTime && event.endTime && (() => {
+                            const [startH, startM] = event.startTime.split(':').map(Number)
+                            const [endH, endM] = event.endTime.split(':').map(Number)
+                            const duration = (endH * 60 + endM) - (startH * 60 + startM)
+                            return ` • ${duration}min`
+                          })()}
                         </div>
                       )}
-                      {event.description && height > 60 && (
+                      {event.description && parseInt(style.height as string) > 60 && (
                         <div className="text-xs opacity-60 mt-1 line-clamp-2">
                           {event.description}
                         </div>

@@ -3,9 +3,9 @@
  * Handles communication with Google's Gemini API
  */
 
-// Gemini 2.5 Flash - Latest official model (January 2025)
+// Gemini 2.0 Flash - Latest official model (December 2024)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBFlZdThjH9z3ciJVSIJwfPDfmTpZeN85w'
-const MODEL = 'gemini-2.5-flash'
+const MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash-exp'
 
 interface ConversationMessage {
   role: 'user' | 'assistant'

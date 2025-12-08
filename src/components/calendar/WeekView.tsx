@@ -1,14 +1,15 @@
 import { Event } from '../../types/calendar'
-import { isSameDay } from '../../utils/dateUtils'
+import { isSameDay, isEventActiveOnDate } from '../../utils/dateUtils'
 import { layoutEvents, getEventStyle } from '../../utils/eventLayoutUtils'
 
 interface WeekViewProps {
   currentDate: Date
   events: Event[]
   onEventClick: (eventId: string) => void
+  onDateClick?: (date: Date) => void
 }
 
-export function WeekView({ currentDate, events, onEventClick }: WeekViewProps) {
+export function WeekView({ currentDate, events, onEventClick, onDateClick }: WeekViewProps) {
   // Get week days (Monday to Sunday)
   const getWeekDays = () => {
     const days: Date[] = []
@@ -30,7 +31,7 @@ export function WeekView({ currentDate, events, onEventClick }: WeekViewProps) {
 
   const getEventsForDay = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0]
-    return events.filter(e => e.startDate === dateStr && e.startTime)
+    return events.filter(e => isEventActiveOnDate(e, dateStr) && e.startTime)
   }
 
   const isToday = (date: Date) => {

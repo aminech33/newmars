@@ -97,6 +97,18 @@ export const isPast = (date: string): boolean => {
   return d < today
 }
 
+/**
+ * Vérifie si un événement est actif pour une date donnée
+ * (prend en compte les événements multi-jours)
+ */
+export const isEventActiveOnDate = (event: { startDate: string; endDate?: string }, dateStr: string): boolean => {
+  const eventStart = event.startDate
+  const eventEnd = event.endDate || event.startDate
+  
+  // L'événement est actif si la date est entre le début et la fin (inclus)
+  return dateStr >= eventStart && dateStr <= eventEnd
+}
+
 export const getTimeUntil = (date: string, time?: string): string => {
   const targetDate = new Date(date)
   if (time) {
@@ -133,20 +145,49 @@ export const getRelativeTime = (date: string): string => {
   return formatDate(date, 'short')
 }
 
-export const getCalendarDays = (year: number, month: number): (Date | null)[] => {
+export const getCalendarDays = (year: number, month: number): Array<{ date: Date, isCurrentMonth: boolean, isToday: boolean }> => {
   const daysInMonth = getDaysInMonth(year, month)
   const firstDay = getFirstDayOfMonth(year, month)
-  const days: (Date | null)[] = []
+  const days: Array<{ date: Date, isCurrentMonth: boolean, isToday: boolean }> = []
   
   // Jours du mois précédent (pour remplir la première semaine)
   const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1 // Lundi = 0
-  for (let i = 0; i < adjustedFirstDay; i++) {
-    days.push(null)
+  const prevMonth = month === 0 ? 11 : month - 1
+  const prevYear = month === 0 ? year - 1 : year
+  const daysInPrevMonth = getDaysInMonth(prevYear, prevMonth)
+  
+  for (let i = adjustedFirstDay - 1; i >= 0; i--) {
+    const date = new Date(prevYear, prevMonth, daysInPrevMonth - i)
+    days.push({ 
+      date, 
+      isCurrentMonth: false, 
+      isToday: isToday(date) 
+    })
   }
   
   // Jours du mois actuel
+  const today = new Date()
   for (let i = 1; i <= daysInMonth; i++) {
-    days.push(new Date(year, month, i))
+    const date = new Date(year, month, i)
+    days.push({ 
+      date, 
+      isCurrentMonth: true, 
+      isToday: date.toDateString() === today.toDateString()
+    })
+  }
+  
+  // Jours du mois suivant (pour remplir la dernière semaine)
+  const remainingDays = 42 - days.length // 6 semaines max
+  const nextMonth = month === 11 ? 0 : month + 1
+  const nextYear = month === 11 ? year + 1 : year
+  
+  for (let i = 1; i <= remainingDays; i++) {
+    const date = new Date(nextYear, nextMonth, i)
+    days.push({ 
+      date, 
+      isCurrentMonth: false, 
+      isToday: isToday(date) 
+    })
   }
   
   return days

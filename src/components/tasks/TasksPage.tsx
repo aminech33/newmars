@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, FolderKanban, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Plus, FolderKanban, BarChart3, ArrowUpDown } from 'lucide-react'
 import { useStore, Task, TaskCategory, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { KanbanBoard } from './KanbanBoard'
 import { TaskDetails } from './TaskDetails'
 import { UnifiedFilters, TaskFilterState } from './UnifiedFilters'
 import { AddProjectModal } from './AddProjectModal'
-import { CreateProjectWithTasksModal } from './CreateProjectWithTasksModal'
+import { CreateProjectWithTasksPage } from './CreateProjectWithTasksPage'
 import { TaskQuotaDisplay } from './TaskQuotaDisplay'
 import { TaskQuotaSettings } from './TaskQuotaSettings'
 import { ProjectsManagementPage } from './ProjectsManagementPage'
 import { StatDetailModal } from './StatDetailModal'
 import { TaskFAB } from './TaskFAB'
-import { UndoToast } from '../ui/UndoToast'
 import { Tooltip } from '../ui/Tooltip'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { useUndo } from '../../hooks/useUndo'
 import { useDebounce } from '../../hooks/useDebounce'
 import { useTaskFilters, QuickFilter } from '../../hooks/useTaskFilters'
 import { useTaskStats } from '../../hooks/useTaskStats'
@@ -55,6 +53,7 @@ export function TasksPage() {
     hasSubtasks: null,
     hasDueDate: null,
   })
+  const [sortBy, setSortBy] = useState<'none' | 'dueDate' | 'priority' | 'title'>('none')
   
   // Quick Add States
   const [showQuickAdd, setShowQuickAdd] = useState(false)
@@ -67,9 +66,8 @@ export function TasksPage() {
   const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0])
   const [newProjectIcon, setNewProjectIcon] = useState(PROJECT_ICONS[0])
   
-  // Confirmation & Undo
+  // Confirmation
   const [confirmDelete, setConfirmDelete] = useState<{ task: Task } | null>(null)
-  const { addAction, undo, showToast, currentAction, canUndo } = useUndo()
   
   // Debounced search
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
@@ -81,6 +79,30 @@ export function TasksPage() {
     searchQuery: debouncedSearchQuery,
     quickFilter,
     advancedFilters
+  })
+  
+  // Sort filtered tasks
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (sortBy === 'none') return 0
+    
+    if (sortBy === 'dueDate') {
+      // Tasks without due date go to end
+      if (!a.dueDate && !b.dueDate) return 0
+      if (!a.dueDate) return 1
+      if (!b.dueDate) return -1
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    }
+    
+    if (sortBy === 'priority') {
+      const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 }
+      return priorityOrder[a.priority] - priorityOrder[b.priority]
+    }
+    
+    if (sortBy === 'title') {
+      return a.title.localeCompare(b.title)
+    }
+    
+    return 0
   })
   
   const { last7DaysStats, completedToday } = useTaskStats(tasks)
@@ -97,14 +119,10 @@ export function TasksPage() {
         e.preventDefault()
         document.getElementById('task-search')?.focus()
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && canUndo) {
-        e.preventDefault()
-        undo()
-      }
     }
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [canUndo, undo])
+  }, [])
   
   // Handlers
   const handleQuickAdd = () => {
@@ -189,14 +207,7 @@ export function TasksPage() {
   const confirmDeleteTask = () => {
     if (!confirmDelete) return
     const task = confirmDelete.task
-    const taskCopy = { ...task }
     deleteTask(task.id)
-    addAction({
-      type: 'delete',
-      data: taskCopy,
-      undo: () => addTask(taskCopy),
-      label: `Tâche "${task.title}" supprimée`
-    })
     setConfirmDelete(null)
   }
   
@@ -296,10 +307,58 @@ export function TasksPage() {
           onReset={handleResetFilters}
         />
         
+        {/* Sort Menu */}
+        <div className="mb-3 flex items-center gap-2 px-1">
+          <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500" />
+          <span className="text-xs text-zinc-500">Trier par :</span>
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setSortBy('none')}
+              className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                sortBy === 'none'
+                  ? 'bg-white/10 text-white'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              }`}
+            >
+              Défaut
+            </button>
+            <button
+              onClick={() => setSortBy('dueDate')}
+              className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                sortBy === 'dueDate'
+                  ? 'bg-white/10 text-white'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              }`}
+            >
+              Date
+            </button>
+            <button
+              onClick={() => setSortBy('priority')}
+              className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                sortBy === 'priority'
+                  ? 'bg-white/10 text-white'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              }`}
+            >
+              Priorité
+            </button>
+            <button
+              onClick={() => setSortBy('title')}
+              className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                sortBy === 'title'
+                  ? 'bg-white/10 text-white'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              }`}
+            >
+              Nom
+            </button>
+          </div>
+        </div>
+        
         {/* Content - Kanban prend tout l'espace restant */}
         <div className="h-[calc(100vh-280px)]">
           <KanbanBoard
-            tasks={filteredTasks}
+            tasks={sortedTasks}
             onTaskClick={setSelectedTask}
             onTaskDelete={handleDeleteWithUndo}
           />
@@ -316,14 +375,7 @@ export function TasksPage() {
       
       {/* FAB Mobile */}
       <TaskFAB onClick={() => setShowQuickAdd(true)} />
-      
-      {/* Undo Toast */}
-      <UndoToast
-        message={currentAction?.label || ''}
-        onUndo={undo}
-        isVisible={showToast}
-      />
-      
+
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
         isOpen={!!confirmDelete}
@@ -391,8 +443,8 @@ export function TasksPage() {
         onCreate={handleCreateProject}
       />
       
-      {/* Create Project With Tasks Modal */}
-      <CreateProjectWithTasksModal
+      {/* Create Project With Tasks Page */}
+      <CreateProjectWithTasksPage
         isOpen={showCreateProjectWithTasks}
         onClose={() => setShowCreateProjectWithTasks(false)}
         onCreate={handleCreateProjectWithTasks}

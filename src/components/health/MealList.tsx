@@ -95,13 +95,13 @@ export const MealList = memo(function MealList({ entries, onDelete, onDuplicate,
                       {/* Affichage des macros */}
                       <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500">
                         {meal.protein !== undefined && (
-                          <span className="text-rose-400/80">P: {meal.protein}g</span>
+                          <span className="text-rose-400/80">P: {Math.round(meal.protein * 10) / 10}g</span>
                         )}
                         {meal.carbs !== undefined && (
-                          <span className="text-amber-400/80">G: {meal.carbs}g</span>
+                          <span className="text-amber-400/80">G: {Math.round(meal.carbs * 10) / 10}g</span>
                         )}
                         {meal.fat !== undefined && (
-                          <span className="text-yellow-400/80">L: {meal.fat}g</span>
+                          <span className="text-yellow-400/80">L: {Math.round(meal.fat * 10) / 10}g</span>
                         )}
                       </div>
                     </div>

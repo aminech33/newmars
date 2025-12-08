@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, BookOpen, Star, Clock, Play, Quote, FileText } from 'lucide-react'
+import { X, BookOpen, Star, Clock, Play, Quote, FileText, Search, Image } from 'lucide-react'
 import { Book, Quote as QuoteType, ReadingNote } from '../../../types/library'
 import { getBookProgress, formatReadingTimeDetailed, formatDateShort } from '../../../utils/libraryFormatters'
 import { Button } from '../../ui/Button'
 import { Textarea } from '../../ui/Input'
+import { fetchMultipleBookCovers, BookCoverResult } from '../../../utils/bookCoverAPI'
+import { GenreBadge } from './GenreBadge'
 
 type ModalTab = 'details' | 'quotes' | 'notes'
 
@@ -44,6 +46,9 @@ export function BookDetailModal({
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null)
   const [editQuoteText, setEditQuoteText] = useState('')
   const [editQuotePage, setEditQuotePage] = useState('')
+  const [isLoadingCover, setIsLoadingCover] = useState(false)
+  const [coverOptions, setCoverOptions] = useState<BookCoverResult[]>([])
+  const [selectedCoverUrl, setSelectedCoverUrl] = useState<string>()
   
   const modalRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -132,6 +137,43 @@ export function BookDetailModal({
     setEditQuotePage('')
   }, [])
 
+  const handleSearchCover = useCallback(async () => {
+    setIsLoadingCover(true)
+    try {
+      const results = await fetchMultipleBookCovers(book.title, book.author)
+      
+      if (results.length > 0) {
+        setCoverOptions(results)
+        // Sélectionner automatiquement la première option
+        setSelectedCoverUrl(results[0].coverUrl)
+      }
+    } catch (error) {
+      console.error('Erreur recherche couverture:', error)
+    } finally {
+      setIsLoadingCover(false)
+    }
+  }, [book.title, book.author])
+
+  const handleApplyCover = useCallback(() => {
+    if (selectedCoverUrl) {
+      onUpdate({ coverUrl: selectedCoverUrl })
+      
+      // Optionnel : remplir les pages si manquantes
+      const selectedOption = coverOptions.find(opt => opt.coverUrl === selectedCoverUrl)
+      if (selectedOption?.pages && !book.pages) {
+        onUpdate({ pages: selectedOption.pages })
+      }
+      
+      setCoverOptions([])
+      setSelectedCoverUrl(undefined)
+    }
+  }, [selectedCoverUrl, coverOptions, book.pages, onUpdate])
+
+  const handleCancelCover = useCallback(() => {
+    setCoverOptions([])
+    setSelectedCoverUrl(undefined)
+  }, [])
+
   const tabs = [
     { id: 'details' as const, label: 'Détails', icon: BookOpen },
     { id: 'quotes' as const, label: `Citations (${book.quotes?.length || 0})`, icon: Quote },
@@ -201,7 +243,15 @@ export function BookDetailModal({
           <h2 id="book-detail-title" className="text-xl md:text-2xl font-semibold text-zinc-100">
             {book.title}
           </h2>
-          <p className="text-zinc-400">{book.author}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-zinc-400">{book.author}</p>
+            {book.genre && (
+              <>
+                <span className="text-zinc-700">•</span>
+                <GenreBadge genreId={book.genre} size="sm" />
+              </>
+            )}
+          </div>
         </div>
         
         {/* Onglets */}
@@ -328,6 +378,128 @@ export function BookDetailModal({
                     <p className="text-zinc-300">{book.pages}</p>
                   </div>
                 )}
+              </div>
+
+              {/* Gestion de la couverture */}
+              <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <Image className="w-4 h-4 text-zinc-400" />
+                  <h3 className="text-sm font-medium text-zinc-300">Couverture du livre</h3>
+                </div>
+
+                {/* Couverture actuelle */}
+                {book.coverUrl && coverOptions.length === 0 && (
+                  <div className="flex items-center gap-3 mb-3">
+                    <img 
+                      src={book.coverUrl} 
+                      alt="Couverture actuelle"
+                      className="w-16 h-20 object-cover rounded shadow-lg"
+                    />
+                    <div className="flex-1 text-xs text-zinc-400">
+                      <p>Couverture actuelle</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Options de couvertures trouvées */}
+                {coverOptions.length > 0 && (
+                  <div className="space-y-3 mb-3">
+                    <p className="text-xs text-emerald-400 mb-2">
+                      ✓ {coverOptions.length} couverture{coverOptions.length > 1 ? 's' : ''} trouvée{coverOptions.length > 1 ? 's' : ''}
+                    </p>
+                    
+                    {/* Grille scrollable avec plus d'options */}
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto p-1">
+                      {coverOptions.map((option, index) => (
+                        <button
+                          key={`${option.coverUrl}-${index}`}
+                          onClick={() => setSelectedCoverUrl(option.coverUrl)}
+                          className={`relative group rounded-lg overflow-hidden transition-all ${
+                            selectedCoverUrl === option.coverUrl
+                              ? 'ring-2 ring-emerald-500 scale-105 z-10'
+                              : 'hover:ring-2 hover:ring-zinc-600 hover:scale-105'
+                          }`}
+                          title={option.publisher ? `Éditeur: ${option.publisher}` : `Option ${index + 1}`}
+                        >
+                          <div className="relative w-full aspect-[2/3] bg-zinc-800">
+                            <img 
+                              src={option.coverUrl} 
+                              alt={`Option ${index + 1}`}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                // Cacher l'image si elle ne charge pas
+                                e.currentTarget.parentElement!.style.display = 'none'
+                              }}
+                            />
+                          </div>
+                          
+                          {selectedCoverUrl === option.coverUrl && (
+                            <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                              <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                                <span className="text-white text-xs font-bold">✓</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Numéro de l'option au survol */}
+                          <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                              #{index + 1}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Info de l'option sélectionnée */}
+                    {selectedCoverUrl && (() => {
+                      const selected = coverOptions.find(opt => opt.coverUrl === selectedCoverUrl)
+                      return selected && (
+                        <div className="text-xs text-zinc-500 space-y-1">
+                          {selected.pages && <p>📄 {selected.pages} pages</p>}
+                          {selected.publisher && <p>📚 {selected.publisher}</p>}
+                          {selected.isbn && <p>🔖 ISBN: {selected.isbn}</p>}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  {coverOptions.length > 0 ? (
+                    <>
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={handleApplyCover}
+                        disabled={!selectedCoverUrl}
+                        className="flex-1"
+                      >
+                        Appliquer
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelCover}
+                      >
+                        Annuler
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={Search}
+                      onClick={handleSearchCover}
+                      disabled={isLoadingCover}
+                      className="flex-1"
+                    >
+                      {isLoadingCover ? 'Recherche...' : book.coverUrl ? 'Changer la couverture' : 'Chercher une couverture'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           )}
