@@ -1,0 +1,53 @@
+"""
+Backend FastAPI - Apprentissage Adaptatif avec Gemini
+"""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from config import settings
+from routes.learning import router as learning_router
+
+app = FastAPI(
+    title="Adaptive Learning API",
+    description="Backend Python pour apprentissage adaptatif propulsé par Gemini AI",
+    version="1.0.0"
+)
+
+# CORS pour permettre les requêtes depuis le frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # À restreindre en production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Routes
+app.include_router(learning_router, prefix="/api/learning", tags=["Learning"])
+
+
+@app.get("/")
+async def root():
+    """Route racine"""
+    return {
+        "message": "🚀 Backend Adaptatif - Apprentissage pour procrastinateurs",
+        "version": "1.0.0",
+        "status": "running",
+        "docs": "/docs",
+        "algo": "SM-2++ avec Gemini AI"
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health check"""
+    return {"status": "healthy", "gemini": "connected"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.DEBUG
+    )
