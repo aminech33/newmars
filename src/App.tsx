@@ -17,6 +17,7 @@ const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m
 const PomodoroPage = lazy(() => import('./components/pomodoro/PomodoroPage').then(m => ({ default: m.PomodoroPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const TestLabPage = lazy(() => import('./components/testing/TestLabPage').then(m => ({ default: m.TestLabPage })))
+const WidgetShowcase = lazy(() => import('./components/WidgetShowcase').then(m => ({ default: m.WidgetShowcase })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
@@ -137,6 +138,7 @@ function AppContent() {
             {currentView === 'pomodoro' && <PomodoroPage />}
             {currentView === 'settings' && <SettingsPage />}
             {currentView === 'test-lab' && <TestLabPage />}
+            {currentView === 'widget-showcase' && <WidgetShowcase />}
           </>
         )}
       </Suspense>

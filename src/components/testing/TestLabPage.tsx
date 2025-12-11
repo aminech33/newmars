@@ -258,6 +258,14 @@ ${date}
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setView('widget-showcase')}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20"
+                title="Explore 25+ professional widget designs"
+              >
+                <Zap className="w-4 h-4" />
+                🎨 Widget Showcase
+              </button>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                 <Shield className="w-4 h-4 text-emerald-400" />
                 <span className="text-xs text-emerald-400 font-medium">Auto-backup actif</span>

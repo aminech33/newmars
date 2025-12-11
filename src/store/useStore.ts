@@ -130,7 +130,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro' | 'settings' | 'test-lab'
+type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro' | 'settings' | 'test-lab' | 'widget-showcase'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
