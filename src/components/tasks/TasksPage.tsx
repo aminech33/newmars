@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, FolderKanban, BarChart3, ArrowUpDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ArrowLeft, Plus, Search, MoreVertical, ChevronDown, FolderKanban, BarChart3, Settings, X } from 'lucide-react'
 import { useStore, Task, TaskCategory, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { KanbanBoard } from './KanbanBoard'
 import { TaskDetails } from './TaskDetails'
-import { UnifiedFilters, TaskFilterState } from './UnifiedFilters'
 import { AddProjectModal } from './AddProjectModal'
 import { CreateProjectWithTasksPage } from './CreateProjectWithTasksPage'
-import { TaskQuotaDisplay } from './TaskQuotaDisplay'
 import { TaskQuotaSettings } from './TaskQuotaSettings'
 import { ProjectsManagementPage } from './ProjectsManagementPage'
 import { StatDetailModal } from './StatDetailModal'
@@ -45,13 +43,13 @@ export function TasksPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
-  const [advancedFilters, setAdvancedFilters] = useState<TaskFilterState>({
-    categories: [],
-    priorities: [],
-    statuses: [],
+  const [advancedFilters, setAdvancedFilters] = useState({
+    categories: [] as string[],
+    priorities: [] as string[],
+    statuses: [] as string[],
     showCompleted: true,
-    hasSubtasks: null,
-    hasDueDate: null,
+    hasSubtasks: null as boolean | null,
+    hasDueDate: null as boolean | null,
   })
   const [sortBy, setSortBy] = useState<'none' | 'dueDate' | 'priority' | 'title'>('none')
   
@@ -68,6 +66,25 @@ export function TasksPage() {
   
   // Confirmation
   const [confirmDelete, setConfirmDelete] = useState<{ task: Task } | null>(null)
+  
+  // Fairphone UI states
+  const [showMenu, setShowMenu] = useState(false)
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const filterRef = useRef<HTMLDivElement>(null)
+  const sortRef = useRef<HTMLDivElement>(null)
+  
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false)
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterDropdown(false)
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setShowSortDropdown(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   
   // Debounced search
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
@@ -211,18 +228,20 @@ export function TasksPage() {
     setConfirmDelete(null)
   }
   
-  const handleResetFilters = () => {
-    setSelectedProjectId('all')
-    setSearchQuery('')
-    setQuickFilter('all')
-    setAdvancedFilters({
-      categories: [],
-      priorities: [],
-      statuses: [],
-      showCompleted: true,
-      hasSubtasks: null,
-      hasDueDate: null,
-    })
+  // Filter labels
+  const filterLabels: Record<QuickFilter, string> = {
+    all: 'Toutes',
+    today: "Aujourd'hui",
+    overdue: 'En retard',
+    high: 'Priorité haute',
+    'no-date': 'Sans date'
+  }
+  
+  const sortLabels: Record<string, string> = {
+    none: 'Défaut',
+    dueDate: 'Date',
+    priority: 'Priorité',
+    title: 'Nom'
   }
   
   // Show sub-pages if activated
@@ -231,51 +250,155 @@ export function TasksPage() {
   }
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-mars-surface">
-      {/* Header - Compact */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/50">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setView('hub')}
-            className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-zinc-800/50"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-lg font-semibold text-zinc-200">Tâches</h1>
+    <div className="h-screen w-full flex flex-col overflow-hidden"
+      style={{
+        background: `
+          radial-gradient(ellipse 80% 50% at top right, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+          radial-gradient(ellipse 80% 50% at bottom left, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+          linear-gradient(to bottom, #0a0a1a 0%, #000 100%)
+        `
+      }}
+    >
+      {/* Header Fairphone - Une seule ligne */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/30">
+        {/* Back */}
+        <button
+          onClick={() => setView('hub')}
+          className="p-1 text-zinc-500 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        
+        {/* Search - Juste après la flèche */}
+        <div className="flex-1 max-w-sm">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/50 rounded-lg border border-zinc-800/50">
+            <Search className="w-3.5 h-3.5 text-zinc-500" />
+            <input
+              id="task-search"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher..."
+              className="flex-1 bg-transparent text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-zinc-500 hover:text-white">
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        {/* Filter Dropdown */}
+        <div className="relative" ref={filterRef}>
           <button
-            onClick={() => setView('dashboard')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-zinc-800/50 transition-colors"
-            title="Voir les statistiques dans le Dashboard"
+            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+              quickFilter !== 'all' 
+                ? 'bg-white/10 text-white' 
+                : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
+            }`}
           >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">Dashboard</span>
+            {filterLabels[quickFilter]}
+            <ChevronDown className="w-3 h-3" />
           </button>
-          <button
-            onClick={() => setShowProjectsManagement(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-zinc-800/50 transition-colors"
-          >
-            <FolderKanban className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">Projets</span>
-          </button>
-          <Tooltip content="Ctrl+N" side="bottom">
-            <button
-              onClick={() => setShowQuickAdd(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="text-xs font-medium">Nouvelle</span>
-            </button>
-          </Tooltip>
+          {showFilterDropdown && (
+            <div className="absolute top-full mt-1 right-0 w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
+              {(Object.keys(filterLabels) as QuickFilter[]).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => { setQuickFilter(filter); setShowFilterDropdown(false) }}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                    quickFilter === filter ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                  }`}
+                >
+                  {filterLabels[filter]}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+        
+        {/* Sort Dropdown */}
+        <div className="relative" ref={sortRef}>
+          <button
+            onClick={() => setShowSortDropdown(!showSortDropdown)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+              sortBy !== 'none' 
+                ? 'bg-white/10 text-white' 
+                : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
+            }`}
+          >
+            {sortLabels[sortBy]}
+            <ChevronDown className="w-3 h-3" />
+          </button>
+          {showSortDropdown && (
+            <div className="absolute top-full mt-1 right-0 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
+              {Object.entries(sortLabels).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => { setSortBy(key as any); setShowSortDropdown(false) }}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                    sortBy === key ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Menu ⋮ */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1.5 text-zinc-500 hover:text-white transition-colors rounded-lg hover:bg-zinc-800/50"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+          {showMenu && (
+            <div className="absolute top-full mt-1 right-0 w-44 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
+              <button
+                onClick={() => { setView('dashboard'); setShowMenu(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => { setShowProjectsManagement(true); setShowMenu(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <FolderKanban className="w-3.5 h-3.5" />
+                Projets
+              </button>
+              <button
+                onClick={() => { setShowQuotaSettings(true); setShowMenu(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Quota
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Add Button */}
+        <Tooltip content="Ctrl+N" side="bottom">
+          <button
+            onClick={() => setShowQuickAdd(true)}
+            className="p-1.5 text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </Tooltip>
       </div>
       
-      <div className="flex-1 overflow-y-auto px-4 py-3">
-        {/* Quick Add */}
-        {showQuickAdd && (
-          <div className="mb-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+      {/* Quick Add Input - Apparaît sous le header */}
+      {showQuickAdd && (
+        <div className="px-4 py-2 border-b border-zinc-800/30">
+          <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/50 rounded-lg border border-zinc-700/50">
             <input
               type="text"
               value={newTaskTitle}
@@ -284,85 +407,27 @@ export function TasksPage() {
                 if (e.key === 'Enter') handleQuickAdd()
                 if (e.key === 'Escape') setShowQuickAdd(false)
               }}
-              placeholder="Titre de la tâche..."
-              className="w-full bg-transparent text-zinc-300 placeholder:text-zinc-600 focus:outline-none text-sm"
+              placeholder="Nouvelle tâche..."
+              className="flex-1 bg-transparent text-sm text-zinc-300 placeholder:text-zinc-500 focus:outline-none"
               autoFocus
             />
+            <button
+              onClick={() => setShowQuickAdd(false)}
+              className="text-zinc-500 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
-        
-        {/* Task Quota Display */}
-        <div className="mb-3">
-          <TaskQuotaDisplay onSettingsClick={() => setShowQuotaSettings(true)} />
         </div>
-        
-        {/* Unified Filters */}
-        <UnifiedFilters
-          quickFilter={quickFilter}
-          onQuickFilterChange={setQuickFilter}
-          advancedFilters={advancedFilters}
-          onAdvancedFilterChange={setAdvancedFilters}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onReset={handleResetFilters}
+      )}
+      
+      {/* Kanban - Prend tout l'espace */}
+      <div className="flex-1 overflow-hidden px-4 py-3">
+        <KanbanBoard
+          tasks={sortedTasks}
+          onTaskClick={setSelectedTask}
+          onTaskDelete={handleDeleteWithUndo}
         />
-        
-        {/* Sort Menu */}
-        <div className="mb-3 flex items-center gap-2 px-1">
-          <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500" />
-          <span className="text-xs text-zinc-500">Trier par :</span>
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setSortBy('none')}
-              className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
-                sortBy === 'none'
-                  ? 'bg-white/10 text-white'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-              }`}
-            >
-              Défaut
-            </button>
-            <button
-              onClick={() => setSortBy('dueDate')}
-              className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
-                sortBy === 'dueDate'
-                  ? 'bg-white/10 text-white'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-              }`}
-            >
-              Date
-            </button>
-            <button
-              onClick={() => setSortBy('priority')}
-              className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
-                sortBy === 'priority'
-                  ? 'bg-white/10 text-white'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-              }`}
-            >
-              Priorité
-            </button>
-            <button
-              onClick={() => setSortBy('title')}
-              className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
-                sortBy === 'title'
-                  ? 'bg-white/10 text-white'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-              }`}
-            >
-              Nom
-            </button>
-          </div>
-        </div>
-        
-        {/* Content - Kanban prend tout l'espace restant */}
-        <div className="h-[calc(100vh-280px)]">
-          <KanbanBoard
-            tasks={sortedTasks}
-            onTaskClick={setSelectedTask}
-            onTaskDelete={handleDeleteWithUndo}
-          />
-        </div>
       </div>
       
       {/* Task Details Panel */}
@@ -458,4 +523,3 @@ export function TasksPage() {
     </div>
   )
 }
-

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { ArrowLeft, Plus, BookOpen, Search, Target, Trophy, BarChart3, Download, Upload, FileText } from 'lucide-react'
+import { ArrowLeft, Plus, BookOpen, Search, Target, Trophy, BarChart3, Download, Upload, FileText, MoreVertical, ChevronDown, X } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { Book } from '../../types/library'
 import { useLibraryStats } from '../../hooks/useLibraryStats'
@@ -13,7 +13,6 @@ import {
   AddBookModal,
   GoalModal,
   QuotesLibraryPage,
-  GenreBadge
 } from './components'
 import { BOOK_GENRES } from '../../constants/bookGenres'
 
@@ -39,8 +38,29 @@ export function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('recent')
   const [sessionTime, setSessionTime] = useState(0)
-  const [showExportMenu, setShowExportMenu] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Fairphone UI states
+  const [showMenu, setShowMenu] = useState(false)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [showGenreDropdown, setShowGenreDropdown] = useState(false)
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const statusRef = useRef<HTMLDivElement>(null)
+  const genreRef = useRef<HTMLDivElement>(null)
+  const sortRef = useRef<HTMLDivElement>(null)
+  
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false)
+      if (statusRef.current && !statusRef.current.contains(e.target as Node)) setShowStatusDropdown(false)
+      if (genreRef.current && !genreRef.current.contains(e.target as Node)) setShowGenreDropdown(false)
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setShowSortDropdown(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   
   // Deep linking: ouvrir le livre sélectionné depuis la recherche
   useEffect(() => {
@@ -178,12 +198,12 @@ export function LibraryPage() {
 
   const handleExport = useCallback(() => {
     exportLibrary(books)
-    setShowExportMenu(false)
+    setShowMenu(false)
   }, [books])
 
   const handleExportQuotes = useCallback(() => {
     exportQuotesAsMarkdown(books)
-    setShowExportMenu(false)
+    setShowMenu(false)
   }, [books])
 
   const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,82 +238,228 @@ export function LibraryPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
+    setShowMenu(false)
   }, [addBook])
 
-  const filters: { status: FilterStatus; label: string }[] = [
-    { status: 'all', label: `Tous (${pageStats.total})` },
-    { status: 'reading', label: `En cours (${pageStats.reading})` },
-    { status: 'completed', label: `Terminés (${pageStats.completed})` },
-    { status: 'to-read', label: `À lire (${pageStats.toRead})` },
-  ]
+  // Labels
+  const statusLabels: Record<FilterStatus, string> = {
+    all: 'Tous',
+    reading: 'En cours',
+    completed: 'Terminés',
+    'to-read': 'À lire'
+  }
+
+  const sortLabels: Record<SortOption, string> = {
+    recent: 'Récent',
+    title: 'Titre',
+    author: 'Auteur',
+    rating: 'Note',
+    progress: 'Progression',
+    pages: 'Pages'
+  }
+
+  // Genres avec livres
+  const genresWithBooks = BOOK_GENRES.filter(genre => genreCounts[genre.id] > 0)
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden">
-      {/* Header - Compact */}
-      <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setView('hub')}
-              className="p-1.5 text-zinc-600 hover:text-zinc-400 transition-colors rounded-lg"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <BookOpen className="w-4 h-4 text-amber-500" />
-            <h1 className="text-lg font-semibold text-zinc-200">Bibliothèque</h1>
-            <span className="text-xs text-zinc-600">{stats.totalBooks} livres • {stats.totalPagesRead}p</span>
-          </div>
-          
-          <div className="flex items-center gap-1.5">
-            {/* Import/Export */}
-            <div className="relative">
-              <button
-                onClick={() => setShowExportMenu(!showExportMenu)}
-                className="p-1.5 bg-zinc-800/50 text-zinc-400 rounded-lg hover:bg-zinc-700/50 transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
+    <div className="h-screen w-full flex flex-col overflow-hidden bg-black">
+      {/* Header Fairphone - Une seule ligne */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/30">
+        {/* Back */}
+        <button
+          onClick={() => setView('hub')}
+          className="p-1 text-zinc-500 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        
+        {/* Search */}
+        <div className="flex-1 max-w-sm">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/50 rounded-lg border border-zinc-800/50">
+            <Search className="w-3.5 h-3.5 text-zinc-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher..."
+              className="flex-1 bg-transparent text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-zinc-500 hover:text-white">
+                <X className="w-3 h-3" />
               </button>
-              
-              {showExportMenu && (
-                <div className="absolute right-0 top-8 z-50 w-40 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl p-1 text-xs">
-                  <button onClick={handleExport} className="w-full flex items-center gap-2 px-2 py-1.5 text-zinc-300 hover:bg-zinc-800 rounded">
-                    <Download className="w-3 h-3" /> JSON
-                  </button>
-                  <button onClick={handleExportQuotes} className="w-full flex items-center gap-2 px-2 py-1.5 text-zinc-300 hover:bg-zinc-800 rounded">
-                    <FileText className="w-3 h-3" /> Citations
-                  </button>
-                  <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-2 px-2 py-1.5 text-zinc-300 hover:bg-zinc-800 rounded">
-                    <Upload className="w-3 h-3" /> Import
-                  </button>
-                </div>
-              )}
-              <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
-            </div>
-            
-            <button
-              onClick={() => setShowQuotesLibrary(true)}
-              className="p-1.5 bg-zinc-800/50 text-zinc-400 rounded-lg hover:bg-zinc-700/50 transition-colors"
-              title="Bibliothèque de citations"
-            >
-              <FileText className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setView('dashboard')}
-              className="p-1.5 bg-zinc-800/50 text-zinc-400 rounded-lg hover:bg-zinc-700/50 transition-colors"
-              title="Voir les statistiques dans le Dashboard"
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-1 px-2 py-1 bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 text-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter</span>
-            </button>
+            )}
           </div>
         </div>
-      </header>
+        
+        {/* Status Filter Dropdown */}
+        <div className="relative" ref={statusRef}>
+          <button
+            onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+              filterStatus !== 'all' 
+                ? 'bg-white/10 text-white' 
+                : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
+            }`}
+          >
+            {statusLabels[filterStatus]}
+            <ChevronDown className="w-3 h-3" />
+          </button>
+          {showStatusDropdown && (
+            <div className="absolute top-full mt-1 right-0 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
+              {(Object.keys(statusLabels) as FilterStatus[]).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => { setFilterStatus(status); setShowStatusDropdown(false) }}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                    filterStatus === status ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                  }`}
+                >
+                  {statusLabels[status]} ({status === 'all' ? pageStats.total : status === 'reading' ? pageStats.reading : status === 'completed' ? pageStats.completed : pageStats.toRead})
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Genre Filter Dropdown */}
+        {genresWithBooks.length > 0 && (
+          <div className="relative" ref={genreRef}>
+            <button
+              onClick={() => setShowGenreDropdown(!showGenreDropdown)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                filterGenre 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
+              }`}
+            >
+              {filterGenre ? BOOK_GENRES.find(g => g.id === filterGenre)?.emoji : 'Genre'}
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {showGenreDropdown && (
+              <div className="absolute top-full mt-1 right-0 w-40 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1 max-h-64 overflow-y-auto">
+                <button
+                  onClick={() => { setFilterGenre(null); setShowGenreDropdown(false) }}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                    !filterGenre ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                  }`}
+                >
+                  Tous genres
+                </button>
+                {genresWithBooks.map((genre) => (
+                  <button
+                    key={genre.id}
+                    onClick={() => { setFilterGenre(genre.id); setShowGenreDropdown(false) }}
+                    className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center gap-2 ${
+                      filterGenre === genre.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                    }`}
+                  >
+                    <span>{genre.emoji}</span>
+                    <span>{genre.label}</span>
+                    <span className="ml-auto text-zinc-600">{genreCounts[genre.id]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Sort Dropdown */}
+        <div className="relative" ref={sortRef}>
+          <button
+            onClick={() => setShowSortDropdown(!showSortDropdown)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+              sortBy !== 'recent' 
+                ? 'bg-white/10 text-white' 
+                : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
+            }`}
+          >
+            {sortLabels[sortBy]}
+            <ChevronDown className="w-3 h-3" />
+          </button>
+          {showSortDropdown && (
+            <div className="absolute top-full mt-1 right-0 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
+              {(Object.keys(sortLabels) as SortOption[]).map((sort) => (
+                <button
+                  key={sort}
+                  onClick={() => { setSortBy(sort); setShowSortDropdown(false) }}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                    sortBy === sort ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                  }`}
+                >
+                  {sortLabels[sort]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Menu ⋮ */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1.5 text-zinc-500 hover:text-white transition-colors rounded-lg hover:bg-zinc-800/50"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+          {showMenu && (
+            <div className="absolute top-full mt-1 right-0 w-44 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
+              <button
+                onClick={() => { setView('dashboard'); setShowMenu(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => { setShowQuotesLibrary(true); setShowMenu(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Citations
+              </button>
+              <button
+                onClick={() => { handleOpenGoalModal(); setShowMenu(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <Target className="w-3.5 h-3.5" />
+                Objectif ({stats.completedThisYear}/{readingGoal?.targetBooks || 12})
+              </button>
+              <div className="border-t border-zinc-800 my-1" />
+              <button
+                onClick={handleExport}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export JSON
+              </button>
+              <button
+                onClick={handleExportQuotes}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Export Citations
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Import
+              </button>
+              <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </div>
+          )}
+        </div>
+        
+        {/* Add Button */}
+        <button
+          onClick={handleOpenAddModal}
+          className="p-1.5 text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
 
       {/* Barre de session de lecture active */}
       {isReadingSession && currentReadingBook && (
@@ -304,99 +470,6 @@ export function LibraryPage() {
           onEnd={endReadingSession}
         />
       )}
-
-      {/* Objectif + Filtres - Combined Compact Bar */}
-      <div className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/30">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Objectif */}
-          <button
-            onClick={handleOpenGoalModal}
-            className="flex items-center gap-2 px-2 py-1 bg-zinc-900/50 rounded-lg border border-zinc-800/50 hover:border-amber-500/30 transition-colors"
-          >
-            <Target className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-xs text-zinc-400">{stats.completedThisYear}/{readingGoal?.targetBooks || 12}</span>
-            <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-amber-500" style={{ width: `${Math.min(100, stats.goalProgress)}%` }} />
-            </div>
-            <span className={`text-xs font-medium ${stats.goalProgress >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>
-              {stats.goalProgress}%
-            </span>
-            {stats.goalProgress >= 100 && <Trophy className="w-3 h-3 text-amber-400" />}
-          </button>
-
-          {/* Recherche */}
-          <div className="relative flex-1 min-w-[150px] max-w-xs">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600" />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher..."
-              className="w-full bg-zinc-900/50 text-zinc-300 placeholder:text-zinc-600 pl-7 pr-2 py-1 text-xs rounded-lg border border-zinc-800 focus:outline-none"
-            />
-          </div>
-          
-          {/* Filtres statut */}
-          <div className="flex items-center gap-1">
-            {filters.map(({ status, label }) => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`px-2 py-1 text-[10px] rounded-md transition-colors ${
-                  filterStatus === status ? 'bg-zinc-800 text-zinc-200' : 'text-zinc-600 hover:text-zinc-400'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Filtres par genre */}
-          {Object.keys(genreCounts).length > 0 && (
-            <div className="flex items-center gap-1 flex-wrap max-w-md">
-              <button
-                onClick={() => setFilterGenre(null)}
-                className={`px-2 py-1 text-[10px] rounded-md transition-colors ${
-                  !filterGenre ? 'bg-zinc-800 text-zinc-200' : 'text-zinc-600 hover:text-zinc-400'
-                }`}
-              >
-                Tous genres
-              </button>
-              {BOOK_GENRES
-                .filter(genre => genreCounts[genre.id] > 0)
-                .slice(0, 5) // Montrer les 5 premiers genres avec des livres
-                .map((genre) => (
-                  <button
-                    key={genre.id}
-                    onClick={() => setFilterGenre(genre.id)}
-                    className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] rounded-md border transition-all ${
-                      filterGenre === genre.id
-                        ? genre.color
-                        : 'text-zinc-600 border-transparent hover:text-zinc-400'
-                    }`}
-                    title={genre.label}
-                  >
-                    <span>{genre.emoji}</span>
-                    <span>{genreCounts[genre.id]}</span>
-                  </button>
-                ))}
-            </div>
-          )}
-          
-          {/* Tri */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="px-2 py-1 text-[10px] bg-zinc-900/50 text-zinc-400 border border-zinc-800 rounded-md"
-          >
-            <option value="recent">Récent</option>
-            <option value="title">Titre</option>
-            <option value="author">Auteur</option>
-            <option value="rating">Note</option>
-            <option value="progress">Progression</option>
-          </select>
-        </div>
-      </div>
 
       {/* Contenu principal - Étagères */}
       <main className="flex-1 overflow-auto px-4 py-3">
@@ -437,7 +510,7 @@ export function LibraryPage() {
             <div className="text-center py-8">
               <BookOpen className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
               <p className="text-xs text-zinc-600">Aucun livre</p>
-              <button onClick={handleOpenAddModal} className="mt-2 text-amber-500 text-xs hover:underline">
+              <button onClick={handleOpenAddModal} className="mt-2 text-white text-xs hover:underline">
                 + Ajouter
               </button>
             </div>

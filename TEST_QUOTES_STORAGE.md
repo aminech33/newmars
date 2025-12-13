@@ -120,3 +120,4 @@ addQuote: (bookId, quote) => {
 
 Chaque appel à `set()` déclenche automatiquement la sauvegarde dans le Local Storage.
 
+

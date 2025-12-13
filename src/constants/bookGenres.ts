@@ -83,3 +83,4 @@ export function getGenreEmoji(genreIdOrLabel: string): string {
   return genre?.emoji || '📚'
 }
 
+

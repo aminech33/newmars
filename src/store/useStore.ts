@@ -369,64 +369,11 @@ interface AppState {
 const generateId = () => Math.random().toString(36).substring(2, 9)
 
 // Widgets par défaut - Taille unique pour tous
-const defaultWidgets: Widget[] = [
-  {
-    id: '1',
-    type: 'tasks',
-    size: 'notification',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 0, y: 0 }
-  },
-  {
-    id: '2',
-    type: 'calendar',
-    size: 'notification',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 1, y: 0 }
-  },
-  {
-    id: '3',
-    type: 'journal',
-    size: 'notification',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 2, y: 0 }
-  },
-  {
-    id: '4',
-    type: 'pomodoro',
-    size: 'notification',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 3, y: 0 }
-  },
-  {
-    id: '5',
-    type: 'habits',
-    size: 'notification',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 4, y: 0 }
-  },
-  {
-    id: '6',
-    type: 'health',
-    size: 'notification',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 5, y: 0 }
-  },
-  {
-    id: '7',
-    type: 'learning',
-    size: 'notification',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 6, y: 0 }
-  },
-  {
-    id: '8',
-    type: 'library',
-    size: 'notification',
-    dimensions: { width: 1, height: 1 },
-    position: { x: 7, y: 0 }
-  }
-]
+// Widgets supprimés - Hub vide par défaut
+const defaultWidgets: Widget[] = []
+
+// Version du store - incrémente pour forcer un reset
+const STORE_VERSION = 2
 
 export const useStore = create<AppState>()(
   persist(
@@ -1488,6 +1435,17 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'newmars-storage',
+      version: STORE_VERSION,
+      migrate: (persistedState: any, version: number) => {
+        // Si la version change, on reset les widgets
+        if (version < STORE_VERSION) {
+          return {
+            ...persistedState,
+            widgets: defaultWidgets
+          }
+        }
+        return persistedState
+      },
       partialize: (state) => ({
         userName: state.userName,
         accentTheme: state.accentTheme,

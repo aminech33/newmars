@@ -46,3 +46,4 @@ export function SmartSuggestions({ events }: SmartSuggestionsProps) {
 
 
 
+

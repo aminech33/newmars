@@ -50,3 +50,4 @@ Les résultats des tests sont automatiquement sauvegardés dans le localStorage 
 - ✅ Synchronisation entre la bulle et la page complète
 - ✅ Persistance entre les sessions
 
+

@@ -183,3 +183,4 @@ export function CategoriesManagementModal({ isOpen, onClose }: CategoriesManagem
   )
 }
 
+

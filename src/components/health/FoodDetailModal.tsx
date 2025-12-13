@@ -241,3 +241,4 @@ export function FoodDetailModal({ food, isOpen, onClose, onUpdate }: FoodDetailM
   )
 }
 
+

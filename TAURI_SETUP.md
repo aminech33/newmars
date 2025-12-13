@@ -94,3 +94,4 @@ src-tauri/target/release/IKU.exe
 
 
 
+

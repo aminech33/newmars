@@ -58,20 +58,13 @@ export function WidgetShowcase() {
     library,
     children
   }: { label: string; tag: string; library: LibraryId; children: React.ReactNode }) => (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden shadow-[0_15px_45px_rgba(0,0,0,0.35)] hover:border-indigo-500/30 transition-all flex flex-col min-h-[320px]">
-      {/* Header compact */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50 bg-zinc-950/30">
-        <div className="text-xs text-zinc-300 font-semibold">{label}</div>
-        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-500 capitalize">{library}</span>
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 shadow-[0_15px_45px_rgba(0,0,0,0.35)] hover:border-indigo-500/30 transition-all">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-sm text-zinc-200 font-semibold">{label}</div>
+        <span className="text-[11px] px-2 py-1 rounded-full bg-zinc-800 text-zinc-400 capitalize">{library}</span>
       </div>
-      
-      {/* Widget content - avec padding interne pour respirer */}
-      <div className="flex-1 bg-zinc-950/50 p-4">{children}</div>
-      
-      {/* Footer tag */}
-      <div className="px-3 py-1.5 border-t border-zinc-800/50 bg-zinc-950/30">
-        <div className="text-[10px] text-indigo-400">{tag}</div>
-      </div>
+      <div className="rounded-xl bg-zinc-950/50 border border-zinc-800/70 p-4">{children}</div>
+      <div className="mt-3 text-[11px] text-indigo-300">{tag}</div>
     </div>
   )
 
@@ -221,7 +214,7 @@ export function WidgetShowcase() {
                     </div>
                     <div className="text-xs text-zinc-500 bg-zinc-800 px-3 py-1 rounded-full w-fit">+{visible.length} variations</div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {visible.map(example => (
                       <DesignExampleCard
                         key={example.id}

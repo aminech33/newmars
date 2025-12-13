@@ -41,7 +41,7 @@ export function TestLabQuickView({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[99998] p-4"
+      className="fixed inset-0 z-[99998] p-4 flex items-center justify-center bg-gradient-to-br from-indigo-950/80 via-black/70 to-purple-950/80 backdrop-blur-xl"
       style={{
         position: 'fixed',
         top: 0,
@@ -56,11 +56,11 @@ export function TestLabQuickView({
       onClick={onClose}
     >
       <div 
-        className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+        className="relative w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl border border-indigo-500/20 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.12),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(236,72,153,0.1),transparent_30%),linear-gradient(145deg,rgba(24,24,27,0.92),rgba(15,15,17,0.94))] shadow-[0_25px_80px_rgba(0,0,0,0.55)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800/70 bg-zinc-900/40 backdrop-blur">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-indigo-500/20 to-purple-600/20 rounded-lg">
               <FlaskConical className="w-5 h-5 text-indigo-400" />
@@ -88,23 +88,21 @@ export function TestLabQuickView({
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 p-4 border-b border-zinc-800">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-300">{stats.total}</div>
-            <div className="text-xs text-zinc-600">Total</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-emerald-400">{stats.passed}</div>
-            <div className="text-xs text-zinc-600">Réussis</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-rose-400">{stats.failed}</div>
-            <div className="text-xs text-zinc-600">Échecs</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-amber-400">{stats.pending}</div>
-            <div className="text-xs text-zinc-600">En attente</div>
-          </div>
+        <div className="grid grid-cols-4 gap-3 p-4 border-b border-zinc-800/70 bg-zinc-900/30">
+          {[
+            { label: 'Total', value: stats.total, color: 'text-zinc-200', glow: 'from-zinc-700/60 to-zinc-800/50' },
+            { label: 'Réussis', value: stats.passed, color: 'text-emerald-300', glow: 'from-emerald-600/30 to-emerald-500/10' },
+            { label: 'Échecs', value: stats.failed, color: 'text-rose-300', glow: 'from-rose-600/30 to-rose-500/10' },
+            { label: 'En attente', value: stats.pending, color: 'text-amber-300', glow: 'from-amber-600/30 to-amber-500/10' }
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border border-white/5 bg-gradient-to-br from-zinc-800/60 to-zinc-900/60 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+              <div className="flex items-center justify-between">
+                <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
+              </div>
+              <div className="text-[11px] text-zinc-500 mt-1">{item.label}</div>
+              <div className={`mt-2 h-1 rounded-full bg-gradient-to-r ${item.glow}`} />
+            </div>
+          ))}
         </div>
 
         {/* Content */}
@@ -124,7 +122,7 @@ export function TestLabQuickView({
                   <button
                     key={module.id}
                     onClick={() => setSelectedModuleId(module.id)}
-                    className="w-full p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-all text-left group"
+                    className="w-full p-3 rounded-xl border border-zinc-800/70 bg-gradient-to-r from-zinc-900/70 via-zinc-900/50 to-zinc-900/70 hover:from-indigo-950/40 hover:to-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-indigo-500/40 transition-all text-left group"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">

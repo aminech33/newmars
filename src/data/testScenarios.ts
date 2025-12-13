@@ -2328,49 +2328,9 @@ const habitsTests: TestModule = {
 }
 
 // ============================================
-// WIDGETS MODULE TESTS
+// WIDGETS MODULE TESTS - SUPPRIMÉ
 // ============================================
-const widgetsTests: TestModule = {
-  id: 'widgets',
-  name: 'Widgets',
-  icon: '🧩',
-  scenarios: [
-    {
-      id: 'wid-01',
-      module: 'Widgets',
-      name: 'Ajouter un widget',
-      description: 'Vérifie l\'ajout de widget',
-      priority: 'high',
-      expectedResult: 'Widget ajouté au hub',
-      autoTest: (): TestResult => {
-        try {
-          const store = useStore.getState()
-          const initialCount = store.widgets?.length || 0
-          
-          // Note: addWidget nécessite plus de paramètres
-          // On retourne un test en attente
-          return { status: 'skip', message: '⚠️ Test widget à implémenter' }
-        } catch (error) {
-          return { status: 'fail', message: `❌ Erreur: ${error instanceof Error ? error.message : 'Unknown'}` }
-        }
-      }
-    },
-    {
-      id: 'wid-02',
-      module: 'Widgets',
-      name: 'Drag & Drop',
-      description: 'Test du repositionnement',
-      priority: 'medium',
-      expectedResult: 'Layout sauvegardé après déplacement',
-      manualSteps: [
-        '1. Aller dans Hub',
-        '2. Déplacer un widget',
-        '3. Rafraîchir la page',
-        '4. Vérifier que la position est conservée'
-      ]
-    }
-  ]
-}
+// Module de tests widgets supprimé
 
 // ============================================
 // DASHBOARD MODULE TESTS
@@ -2863,7 +2823,6 @@ export const ALL_TEST_MODULES: TestModule[] = [
   pomodoroTests,
   journalTests,
   habitsTests,
-  widgetsTests,
   dashboardTests,
   aiTests,
   settingsTests,
