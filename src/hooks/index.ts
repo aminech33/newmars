@@ -3,9 +3,7 @@ export * from './useGlobalStats'
 
 // Hooks spécifiques
 export * from './useAutoBackup'
-export * from './useCalendarEvents'
 export * from './useDebounce'
-export * from './useEventReminders'
 export * from './useHealthData'
 export * from './useKeyboard'
 export * from './useLearningData'

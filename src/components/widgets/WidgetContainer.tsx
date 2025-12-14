@@ -17,7 +17,6 @@ interface WidgetContainerProps {
 const widgetTitles: Record<string, string> = {
   'tasks': 'Tâches',
   'stats': 'Statistiques',
-  'calendar': 'Calendrier',
   'health': 'Santé',
   'journal': 'Journal',
   'notes': 'Notes',

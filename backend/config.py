@@ -27,6 +27,8 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"  # Ignore les champs extra du .env
+        # Ne pas lever d'erreur si le fichier .env n'existe pas
+        case_sensitive = False
 
 
 settings = Settings()

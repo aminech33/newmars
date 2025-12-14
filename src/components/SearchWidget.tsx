@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../store/useStore'
-import { Search, CheckSquare, Calendar, Heart, BookOpen, BookMarked, X, ArrowRight, Sparkles, Timer, GraduationCap, BarChart3, Keyboard } from 'lucide-react'
+import { Search, CheckSquare, Heart, BookOpen, BookMarked, X, ArrowRight, Sparkles, Timer, GraduationCap, BarChart3, Keyboard } from 'lucide-react'
 
 interface SearchResult {
   id: string
-  type: 'task' | 'event' | 'journal' | 'book' | 'note' | 'project' | 'page' | 'action'
+  type: 'task' | 'journal' | 'book' | 'note' | 'project' | 'page' | 'action'
   title: string
   subtitle?: string
   icon: any
@@ -17,14 +17,12 @@ export function SearchWidget() {
     isCommandPaletteOpen: isSearchOpen, 
     setCommandPaletteOpen: setSearchOpen,
     tasks, 
-    events, 
     journalEntries, 
     books, 
     notes,
     projects,
     setView,
     setSelectedTaskId,
-    setSelectedEventId,
     setSelectedBookId
   } = useStore()
   
@@ -62,19 +60,6 @@ export function SearchWidget() {
             setView('tasks')
             setSearchOpen(false)
           }
-        })),
-        // Événements à venir
-        ...events.slice(0, 2).map(event => ({
-          id: `event-${event.id}`,
-          type: 'event' as const,
-          title: event.title,
-          subtitle: `${event.startDate} ${event.startTime || ''}`,
-          icon: Calendar,
-          action: () => {
-            setSelectedEventId(event.id)
-            setView('calendar')
-            setSearchOpen(false)
-          }
         }))
       ]
     }
@@ -86,13 +71,11 @@ export function SearchWidget() {
     const pages = [
       { id: 'hub', name: 'Hub', desc: 'Accueil, widgets', icon: Sparkles, view: 'hub' as const },
       { id: 'tasks', name: 'Tâches', desc: 'Gestion des tâches, Kanban', icon: CheckSquare, view: 'tasks' as const },
-      { id: 'calendar', name: 'Calendrier', desc: 'Événements, planning', icon: Calendar, view: 'calendar' as const },
       { id: 'myday', name: 'Ma Journée', desc: 'Habitudes, journal, réflexion, gratitude', icon: BookOpen, view: 'myday' as const },
       { id: 'pomodoro', name: 'Pomodoro', desc: 'Timer, focus, productivité', icon: Timer, view: 'pomodoro' as const },
       { id: 'library', name: 'Bibliothèque', desc: 'Lectures, livres, citations', icon: BookMarked, view: 'library' as const },
       { id: 'health', name: 'Santé', desc: 'Poids, nutrition, bien-être', icon: Heart, view: 'health' as const },
       { id: 'learning', name: 'Apprentissage', desc: 'Cours, IA, flashcards', icon: GraduationCap, view: 'learning' as const },
-      { id: 'ai', name: 'Assistant IA', desc: 'Chat avec Gemini', icon: Sparkles, view: 'ai' as const },
       { id: 'dashboard', name: 'Dashboard', desc: 'Statistiques, productivité', icon: BarChart3, view: 'dashboard' as const },
     ]
 
@@ -127,25 +110,6 @@ export function SearchWidget() {
           action: () => {
             setSelectedTaskId(task.id) // Deep link!
             setView('tasks')
-            setSearchOpen(false)
-          }
-        })
-      }
-    })
-
-    // Recherche dans les événements - AVEC DEEP LINKING
-    events.forEach(event => {
-      if (event.title.toLowerCase().includes(lowerQuery) ||
-          event.description?.toLowerCase().includes(lowerQuery)) {
-        results.push({
-          id: `event-${event.id}`,
-          type: 'event',
-          title: event.title,
-          subtitle: `${event.startDate} ${event.startTime || ''}`,
-          icon: Calendar,
-          action: () => {
-            setSelectedEventId(event.id) // Deep link!
-            setView('calendar')
             setSearchOpen(false)
           }
         })

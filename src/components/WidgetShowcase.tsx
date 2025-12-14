@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Search, Star, Sparkles, Zap, Layout, CheckCircle2, Calendar, BookOpen, Clock, Heart, Activity, Brain, Library as LibraryIcon } from 'lucide-react'
+import { ArrowLeft, Search, Star, Sparkles, Zap, Layout, CheckCircle2, BookOpen, Clock, Heart, Activity, Brain, Library as LibraryIcon } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { motion } from 'framer-motion'
 import { useSpring, config } from 'react-spring'
@@ -34,14 +34,12 @@ export function WidgetShowcase() {
   const categories: { id: CategoryId; label: string; icon: typeof Layout; count: number }[] = [
     { id: 'all', label: 'All Widgets', icon: Layout, count: getCategoryCount('all') },
     { id: 'tasks', label: 'Tâches', icon: CheckCircle2, count: getCategoryCount('tasks') },
-    { id: 'calendar', label: 'Calendrier', icon: Calendar, count: getCategoryCount('calendar') },
     { id: 'journal', label: 'Journal', icon: BookOpen, count: getCategoryCount('journal') },
     { id: 'pomodoro', label: 'Pomodoro', icon: Clock, count: getCategoryCount('pomodoro') },
     { id: 'habits', label: 'Habitudes', icon: Heart, count: getCategoryCount('habits') },
     { id: 'health', label: 'Santé', icon: Activity, count: getCategoryCount('health') },
     { id: 'learning', label: 'Apprentissage', icon: Brain, count: getCategoryCount('learning') },
     { id: 'library', label: 'Bibliothèque', icon: LibraryIcon, count: getCategoryCount('library') },
-    { id: 'ai', label: 'Assistant IA', icon: Sparkles, count: getCategoryCount('ai') }
   ]
 
   const libraries = [

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { 
   CheckSquare, 
-  Calendar, 
   CalendarDays,
   Timer, 
   Library, 
@@ -19,13 +18,11 @@ import {
 
 const apps = [
   { icon: CheckSquare, label: 'Tâches', view: 'tasks', color: 'emerald', shortcut: '⌘T' },
-  { icon: Calendar, label: 'Calendrier', view: 'calendar', color: 'blue', shortcut: '' },
   { icon: CalendarDays, label: 'Ma Journée', view: 'myday', color: 'violet', shortcut: '⌘J' },
   { icon: Timer, label: 'Pomodoro', view: 'pomodoro', color: 'rose', shortcut: '⌘P' },
   { icon: Library, label: 'Bibliothèque', view: 'library', color: 'indigo', shortcut: '⌘L' },
   { icon: Heart, label: 'Santé', view: 'health', color: 'pink', shortcut: '' },
   { icon: GraduationCap, label: 'Apprentissage', view: 'learning', color: 'purple', shortcut: '' },
-  { icon: Sparkles, label: 'IA', view: 'ai', color: 'cyan', shortcut: '⌘I' },
   { icon: BarChart3, label: 'Stats', view: 'dashboard', color: 'teal', shortcut: '⌘D' },
   { icon: FlaskConical, label: '🧪 Test Lab', view: 'test-lab', color: 'amber', shortcut: '' },
   { icon: Settings, label: 'Paramètres', view: 'settings', color: 'zinc', shortcut: '⌘,' },

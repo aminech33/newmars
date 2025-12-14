@@ -6,11 +6,9 @@ import { useStore } from './store/useStore'
 // Lazy load des composants lourds pour éviter les erreurs au chargement initial
 const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.HubV2 })))
 const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
-const CalendarPage = lazy(() => import('./components/calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
 const HealthPage = lazy(() => import('./components/health/HealthPage').then(m => ({ default: m.HealthPage })))
 const MyDayPage = lazy(() => import('./components/myday/MyDayPage').then(m => ({ default: m.MyDayPage })))
 const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
-const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m => ({ default: m.LibraryPage })))
@@ -128,11 +126,9 @@ function AppContent() {
           <>
             {currentView === 'hub' && <HubV2 />}
             {currentView === 'tasks' && <TasksPage />}
-            {currentView === 'calendar' && <CalendarPage />}
             {currentView === 'health' && <HealthPage />}
             {currentView === 'myday' && <MyDayPage />}
             {currentView === 'dashboard' && <Dashboard />}
-            {currentView === 'ai' && <AIAssistant />}
             {currentView === 'learning' && <LearningPage />}
             {currentView === 'library' && <LibraryPage />}
             {currentView === 'pomodoro' && <PomodoroPage />}

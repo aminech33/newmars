@@ -1,13 +1,11 @@
 import { lazy, ComponentType } from 'react'
-import { CheckSquare, Calendar, Flame, Timer, Sparkles, Heart, Book, GraduationCap, Library } from 'lucide-react'
+import { CheckSquare, Flame, Timer, Heart, Book, GraduationCap, Library } from 'lucide-react'
 import { Widget } from '../types/widgets'
 
 // Lazy load all widgets for better performance
 const TasksWidget = lazy(() => import('../components/widgets/TasksWidget').then(m => ({ default: m.TasksWidget })))
 const HabitsWidget = lazy(() => import('../components/widgets/HabitsWidget').then(m => ({ default: m.HabitsWidget })))
-const CalendarWidget = lazy(() => import('../components/widgets/CalendarWidget').then(m => ({ default: m.CalendarWidget })))
 const PomodoroWidget = lazy(() => import('../components/widgets/PomodoroWidget').then(m => ({ default: m.PomodoroWidget })))
-const AIWidget = lazy(() => import('../components/widgets/AIWidget').then(m => ({ default: m.AIWidget })))
 const HealthWidget = lazy(() => import('../components/widgets/HealthWidget').then(m => ({ default: m.HealthWidget })))
 const JournalWidget = lazy(() => import('../components/widgets/JournalWidget').then(m => ({ default: m.JournalWidget })))
 const LearningWidget = lazy(() => import('../components/widgets/LearningWidget').then(m => ({ default: m.LearningWidget })))
@@ -30,15 +28,6 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     description: 'Liste de vos tâches en cours',
     icon: CheckSquare,
     component: TasksWidget,
-    category: 'productivity',
-    defaultSize: 'notification'
-  },
-  calendar: {
-    type: 'calendar',
-    label: 'Calendrier',
-    description: 'Échéances à venir',
-    icon: Calendar,
-    component: CalendarWidget,
     category: 'productivity',
     defaultSize: 'notification'
   },
@@ -76,15 +65,6 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     icon: Timer,
     component: PomodoroWidget,
     category: 'productivity',
-    defaultSize: 'notification'
-  },
-  ai: {
-    type: 'ai',
-    label: 'Assistant IA',
-    description: "Accès rapide à l'IA",
-    icon: Sparkles,
-    component: AIWidget,
-    category: 'tools',
     defaultSize: 'notification'
   },
   learning: {

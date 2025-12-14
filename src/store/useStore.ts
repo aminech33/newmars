@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Widget, WidgetLayout, Habit, QuickNote, QuickLink } from '../types/widgets'
-import { Event } from '../types/calendar'
 import { WeightEntry, MealEntry, HealthGoal, UserProfile, ExerciseEntry, HydrationEntry } from '../types/health'
 import { JournalEntry } from '../types/journal'
 import { TaskRelation } from '../types/taskRelation'
@@ -51,7 +50,6 @@ export interface Task {
   subtasks?: SubTask[]
   description?: string
   focusScore?: number
-  linkedEventId?: string // Link to calendar event
   projectId?: string // ID du projet associé
   isVisible?: boolean // Pour le système de quota (true = visible, false = cachée)
 }
@@ -130,7 +128,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'ai' | 'calendar' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro' | 'settings' | 'test-lab' | 'widget-showcase'
+type View = 'hub' | 'tasks' | 'dashboard' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro' | 'settings' | 'test-lab' | 'widget-showcase'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
@@ -144,10 +142,8 @@ interface AppState {
   
   // Deep linking - selected items to open after navigation
   selectedTaskId: string | null
-  selectedEventId: string | null
   selectedBookId: string | null
   setSelectedTaskId: (id: string | null) => void
-  setSelectedEventId: (id: string | null) => void
   setSelectedBookId: (id: string | null) => void
   
   // User
@@ -252,13 +248,6 @@ interface AppState {
   quickLinks: QuickLink[]
   addQuickLink: (label: string, url: string) => void
   deleteQuickLink: (id: string) => void
-  
-  // Events/Calendar
-  events: Event[]
-  addEvent: (event: Omit<Event, 'id' | 'createdAt'>) => void
-  updateEvent: (id: string, updates: Partial<Event>) => void
-  deleteEvent: (id: string) => void
-  toggleEventComplete: (id: string) => void
   
   // Health
   userProfile: UserProfile
@@ -407,10 +396,8 @@ export const useStore = create<AppState>()(
       
       // Deep linking
       selectedTaskId: null,
-      selectedEventId: null,
       selectedBookId: null,
       setSelectedTaskId: (id) => set({ selectedTaskId: id }),
-      setSelectedEventId: (id) => set({ selectedEventId: id }),
       setSelectedBookId: (id) => set({ selectedBookId: id }),
       
       // User
@@ -978,54 +965,6 @@ export const useStore = create<AppState>()(
         quickLinks: state.quickLinks.filter(l => l.id !== id)
       })),
       
-      // Events/Calendar
-      events: [
-        {
-          id: '1',
-          title: 'Réunion équipe',
-          startDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-          startTime: '14:00',
-          endTime: '15:00',
-          type: 'meeting' as const,
-          category: 'work' as const,
-          priority: 'medium' as const,
-          isRecurring: false,
-          completed: false,
-          createdAt: Date.now()
-        },
-        {
-          id: '2',
-          title: 'Deadline projet',
-          startDate: new Date(Date.now() + 172800000).toISOString().split('T')[0],
-          type: 'deadline' as const,
-          category: 'work' as const,
-          priority: 'high' as const,
-          isRecurring: false,
-          completed: false,
-          createdAt: Date.now()
-        }
-      ],
-      addEvent: (event) => {
-        const newEvent = { ...event, id: generateId(), createdAt: Date.now() }
-        set((state) => ({ events: [...state.events, newEvent] }))
-        get().addToast('Événement créé', 'success')
-      },
-      updateEvent: (id, updates) => {
-        set((state) => ({
-          events: state.events.map((e) => e.id === id ? { ...e, ...updates } : e)
-        }))
-        get().addToast('Événement mis à jour', 'success')
-      },
-      deleteEvent: (id) => {
-        set((state) => ({ events: state.events.filter((e) => e.id !== id) }))
-        get().addToast('Événement supprimé', 'info')
-      },
-      toggleEventComplete: (id) => {
-        set((state) => ({
-          events: state.events.map((e) => e.id === id ? { ...e, completed: !e.completed } : e)
-        }))
-      },
-      
       // Health
       userProfile: {
         height: 175, // cm
@@ -1459,7 +1398,6 @@ export const useStore = create<AppState>()(
         habits: state.habits,
         quickNotes: state.quickNotes,
         quickLinks: state.quickLinks,
-        events: state.events,
         userProfile: state.userProfile,
         weightEntries: state.weightEntries,
         mealEntries: state.mealEntries,

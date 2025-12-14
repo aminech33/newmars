@@ -1,13 +1,11 @@
 export type WidgetType = 
   | 'tasks' 
   | 'stats' 
-  | 'calendar' 
   | 'notes' 
   | 'habits' 
   | 'pomodoro'
   | 'links'
   | 'weather'
-  | 'ai'
   | 'quick-actions'
   | 'health'
   | 'journal'
