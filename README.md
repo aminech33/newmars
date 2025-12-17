@@ -18,7 +18,6 @@
 | **Santé & Nutrition** | 9.0/10 | ✅ Optimisé + Base Aliments |
 | **Tâches** | 9.0/10 | ✅ Optimisé + Post-It |
 | **Library** | 9.0/10 | ✅ Optimisé + Google Books |
-| **Test Lab** | 9.5/10 | ✅ 170+ Tests |
 | **Journal** | ~7.5/10 | ⏳ À auditer |
 | **Habitudes** | ~7.0/10 | ⏳ À auditer |
 
@@ -409,16 +408,15 @@ src/
 │   ├── widgets/      # Widgets hub (12 fichiers)
 │   ├── health/       # Santé (11 fichiers + Food DB)
 │   ├── library/      # Bibliothèque (7 fichiers + Quotes)
-│   ├── testing/      # Test Lab (2 fichiers)
 │   ├── debug/        # Debug tools (1 fichier)
 │   ├── ui/           # Composants UI (10 fichiers)
 │   └── ...
-├── data/             # Test scenarios (2900+ lignes)
+├── data/             # Données statiques
 ├── hooks/            # Hooks customs (10 fichiers)
 ├── store/            # Zustand store + selectors
 ├── constants/        # Constantes partagées (calendar, bookGenres)
-├── types/            # Types TypeScript (testing, etc.)
-├── utils/            # Utilitaires (AI, books, health, tests)
+├── types/            # Types TypeScript
+├── utils/            # Utilitaires (AI, books, health)
 └── docs/             # Documentation (API, comparaisons)
 ```
 
@@ -432,78 +430,13 @@ src/
 | EventDetails.tsx | 470 lignes | 264 lignes | -44% |
 | Hooks customs | 2 | 10 | +400% |
 | Composants UI | 3 | 15 | +400% |
-| Tests manuels | 0 | 170+ | +∞ |
 | Couverture A11y | ~40% | ~85% | +112% |
-| Modules testés | 0 | 12 | +∞ |
-
----
-
-## 🧪 Test Lab (9.5/10)
-
-### ✅ Points Forts
-- 170+ tests manuels complets couvrant tous les modules
-- Interface intégrée accessible via 🧪 ou `Cmd+Shift+T`
-- Tests organisés par module et priorité (Critical/High/Medium/Low)
-- Système de checkboxes pour validation manuelle
-- Export/Import des résultats de tests
-- Progression en temps réel par module
-- Documentation détaillée de chaque test
-
-### 🏗️ Architecture
-```
-src/
-├── data/
-│   └── testScenarios.ts (2900+ lignes, 170+ tests)
-├── components/
-│   ├── testing/
-│   │   └── TestLabPage.tsx (interface principale)
-│   └── debug/
-│       └── DebugPanel.tsx (outils de debug)
-├── types/
-│   └── testing.ts (types TypeScript)
-└── hooks/
-    └── useTestBackup.ts (sauvegarde résultats)
-```
-
-### 📊 Couverture par Module
-| Module | Tests | Statut |
-|--------|-------|--------|
-| Tasks | 25 tests | ✅ Complet |
-| Calendar | 20 tests | ✅ Complet |
-| Health | 18 tests | ✅ Complet |
-| Pomodoro | 20 tests | ✅ Complet |
-| Library | 20 tests | ✅ Complet |
-| Learning | 18 tests | ✅ Complet |
-| AI Assistant | 3 tests | ✅ Complet |
-| Settings | 12 tests | ✅ Complet |
-| Global Nav | 15 tests | ✅ Complet |
-
-### ⌨️ Raccourcis
-| Raccourci | Action |
-|-----------|--------|
-| `Cmd+Shift+T` | Ouvrir Test Lab |
-| `Escape` | Fermer Test Lab |
-
-### 🎯 Types de Tests
-- ✅ **Tests de base** : CRUD, navigation, UI
-- ✅ **Tests d'intégration** : Interactions entre modules
-- ✅ **Tests avancés** : Performances, edge cases
-- ✅ **Tests accessibilité** : ARIA, keyboard navigation
-
-### 📱 Fonctionnalités
-- Sélection de module avec icônes
-- Filtrage par priorité
-- Progression visuelle (%)
-- Statistiques globales
-- Export JSON des résultats
-- Liens vers documentation
 
 ---
 
 ## 🔮 Roadmap
 
 ### ✅ Terminé
-- [x] Test Lab complet (9.5/10) - 170+ tests
 - [x] Dashboard interactif (9.0/10)
 - [x] Widgets Hub refactorisé (9.0/10)
 - [x] Calendrier avec Templates (9.2/10)
@@ -516,7 +449,6 @@ src/
 - [x] Documentation technique complète
 
 ### ⏳ À Faire
-- [ ] Exécuter Test Lab (170+ tests à valider)
 - [ ] Audit Journal (~7.5/10 → 8.5/10)
 - [ ] Audit Habitudes (~7.0/10 → 8.0/10)
 - [ ] Tests unitaires automatisés (Vitest)
@@ -529,13 +461,6 @@ src/
 ## 📝 Changelog
 
 ### v2.5.0 (8 Déc 2024) 🎉
-- 🧪 **Test Lab** - Système de tests complet avec 170+ scénarios
-  - Interface de tests manuels intégrée
-  - Tests organisés par module et priorité
-  - Export/Import des résultats
-  - Raccourci Cmd+Shift+T
-  - Icône 🧪 dans AppBar
-  
 - 📚 **Library améliorée** (8.5 → 9.0/10)
   - Google Books API pour couvertures haute qualité
   - Métadonnées automatiques (40M+ livres)

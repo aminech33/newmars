@@ -61,14 +61,7 @@
 
 ## 🎨 Comment Accéder
 
-### Méthode 1 - Navigation Normale:
-```
-1. Test Lab (🧪)
-2. Cliquer "🧪 Widget Lab" (bouton violet)
-3. Puis "🚀 Advanced Widgets" (pour la version avancée)
-```
-
-### Méthode 2 - Directement dans le code:
+### Directement dans le code:
 ```typescript
 // Depuis n'importe quel composant
 const { setView } = useStore()

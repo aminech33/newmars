@@ -234,29 +234,29 @@ export function SearchWidget() {
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-start justify-center pt-[20vh] px-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       onClick={() => setSearchOpen(false)}
     >
       <div 
-        className="w-full max-w-2xl bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-800">
-          <Search className="w-5 h-5 text-zinc-600" />
+        <div className="flex items-center gap-4 px-5 py-4 border-b border-zinc-800">
+          <Search className="w-5 h-5 text-zinc-500" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Rechercher des tâches, événements, notes, livres..."
-            className="flex-1 bg-transparent text-zinc-200 placeholder-zinc-600 outline-none text-base"
+            placeholder="Rechercher..."
+            className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-500 outline-none text-base"
           />
           <button
             onClick={() => setSearchOpen(false)}
-            className="text-zinc-600 hover:text-zinc-400 transition-colors"
+            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -266,9 +266,7 @@ export function SearchWidget() {
         <div className="max-h-[400px] overflow-y-auto">
           {results.length === 0 ? (
             <div className="px-5 py-12 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-800/50 mb-3">
-                <Search className="w-5 h-5 text-zinc-600" />
-              </div>
+              <Search className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
               <p className="text-zinc-500 text-sm">
                 {query ? 'Aucun résultat trouvé' : 'Commencez à taper pour rechercher'}
               </p>
@@ -285,36 +283,36 @@ export function SearchWidget() {
                     onClick={result.action}
                     className={`
                       w-full flex items-center gap-3 px-5 py-3 text-left transition-colors
-                      ${isSelected ? 'bg-zinc-800/50' : 'hover:bg-zinc-800/30'}
+                      ${isSelected ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}
                     `}
                   >
                     <div className={`
                       flex items-center justify-center w-9 h-9 rounded-lg
-                      ${result.type === 'task' ? 'bg-blue-500/10 text-blue-400' : ''}
-                      ${result.type === 'event' ? 'bg-purple-500/10 text-purple-400' : ''}
-                      ${result.type === 'journal' ? 'bg-amber-500/10 text-amber-400' : ''}
-                      ${result.type === 'book' ? 'bg-emerald-500/10 text-emerald-400' : ''}
-                      ${result.type === 'note' ? 'bg-cyan-500/10 text-cyan-400' : ''}
-                      ${result.type === 'project' ? 'bg-violet-500/10 text-violet-400' : ''}
-                      ${result.type === 'page' ? 'bg-indigo-500/10 text-indigo-400' : ''}
-                      ${result.type === 'action' ? 'bg-zinc-500/10 text-zinc-400' : ''}
+                      ${result.type === 'task' ? 'bg-zinc-800 text-zinc-300' : ''}
+                      ${result.type === 'event' ? 'bg-zinc-800 text-zinc-300' : ''}
+                      ${result.type === 'journal' ? 'bg-zinc-800 text-zinc-300' : ''}
+                      ${result.type === 'book' ? 'bg-zinc-800 text-zinc-300' : ''}
+                      ${result.type === 'note' ? 'bg-zinc-800 text-zinc-300' : ''}
+                      ${result.type === 'project' ? 'bg-zinc-800 text-zinc-300' : ''}
+                      ${result.type === 'page' ? 'bg-zinc-800 text-zinc-300' : ''}
+                      ${result.type === 'action' ? 'bg-zinc-800 text-zinc-300' : ''}
                     `}>
                       <Icon className="w-4 h-4" />
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="text-zinc-200 text-sm font-medium truncate">
+                      <div className="text-zinc-200 text-sm truncate">
                         {result.title}
                       </div>
                       {result.subtitle && (
-                        <div className="text-zinc-600 text-xs truncate">
+                        <div className="text-zinc-500 text-xs truncate">
                           {result.subtitle}
                         </div>
                       )}
                     </div>
 
                     {isSelected && (
-                      <ArrowRight className="w-4 h-4 text-zinc-600" />
+                      <ArrowRight className="w-4 h-4 text-zinc-500" />
                     )}
                   </button>
                 )

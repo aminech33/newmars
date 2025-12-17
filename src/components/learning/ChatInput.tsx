@@ -61,11 +61,9 @@ export const ChatInput = memo(function ChatInput({
   }
 
   return (
-    <div className="relative group">
-      {/* Glow effect on focus */}
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-zinc-800 to-zinc-700 rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity blur-sm" />
-      
-      <div className="relative">
+    <div className="relative">
+      {/* Container avec effet de profondeur */}
+      <div className="flex items-end gap-3 p-1.5 bg-zinc-800/50 rounded-2xl">
         <textarea
           ref={textareaRef}
           value={message}
@@ -74,17 +72,17 @@ export const ChatInput = memo(function ChatInput({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="w-full resize-none bg-zinc-900/80 backdrop-blur-sm text-white placeholder:text-zinc-500 rounded-2xl px-5 py-4 pr-14 border border-zinc-800/80 focus:border-zinc-700 focus:outline-none transition-all disabled:opacity-50 text-[15px] leading-relaxed"
-          style={{ minHeight: '56px', maxHeight: '200px' }}
+          className="flex-1 resize-none bg-transparent text-zinc-100 placeholder:text-zinc-500 rounded-xl px-4 py-3 outline-none focus:outline-none focus:ring-0 focus:border-none disabled:opacity-50 text-[15px]"
+          style={{ minHeight: '46px', maxHeight: '200px', outline: 'none', boxShadow: 'none' }}
         />
         
         <button
           onClick={handleSend}
           disabled={!message.trim() || isTyping || disabled}
-          className={`absolute right-3 bottom-3 p-2 rounded-xl transition-all duration-200 ${
+          className={`flex-shrink-0 h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
             message.trim() && !isTyping && !disabled
-              ? 'bg-white text-black hover:bg-zinc-100 hover:scale-105 shadow-lg shadow-white/10'
-              : 'text-zinc-600 cursor-not-allowed'
+              ? 'bg-white text-zinc-900 hover:scale-105 shadow-lg shadow-white/10'
+              : 'bg-zinc-700/50 text-zinc-500'
           }`}
         >
           {isTyping ? (

@@ -239,7 +239,7 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
               type="checkbox"
               checked={isProgramming}
               onChange={(e) => setIsProgramming(e.target.checked)}
-              className="w-4 h-4 rounded border-zinc-800/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+              className="w-4 h-4 rounded border-zinc-700 text-zinc-400 focus:ring-zinc-600 focus:ring-offset-0 accent-zinc-500"
             />
             <div className="flex-1">
               <div className="text-sm text-zinc-200 font-medium flex items-center gap-2">

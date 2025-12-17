@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useRef } from 'react'
-import { Plus, Pin, Archive, MoreVertical, Trash2, Edit2 } from 'lucide-react'
+import { Plus, Pin, Archive, MoreVertical, Trash2, Edit2, PanelLeftClose } from 'lucide-react'
 import { Course, CourseStatus } from '../../types/learning'
 import { Tooltip } from '../ui/Tooltip'
 
@@ -19,6 +19,7 @@ interface CourseListProps {
   onDeleteCourse: (courseId: string) => void
   onPinCourse: (courseId: string) => void
   onArchiveCourse: (courseId: string) => void
+  onHideSidebar?: () => void
 }
 
 const COLOR_CLASSES: Record<string, string> = {
@@ -43,7 +44,8 @@ export const CourseList = memo(function CourseList({
   onEditCourse,
   onDeleteCourse,
   onPinCourse,
-  onArchiveCourse
+  onArchiveCourse,
+  onHideSidebar
 }: CourseListProps) {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -101,18 +103,30 @@ export const CourseList = memo(function CourseList({
 
   return (
     <aside className="w-72 bg-zinc-950 border-r border-zinc-800/50 flex flex-col h-full">
-      {/* Header - Premium */}
+      {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-zinc-800/50">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-indigo-500" />
           <span className="text-sm font-medium text-zinc-300">Mes cours</span>
         </div>
-        <button
-          onClick={onCreateCourse}
-          className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all hover:scale-105"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onCreateCourse}
+            className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all hover:scale-105"
+            title="Nouveau cours"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          {onHideSidebar && (
+            <button
+              onClick={onHideSidebar}
+              className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all hover:scale-105"
+              title="Masquer la sidebar (⌘B)"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Liste */}

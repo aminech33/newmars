@@ -6,7 +6,6 @@ import { JournalEntry } from '../types/journal'
 import { TaskRelation } from '../types/taskRelation'
 import { Course, Message, Flashcard, Note as LearningNote } from '../types/learning'
 import { Book, DEMO_BOOKS, Quote, ReadingNote, ReadingSession, ReadingGoal } from '../types/library'
-import { TestResult } from '../types/testing'
 
 export type TaskCategory = string // Changé pour accepter n'importe quelle string
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
@@ -129,7 +128,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro' | 'settings' | 'test-lab' | 'widget-showcase'
+type View = 'hub' | 'tasks' | 'dashboard' | 'health' | 'myday' | 'learning' | 'library' | 'pomodoro' | 'settings' | 'widget-showcase'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
@@ -351,11 +350,6 @@ interface AppState {
     goalProgress: number
   }
   
-  // 🛡️ Test Lab Results - Backup persistant dans Zustand
-  testResults: Record<string, TestResult>
-  setTestResults: (results: Record<string, TestResult>) => void
-  updateTestResult: (testId: string, result: TestResult) => void
-  clearTestResults: () => void
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
@@ -1375,18 +1369,6 @@ export const useStore = create<AppState>()(
         }
       },
       
-      // 🛡️ Test Lab Results - Backup dans Zustand pour ne jamais perdre les données
-      testResults: {},
-      setTestResults: (results) => set({ testResults: results }),
-      updateTestResult: (testId, result) => {
-        set((state) => ({
-          testResults: {
-            ...state.testResults,
-            [testId]: result
-          }
-        }))
-      },
-      clearTestResults: () => set({ testResults: {} }),
     }),
     {
       name: 'newmars-storage',
@@ -1426,7 +1408,6 @@ export const useStore = create<AppState>()(
         books: state.books,
         readingSessions: state.readingSessions,
         readingGoal: state.readingGoal,
-        testResults: state.testResults, // 🛡️ Backup des résultats de tests
       })
     }
   )

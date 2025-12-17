@@ -12,8 +12,7 @@ import {
   Settings,
   Home,
   MoreHorizontal,
-  X,
-  FlaskConical
+  X
 } from 'lucide-react'
 
 const apps = [
@@ -24,7 +23,6 @@ const apps = [
   { icon: Heart, label: 'Santé', view: 'health', color: 'pink', shortcut: '' },
   { icon: GraduationCap, label: 'Apprentissage', view: 'learning', color: 'purple', shortcut: '' },
   { icon: BarChart3, label: 'Stats', view: 'dashboard', color: 'teal', shortcut: '⌘D' },
-  { icon: FlaskConical, label: '🧪 Test Lab', view: 'test-lab', color: 'amber', shortcut: '' },
   { icon: Settings, label: 'Paramètres', view: 'settings', color: 'zinc', shortcut: '⌘,' },
 ]
 

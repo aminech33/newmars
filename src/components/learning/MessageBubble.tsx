@@ -71,60 +71,67 @@ export const MessageBubble = memo(function MessageBubble({
 
   return (
     <div 
-      className="group flex gap-4 items-start hover:bg-zinc-900/30 -mx-4 px-4 py-4 rounded-xl transition-colors"
+      className={`group flex gap-3 items-end py-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      {/* Avatar - Premium */}
+      {/* Avatar */}
       <div className="flex-shrink-0">
         {isAssistant ? (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-1 ring-white/5">
-            <Sparkles className="w-4 h-4 text-zinc-300" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600/20 to-indigo-800/20 flex items-center justify-center ring-1 ring-indigo-500/20">
+            <Sparkles className="w-4 h-4 text-indigo-400" />
           </div>
         ) : (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center ring-1 ring-white/5">
-            <User className="w-4 h-4 text-zinc-300" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-600 to-zinc-700 flex items-center justify-center ring-1 ring-white/10">
+            <User className="w-4 h-4 text-white" />
           </div>
         )}
       </div>
 
-      {/* Message */}
-      <div className="flex-1 min-w-0 pt-0.5">
-        {/* Label */}
-        <p className="text-xs font-medium text-zinc-500 mb-1.5">
-          {isAssistant ? 'Assistant' : 'Vous'}
-        </p>
-        
+      {/* Message Bubble */}
+      <div className={`max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
         {message.isError ? (
-          <p className="text-red-400 text-sm">{message.errorMessage || 'Une erreur est survenue'}</p>
+          <div className="px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20">
+            <p className="text-red-400 text-sm">{message.errorMessage || 'Une erreur est survenue'}</p>
+          </div>
         ) : (
           <div 
-            className="text-[15px] leading-[1.7] text-zinc-100 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-white [&_strong]:font-semibold [&_em]:text-zinc-300 [&_code]:bg-zinc-800/80 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:text-indigo-300 [&_code]:text-[13px] [&_code]:font-mono [&_pre]:bg-zinc-900/80 [&_pre]:border [&_pre]:border-zinc-800 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-zinc-300 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-1"
-            dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
-          />
-        )}
-        
-        {/* Actions */}
-        {isAssistant && !message.isError && (
-          <div className={`mt-3 flex items-center gap-1 transition-opacity duration-200 ${showActions ? 'opacity-100' : 'opacity-0'}`}>
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-green-400" />
-                  <span>Copié</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copier</span>
-                </>
-              )}
-            </button>
+            className={`px-4 py-3 rounded-2xl ${
+              isUser 
+                ? 'bg-zinc-700 text-zinc-100 rounded-br-md' 
+                : 'bg-zinc-800/50 text-zinc-100 rounded-bl-md'
+            }`}
+          >
+            <div 
+              className={`text-[15px] leading-[1.6] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic ${
+                isUser 
+                  ? '[&_code]:bg-zinc-200 [&_code]:text-zinc-800' 
+                  : '[&_code]:bg-zinc-700 [&_code]:text-zinc-200'
+              } [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:text-[13px] [&_code]:font-mono [&_pre]:bg-zinc-900 [&_pre]:border [&_pre]:border-zinc-700 [&_pre]:p-3 [&_pre]:rounded-xl [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-2 [&_li]:mb-1`}
+              dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
+            />
           </div>
         )}
+        
+        {/* Time + Actions */}
+        <div className={`flex items-center gap-2 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
+          <span className="text-[10px] text-zinc-600">{formattedTime}</span>
+          
+          {isAssistant && !message.isError && (
+            <div className={`flex items-center gap-1 transition-opacity duration-200 ${showActions ? 'opacity-100' : 'opacity-0'}`}>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-zinc-500 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+              >
+                {copied ? (
+                  <Check className="w-3 h-3 text-green-400" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

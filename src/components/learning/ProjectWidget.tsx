@@ -212,7 +212,7 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
                         type="checkbox"
                         checked={task.completed}
                         onChange={() => toggleTask(task.id)}
-                        className="w-4 h-4 rounded border-zinc-800/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+                        className="w-4 h-4 rounded border-zinc-700 text-zinc-400 focus:ring-zinc-600 focus:ring-offset-0 accent-zinc-500"
                       />
                       <span className={`text-sm flex-1 ${
                         task.completed 

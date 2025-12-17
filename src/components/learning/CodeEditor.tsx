@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import Editor from '@monaco-editor/react'
-import { Play, Copy, Lightbulb, Check, Code, X, ChevronDown, ChevronUp, Terminal, AlertCircle } from 'lucide-react'
+import { Play, Copy, Check, Code, X, ChevronDown, ChevronUp, Terminal, AlertCircle } from 'lucide-react'
 import type { editor } from 'monaco-editor'
 
 interface CodeEditorProps {
@@ -9,11 +9,9 @@ interface CodeEditorProps {
   value?: string
   onChange?: (code: string) => void
   onRun?: (code: string) => void
-  onAskHelp?: (code: string) => void
   readOnly?: boolean
   showHeader?: boolean
   courseName?: string
-  includeAI?: boolean
   isTyping?: boolean
 }
 
@@ -23,10 +21,8 @@ export function CodeEditor({
   value,
   onChange,
   onRun,
-  onAskHelp,
   readOnly = false,
   showHeader = true,
-  includeAI = false,
   isTyping = false
 }: CodeEditorProps) {
   const [internalCode, setInternalCode] = useState(defaultCode)
@@ -93,14 +89,6 @@ export function CodeEditor({
         {/* Action buttons */}
         {showHeader && (
           <div className="flex items-center gap-1 px-2 bg-[#252526]">
-            {/* IA Status indicator */}
-            {includeAI && (
-              <div className="flex items-center gap-1.5 px-2 py-1 mr-2">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                <span className="text-xs text-emerald-400 font-medium">IA Active</span>
-              </div>
-            )}
-            
             {/* Copy Button */}
             <button
               onClick={handleCopy}
@@ -114,20 +102,7 @@ export function CodeEditor({
               )}
             </button>
 
-            {/* Ask Help Button */}
-            {onAskHelp && (
-              <button
-                onClick={() => onAskHelp(code)}
-                disabled={isTyping}
-                className="px-2.5 py-1.5 rounded hover:bg-[#2d2d30] text-amber-400 hover:text-amber-300 text-xs font-medium flex items-center gap-1.5 transition-[background-color] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Demander de l'aide à l'IA sur ton code"
-              >
-                <Lightbulb className="w-3 h-3" aria-hidden="true" />
-                <span>Aide</span>
-              </button>
-            )}
-
-            {/* Run Button */}
+            {/* Run Button - Principal */}
             {onRun && (
               <button
                 onClick={() => {
@@ -136,11 +111,11 @@ export function CodeEditor({
                   setOutput('Analyse en cours...')
                 }}
                 disabled={isTyping}
-                className="px-2.5 py-1.5 rounded hover:bg-[#2d2d30] text-green-400 hover:text-green-300 text-xs font-medium flex items-center gap-1.5 transition-[background-color] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Exécuter et analyser le code"
+                className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-500 text-white text-xs font-medium flex items-center gap-1.5 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-green-600/50"
+                title="Exécuter le code"
               >
-                <Play className="w-3 h-3" />
-                <span>Analyser</span>
+                <Play className="w-3.5 h-3.5" />
+                <span>Exécuter</span>
               </button>
             )}
           </div>
@@ -169,15 +144,17 @@ export function CodeEditor({
             smoothScrolling: true,
             fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace",
             fontLigatures: true,
-            padding: { top: 8, bottom: 8 },
+            padding: { top: 16, bottom: 16 },
             renderLineHighlight: 'all',
             bracketPairColorization: {
               enabled: true,
             },
-            glyphMargin: true,
+            glyphMargin: false,
             folding: true,
-            lineDecorationsWidth: 10,
-            lineNumbersMinChars: 4,
+            foldingHighlight: true,
+            showFoldingControls: 'mouseover',
+            lineDecorationsWidth: 16,
+            lineNumbersMinChars: 3,
             renderWhitespace: 'selection',
             guides: {
               bracketPairs: true,
