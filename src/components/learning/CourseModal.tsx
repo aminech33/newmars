@@ -63,6 +63,20 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
     { value: 'ruby', label: 'Ruby' }
   ]
 
+  // Technical keywords for auto-enabling code mode
+  const TECH_KEYWORDS = [
+    'javascript', 'js', 'typescript', 'ts', 'python', 'java', 'cpp', 'c++',
+    'csharp', 'c#', 'rust', 'go', 'golang', 'php', 'ruby', 'html', 'css',
+    'react', 'vue', 'angular', 'node', 'sql', 'mongodb', 'api', 'backend',
+    'frontend', 'web', 'code', 'programming', 'développement', 'dev'
+  ]
+
+  // Auto-detect code mode based on course name
+  const detectCodeMode = (courseName: string): boolean => {
+    const lowerName = courseName.toLowerCase()
+    return TECH_KEYWORDS.some(keyword => lowerName.includes(keyword))
+  }
+
   // Initialize form when opening
   useEffect(() => {
     if (isOpen) {
@@ -95,6 +109,13 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
     }
   }, [isOpen, course])
 
+  // Auto-detect code mode when name changes (only in create mode)
+  useEffect(() => {
+    if (!isEditMode && name) {
+      setIsProgramming(detectCodeMode(name))
+    }
+  }, [name, isEditMode])
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
     setError('')
@@ -109,10 +130,8 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
       return
     }
 
-    if (!linkedProjectId) {
-      setError('Veuillez sélectionner un projet')
-      return
-    }
+    // Projet lié n'est plus requis, utilise le premier projet par défaut si non défini
+    const finalProjectId = linkedProjectId || (projects.length > 0 ? projects[0].id : '')
 
     onSubmit({
       name: name.trim(),
@@ -120,7 +139,7 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
       icon,
       color,
       level,
-      linkedProjectId,
+      linkedProjectId: finalProjectId,
       systemPrompt: systemPrompt.trim() || undefined,
       isProgramming,
       programmingLanguage: isProgramming ? programmingLanguage : undefined
@@ -187,66 +206,6 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
           rows={2}
         />
 
-        {/* Projet lié */}
-        <Select
-          label="Projet lié"
-          value={linkedProjectId}
-          onChange={(e) => setLinkedProjectId(e.target.value)}
-          options={[
-            { value: '', label: '-- Sélectionner un projet --' },
-            ...projects.map(project => ({
-              value: project.id,
-              label: `${project.icon} ${project.name}`
-            }))
-          ]}
-          hint="💡 Les tâches et concepts de ce projet seront accessibles pendant le chat via un widget flottant."
-        />
-
-        {/* Icon & Color */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Icon */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">Icône</label>
-            <div className="grid grid-cols-8 gap-1 p-2 bg-zinc-800/30 rounded-xl max-h-24 overflow-y-auto">
-              {COURSE_ICONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => setIcon(emoji)}
-                  className={`p-1.5 rounded-lg text-lg transition-[background-color] duration-200 ${
-                    icon === emoji
-                      ? `${COLOR_CLASSES[color].bg} ring-2 ${COLOR_CLASSES[color].border}`
-                      : 'hover:bg-zinc-700/50'
-                  }`}
-                  aria-label={`Icône ${emoji}`}
-                  aria-pressed={icon === emoji}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Color */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">Couleur</label>
-            <div className="grid grid-cols-4 gap-2 p-2 bg-zinc-800/30 rounded-xl">
-              {COURSE_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`w-full aspect-square rounded-xl transition-shadow duration-200 ${COLOR_CLASSES[c].bg} ${
-                    color === c ? `ring-2 ${COLOR_CLASSES[c].border}` : ''
-                  }`}
-                  aria-label={`Couleur ${c}`}
-                  aria-pressed={color === c}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* Level */}
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-2">Niveau</label>
@@ -268,9 +227,12 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
               </button>
             ))}
           </div>
+          <p className="text-xs text-zinc-500 mt-2">
+            Ce choix adapte le style et la profondeur des réponses de l'IA
+          </p>
         </div>
 
-        {/* Programming Options */}
+        {/* Mode Code Toggle */}
         <div>
           <label className="flex items-center gap-3 p-4 bg-zinc-800/30 rounded-xl cursor-pointer hover:bg-zinc-800/50 transition-[background-color] duration-200">
             <input
@@ -281,10 +243,10 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
             />
             <div className="flex-1">
               <div className="text-sm text-zinc-200 font-medium flex items-center gap-2">
-                💻 Cours de programmation
+                💻 Mode code (éditeur intégré)
               </div>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Active l'éditeur de code en split view
+                Active un éditeur de code en split view
               </p>
             </div>
           </label>
@@ -301,18 +263,80 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
           )}
         </div>
 
-        {/* Advanced Options */}
-        <div>
+        {/* Advanced Options - Collapsed by default */}
+        <div className="pt-2">
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="text-sm text-zinc-500 hover:text-zinc-300 transition-[color] duration-200"
+            className="text-sm text-zinc-500 hover:text-zinc-300 transition-[color] duration-200 flex items-center gap-2"
           >
-            {showAdvanced ? '▼' : '▶'} Options avancées
+            <span>{showAdvanced ? '▼' : '▶'}</span>
+            <span>Options avancées</span>
           </button>
 
           {showAdvanced && (
-            <div className="mt-3 animate-fade-in">
+            <div className="mt-4 space-y-4 animate-fade-in">
+              {/* Projet lié */}
+              <Select
+                label="Projet lié"
+                value={linkedProjectId}
+                onChange={(e) => setLinkedProjectId(e.target.value)}
+                options={[
+                  { value: '', label: '-- Aucun projet --' },
+                  ...projects.map(project => ({
+                    value: project.id,
+                    label: `${project.icon} ${project.name}`
+                  }))
+                ]}
+                hint="💡 Les tâches et concepts de ce projet seront accessibles pendant le chat via un widget flottant."
+              />
+
+              {/* Icon & Color */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Icon */}
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Icône</label>
+                  <div className="grid grid-cols-8 gap-1 p-2 bg-zinc-800/30 rounded-xl max-h-24 overflow-y-auto">
+                    {COURSE_ICONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setIcon(emoji)}
+                        className={`p-1.5 rounded-lg text-lg transition-[background-color] duration-200 ${
+                          icon === emoji
+                            ? `${COLOR_CLASSES[color].bg} ring-2 ${COLOR_CLASSES[color].border}`
+                            : 'hover:bg-zinc-700/50'
+                        }`}
+                        aria-label={`Icône ${emoji}`}
+                        aria-pressed={icon === emoji}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Color */}
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Couleur</label>
+                  <div className="grid grid-cols-4 gap-2 p-2 bg-zinc-800/30 rounded-xl">
+                    {COURSE_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(c)}
+                        className={`w-full aspect-square rounded-xl transition-shadow duration-200 ${COLOR_CLASSES[c].bg} ${
+                          color === c ? `ring-2 ${COLOR_CLASSES[c].border}` : ''
+                        }`}
+                        aria-label={`Couleur ${c}`}
+                        aria-pressed={color === c}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* System Prompt */}
               <Textarea
                 label="Instructions pour l'IA (optionnel)"
                 value={systemPrompt}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Check, Play, Pause, Calendar, ListChecks } from 'lucide-react'
+import { Check, Calendar, ListChecks, Star } from 'lucide-react'
 import { Task, useStore } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
 
@@ -18,7 +18,7 @@ const priorityColors = {
 }
 
 export function TaskCard({ task, index, onClick }: TaskCardProps) {
-  const { projects, toggleTask, moveTask, updateTask } = useStore()
+  const { projects, toggleTask, updateTask, setPriorityTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
   
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -41,30 +41,19 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
     }
   }, [isEditingTitle])
 
-  // Actions
-  const handleStartTask = (e: React.MouseEvent) => {
+  const handleToggleComplete = (e: React.MouseEvent) => {
     e.stopPropagation()
-    moveTask(task.id, 'in-progress')
+    toggleTask(task.id)
   }
 
-  const handlePauseTask = (e: React.MouseEvent) => {
+  const handleSetPriority = (e: React.MouseEvent) => {
     e.stopPropagation()
-    moveTask(task.id, 'todo')
-  }
-
-  const handleCompleteTask = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    moveTask(task.id, 'done')
-    if (!task.completed) {
-      toggleTask(task.id)
-    }
-  }
-
-  const handleReopenTask = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    moveTask(task.id, 'todo')
-    if (task.completed) {
-      toggleTask(task.id)
+    if (task.isPriority) {
+      // Si déjà prioritaire, la retirer
+      updateTask(task.id, { isPriority: false })
+    } else {
+      // Sinon, la définir comme prioritaire (retire automatiquement l'ancienne)
+      setPriorityTask(task.id)
     }
   }
 
@@ -107,50 +96,6 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
   }
 
-  // Render action button based on status
-  const renderActionButton = () => {
-    if (task.status === 'todo') {
-      // À faire → Play button to start
-      return (
-        <button
-          onClick={handleStartTask}
-          className="flex-shrink-0 w-7 h-7 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 flex items-center justify-center transition-colors group/btn"
-          title="Commencer"
-        >
-          <Play className="w-3.5 h-3.5 text-amber-400 group-hover/btn:scale-110 transition-transform" fill="currentColor" />
-        </button>
-      )
-    }
-    
-    if (task.status === 'in-progress') {
-      // En cours → Pause button
-      return (
-        <button
-          onClick={handlePauseTask}
-          className="flex-shrink-0 w-7 h-7 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 flex items-center justify-center transition-colors animate-pulse"
-          title="Mettre en pause"
-        >
-          <Pause className="w-3.5 h-3.5 text-indigo-400" fill="currentColor" />
-        </button>
-      )
-    }
-    
-    if (task.status === 'done') {
-      // Terminé → Check button (can reopen)
-      return (
-        <button
-          onClick={handleReopenTask}
-          className="flex-shrink-0 w-7 h-7 rounded-lg bg-emerald-500/30 flex items-center justify-center transition-colors hover:bg-emerald-500/20"
-          title="Rouvrir"
-        >
-          <Check className="w-4 h-4 text-emerald-400" strokeWidth={3} />
-        </button>
-      )
-    }
-    
-    return null
-  }
-
   return (
     <Draggable draggableId={task.id} index={index}>
       {(provided, snapshot) => (
@@ -163,11 +108,13 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
             group relative overflow-hidden
             p-4 rounded-2xl cursor-pointer
             bg-white/[0.03] backdrop-blur-xl
-            border border-white/[0.06]
-            hover:bg-white/[0.06] hover:border-white/[0.1]
-            transition-[background-color,border-color] duration-300
+            border transition-all duration-300
+            ${task.isPriority && !task.completed
+              ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10' 
+              : 'border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1]'
+            }
             ${snapshot.isDragging ? 'bg-white/[0.08] shadow-xl' : ''}
-            ${task.status === 'done' ? 'opacity-60' : ''}
+            ${task.completed ? 'opacity-60' : ''}
           `}
           style={provided.draggableProps.style}
         >
@@ -178,12 +125,30 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
           />
 
           <div className="flex items-start gap-3 pl-2">
-            {/* Action Button (Play/Pause/Check) */}
-            {renderActionButton()}
+            {/* Checkbox simple */}
+            <button
+              onClick={handleToggleComplete}
+              className={`
+                flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
+                ${task.completed
+                  ? 'bg-emerald-500/30 border-emerald-500 hover:bg-emerald-500/40' 
+                  : 'border-white/20 hover:border-white/40 hover:bg-white/5'
+                }
+              `}
+            >
+              {task.completed && <Check className="w-4 h-4 text-emerald-400" strokeWidth={3} />}
+            </button>
             
             {/* Content */}
             <div className="flex-1 min-w-0">
-              {/* Title */}
+              {/* Project context - only text, no icons */}
+              {project && (
+                <div className="mb-1.5 text-[12.5px] text-white/50 font-medium leading-snug">
+                  {project.name}
+                </div>
+              )}
+              
+              {/* Title - always dominant, larger and more readable */}
               {isEditingTitle ? (
                 <input
                   ref={inputRef}
@@ -193,14 +158,14 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
                   onBlur={handleTitleBlur}
                   onKeyDown={handleTitleKeyDown}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full text-[13px] font-medium leading-relaxed bg-zinc-900/80 text-white/90 px-2 py-1 rounded border border-indigo-500/50 focus:outline-none focus:border-indigo-500"
+                  className="w-full text-[16px] font-medium leading-[1.5] bg-zinc-900/80 text-white/90 px-2 py-1 rounded border border-indigo-500/50 focus:outline-none focus:border-indigo-500"
                 />
               ) : (
                 <h3 
                   onDoubleClick={handleTitleDoubleClick}
                   className={`
-                    text-[13px] font-medium leading-relaxed
-                    ${task.status === 'done'
+                    text-[16px] font-medium leading-[1.5]
+                    ${task.completed
                       ? 'text-white/30 line-through' 
                       : 'text-white/90'
                     }
@@ -211,17 +176,9 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
                 </h3>
               )}
               
-              {/* Metadata */}
-              {(project || task.dueDate || totalSubtasks > 0) && (
+              {/* Metadata - only due date and subtasks, no project here */}
+              {(task.dueDate || totalSubtasks > 0) && (
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
-                  {/* Project */}
-                  {project && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-white/40">
-                      <span>{project.icon}</span>
-                      <span className="max-w-[100px] truncate">{project.name}</span>
-                    </span>
-                  )}
-                  
                   {/* Due date */}
                   {task.dueDate && (
                     <span className={`
@@ -249,26 +206,34 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
               )}
             </div>
 
-            {/* Complete button for in-progress tasks */}
-            {task.status === 'in-progress' && (
+            {/* Priority star button - only for non-completed tasks */}
+            {!task.completed && (
               <button
-                onClick={handleCompleteTask}
-                className="flex-shrink-0 w-7 h-7 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 flex items-center justify-center transition-colors"
-                title="Terminer"
+                onClick={handleSetPriority}
+                className={`
+                  flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all
+                  ${task.isPriority
+                    ? 'bg-amber-500/20 hover:bg-amber-500/30' 
+                    : 'bg-white/5 hover:bg-white/10'
+                  }
+                `}
+                title={task.isPriority ? "Retirer la priorité" : "Définir comme prioritaire"}
               >
-                <Check className="w-4 h-4 text-emerald-400" strokeWidth={2.5} />
+                <Star 
+                  className={`w-4 h-4 transition-colors ${
+                    task.isPriority 
+                      ? 'text-amber-400 fill-amber-400' 
+                      : 'text-white/30'
+                  }`}
+                  strokeWidth={1.5}
+                />
               </button>
-            )}
-
-            {/* Urgent indicator */}
-            {task.priority === 'urgent' && task.status !== 'done' && (
-              <div className="w-2 h-2 rounded-full bg-rose-500/80 animate-pulse" />
             )}
           </div>
 
           {/* Subtasks as mini cards */}
           {task.subtasks && task.subtasks.length > 0 && (
-            <div className="mt-3 pl-11 space-y-1.5">
+            <div className="mt-3 pl-9 space-y-1.5">
               {task.subtasks.map((subtask) => (
                 <div
                   key={subtask.id}

@@ -7,18 +7,29 @@ export type MoodEmoji = '😢' | '😐' | '🙂' | '😊' | '🤩'
 export interface JournalEntry {
   id: string
   date: string // YYYY-MM-DD
+  
+  // ✨ INTENTION + ACTION (prioritaire)
+  intention?: string // "Qu'est-ce qui compte aujourd'hui ?"
+  action?: string // Action concrète associée
+  
+  // Champs optionnels (secondaires, fusionnés)
   mood?: MoodLevel
   moodEmoji?: MoodEmoji
-  mainGoal?: string
-  gratitude?: string[]
-  reflection: string
-  learned?: string
-  victory?: string
-  photos?: string[] // URLs or base64
+  freeNotes?: string // Fusion de gratitude/learned/victory/reflection
+  
+  // Métadonnées (silencieuses)
   tags?: string[]
   isFavorite?: boolean
   createdAt: number
   updatedAt: number
+  
+  // Legacy fields (deprecated, pour compatibilité)
+  mainGoal?: string
+  gratitude?: string[]
+  reflection?: string
+  learned?: string
+  victory?: string
+  photos?: string[]
 }
 
 export interface JournalPrompt {

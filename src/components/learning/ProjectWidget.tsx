@@ -51,6 +51,12 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
     // NOTE: La navigation vers le projet spécifique se fait via le store (selectedProjectId)
   }
 
+  // Masquer le widget si aucune activité (concepts et tâches à zéro)
+  const hasActivity = (totalConcepts > 0 && completedConcepts > 0) || (totalTasks > 0 && completedTasks > 0)
+  
+  // Si pas d'activité, ne rien afficher
+  if (!hasActivity && !expanded) return null
+
   return (
     <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
       {/* Bouton compact */}
@@ -69,8 +75,12 @@ export function ProjectWidget({ course }: ProjectWidgetProps) {
                 {project.name}
               </p>
               <div className="flex gap-2 text-[10px] text-zinc-600 mt-0.5">
-                <span>🎯 {completedConcepts}/{totalConcepts}</span>
-                <span>✅ {completedTasks}/{totalTasks}</span>
+                {totalConcepts > 0 && completedConcepts > 0 && (
+                  <span>🎯 {completedConcepts}/{totalConcepts}</span>
+                )}
+                {totalTasks > 0 && completedTasks > 0 && (
+                  <span>✅ {completedTasks}/{totalTasks}</span>
+                )}
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />

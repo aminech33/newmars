@@ -1,7 +1,6 @@
 import { memo, useState } from 'react'
-import { Copy, Check, ThumbsUp, Bookmark, Sparkles, User, Trash2 } from 'lucide-react'
+import { Copy, Check, Sparkles, User } from 'lucide-react'
 import { Message } from '../../types/learning'
-import { Tooltip } from '../ui/Tooltip'
 
 interface MessageBubbleProps {
   message: Message
@@ -72,119 +71,60 @@ export const MessageBubble = memo(function MessageBubble({
 
   return (
     <div 
-      className={`group flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}
+      className="group flex gap-4 items-start hover:bg-zinc-900/30 -mx-4 px-4 py-4 rounded-xl transition-colors"
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      {/* Avatar */}
-      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-        isUser 
-          ? 'bg-indigo-500/20 text-indigo-400' 
-          : 'bg-emerald-500/20 text-emerald-400'
-      }`}>
-        {isUser ? (
-          <User className="w-4 h-4" aria-hidden="true" />
+      {/* Avatar - Premium */}
+      <div className="flex-shrink-0">
+        {isAssistant ? (
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-1 ring-white/5">
+            <Sparkles className="w-4 h-4 text-zinc-300" />
+          </div>
         ) : (
-          <Sparkles className="w-4 h-4" aria-hidden="true" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center ring-1 ring-white/5">
+            <User className="w-4 h-4 text-zinc-300" />
+          </div>
         )}
       </div>
 
       {/* Message */}
-      <div className={`flex-1 max-w-[80%] ${isUser ? 'text-right' : ''}`}>
-        <div 
-          className={`inline-block p-4 rounded-2xl ${
-            isUser 
-              ? 'bg-indigo-500/20 text-zinc-200 rounded-tr-sm' 
-              : 'bg-zinc-800/50 text-zinc-300 rounded-tl-sm'
-          } ${message.isStreaming ? 'animate-pulse' : ''}`}
-        >
-          {message.isError ? (
-            <p className="text-rose-400 text-sm">{message.errorMessage || 'Une erreur est survenue'}</p>
-          ) : (
-            <div 
-              className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
-            />
-          )}
-        </div>
-
-        {/* Timestamp & Actions */}
-        <div className={`flex items-center gap-2 mt-1.5 ${isUser ? 'justify-end' : ''}`}>
-          <span className="text-xs text-zinc-600">{formattedTime}</span>
-          
-          {/* Actions for assistant messages */}
-          {isAssistant && !message.isError && (
-            <div className={`flex items-center gap-1 transition-opacity ${showActions ? 'opacity-100' : 'opacity-0'}`}>
-              <Tooltip content={copied ? 'Copié !' : 'Copier'}>
-                <button
-                  onClick={handleCopy}
-                  className="p-1 text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-[background-color,color] duration-200"
-                  aria-label="Copier le message"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
-                </button>
-              </Tooltip>
-
-              <Tooltip content={message.liked ? 'Retirer le like' : 'Aimer'}>
-                <button
-                  onClick={onLike}
-                  className={`p-1 rounded transition-[background-color,color] duration-200 ${
-                    message.liked 
-                      ? 'text-rose-400 bg-rose-500/10' 
-                      : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
-                  }`}
-                  aria-label={message.liked ? 'Retirer le like' : 'Aimer'}
-                  aria-pressed={message.liked}
-                >
-                  <ThumbsUp className="w-3.5 h-3.5" aria-hidden="true" />
-                </button>
-              </Tooltip>
-
-              <Tooltip content="Sauvegarder en note">
-                <button
-                  onClick={onSaveAsNote}
-                  className={`p-1 rounded transition-[background-color,color] duration-200 ${
-                    message.savedAsNote 
-                      ? 'text-amber-400 bg-amber-500/10' 
-                      : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
-                  }`}
-                  aria-label="Sauvegarder en note"
-                >
-                  <Bookmark className="w-3.5 h-3.5" aria-hidden="true" />
-                </button>
-              </Tooltip>
-
-              <Tooltip content="Créer une flashcard">
-                <button
-                  onClick={onCreateFlashcard}
-                  className={`p-1 rounded transition-[background-color,color] duration-200 ${
-                    message.flashcardCreated 
-                      ? 'text-cyan-400 bg-cyan-500/10' 
-                      : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
-                  }`}
-                  aria-label="Créer une flashcard"
-                >
-                  <span className="text-xs">📇</span>
-                </button>
-              </Tooltip>
-            </div>
-          )}
-
-          {/* Delete for user messages */}
-          {isUser && (
-            <div className={`transition-opacity ${showActions ? 'opacity-100' : 'opacity-0'}`}>
-              <Tooltip content="Supprimer">
-                <button
-                  onClick={onDelete}
-                  className="p-1 text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-[background-color,color] duration-200"
-                  aria-label="Supprimer le message"
-                >
-                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                </button>
-              </Tooltip>
-            </div>
-          )}
-        </div>
+      <div className="flex-1 min-w-0 pt-0.5">
+        {/* Label */}
+        <p className="text-xs font-medium text-zinc-500 mb-1.5">
+          {isAssistant ? 'Assistant' : 'Vous'}
+        </p>
+        
+        {message.isError ? (
+          <p className="text-red-400 text-sm">{message.errorMessage || 'Une erreur est survenue'}</p>
+        ) : (
+          <div 
+            className="text-[15px] leading-[1.7] text-zinc-100 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-white [&_strong]:font-semibold [&_em]:text-zinc-300 [&_code]:bg-zinc-800/80 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:text-indigo-300 [&_code]:text-[13px] [&_code]:font-mono [&_pre]:bg-zinc-900/80 [&_pre]:border [&_pre]:border-zinc-800 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-zinc-300 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-1"
+            dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
+          />
+        )}
+        
+        {/* Actions */}
+        {isAssistant && !message.isError && (
+          <div className={`mt-3 flex items-center gap-1 transition-opacity duration-200 ${showActions ? 'opacity-100' : 'opacity-0'}`}>
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-green-400" />
+                  <span>Copié</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copier</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

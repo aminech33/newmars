@@ -29,18 +29,12 @@ import {
   Settings as SettingsIcon
 } from 'lucide-react'
 
-type SettingsSection = 'appearance' | 'notifications' | 'pomodoro' | 'data' | 'goals' | 'shortcuts' | 'app' | 'privacy' | 'about'
+type SettingsSection = 'appearance' | 'data' | 'advanced'
 
 const sections = [
   { id: 'appearance', label: 'Apparence', icon: Palette, color: 'violet' },
-  { id: 'notifications', label: 'Notifications', icon: Bell, color: 'amber' },
-  { id: 'pomodoro', label: 'Pomodoro', icon: Timer, color: 'rose' },
   { id: 'data', label: 'Données', icon: Database, color: 'cyan' },
-  { id: 'goals', label: 'Objectifs', icon: Target, color: 'emerald' },
-  { id: 'shortcuts', label: 'Raccourcis', icon: Keyboard, color: 'indigo' },
-  { id: 'app', label: 'Application', icon: Monitor, color: 'blue' },
-  { id: 'privacy', label: 'Confidentialité', icon: Shield, color: 'orange' },
-  { id: 'about', label: 'À propos', icon: Info, color: 'zinc' },
+  { id: 'advanced', label: 'Avancé', icon: SettingsIcon, color: 'zinc' },
 ] as const
 
 const colorClasses: Record<string, string> = {
@@ -127,20 +121,10 @@ export function SettingsPage() {
   const { setView, accentTheme, setAccentTheme, readingGoal, setReadingGoal, addToast } = useStore()
   const [activeSection, setActiveSection] = useState<SettingsSection>('appearance')
   
-  // États locaux pour les paramètres (à connecter au store plus tard)
+  // États locaux pour les paramètres essentiels
   const [darkMode, setDarkMode] = useState(true)
-  const [notifications, setNotifications] = useState(true)
-  const [soundEnabled, setSoundEnabled] = useState(true)
-  const [pomodoroWork, setPomodoroWork] = useState(25)
-  const [pomodoroBreak, setPomodoroBreak] = useState(5)
-  const [pomodoroLongBreak, setPomodoroLongBreak] = useState(15)
-  const [sessionsBeforeLong, setSessionsBeforeLong] = useState(4)
-  const [calorieGoal, setCalorieGoal] = useState(2000)
-  const [booksGoal, setBooksGoal] = useState(readingGoal?.targetBooks || 12)
-  const [pomodoroGoal, setPomodoroGoal] = useState(4)
-  const [launchAtStartup, setLaunchAtStartup] = useState(false)
-  const [minimizeToTray, setMinimizeToTray] = useState(true)
-  const [offlineMode, setOfflineMode] = useState(false)
+  const [animationsEnabled, setAnimationsEnabled] = useState(true)
+  const [confettiEnabled, setConfettiEnabled] = useState(false) // Désactivé par défaut
   
   // Export/Import
   const [exportStatus, setExportStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -180,124 +164,53 @@ export function SettingsPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
   
-  const handleBooksGoalChange = (value: number) => {
-    setBooksGoal(value)
-    setReadingGoal({ year: new Date().getFullYear(), targetBooks: value })
-  }
-
+  // Palette d'accents limitée et mature
   const accentColors = [
     { id: 'indigo', label: 'Indigo', class: 'bg-indigo-500' },
+    { id: 'violet', label: 'Violet', class: 'bg-violet-500' },
     { id: 'cyan', label: 'Cyan', class: 'bg-cyan-500' },
     { id: 'emerald', label: 'Émeraude', class: 'bg-emerald-500' },
-    { id: 'rose', label: 'Rose', class: 'bg-rose-500' },
-    { id: 'violet', label: 'Violet', class: 'bg-violet-500' },
-    { id: 'amber', label: 'Ambre', class: 'bg-amber-500' },
-  ]
-
-  const shortcuts = [
-    { key: '⌘/Ctrl + T', action: 'Ouvrir les tâches' },
-    { key: '⌘/Ctrl + J', action: 'Ouvrir Ma Journée' },
-    { key: '⌘/Ctrl + P', action: 'Ouvrir Pomodoro' },
-    { key: '⌘/Ctrl + L', action: 'Ouvrir la bibliothèque' },
-    { key: '⌘/Ctrl + I', action: 'Ouvrir l\'assistant IA' },
-    { key: '⌘/Ctrl + D', action: 'Ouvrir le Dashboard' },
-    { key: '⌘/Ctrl + K', action: 'Recherche rapide' },
-    { key: 'Esc', action: 'Retour au Hub' },
-    { key: '1-9', action: 'Navigation rapide (Dashboard)' },
   ]
 
   const renderContent = () => {
     switch (activeSection) {
       case 'appearance':
         return (
-          <div className="space-y-4">
-            <SettingCard title="Thème" description="Personnalisez l'apparence de l'application">
-              <SettingRow label="Mode sombre" description="Activer le thème sombre">
+          <div className="space-y-6">
+            <div className="text-sm text-zinc-500 mb-6">
+              Réglages essentiels pour la lisibilité et le confort visuel.
+            </div>
+
+            <SettingCard title="Thème">
+              <SettingRow label="Mode sombre">
                 <Toggle enabled={darkMode} onChange={setDarkMode} label="Mode sombre" />
               </SettingRow>
             </SettingCard>
 
-            <SettingCard title="Couleur d'accent" description="Choisissez votre couleur préférée">
-              <div className="flex gap-3 flex-wrap">
+            <SettingCard title="Couleur d'accent">
+              <div className="flex gap-3">
                 {accentColors.map((color) => (
                   <button
                     key={color.id}
                     onClick={() => setAccentTheme(color.id as any)}
-                    className={`w-10 h-10 rounded-xl ${color.class} transition-transform hover:scale-110 ${
-                      accentTheme === color.id ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''
+                    className={`w-12 h-12 rounded-xl ${color.class} transition-all duration-200 ${
+                      accentTheme === color.id 
+                        ? 'ring-2 ring-zinc-400 ring-offset-2 ring-offset-zinc-900 scale-105' 
+                        : 'opacity-60 hover:opacity-100'
                     }`}
                     title={color.label}
+                    aria-label={color.label}
                   />
                 ))}
               </div>
             </SettingCard>
 
-            <SettingCard title="Interface" description="Ajustez l'interface à vos préférences">
-              <SettingRow label="Animations" description="Activer les animations et transitions">
-                <Toggle enabled={true} onChange={() => {}} label="Animations" />
-              </SettingRow>
-              <SettingRow label="Confettis" description="Afficher des confettis lors des accomplissements">
-                <Toggle enabled={true} onChange={() => {}} label="Confettis" />
-              </SettingRow>
-            </SettingCard>
-          </div>
-        )
-
-      case 'notifications':
-        return (
-          <div className="space-y-4">
-            <SettingCard title="Notifications" description="Gérez vos alertes et rappels">
-              <SettingRow label="Activer les notifications" description="Recevoir des notifications de l'application">
-                <Toggle enabled={notifications} onChange={setNotifications} label="Notifications" />
-              </SettingRow>
-              <SettingRow label="Sons" description="Jouer un son pour les notifications">
-                <Toggle enabled={soundEnabled} onChange={setSoundEnabled} label="Sons" />
-              </SettingRow>
-            </SettingCard>
-
-            <SettingCard title="Rappels" description="Configurez vos rappels automatiques">
-              <SettingRow label="Rappels Pomodoro" description="Notification à la fin de chaque session">
-                <Toggle enabled={true} onChange={() => {}} label="Rappels Pomodoro" />
-              </SettingRow>
-              <SettingRow label="Rappels d'habitudes" description="Rappel quotidien pour vos habitudes">
-                <Toggle enabled={true} onChange={() => {}} label="Rappels habitudes" />
-              </SettingRow>
-              <SettingRow label="Rappels de deadline" description="Alerte avant l'échéance des tâches">
-                <Toggle enabled={true} onChange={() => {}} label="Rappels deadline" />
-              </SettingRow>
-            </SettingCard>
-          </div>
-        )
-
-      case 'pomodoro':
-        return (
-          <div className="space-y-4">
-            <SettingCard title="Durées" description="Personnalisez vos sessions de travail">
-              <SettingRow label={`Travail: ${pomodoroWork} min`} description="Durée d'une session de travail">
-                <div className="w-32">
-                  <Slider value={pomodoroWork} onChange={setPomodoroWork} min={15} max={60} step={5} />
-                </div>
-              </SettingRow>
-              <SettingRow label={`Pause courte: ${pomodoroBreak} min`} description="Durée de la pause entre les sessions">
-                <div className="w-32">
-                  <Slider value={pomodoroBreak} onChange={setPomodoroBreak} min={3} max={15} />
-                </div>
-              </SettingRow>
-              <SettingRow label={`Pause longue: ${pomodoroLongBreak} min`} description="Durée de la pause après plusieurs sessions">
-                <div className="w-32">
-                  <Slider value={pomodoroLongBreak} onChange={setPomodoroLongBreak} min={10} max={30} step={5} />
-                </div>
-              </SettingRow>
-              <SettingRow label={`Sessions avant pause longue: ${sessionsBeforeLong}`} description="Nombre de sessions avant la grande pause">
-                <div className="w-32">
-                  <Slider value={sessionsBeforeLong} onChange={setSessionsBeforeLong} min={2} max={6} />
-                </div>
-              </SettingRow>
-            </SettingCard>
-
-            <SettingCard title="Sons" description="Sons de notification Pomodoro">
-              <SettingRow label="Son de fin de session" description="Jouer un son à la fin de chaque session">
-                <Toggle enabled={soundEnabled} onChange={setSoundEnabled} label="Son fin session" />
+            <SettingCard title="Confort">
+              <SettingRow 
+                label="Animations" 
+                description="Transitions et mouvements visuels (réduction possible pour accessibilité)"
+              >
+                <Toggle enabled={animationsEnabled} onChange={setAnimationsEnabled} label="Animations" />
               </SettingRow>
             </SettingCard>
           </div>
@@ -384,136 +297,27 @@ export function SettingsPage() {
           </div>
         )
 
-      case 'goals':
+      case 'advanced':
         return (
-          <div className="space-y-4">
-            <SettingCard title="Objectifs quotidiens" description="Définissez vos objectifs personnels">
-              <SettingRow label={`Calories: ${calorieGoal} kcal`} description="Objectif calorique journalier">
-                <div className="w-32">
-                  <Slider value={calorieGoal} onChange={setCalorieGoal} min={1200} max={4000} step={100} />
-                </div>
-              </SettingRow>
-              <SettingRow label={`Sessions Pomodoro: ${pomodoroGoal}`} description="Sessions de focus par jour">
-                <div className="w-32">
-                  <Slider value={pomodoroGoal} onChange={setPomodoroGoal} min={1} max={12} />
-                </div>
-              </SettingRow>
-            </SettingCard>
-
-            <SettingCard title="Objectifs annuels" description="Vos grands objectifs">
-              <SettingRow label={`Livres à lire: ${booksGoal}`} description="Nombre de livres par an (sauvegardé automatiquement)">
-                <div className="w-32">
-                  <Slider value={booksGoal} onChange={handleBooksGoalChange} min={1} max={52} />
-                </div>
-              </SettingRow>
-            </SettingCard>
-          </div>
-        )
-
-      case 'shortcuts':
-        return (
-          <div className="space-y-4">
-            <SettingCard title="Raccourcis clavier" description="Naviguez plus rapidement">
-              <div className="space-y-1">
-                {shortcuts.map((shortcut, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0">
-                    <span className="text-sm text-zinc-400">{shortcut.action}</span>
-                    <kbd className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 font-mono">
-                      {shortcut.key}
-                    </kbd>
-                  </div>
-                ))}
-              </div>
-            </SettingCard>
-          </div>
-        )
-
-      case 'app':
-        return (
-          <div className="space-y-4">
-            <SettingCard title="Démarrage" description="Comportement au lancement">
-              <SettingRow label="Lancer au démarrage" description="Ouvrir IKU au démarrage de Windows">
-                <Toggle enabled={launchAtStartup} onChange={setLaunchAtStartup} label="Démarrage auto" />
-              </SettingRow>
-              <SettingRow label="Minimiser dans la barre" description="Réduire dans la zone de notification">
-                <Toggle enabled={minimizeToTray} onChange={setMinimizeToTray} label="Minimiser" />
-              </SettingRow>
-            </SettingCard>
-
-            <SettingCard title="Mises à jour" description="Gardez IKU à jour">
-              <button className="w-full flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl transition-colors">
-                <div className="flex items-center gap-3">
-                  <RefreshCw className="w-5 h-5 text-indigo-400" />
-                  <div className="text-left">
-                    <p className="text-sm text-zinc-200">Vérifier les mises à jour</p>
-                    <p className="text-xs text-zinc-500">Version actuelle: 1.0.0</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-500" />
-              </button>
-            </SettingCard>
-          </div>
-        )
-
-      case 'privacy':
-        return (
-          <div className="space-y-4">
-            <SettingCard title="Mode hors-ligne" description="Contrôlez vos données">
-              <SettingRow label="Mode hors-ligne uniquement" description="Désactiver toute synchronisation cloud">
-                <Toggle enabled={offlineMode} onChange={setOfflineMode} label="Hors-ligne" />
-              </SettingRow>
-            </SettingCard>
-
-            <SettingCard title="Cache" description="Données temporaires">
-              <button className="w-full flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl transition-colors">
-                <div className="flex items-center gap-3">
-                  <Trash2 className="w-5 h-5 text-zinc-400" />
-                  <div className="text-left">
-                    <p className="text-sm text-zinc-200">Effacer le cache</p>
-                    <p className="text-xs text-zinc-500">Libérer de l'espace</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-500" />
-              </button>
-            </SettingCard>
-          </div>
-        )
-
-      case 'about':
-        return (
-          <div className="space-y-4">
-            <SettingCard title="IKU" description="Votre hub de productivité personnel">
-              <div className="text-center py-6">
-                <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center">
-                  <span className="text-3xl">🚀</span>
-                </div>
-                <h3 className="text-xl font-bold text-zinc-100">IKU</h3>
-                <p className="text-sm text-zinc-500">Version 1.0.0</p>
-              </div>
-            </SettingCard>
-
-            <SettingCard title="Liens" description="Ressources et support">
-              <div className="space-y-2">
-                <a href="#" className="flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Github className="w-5 h-5 text-zinc-400" />
-                    <span className="text-sm text-zinc-200">GitHub</span>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-zinc-500" />
-                </a>
-                <a href="#" className="flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Heart className="w-5 h-5 text-rose-400" />
-                    <span className="text-sm text-zinc-200">Soutenir le projet</span>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-zinc-500" />
-                </a>
-              </div>
-            </SettingCard>
-
-            <div className="text-center text-xs text-zinc-600 py-4">
-              Fait avec ❤️ pour la productivité
+          <div className="space-y-6">
+            <div className="text-sm text-zinc-500 mb-6">
+              Options secondaires et fonctionnalités expérimentales.
             </div>
+
+            <SettingCard title="Effets visuels">
+              <SettingRow 
+                label="Confettis" 
+                description="Animations lors des accomplissements (désactivé par défaut)"
+              >
+                <Toggle enabled={confettiEnabled} onChange={setConfettiEnabled} label="Confettis" />
+              </SettingRow>
+            </SettingCard>
+
+            <SettingCard title="Application">
+              <div className="text-center py-6 border-b border-zinc-800/50">
+                <p className="text-sm text-zinc-400">Version 1.0.0</p>
+              </div>
+            </SettingCard>
           </div>
         )
 

@@ -45,6 +45,7 @@ export function LibraryPage() {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [showGenreDropdown, setShowGenreDropdown] = useState(false)
   const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [showAllBooks, setShowAllBooks] = useState(false) // Section "Tous" pliable
   const menuRef = useRef<HTMLDivElement>(null)
   const statusRef = useRef<HTMLDivElement>(null)
   const genreRef = useRef<HTMLDivElement>(null)
@@ -471,18 +472,96 @@ export function LibraryPage() {
         />
       )}
 
-      {/* Contenu principal - Étagères */}
-      <main className="flex-1 overflow-auto px-4 py-3">
-        <div className="max-w-6xl mx-auto space-y-4">
-          {/* Livres en cours */}
-          {readingBooks.length > 0 && filterStatus === 'all' && (
+      {/* Contenu principal - Tunnel de lecture */}
+      <main className="flex-1 overflow-auto px-4 py-6">
+        <div className="max-w-6xl mx-auto space-y-8">
+          
+          {/* 📖 EN COURS - Section dominante et prioritaire */}
+          {readingBooks.length > 0 && filterStatus === 'all' ? (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                  En cours de lecture
+                </h2>
+                {readingBooks.length === 1 && (
+                  <span className="text-xs text-zinc-500">Votre lecture active</span>
+                )}
+              </div>
+              
+              {/* Affichage agrandi si un seul livre */}
+              {readingBooks.length === 1 ? (
+                <div className="bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/20 rounded-2xl p-6">
+                  <Bookshelf 
+                    books={readingBooks} 
+                    onSelectBook={handleSelectBook}
+                    onStartReading={startReadingSession}
+                    isReadingSession={isReadingSession}
+                    currentReadingBookId={currentReadingBookId}
+                  />
+                </div>
+              ) : (
+                <Bookshelf 
+                  books={readingBooks} 
+                  onSelectBook={handleSelectBook}
+                  onStartReading={startReadingSession}
+                  isReadingSession={isReadingSession}
+                  currentReadingBookId={currentReadingBookId}
+                />
+              )}
+            </section>
+          ) : filterStatus === 'reading' ? (
+            /* Vue filtrée "En cours" uniquement */
             <section>
-              <h2 className="text-xs font-medium text-amber-400 mb-2 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
-                En cours ({readingBooks.length})
+              <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                En cours de lecture ({readingBooks.length})
               </h2>
               <Bookshelf 
-                books={readingBooks} 
+                books={filteredAndSortedBooks} 
+                onSelectBook={handleSelectBook}
+                onStartReading={startReadingSession}
+                isReadingSession={isReadingSession}
+                currentReadingBookId={currentReadingBookId}
+              />
+            </section>
+          ) : null}
+
+          {/* 📚 TOUS LES LIVRES - Section secondaire pliable */}
+          {filterStatus === 'all' && (
+            <section className="border-t border-zinc-800/50 pt-6">
+              <button
+                onClick={() => setShowAllBooks(!showAllBooks)}
+                className="w-full flex items-center justify-between text-left mb-4 group"
+              >
+                <h2 className="text-sm font-medium text-zinc-500 group-hover:text-zinc-400 transition-colors">
+                  Bibliothèque complète ({filteredAndSortedBooks.length} livres)
+                </h2>
+                <ChevronDown className={`w-4 h-4 text-zinc-600 transition-transform ${showAllBooks ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showAllBooks && (
+                <div className="animate-in fade-in duration-200">
+                  <Bookshelf 
+                    books={filteredAndSortedBooks} 
+                    onSelectBook={handleSelectBook}
+                    onStartReading={startReadingSession}
+                    isReadingSession={isReadingSession}
+                    currentReadingBookId={currentReadingBookId}
+                  />
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Vue filtrée "Terminés" ou "À lire" */}
+          {(filterStatus === 'completed' || filterStatus === 'to-read') && (
+            <section>
+              <h2 className="text-sm font-medium text-zinc-500 mb-4">
+                {filterStatus === 'completed' ? 'Terminés' : 'À lire'} ({filteredAndSortedBooks.length})
+              </h2>
+              <Bookshelf 
+                books={filteredAndSortedBooks} 
                 onSelectBook={handleSelectBook}
                 onStartReading={startReadingSession}
                 isReadingSession={isReadingSession}
@@ -491,27 +570,13 @@ export function LibraryPage() {
             </section>
           )}
 
-          {/* Tous les livres filtrés */}
-          <section>
-            <h2 className="text-xs font-medium text-zinc-500 mb-2">
-              {filterStatus === 'all' ? 'Tous' : filterStatus === 'reading' ? 'En cours' : filterStatus === 'completed' ? 'Terminés' : 'À lire'} ({filteredAndSortedBooks.length})
-            </h2>
-            <Bookshelf 
-              books={filteredAndSortedBooks} 
-              onSelectBook={handleSelectBook}
-              onStartReading={startReadingSession}
-              isReadingSession={isReadingSession}
-              currentReadingBookId={currentReadingBookId}
-            />
-          </section>
-
           {/* État vide */}
           {filteredAndSortedBooks.length === 0 && (
-            <div className="text-center py-8">
-              <BookOpen className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-              <p className="text-xs text-zinc-600">Aucun livre</p>
-              <button onClick={handleOpenAddModal} className="mt-2 text-white text-xs hover:underline">
-                + Ajouter
+            <div className="text-center py-12">
+              <BookOpen className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+              <p className="text-sm text-zinc-600 mb-2">Aucun livre dans cette section</p>
+              <button onClick={handleOpenAddModal} className="text-white text-sm hover:underline">
+                + Ajouter un livre
               </button>
             </div>
           )}

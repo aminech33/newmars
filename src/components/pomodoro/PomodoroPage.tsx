@@ -401,13 +401,12 @@ export function PomodoroPage() {
             <h1 className="text-lg font-semibold text-zinc-200">Pomodoro</h1>
           </div>
 
-          {/* Tabs */}
+          {/* Tabs - Réduits pour focus sur l'action */}
           <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-0.5" role="tablist">
             {[
-              { id: 'timer' as const, label: 'Timer', icon: Timer },
-              { id: 'stats' as const, label: 'Stats', icon: TrendingUp },
-              { id: 'history' as const, label: 'Historique', icon: Calendar },
-              { id: 'settings' as const, label: 'Paramètres', icon: Settings }
+              { id: 'timer' as const, label: 'Focus', icon: Timer },
+              { id: 'history' as const, label: 'Aujourd\'hui', icon: Calendar },
+              { id: 'settings' as const, label: 'Réglages', icon: Settings }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -493,39 +492,48 @@ export function PomodoroPage() {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-5xl font-bold mb-1">{formatTime(timerState.timeLeft)}</div>
-                      <div className="text-zinc-500 text-xs">
-                        {timerState.status === 'running' && 'En cours...'}
-                        {timerState.status === 'paused' && 'En pause'}
-                        {timerState.status === 'idle' && 'Prêt'}
-                        {timerState.status === 'completed' && 'Terminé !'}
-                      </div>
+                      {/* État masqué à l'idle - le bouton Play parle de lui-même */}
+                      {timerState.status !== 'idle' && (
+                        <div className="text-zinc-500 text-xs">
+                          {timerState.status === 'running' && 'En cours...'}
+                          {timerState.status === 'paused' && 'En pause'}
+                          {timerState.status === 'completed' && 'Terminé !'}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Controls */}
+                {/* Controls - Bouton Play agrandi à l'état idle */}
                 <div className="flex items-center justify-center gap-3 mb-4">
                   <button
                     onClick={toggleTimer}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                    className={`rounded-full flex items-center justify-center transition-all duration-200 ${
+                      timerState.status === 'idle' || timerState.status === 'completed'
+                        ? 'w-20 h-20 shadow-2xl shadow-red-500/20' // 2x plus gros à l'idle
+                        : 'w-12 h-12'
+                    } ${
                       timerState.mode === 'focus'
                         ? 'bg-red-500 hover:bg-red-600 text-white'
                         : 'bg-green-500 hover:bg-green-600 text-white'
                     }`}
                   >
                     {timerState.status === 'running' ? (
-                      <Pause className="w-6 h-6" />
+                      <Pause className={timerState.status === 'idle' || timerState.status === 'completed' ? 'w-10 h-10' : 'w-6 h-6'} />
                     ) : (
-                      <Play className="w-6 h-6 ml-0.5" />
+                      <Play className={`${timerState.status === 'idle' || timerState.status === 'completed' ? 'w-10 h-10 ml-1' : 'w-6 h-6 ml-0.5'}`} />
                     )}
                   </button>
 
-                  <button
-                    onClick={resetTimer}
-                    className="w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
+                  {/* Reset button - Seulement visible si timer actif */}
+                  {timerState.status !== 'idle' && timerState.status !== 'completed' && (
+                    <button
+                      onClick={resetTimer}
+                      className="w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Session info - Compact */}
@@ -560,346 +568,223 @@ export function PomodoroPage() {
               </div>
             </div>
 
-            {/* Sidebar - Compact */}
-            <div className="space-y-3">
-              {/* Duration presets */}
-              {timerState.status === 'idle' && timerState.mode === 'focus' && (
-                <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
-                  <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
-                    <Clock className="w-3 h-3" />
-                    DURÉE
-                  </h3>
-                  <div className="grid grid-cols-5 gap-1.5 mb-2">
-                    {presetDurations.map(duration => (
-                      <button
-                        key={duration}
-                        onClick={() => {
-                          setCustomDuration(duration)
-                          setTimerState(prev => ({
-                            ...prev,
-                            timeLeft: duration * 60,
-                            totalTime: duration * 60
-                          }))
-                        }}
-                        className={`py-1.5 px-2 rounded-md font-medium text-xs transition-colors ${
-                          customDuration === duration
-                            ? 'bg-red-500 text-white'
-                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                        }`}
+            {/* Sidebar - Apparaît SEULEMENT si timer actif ou en pause */}
+            {(timerState.status === 'running' || timerState.status === 'paused') && (
+              <div className="space-y-3 animate-fade-in">
+                {/* Duration presets - Visible en pause uniquement */}
+                {timerState.status === 'paused' && timerState.mode === 'focus' && (
+                  <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
+                    <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" />
+                      AJUSTER DURÉE
+                    </h3>
+                    <div className="grid grid-cols-5 gap-1.5 mb-2">
+                      {presetDurations.map(duration => (
+                        <button
+                          key={duration}
+                          onClick={() => {
+                            setCustomDuration(duration)
+                            setTimerState(prev => ({
+                              ...prev,
+                              timeLeft: duration * 60,
+                              totalTime: duration * 60
+                            }))
+                          }}
+                          className={`py-1.5 px-2 rounded-md font-medium text-xs transition-colors ${
+                            customDuration === duration
+                              ? 'bg-red-500 text-white'
+                              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                          }`}
+                        >
+                          {duration}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Task selector - Accessible pendant la session */}
+                {timerState.mode === 'focus' && (
+                  <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
+                    <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
+                      <Target className="w-3 h-3" />
+                      LIER (OPTIONNEL)
+                    </h3>
+                    
+                    <div className="space-y-2">
+                      <select
+                        value={selectedTaskId || ''}
+                        onChange={(e) => setSelectedTaskId(e.target.value || undefined)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
                       >
-                        {duration}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                        <option value="">Tâche...</option>
+                        {incompleteTasks.map(task => (
+                          <option key={task.id} value={task.id}>{task.title}</option>
+                        ))}
+                      </select>
 
-              {/* Task selector - Compact */}
-              {timerState.mode === 'focus' && (
-                <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
-                  <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
-                    <Target className="w-3 h-3" />
-                    ASSOCIER
-                  </h3>
-                  
-                  <div className="space-y-2">
-                    <select
-                      value={selectedTaskId || ''}
-                      onChange={(e) => setSelectedTaskId(e.target.value || undefined)}
-                      disabled={timerState.status !== 'idle'}
-                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
-                    >
-                      <option value="">Tâche...</option>
-                      {incompleteTasks.map(task => (
-                        <option key={task.id} value={task.id}>{task.title}</option>
-                      ))}
-                    </select>
+                      <select
+                        value={selectedProjectId || ''}
+                        onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                      >
+                        <option value="">Projet...</option>
+                        {projects.map(project => (
+                          <option key={project.id} value={project.id}>{project.icon} {project.name}</option>
+                        ))}
+                      </select>
 
-                    <select
-                      value={selectedProjectId || ''}
-                      onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
-                      disabled={timerState.status !== 'idle'}
-                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
-                    >
-                      <option value="">Projet...</option>
-                      {projects.map(project => (
-                        <option key={project.id} value={project.id}>{project.icon} {project.name}</option>
-                      ))}
-                    </select>
+                      <select
+                        value={selectedBookId || ''}
+                        onChange={(e) => setSelectedBookId(e.target.value || undefined)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      >
+                        <option value="">📖 Livre...</option>
+                        {readingBooks.map(book => (
+                          <option key={book.id} value={book.id}>{book.title}</option>
+                        ))}
+                      </select>
 
-                    <select
-                      value={selectedBookId || ''}
-                      onChange={(e) => setSelectedBookId(e.target.value || undefined)}
-                      disabled={timerState.status !== 'idle'}
-                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-50"
-                    >
-                      <option value="">📖 Livre...</option>
-                      {readingBooks.map(book => (
-                        <option key={book.id} value={book.id}>{book.title}</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={selectedCourseId || ''}
-                      onChange={(e) => setSelectedCourseId(e.target.value || undefined)}
-                      disabled={timerState.status !== 'idle'}
-                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
-                    >
-                      <option value="">🎓 Cours...</option>
-                      {activeCourses.map(course => (
-                        <option key={course.id} value={course.id}>{course.icon} {course.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </div>
-        )}
-
-        {/* STATS TAB */}
-        {activeTab === 'stats' && (
-          <div 
-            role="tabpanel" 
-            id="panel-stats" 
-            aria-labelledby="tab-stats"
-            className="space-y-4"
-          >
-            {/* Global stats - Compact */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <Timer className="w-4 h-4 text-red-400" />
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Sessions</div>
-                    <div className="text-lg font-bold">{stats.totalSessions}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Total</div>
-                    <div className="text-lg font-bold">{formatDuration(stats.totalMinutes)}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-green-400" />
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Complétion</div>
-                    <div className="text-lg font-bold">{stats.completionRate}%</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-orange-400" />
-                  <div>
-                    <div className="text-[10px] text-zinc-500">Record</div>
-                    <div className="text-lg font-bold">{stats.longestStreak}j</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Project breakdown - Compact */}
-            {projectStats.length > 0 && (
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
-                <h3 className="text-xs font-semibold text-zinc-500 mb-3 flex items-center gap-1.5">
-                  <Folder className="w-3 h-3" />
-                  PAR PROJET
-                </h3>
-                <div className="space-y-2">
-                  {projectStats.slice(0, 5).map(proj => (
-                    <div key={proj.projectId} className="flex items-center gap-2">
-                      <span className="text-sm">{proj.projectIcon || '📁'}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="truncate text-zinc-300">{proj.projectName}</span>
-                          <span className="text-zinc-500">{formatDuration(proj.totalMinutes)}</span>
-                        </div>
-                        <div className="h-1 bg-zinc-800 rounded-full overflow-hidden mt-1">
-                          <div 
-                            className="h-full"
-                            style={{ 
-                              width: `${(proj.totalMinutes / projectStats[0].totalMinutes) * 100}%`,
-                              backgroundColor: proj.projectColor
-                            }}
-                          />
-                        </div>
-                      </div>
+                      <select
+                        value={selectedCourseId || ''}
+                        onChange={(e) => setSelectedCourseId(e.target.value || undefined)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-800/50 rounded-md text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value="">🎓 Cours...</option>
+                        {activeCourses.map(course => (
+                          <option key={course.id} value={course.id}>{course.icon} {course.name}</option>
+                        ))}
+                      </select>
                     </div>
-                  ))}
-                </div>
+                    
+                    <p className="text-[10px] text-zinc-600 mt-2">
+                      Vous pouvez lier cette session pendant ou après
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Task breakdown - Compact */}
-            {taskStats.length > 0 && (
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
-                <h3 className="text-xs font-semibold text-zinc-500 mb-3 flex items-center gap-1.5">
-                  <CheckSquare className="w-3 h-3" />
-                  PAR TÂCHE
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {taskStats.slice(0, 6).map(task => (
-                    <div key={task.taskId} className="p-2 bg-zinc-800/50 rounded-lg flex items-center justify-between">
-                      <span className="text-xs text-zinc-300 truncate flex-1">{task.taskTitle}</span>
-                      <span className="text-xs font-medium text-red-400 ml-2">{formatDuration(task.totalMinutes)}</span>
-                    </div>
-                  ))}
-                </div>
+            {/* Message à l'état idle - Focus sur l'action */}
+            {timerState.status === 'idle' && timerState.mode === 'focus' && (
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 text-center">
+                <p className="text-sm text-zinc-500 mb-2">
+                  Cliquez sur Play pour commencer
+                </p>
+                <p className="text-xs text-zinc-600">
+                  Durée : {customDuration} minutes
+                </p>
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className="text-xs text-zinc-700 hover:text-zinc-500 mt-2 transition-colors"
+                >
+                  Changer les réglages par défaut
+                </button>
               </div>
             )}
-
-            {/* Productivity patterns - Compact */}
-            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
-              <h3 className="text-xs font-semibold text-zinc-500 mb-3 flex items-center gap-1.5">
-                <BarChart3 className="w-3 h-3" />
-                PATTERNS
-              </h3>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { key: 'morning', icon: '🌅' },
-                  { key: 'afternoon', icon: '☀️' },
-                  { key: 'evening', icon: '🌆' },
-                  { key: 'night', icon: '🌙' }
-                ].map(period => {
-                  const minutes = patterns[period.key as keyof typeof patterns] as number
-                  const isBest = patterns.bestTime === period.key
-                  return (
-                    <div 
-                      key={period.key} 
-                      className={`p-2 rounded-lg text-center ${
-                        isBest ? 'bg-red-500/10 border border-red-500/20' : 'bg-zinc-800/50'
-                      }`}
-                    >
-                      <div className="text-lg mb-1">{period.icon}</div>
-                      <div className="text-sm font-bold text-red-400">{formatDuration(minutes)}</div>
-                      {isBest && <div className="text-[9px] text-red-400">⭐ Best</div>}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
           </div>
         )}
 
-        {/* HISTORY TAB */}
+
+        {/* HISTORY TAB - Simplifié : Aujourd'hui uniquement */}
         {activeTab === 'history' && (
           <div 
             role="tabpanel" 
             id="panel-history" 
             aria-labelledby="tab-history"
-            className="space-y-4"
+            className="space-y-4 max-w-2xl mx-auto"
           >
-            {/* Date navigation - Compact */}
-            <div className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2">
-              <button
-                onClick={() => navigateDate('prev')}
-                className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h2 className="text-lg font-medium text-zinc-300 mb-1">Aujourd'hui</h2>
+              <p className="text-xs text-zinc-600">
+                {new Date().toLocaleDateString('fr-FR', { 
+                  weekday: 'long', 
+                  day: 'numeric',
+                  month: 'long'
+                })}
+              </p>
+            </div>
 
-              <div className="text-center">
-                <div className="text-sm font-medium">
-                  {isToday ? 'Aujourd\'hui' : new Date(selectedDate).toLocaleDateString('fr-FR', { 
-                    weekday: 'short', 
-                    day: 'numeric',
-                    month: 'short'
-                  })}
+            {/* Stats du jour - Minimal */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-red-400 mb-1">
+                  {daySchedule.totalSessions}
                 </div>
+                <div className="text-xs text-zinc-500">Sessions focus</div>
               </div>
-
-              <button
-                onClick={() => navigateDate('next')}
-                disabled={isToday}
-                className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-30"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Day stats - Compact */}
-            <div className="grid grid-cols-4 gap-2">
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
-                <div className="text-lg font-bold">{daySchedule.totalSessions}</div>
-                <div className="text-[10px] text-zinc-500">Sessions</div>
-              </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
-                <div className="text-lg font-bold text-red-400">{formatDuration(daySchedule.totalFocusMinutes)}</div>
-                <div className="text-[10px] text-zinc-500">Focus</div>
-              </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
-                <div className="text-lg font-bold text-green-400">{formatDuration(daySchedule.totalBreakMinutes)}</div>
-                <div className="text-[10px] text-zinc-500">Pause</div>
-              </div>
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
-                <div className="text-lg font-bold text-orange-400">{daySchedule.productivityScore}%</div>
-                <div className="text-[10px] text-zinc-500">Score</div>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-red-400 mb-1">
+                  {formatDuration(daySchedule.totalFocusMinutes)}
+                </div>
+                <div className="text-xs text-zinc-500">Temps de focus</div>
               </div>
             </div>
 
-            {/* Timeline - Compact */}
+            {/* Timeline simple */}
             {daySchedule.sessions.length > 0 ? (
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3">
-                <h3 className="text-xs font-semibold text-zinc-500 mb-2 flex items-center gap-1.5">
-                  <Clock className="w-3 h-3" />
-                  TIMELINE
-                </h3>
-                <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
-                  {daySchedule.sessions.map((session) => (
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4">
+                <h3 className="text-xs font-semibold text-zinc-500 mb-3">SESSIONS</h3>
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {daySchedule.sessions.filter(s => s.type === 'focus').map((session) => (
                     <div 
                       key={session.id} 
-                      className={`p-2 rounded-lg flex items-center justify-between text-xs ${
-                        session.type === 'focus' ? 'bg-red-500/5' : 'bg-green-500/5'
-                      }`}
+                      className="p-3 bg-zinc-800/30 rounded-lg flex items-center justify-between"
                     >
-                      <div className="flex items-center gap-2">
-                        {session.type === 'focus' ? (
-                          <Zap className="w-3 h-3 text-red-400" />
-                        ) : (
-                          <Coffee className="w-3 h-3 text-green-400" />
-                        )}
-                        <span className="font-medium">{session.actualDuration || session.duration}min</span>
-                        <span className="text-zinc-500">
-                          {new Date(session.completedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {session.taskTitle && <span className="text-zinc-400 truncate max-w-[100px]">📋 {session.taskTitle}</span>}
+                      <div className="flex items-center gap-3">
+                        <Zap className="w-4 h-4 text-red-400" />
+                        <div>
+                          <div className="text-sm font-medium text-zinc-300">
+                            {session.actualDuration || session.duration} min
+                          </div>
+                          <div className="text-xs text-zinc-600">
+                            {new Date(session.completedAt).toLocaleTimeString('fr-FR', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </div>
+                        </div>
                       </div>
-                      {session.interrupted && <span className="text-orange-400">⚠️</span>}
+                      {session.taskTitle && (
+                        <div className="text-xs text-zinc-500 truncate max-w-[150px]">
+                          {session.taskTitle}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6 text-center">
-                <Clock className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-                <p className="text-xs text-zinc-500">Aucune session</p>
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-8 text-center">
+                <p className="text-sm text-zinc-500">Aucune session aujourd'hui</p>
               </div>
             )}
+
+            {/* Lien vers Dashboard */}
+            <div className="text-center pt-4 border-t border-zinc-800/50">
+              <button
+                onClick={() => setView('dashboard')}
+                className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+              >
+                Voir les statistiques complètes dans le Dashboard →
+              </button>
+            </div>
           </div>
         )}
 
-        {/* SETTINGS TAB */}
+        {/* SETTINGS TAB - Simplifié */}
         {activeTab === 'settings' && (
           <div 
             role="tabpanel" 
             id="panel-settings" 
             aria-labelledby="tab-settings"
-            className="max-w-2xl mx-auto space-y-6"
+            className="max-w-xl mx-auto space-y-6"
           >
-            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-              <h3 className="text-sm font-semibold text-zinc-400 mb-6 flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                DURÉES PAR DÉFAUT
-              </h3>
-              <div className="space-y-4">
+            {/* Durées */}
+            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-zinc-400 mb-4">Durées</h3>
+              <div className="space-y-3">
                 <div>
                   <label className="text-sm text-zinc-300 mb-2 block">Focus (minutes)</label>
                   <input
@@ -908,7 +793,7 @@ export function PomodoroPage() {
                     onChange={(e) => setSettings({ ...settings, defaultFocusDuration: parseInt(e.target.value) || 25 })}
                     min="1"
                     max="120"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
                 <div>
@@ -919,7 +804,7 @@ export function PomodoroPage() {
                     onChange={(e) => setSettings({ ...settings, defaultShortBreak: parseInt(e.target.value) || 5 })}
                     min="1"
                     max="30"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
                 <div>
@@ -930,31 +815,32 @@ export function PomodoroPage() {
                     onChange={(e) => setSettings({ ...settings, defaultLongBreak: parseInt(e.target.value) || 15 })}
                     min="1"
                     max="60"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-zinc-300 mb-2 block">Pause longue tous les (sessions)</label>
+                  <label className="text-sm text-zinc-300 mb-2 block">Pause longue tous les X sessions</label>
                   <input
                     type="number"
                     value={settings.longBreakInterval}
                     onChange={(e) => setSettings({ ...settings, longBreakInterval: parseInt(e.target.value) || 4 })}
                     min="2"
                     max="10"
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-800/50 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-              <h3 className="text-sm font-semibold text-zinc-400 mb-6 flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                COMPORTEMENT
-              </h3>
-              <div className="space-y-4">
+            {/* Automatisation & Sons */}
+            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-zinc-400 mb-4">Automatisation & Sons</h3>
+              <div className="space-y-3">
                 <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm text-zinc-300">Démarrer automatiquement les pauses</span>
+                  <div>
+                    <div className="text-sm text-zinc-300">Auto-démarrer les pauses</div>
+                    <div className="text-xs text-zinc-600">Lancer automatiquement les pauses</div>
+                  </div>
                   <input
                     type="checkbox"
                     checked={settings.autoStartBreaks}
@@ -962,8 +848,12 @@ export function PomodoroPage() {
                     className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
                   />
                 </label>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm text-zinc-300">Démarrer automatiquement les sessions</span>
+                
+                <label className="flex items-center justify-between cursor-pointer opacity-50">
+                  <div>
+                    <div className="text-sm text-zinc-300">Auto-démarrer les sessions</div>
+                    <div className="text-xs text-zinc-600">Désactivé par défaut (calme)</div>
+                  </div>
                   <input
                     type="checkbox"
                     checked={settings.autoStartPomodoros}
@@ -971,41 +861,35 @@ export function PomodoroPage() {
                     className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
                   />
                 </label>
-              </div>
-            </div>
 
-            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-              <h3 className="text-sm font-semibold text-zinc-400 mb-6 flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                SONS & NOTIFICATIONS
-              </h3>
-              <div className="space-y-4">
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm text-zinc-300">Sons activés</span>
-                  <input
-                    type="checkbox"
-                    checked={settings.soundEnabled}
-                    onChange={(e) => setSettings({ ...settings, soundEnabled: e.target.checked })}
-                    className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
-                  />
-                </label>
-
-                {settings.soundEnabled && (
-                  <div>
-                    <label className="text-sm text-zinc-300 mb-2 block">Volume ({settings.soundVolume}%)</label>
+                <div className="border-t border-zinc-800/50 pt-3 mt-3">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span className="text-sm text-zinc-300">Sons de fin</span>
                     <input
-                      type="range"
-                      value={settings.soundVolume}
-                      onChange={(e) => setSettings({ ...settings, soundVolume: parseInt(e.target.value) })}
-                      min="0"
-                      max="100"
-                      className="w-full"
+                      type="checkbox"
+                      checked={settings.soundEnabled}
+                      onChange={(e) => setSettings({ ...settings, soundEnabled: e.target.checked })}
+                      className="w-5 h-5 rounded bg-zinc-800 border-zinc-800 text-red-500 focus:ring-2 focus:ring-red-500"
                     />
-                  </div>
-                )}
+                  </label>
+
+                  {settings.soundEnabled && (
+                    <div className="mt-3">
+                      <label className="text-sm text-zinc-400 mb-2 block">Volume ({settings.soundVolume}%)</label>
+                      <input
+                        type="range"
+                        value={settings.soundVolume}
+                        onChange={(e) => setSettings({ ...settings, soundVolume: parseInt(e.target.value) })}
+                        min="0"
+                        max="100"
+                        className="w-full accent-red-500"
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm text-zinc-300">Notifications activées</span>
+                  <span className="text-sm text-zinc-300">Notifications</span>
                   <input
                     type="checkbox"
                     checked={settings.notificationsEnabled}
@@ -1014,8 +898,11 @@ export function PomodoroPage() {
                   />
                 </label>
 
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm text-zinc-300">Son de tick-tack</span>
+                <label className="flex items-center justify-between cursor-pointer opacity-50">
+                  <div>
+                    <div className="text-sm text-zinc-300">Tick-tack</div>
+                    <div className="text-xs text-zinc-600">Désactivé par défaut (non intrusif)</div>
+                  </div>
                   <input
                     type="checkbox"
                     checked={settings.tickingSound}
@@ -1024,6 +911,11 @@ export function PomodoroPage() {
                   />
                 </label>
               </div>
+            </div>
+
+            {/* Note */}
+            <div className="text-center text-xs text-zinc-600 pt-2">
+              Le Pomodoro reste calme et non intrusif par défaut
             </div>
           </div>
         )}

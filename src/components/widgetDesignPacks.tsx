@@ -263,7 +263,7 @@ export const designPacks: DesignPack[] = [
           </div>
         )
       }
-    ]
+      ]
   },
 
   // SANTÉ - 7 variations

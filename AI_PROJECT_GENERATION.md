@@ -354,3 +354,5 @@ Avant de déployer en production :
 
 **Conclusion** : Cette feature transforme la friction de la création de projet en une expérience fluide et motivante, alignée avec l'objectif de lutte contre la procrastination. 🚀
 
+
+

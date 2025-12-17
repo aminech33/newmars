@@ -7,7 +7,7 @@ import { TaskFAB } from './TaskFAB'
 import { GenerateProjectFromIdea } from './GenerateProjectFromIdea'
 import { Tooltip } from '../ui/Tooltip'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { autoCategorizeTasks, estimateTaskDuration, detectPriority, calculateFocusScore } from '../../utils/taskIntelligence'
+import { autoCategorizeTasks, estimateTaskDuration, detectPriority } from '../../utils/taskIntelligence'
 
 export function TasksPage() {
   const { tasks, addTask, deleteTask, setView, selectedTaskId, setSelectedTaskId } = useStore()
@@ -28,11 +28,18 @@ export function TasksPage() {
     }
   }, [selectedTaskId, tasks, setSelectedTaskId])
   
-  // Tri automatique : priorité + échéance (pas de filtre, pas de recherche)
+  // Tri simple : tâche prioritaire en premier, puis urgentes, puis par date de création
   const sortedTasks = [...tasks].sort((a, b) => {
-    const scoreA = calculateFocusScore(a)
-    const scoreB = calculateFocusScore(b)
-    return scoreB - scoreA
+    // Tâche prioritaire toujours en premier
+    if (a.isPriority && !b.isPriority) return -1
+    if (!a.isPriority && b.isPriority) return 1
+    
+    // Puis tâches urgentes
+    if (a.priority === 'urgent' && b.priority !== 'urgent') return -1
+    if (a.priority !== 'urgent' && b.priority === 'urgent') return 1
+    
+    // Puis par date de création (plus récent d'abord)
+    return b.createdAt - a.createdAt
   })
   
   // Raccourci clavier
@@ -88,7 +95,7 @@ export function TasksPage() {
         `
       }}
     >
-      {/* Header ultra-simplifié : seulement 3 actions */}
+      {/* Header simplifié */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/30">
         <button
           onClick={() => setView('hub')}
@@ -124,7 +131,7 @@ export function TasksPage() {
         </Tooltip>
       </div>
       
-      {/* Quick Add - Déplie sous le header */}
+      {/* Quick Add */}
       {showQuickAdd && (
         <div className="px-4 py-3 bg-zinc-900/50 border-b border-zinc-800/30">
           <input
@@ -145,7 +152,7 @@ export function TasksPage() {
         </div>
       )}
       
-      {/* Liste unique priorisée automatiquement */}
+      {/* Liste unique - organisée automatiquement */}
       <div className="flex-1 overflow-hidden px-4 py-4">
         <TaskList
           tasks={sortedTasks}

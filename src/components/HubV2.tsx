@@ -2,13 +2,11 @@ import { useStore } from '../store/useStore'
 
 const pages = [
   { id: 'tasks', label: 'Tâches' },
-  { id: 'calendar', label: 'Calendrier' },
   { id: 'pomodoro', label: 'Pomodoro' },
   { id: 'health', label: 'Santé' },
   { id: 'myday', label: 'Ma journée' },
   { id: 'learning', label: 'Apprentissage' },
   { id: 'library', label: 'Bibliothèque' },
-  { id: 'ai', label: 'Assistant IA' },
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'settings', label: 'Paramètres' },
 ]

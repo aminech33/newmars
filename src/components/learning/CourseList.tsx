@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useRef } from 'react'
-import { Search, Plus, Pin, Archive, MoreVertical, Trash2, Edit2, Filter, SortAsc } from 'lucide-react'
+import { Plus, Pin, Archive, MoreVertical, Trash2, Edit2 } from 'lucide-react'
 import { Course, CourseStatus } from '../../types/learning'
 import { Tooltip } from '../ui/Tooltip'
 
@@ -32,39 +32,19 @@ const COLOR_CLASSES: Record<string, string> = {
   teal: 'bg-teal-500/20 text-teal-400 border-teal-500/30'
 }
 
-const STATUS_FILTERS: { value: CourseStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Tous' },
-  { value: 'active', label: 'Actifs' },
-  { value: 'paused', label: 'En pause' },
-  { value: 'completed', label: 'Terminés' },
-  { value: 'archived', label: 'Archivés' }
-]
-
-const SORT_OPTIONS: { value: 'recent' | 'name' | 'progress' | 'streak'; label: string }[] = [
-  { value: 'recent', label: 'Récents' },
-  { value: 'name', label: 'Nom' },
-  { value: 'progress', label: 'Progression' },
-  { value: 'streak', label: 'Streak' }
-]
+// STATUS_FILTERS et SORT_OPTIONS supprimés - interface simplifiée
 
 export const CourseList = memo(function CourseList({
   courses,
   activeCourseId,
-  searchQuery,
-  filterStatus,
-  sortBy,
   collapsed,
   onSelectCourse,
-  onSearchChange,
-  onFilterChange,
-  onSortChange,
   onCreateCourse,
   onEditCourse,
   onDeleteCourse,
   onPinCourse,
   onArchiveCourse
 }: CourseListProps) {
-  const [showFilters, setShowFilters] = useState(false)
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -91,30 +71,25 @@ export const CourseList = memo(function CourseList({
 
   if (collapsed) {
     return (
-      <div className="w-16 bg-zinc-900/50 border-r border-zinc-800/50 flex flex-col items-center py-4 gap-2">
-        <Tooltip content="Nouveau cours (Ctrl+N)" side="right">
-          <button
-            onClick={onCreateCourse}
-            className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-[background-color] duration-200"
-            aria-label="Nouveau cours"
-          >
-            <Plus className="w-5 h-5" aria-hidden="true" />
-          </button>
-        </Tooltip>
+      <div className="w-16 bg-zinc-950 border-r border-zinc-800/50 flex flex-col items-center py-4 gap-1">
+        <button
+          onClick={onCreateCourse}
+          className="p-2.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-xl transition-all hover:scale-105 mb-3"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
         
-        <div className="w-8 h-px bg-zinc-800 my-2" />
+        <div className="w-8 h-px bg-zinc-800 mb-3" />
         
-        {courses.slice(0, 8).map((course) => (
+        {courses.slice(0, 10).map((course) => (
           <Tooltip key={course.id} content={course.name} side="right">
             <button
               onClick={() => onSelectCourse(course.id)}
-              className={`p-3 rounded-xl transition-[background-color] duration-200 ${
+              className={`p-2.5 rounded-xl transition-all ${
                 activeCourseId === course.id
-                  ? COLOR_CLASSES[course.color] || COLOR_CLASSES.indigo
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                  ? 'bg-zinc-800 text-white ring-1 ring-zinc-700/50 scale-105'
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900 hover:scale-105'
               }`}
-              aria-label={course.name}
-              aria-current={activeCourseId === course.id ? 'page' : undefined}
             >
               <span className="text-lg">{course.icon}</span>
             </button>
@@ -125,267 +100,125 @@ export const CourseList = memo(function CourseList({
   }
 
   return (
-    <aside 
-      className="w-64 lg:w-72 xl:w-80 2xl:w-96 bg-zinc-900/30 border-r border-zinc-800/50 flex flex-col h-full transition-[background-color] duration-300"
-      role="navigation"
-      aria-label="Liste des cours"
-    >
-      {/* Header */}
-      <div className="p-4 border-b border-zinc-800/50">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-zinc-200">Mes Cours</h2>
-          <Tooltip content="Nouveau cours (Ctrl+N)">
+    <aside className="w-72 bg-zinc-950 border-r border-zinc-800/50 flex flex-col h-full">
+      {/* Header - Premium */}
+      <div className="p-4 flex items-center justify-between border-b border-zinc-800/50">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-indigo-500" />
+          <span className="text-sm font-medium text-zinc-300">Mes cours</span>
+        </div>
+        <button
+          onClick={onCreateCourse}
+          className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all hover:scale-105"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Liste */}
+      <div className="flex-1 overflow-y-auto p-2">
+        {courses.length === 0 ? (
+          <div className="text-center py-16 px-4">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center mx-auto mb-4 ring-1 ring-zinc-800">
+              <Plus className="w-5 h-5 text-zinc-600" />
+            </div>
+            <p className="text-zinc-500 text-sm mb-1">Aucun cours</p>
+            <p className="text-zinc-600 text-xs mb-4">Créez votre premier cours pour commencer</p>
             <button
               onClick={onCreateCourse}
-            className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-[background-color] duration-200"
-            aria-label="Nouveau cours"
-          >
-            <Plus className="w-4 h-4" aria-hidden="true" />
+              className="px-4 py-2 text-sm bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors ring-1 ring-zinc-800"
+            >
+              Nouveau cours
             </button>
-          </Tooltip>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" aria-hidden="true" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Rechercher un cours..."
-            className="w-full pl-10 pr-4 py-2.5 bg-zinc-800/50 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow duration-200"
-            aria-label="Rechercher un cours"
-          />
-        </div>
-
-        {/* Filters Toggle */}
-        <div className="flex items-center gap-2 mt-3">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-[background-color] duration-200 ${
-              showFilters || filterStatus !== 'all'
-                ? 'bg-indigo-500/20 text-indigo-400'
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-            }`}
-            aria-expanded={showFilters}
-          >
-            <Filter className="w-3.5 h-3.5" aria-hidden="true" />
-            Filtres
-            {filterStatus !== 'all' && (
-              <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full" />
-            )}
-          </button>
-          
-          <button
-            onClick={() => {
-              const currentIndex = SORT_OPTIONS.findIndex(o => o.value === sortBy)
-              const nextIndex = (currentIndex + 1) % SORT_OPTIONS.length
-              onSortChange(SORT_OPTIONS[nextIndex].value)
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-[background-color] duration-200"
-            aria-label={`Tri: ${SORT_OPTIONS.find(o => o.value === sortBy)?.label}`}
-          >
-            <SortAsc className="w-3.5 h-3.5" aria-hidden="true" />
-            {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
-          </button>
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="mt-3 p-3 bg-zinc-800/30 rounded-xl animate-fade-in">
-            <p className="text-xs text-zinc-500 mb-2">Statut</p>
-            <div className="flex flex-wrap gap-1">
-              {STATUS_FILTERS.map((filter) => (
-                <button
-                  key={filter.value}
-                  onClick={() => onFilterChange(filter.value)}
-                  className={`px-2.5 py-1 rounded-lg text-xs transition-[background-color] duration-200 ${
-                    filterStatus === filter.value
-                      ? 'bg-indigo-500/20 text-indigo-400'
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50'
-                  }`}
-                  aria-pressed={filterStatus === filter.value}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Course List */}
-      <div className="flex-1 overflow-y-auto p-2" role="list">
-        {courses.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <div className="text-4xl mb-3">📚</div>
-            <p className="text-zinc-400 text-sm mb-2">Aucun cours</p>
-            <p className="text-zinc-600 text-xs mb-4">
-              {searchQuery ? 'Aucun résultat pour cette recherche' : 'Créez votre premier cours pour commencer'}
-            </p>
-            {!searchQuery && (
-              <button
-                onClick={onCreateCourse}
-                className="px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-[background-color] duration-200 text-sm"
-              >
-                Créer un cours
-              </button>
-            )}
           </div>
         ) : (
-          courses.map((course) => (
-            <div
-              key={course.id}
-              role="listitem"
-              className={`relative group mb-1 rounded-2xl transition-[background-color] duration-200 ${
-                activeCourseId === course.id
-                  ? 'bg-zinc-800/70'
-                  : 'hover:bg-zinc-800/40'
-              }`}
-            >
-              <button
-                onClick={() => onSelectCourse(course.id)}
-                className="w-full p-3 text-left"
-                aria-current={activeCourseId === course.id ? 'page' : undefined}
-              >
-                <div className="flex items-start gap-3">
-                  {/* Icon */}
-                  <div className={`p-2 rounded-xl ${COLOR_CLASSES[course.color] || COLOR_CLASSES.indigo}`}>
-                    <span className="text-lg">{course.icon}</span>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-medium text-zinc-200 truncate">
-                        {course.name}
-                      </h3>
-                      {course.pinnedAt && (
-                        <Pin className="w-3 h-3 text-amber-400 flex-shrink-0" aria-label="Épinglé" />
-                      )}
-                    </div>
-                    
-                    <p className="text-xs text-zinc-500 truncate mt-0.5">
-                      {course.messagesCount} messages
-                    </p>
-                    
-                    {/* Progress bar */}
-                    {course.progress > 0 && (
-                      <div 
-                        className="mt-2 h-1 bg-zinc-800 rounded-full overflow-hidden"
-                        role="progressbar"
-                        aria-valuenow={course.progress}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label={`Progression: ${course.progress}%`}
-                      >
-                        <div 
-                          className="h-full bg-emerald-500/60 rounded-full transition-[width] duration-300"
-                          style={{ width: `${course.progress}%` }}
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Stats */}
-                    <div className="flex items-center gap-3 mt-2">
-                      {course.streak > 0 && (
-                        <span className="text-xs text-amber-400 flex items-center gap-1">
-                          🔥 {course.streak}j
-                        </span>
-                      )}
-                      {course.flashcards.length > 0 && (
-                        <span className="text-xs text-zinc-600">
-                          📇 {course.flashcards.length}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Actions Menu */}
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="space-y-0.5">
+            {courses.map((course) => (
+              <div key={course.id} className="group relative">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setMenuOpenId(menuOpenId === course.id ? null : course.id)
-                  }}
-                  className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-lg transition-[background-color] duration-200"
-                  aria-label="Options du cours"
-                  aria-expanded={menuOpenId === course.id}
+                  onClick={() => onSelectCourse(course.id)}
+                  className={`w-full px-3 py-2.5 text-left flex items-center gap-3 rounded-xl transition-all ${
+                    activeCourseId === course.id
+                      ? 'bg-zinc-800/80 text-white ring-1 ring-zinc-700/50'
+                      : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
+                  }`}
                 >
-                  <MoreVertical className="w-4 h-4" aria-hidden="true" />
+                  <span className="text-lg flex-shrink-0">{course.icon}</span>
+                  <span className="text-sm truncate flex-1 font-medium">{course.name}</span>
+                  {course.pinnedAt && (
+                    <Pin className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+                  )}
                 </button>
 
-                {menuOpenId === course.id && (
-                  <div 
-                    ref={menuRef}
-                    className="absolute right-0 top-8 w-40 bg-zinc-800 border border-zinc-800/50 rounded-xl shadow-xl py-1 z-10 animate-scale-in"
-                    role="menu"
+                {/* Menu */}
+                <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMenuOpenId(menuOpenId === course.id ? null : course.id)
+                    }}
+                    className="p-1 text-zinc-600 hover:text-white rounded transition-colors"
                   >
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEditCourse(course)
-                        setMenuOpenId(null)
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-[background-color] duration-200"
-                      role="menuitem"
-                    >
-                      <Edit2 className="w-4 h-4" aria-hidden="true" />
-                      Modifier
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onPinCourse(course.id)
-                        setMenuOpenId(null)
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-[background-color] duration-200"
-                      role="menuitem"
-                    >
-                      <Pin className="w-4 h-4" aria-hidden="true" />
-                      {course.pinnedAt ? 'Désépingler' : 'Épingler'}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onArchiveCourse(course.id)
-                        setMenuOpenId(null)
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-700/50 flex items-center gap-2 transition-[background-color] duration-200"
-                      role="menuitem"
-                    >
-                      <Archive className="w-4 h-4" aria-hidden="true" />
-                      Archiver
-                    </button>
-                    <div className="h-px bg-zinc-700 my-1" />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onDeleteCourse(course.id)
-                        setMenuOpenId(null)
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-[background-color] duration-200"
-                      role="menuitem"
-                    >
-                      <Trash2 className="w-4 h-4" aria-hidden="true" />
-                      Supprimer
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
 
-      {/* Stats Footer */}
-      <div className="p-4 border-t border-zinc-800/50">
-        <div className="flex items-center justify-between text-xs text-zinc-600">
-          <span>{courses.length} cours</span>
-          <span>{courses.filter(c => c.status === 'active').length} actifs</span>
-        </div>
+                  {menuOpenId === course.id && (
+                    <div 
+                      ref={menuRef}
+                      className="absolute right-0 top-8 w-40 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 z-50"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEditCourse(course)
+                          setMenuOpenId(null)
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Modifier
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onPinCourse(course.id)
+                          setMenuOpenId(null)
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2"
+                      >
+                        <Pin className="w-4 h-4" />
+                        {course.pinnedAt ? 'Désépingler' : 'Épingler'}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onArchiveCourse(course.id)
+                          setMenuOpenId(null)
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2"
+                      >
+                        <Archive className="w-4 h-4" />
+                        Archiver
+                      </button>
+                      <div className="h-px bg-zinc-800 my-1" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDeleteCourse(course.id)
+                          setMenuOpenId(null)
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Supprimer
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </aside>
   )

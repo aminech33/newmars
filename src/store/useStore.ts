@@ -52,6 +52,7 @@ export interface Task {
   focusScore?: number
   projectId?: string // ID du projet associé
   isVisible?: boolean // Pour le système de quota (true = visible, false = cachée)
+  isPriority?: boolean // Tâche prioritaire unique pour le hub
 }
 
 // Interface pour les projets personnalisés
@@ -164,6 +165,8 @@ interface AppState {
   addSubtask: (taskId: string, subtaskTitle: string) => void
   toggleSubtask: (taskId: string, subtaskId: string) => void
   deleteSubtask: (taskId: string, subtaskId: string) => void
+  setPriorityTask: (taskId: string) => void // Définir une tâche comme prioritaire (retire l'ancienne)
+  getPriorityTask: () => Task | undefined // Obtenir la tâche prioritaire
   
   // Custom Categories
   customCategories: CustomCategory[]
@@ -544,6 +547,19 @@ export const useStore = create<AppState>()(
               : t
           )
         }))
+      },
+      
+      // Priority Task - Une seule tâche prioritaire à la fois
+      setPriorityTask: (taskId) => {
+        set((state) => ({
+          tasks: state.tasks.map((t) => ({
+            ...t,
+            isPriority: t.id === taskId // Seule cette tâche devient prioritaire
+          }))
+        }))
+      },
+      getPriorityTask: () => {
+        return get().tasks.find(t => t.isPriority && !t.completed)
       },
       
       // Custom Categories
