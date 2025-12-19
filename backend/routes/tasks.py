@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from typing import Optional, List, Literal
 from services.openai_service import openai_service
 from datetime import datetime, timedelta
+import json
+import re
 
 router = APIRouter()
 
@@ -258,7 +260,7 @@ CHECKLIST FINALE (tout doit être vrai) :
 Génère UNIQUEMENT le JSON."""
 
     try:
-        # Appel à OpenAI GPT
+        # Appel à GPT
         response_text = openai_service.generate_content(prompt)
         
         print(f"🤖 Réponse GPT : {response_text[:800]}...")
@@ -530,9 +532,6 @@ Génère UNIQUEMENT le JSON, sans explication."""
         print(f"🤖 Réponse GPT (skill-based) : {response_text[:500]}...")
         
         # Parser le JSON
-        import json
-        import re
-        
         json_match = re.search(r'\{[\s\S]*\}', response_text)
         if not json_match:
             raise ValueError("Pas de JSON valide dans la réponse")

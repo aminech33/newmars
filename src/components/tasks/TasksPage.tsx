@@ -557,6 +557,26 @@ function DefineProjectZone({
     })
   }
 
+  // Toggle tout sélectionner/désélectionner un niveau
+  const toggleAllInLevel = (levelIndex: number) => {
+    if (!domainMap) return
+    const level = domainMap.levels[levelIndex]
+    if (level.isCore) return
+    
+    // Si toutes sont sélectionnées, tout désélectionner. Sinon, tout sélectionner.
+    const allSelected = level.skills.every(s => s.selected)
+    
+    setDomainMap({
+      ...domainMap,
+      levels: domainMap.levels.map((lvl, i) => 
+        i === levelIndex ? {
+          ...lvl,
+          skills: lvl.skills.map(skill => ({ ...skill, selected: !allSelected }))
+        } : lvl
+      )
+    })
+  }
+
   // Compter les compétences sélectionnées
   const getSelectedCount = () => {
     if (!domainMap) return 0
@@ -686,6 +706,36 @@ function DefineProjectZone({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
+                      {/* Checkbox "Tout" pour sélectionner/désélectionner tout le niveau */}
+                      {!level.isCore && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleAllInLevel(levelIndex)
+                          }}
+                          className={`
+                            flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all
+                            ${selectedInLevel === level.skills.length 
+                              ? 'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30' 
+                              : 'bg-zinc-800/50 text-zinc-500 hover:bg-zinc-700/50 hover:text-zinc-400'
+                            }
+                          `}
+                          title={selectedInLevel === level.skills.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                        >
+                          <div className={`
+                            w-3 h-3 rounded-sm flex items-center justify-center transition-all
+                            ${selectedInLevel === level.skills.length 
+                              ? 'bg-indigo-500' 
+                              : selectedInLevel > 0 
+                                ? 'bg-indigo-500/50' 
+                                : 'border border-zinc-600'
+                            }
+                          `}>
+                            {selectedInLevel > 0 && <Check className="w-2 h-2 text-white" />}
+                          </div>
+                          Tout
+                        </button>
+                      )}
                       <span className={`text-[10px] text-zinc-500 ${fontStack}`}>
                         {selectedInLevel}/{level.skills.length}
                       </span>
@@ -808,6 +858,14 @@ function PlanningZone({
   const [editableTasks, setEditableTasks] = useState<EditableTask[]>([])
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [editingTaskIdx, setEditingTaskIdx] = useState<number | null>(null)
+  
+  // Mettre à jour le titre d'une tâche
+  const updateTaskTitle = (idx: number, newTitle: string) => {
+    setEditableTasks(prev => prev.map((task, i) => 
+      i === idx ? { ...task, title: newTitle } : task
+    ))
+  }
   
   // Si des compétences sont présélectionnées, générer automatiquement
   const hasPreselection = preselectedSkills && preselectedSkills.length > 0
@@ -1268,20 +1326,45 @@ function PlanningZone({
                                     )}
                                   </div>
                                   
-                                  {/* Titre de tâche - multiline autorisé */}
+                                  {/* Titre de tâche - éditable au clic */}
                                   <div className="flex-1 min-w-0">
                                     {isValidation && (
                                       <span className={`text-[10px] text-emerald-400 font-medium uppercase tracking-wider ${fontStack}`}>
                                         Validation
                                       </span>
                                     )}
-                                    <span className={`block text-[14px] leading-relaxed ${
-                                      isValidation 
-                                        ? 'text-emerald-200' 
-                                        : isFirst ? 'text-zinc-200' : 'text-zinc-400'
-                                    } ${fontStack}`}>
-                                      {task.title}
-                                    </span>
+                                    {editingTaskIdx === task.idx ? (
+                                      <input
+                                        type="text"
+                                        value={task.title}
+                                        onChange={(e) => updateTaskTitle(task.idx, e.target.value)}
+                                        onBlur={() => setEditingTaskIdx(null)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' || e.key === 'Escape') {
+                                            setEditingTaskIdx(null)
+                                          }
+                                        }}
+                                        className={`w-full bg-transparent border-b border-indigo-500/50 text-[14px] leading-relaxed focus:outline-none ${
+                                          isValidation ? 'text-emerald-200' : 'text-zinc-200'
+                                        } ${fontStack}`}
+                                        autoFocus
+                                      />
+                                    ) : (
+                                      <span 
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setEditingTaskIdx(task.idx)
+                                        }}
+                                        className={`block text-[14px] leading-relaxed cursor-text hover:bg-white/5 rounded px-1 -mx-1 transition-colors ${
+                                          isValidation 
+                                            ? 'text-emerald-200' 
+                                            : isFirst ? 'text-zinc-200' : 'text-zinc-400'
+                                        } ${fontStack}`}
+                                        title="Cliquer pour modifier"
+                                      >
+                                        {task.title}
+                                      </span>
+                                    )}
                                   </div>
                                   
                                   {/* Badge effort */}
