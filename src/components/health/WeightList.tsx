@@ -9,7 +9,7 @@ interface WeightListProps {
   compact?: boolean
 }
 
-export const WeightList = memo(function WeightList({ entries, onDelete, compact = false }: WeightListProps) {
+export const WeightList = memo(function WeightList({ entries, onDelete }: WeightListProps) {
   if (entries.length === 0) {
     return (
       <div className="text-center py-12">

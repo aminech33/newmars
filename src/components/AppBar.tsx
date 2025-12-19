@@ -7,7 +7,6 @@ import {
   Library, 
   Heart, 
   GraduationCap, 
-  Sparkles, 
   BarChart3,
   Settings,
   Home,

@@ -286,17 +286,7 @@ export function SearchWidget() {
                       ${isSelected ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}
                     `}
                   >
-                    <div className={`
-                      flex items-center justify-center w-9 h-9 rounded-lg
-                      ${result.type === 'task' ? 'bg-zinc-800 text-zinc-300' : ''}
-                      ${result.type === 'event' ? 'bg-zinc-800 text-zinc-300' : ''}
-                      ${result.type === 'journal' ? 'bg-zinc-800 text-zinc-300' : ''}
-                      ${result.type === 'book' ? 'bg-zinc-800 text-zinc-300' : ''}
-                      ${result.type === 'note' ? 'bg-zinc-800 text-zinc-300' : ''}
-                      ${result.type === 'project' ? 'bg-zinc-800 text-zinc-300' : ''}
-                      ${result.type === 'page' ? 'bg-zinc-800 text-zinc-300' : ''}
-                      ${result.type === 'action' ? 'bg-zinc-800 text-zinc-300' : ''}
-                    `}>
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-zinc-800 text-zinc-300">
                       <Icon className="w-4 h-4" />
                     </div>
                     

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { ArrowLeft, Plus, BookOpen, Search, Target, Trophy, BarChart3, Download, Upload, FileText, MoreVertical, ChevronDown, X } from 'lucide-react'
+import { ArrowLeft, Plus, BookOpen, Search, Target, BarChart3, Download, Upload, FileText, MoreVertical, ChevronDown, X } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { Book } from '../../types/library'
 import { useLibraryStats } from '../../hooks/useLibraryStats'

@@ -8,8 +8,9 @@ from typing import Optional
 class Settings(BaseSettings):
     """Configuration de l'application"""
     
-    # API Keys
-    GEMINI_API_KEY: str
+    # API Keys (à définir dans .env)
+    GEMINI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
     
     # Algorithme SM-2++
     MIN_EASE_FACTOR: float = 1.3

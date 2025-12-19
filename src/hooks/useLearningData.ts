@@ -177,6 +177,7 @@ export function useLearningData() {
       linkedProjectId: data.linkedProjectId, // Lien projet obligatoire
       isProgramming: data.isProgramming,
       programmingLanguage: data.programmingLanguage,
+      isTerminal: data.isTerminal,
       messages: [],
       systemPrompt: data.systemPrompt,
       flashcards: [],

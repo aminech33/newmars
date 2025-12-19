@@ -43,6 +43,7 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
   const [systemPrompt, setSystemPrompt] = useState('')
   const [isProgramming, setIsProgramming] = useState(false)
   const [programmingLanguage, setProgrammingLanguage] = useState('python')
+  const [isTerminal, setIsTerminal] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [error, setError] = useState('')
 
@@ -90,6 +91,7 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
         setSystemPrompt(course.systemPrompt || '')
         setIsProgramming(course.isProgramming || false)
         setProgrammingLanguage(course.programmingLanguage || 'python')
+        setIsTerminal(course.isTerminal || false)
       } else {
         setName('')
         setDescription('')
@@ -100,6 +102,7 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
         setSystemPrompt('')
         setIsProgramming(false)
         setProgrammingLanguage('python')
+        setIsTerminal(false)
       }
       setError('')
       setShowAdvanced(false)
@@ -141,8 +144,9 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
       level,
       linkedProjectId: finalProjectId,
       systemPrompt: systemPrompt.trim() || undefined,
-      isProgramming,
-      programmingLanguage: isProgramming ? programmingLanguage : undefined
+      isProgramming: isProgramming && !isTerminal, // Un seul mode actif
+      programmingLanguage: isProgramming && !isTerminal ? programmingLanguage : undefined,
+      isTerminal
     })
 
     onClose()
@@ -232,27 +236,82 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
           </p>
         </div>
 
-        {/* Mode Code Toggle */}
-        <div>
-          <label className="flex items-center gap-3 p-4 bg-zinc-800/30 rounded-xl cursor-pointer hover:bg-zinc-800/50 transition-[background-color] duration-200">
+        {/* Mode Selection */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-zinc-300 mb-2">Mode d'apprentissage</label>
+          
+          {/* Mode Chat (default) */}
+          <label className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+            !isProgramming && !isTerminal 
+              ? 'bg-indigo-500/10 ring-1 ring-indigo-500/50' 
+              : 'bg-zinc-800/30 hover:bg-zinc-800/50'
+          }`}>
             <input
-              type="checkbox"
-              checked={isProgramming}
-              onChange={(e) => setIsProgramming(e.target.checked)}
-              className="w-4 h-4 rounded border-zinc-700 text-zinc-400 focus:ring-zinc-600 focus:ring-offset-0 accent-zinc-500"
+              type="radio"
+              name="courseMode"
+              checked={!isProgramming && !isTerminal}
+              onChange={() => { setIsProgramming(false); setIsTerminal(false); }}
+              className="w-4 h-4 border-zinc-700 text-indigo-500 focus:ring-indigo-600 focus:ring-offset-0"
             />
             <div className="flex-1">
-              <div className="text-sm text-zinc-200 font-medium flex items-center gap-2">
-                💻 Mode code (éditeur intégré)
+              <div className="text-sm text-zinc-200 font-medium">
+                💬 Chat classique
               </div>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Active un éditeur de code en split view
+                Conversation avec l'IA sans outils intégrés
               </p>
             </div>
           </label>
 
+          {/* Mode Code */}
+          <label className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+            isProgramming 
+              ? 'bg-emerald-500/10 ring-1 ring-emerald-500/50' 
+              : 'bg-zinc-800/30 hover:bg-zinc-800/50'
+          }`}>
+            <input
+              type="radio"
+              name="courseMode"
+              checked={isProgramming}
+              onChange={() => { setIsProgramming(true); setIsTerminal(false); }}
+              className="w-4 h-4 border-zinc-700 text-emerald-500 focus:ring-emerald-600 focus:ring-offset-0"
+            />
+            <div className="flex-1">
+              <div className="text-sm text-zinc-200 font-medium">
+                💻 Éditeur de code
+              </div>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Split view avec éditeur Monaco intégré
+              </p>
+            </div>
+          </label>
+
+          {/* Mode Terminal */}
+          <label className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+            isTerminal 
+              ? 'bg-amber-500/10 ring-1 ring-amber-500/50' 
+              : 'bg-zinc-800/30 hover:bg-zinc-800/50'
+          }`}>
+            <input
+              type="radio"
+              name="courseMode"
+              checked={isTerminal}
+              onChange={() => { setIsTerminal(true); setIsProgramming(false); }}
+              className="w-4 h-4 border-zinc-700 text-amber-500 focus:ring-amber-600 focus:ring-offset-0"
+            />
+            <div className="flex-1">
+              <div className="text-sm text-zinc-200 font-medium">
+                🖥️ Terminal (shell)
+              </div>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Split view avec terminal zsh interactif
+              </p>
+            </div>
+          </label>
+
+          {/* Programming Language Selector */}
           {isProgramming && (
-            <div className="mt-3 animate-fade-in">
+            <div className="mt-3 pl-7 animate-fade-in">
               <Select
                 label="Langage de programmation"
                 value={programmingLanguage}

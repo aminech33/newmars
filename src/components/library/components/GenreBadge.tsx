@@ -1,4 +1,4 @@
-import { getGenreById, getGenreColor, getGenreEmoji } from '../../../constants/bookGenres'
+import { getGenreById } from '../../../constants/bookGenres'
 
 interface GenreBadgeProps {
   genreId: string

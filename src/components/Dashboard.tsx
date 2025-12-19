@@ -12,56 +12,13 @@ import {
   Flame, 
   BookOpen, 
   Timer, 
-  Heart, 
-  BookMarked, 
-  GraduationCap,
   Activity,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  Target,
-  Award,
-  Smile,
-  Utensils,
-  Scale,
-  Zap,
-  ListChecks,
-  Brain
+  Smile
 } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useGlobalStats } from '../hooks/useGlobalStats'
-import { formatDuration } from '../utils/productivityUtils'
 
 // ========== COMPOSANTS RÉUTILISABLES ==========
-
-interface StatCardProps {
-  icon: React.ReactNode
-  label: string
-  value: string | number
-  subValue?: string
-  trend?: { value: number; label: string }
-}
-
-function StatCard({ icon, label, value, subValue, trend }: StatCardProps) {
-  return (
-    <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/30 to-transparent border border-zinc-800/50">
-      <div className="flex items-start justify-between mb-3">
-        <div className="p-2 rounded-lg bg-zinc-900/50 text-zinc-500">
-          {icon}
-        </div>
-        {trend && (
-          <div className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg bg-zinc-800/50 text-zinc-500">
-            {trend.value > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {trend.label}
-          </div>
-        )}
-      </div>
-      <p className="text-2xl font-bold text-zinc-300 mb-1">{value}</p>
-      <p className="text-xs text-zinc-600 uppercase tracking-wider">{label}</p>
-      {subValue && <p className="text-sm text-zinc-500 mt-1">{subValue}</p>}
-    </div>
-  )
-}
 
 interface SectionProps {
   title: string
@@ -83,43 +40,6 @@ function Section({ title, icon, children }: SectionProps) {
   )
 }
 
-interface ProgressBarProps {
-  value: number
-  max: number
-  label?: string
-  color?: 'emerald' | 'cyan' | 'amber' | 'rose' | 'indigo' | 'violet' | 'orange'
-}
-
-function ProgressBar({ value, max, label, color = 'indigo' }: ProgressBarProps) {
-  const percent = max > 0 ? Math.min((value / max) * 100, 100) : 0
-  
-  const gradients: Record<string, string> = {
-    emerald: 'from-emerald-500 to-emerald-400',
-    cyan: 'from-cyan-500 to-cyan-400',
-    amber: 'from-amber-500 to-amber-400',
-    rose: 'from-rose-500 to-rose-400',
-    indigo: 'from-indigo-500 to-indigo-400',
-    violet: 'from-violet-500 to-violet-400',
-    orange: 'from-orange-500 to-orange-400'
-  }
-
-  return (
-    <div>
-      {label && (
-        <div className="flex justify-between text-xs text-zinc-500 mb-1">
-          <span>{label}</span>
-          <span>{Math.round(percent)}%</span>
-        </div>
-      )}
-      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-        <div 
-          className={`h-full bg-gradient-to-r ${gradients[color]} rounded-full transition-all duration-500`}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-    </div>
-  )
-}
 
 interface BarChartProps {
   data: { label: string; value: number }[]
@@ -180,7 +100,6 @@ export function Dashboard() {
     stats.library.currentStreak > 0
   ].filter(Boolean).length
   
-  const totalModules = 6
   const continuityStatus = activeStreaks >= 4 ? 'Forte continuité' : 
                           activeStreaks >= 2 ? 'Continuité partielle' : 
                           'Continuité faible'

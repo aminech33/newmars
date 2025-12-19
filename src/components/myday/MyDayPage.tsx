@@ -3,11 +3,9 @@ import {
   ArrowLeft, 
   Flame, 
   Check, 
-  Plus,
   Target,
   Zap,
   Save,
-  Calendar,
   Star,
   ChevronDown,
   ChevronUp
@@ -17,7 +15,6 @@ import { MoodEmoji } from '../../types/journal'
 import { 
   moodEmojiToLevel,
   getTodayEntry,
-  getEntriesByMonth,
   formatRelativeDate
 } from '../../utils/journalUtils'
 import { AddHabitModal } from '../habits/AddHabitModal'

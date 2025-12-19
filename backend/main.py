@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from routes.learning import router as learning_router
 from routes.tasks import router as tasks_router
+from routes.terminal import router as terminal_router
+from routes.skills import router as skills_router
 
 app = FastAPI(
     title="Adaptive Learning API",
@@ -25,6 +27,8 @@ app.add_middleware(
 # Routes
 app.include_router(learning_router, prefix="/api/learning", tags=["Learning"])
 app.include_router(tasks_router, prefix="/api/tasks", tags=["Tasks"])
+app.include_router(terminal_router, prefix="/api/terminal", tags=["Terminal"])
+app.include_router(skills_router, prefix="/api/skills", tags=["Skills"])
 
 
 @app.get("/")

@@ -23,8 +23,6 @@ export function HealthPage() {
   const {
     activeTab,
     setActiveTab,
-    latestWeight,
-    targetWeight,
     trend,
     todayCalories,
     targetCalories,

@@ -34,6 +34,9 @@ export interface SubTask {
   completed: boolean
 }
 
+// Colonne temporelle (basée sur l'état réel, pas sur les dates)
+export type TemporalColumn = 'today' | 'inProgress' | 'upcoming' | 'distant'
+
 export interface Task {
   id: string
   title: string
@@ -52,6 +55,9 @@ export interface Task {
   projectId?: string // ID du projet associé
   isVisible?: boolean // Pour le système de quota (true = visible, false = cachée)
   isPriority?: boolean // Tâche prioritaire unique pour le hub
+  temporalColumn?: TemporalColumn // Colonne basée sur l'état réel (today, inProgress, upcoming, distant)
+  effort?: 'XS' | 'S' | 'M' | 'L' // Niveau d'effort estimé
+  phaseIndex?: number // Index de la phase dans le parcours (pour tri)
 }
 
 // Interface pour les projets personnalisés
@@ -161,6 +167,7 @@ interface AppState {
   deleteTask: (id: string) => void
   updateTask: (id: string, updates: Partial<Task>) => void
   moveTask: (taskId: string, newStatus: TaskStatus) => void
+  moveTaskToColumn: (taskId: string, column: TemporalColumn) => void
   addSubtask: (taskId: string, subtaskTitle: string) => void
   toggleSubtask: (taskId: string, subtaskId: string) => void
   deleteSubtask: (taskId: string, subtaskId: string) => void
@@ -509,6 +516,20 @@ export const useStore = create<AppState>()(
         if (newStatus === 'done') {
           window.dispatchEvent(new CustomEvent('task-completed'))
         }
+      },
+      moveTaskToColumn: (taskId, column) => {
+        set((state) => ({
+          tasks: state.tasks.map((t) => 
+            t.id === taskId 
+              ? { 
+                  ...t, 
+                  temporalColumn: column,
+                  // Si on déplace vers "En cours", mettre aussi le status
+                  status: column === 'inProgress' ? 'in-progress' : t.status
+                } 
+              : t
+          )
+        }))
       },
       addSubtask: (taskId, subtaskTitle) => {
         set((state) => ({

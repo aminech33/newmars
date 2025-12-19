@@ -9,7 +9,7 @@ interface FoodDatabaseViewerProps {
   onSelectFood?: (food: FoodItem) => void
 }
 
-export function FoodDatabaseViewer({ isOpen, onClose, onSelectFood }: FoodDatabaseViewerProps) {
+export function FoodDatabaseViewer({ isOpen, onClose }: FoodDatabaseViewerProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null)

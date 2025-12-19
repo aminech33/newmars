@@ -11,7 +11,7 @@ interface HourDetailModalProps {
 }
 
 export function HourDetailModal({ isOpen, onClose, hour, tasks }: HourDetailModalProps) {
-  const categoryColors = {
+  const categoryColors: Record<string, string> = {
     dev: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
     design: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
     work: 'bg-amber-500/10 text-amber-400 border-amber-500/30',

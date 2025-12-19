@@ -76,3 +76,18 @@ export function detectPriority(title: string): TaskPriority {
   
   return 'medium' // Par défaut
 }
+
+/**
+ * Analyse les patterns de productivité
+ */
+export function analyzeProductivityPatterns(tasks: Task[]) {
+  const completed = tasks.filter(t => t.status === 'done')
+  const total = tasks.length
+  
+  return {
+    completionRate: total > 0 ? Math.round((completed.length / total) * 100) : 0,
+    totalTasks: total,
+    completedTasks: completed.length,
+    pendingTasks: tasks.filter(t => t.status !== 'done').length
+  }
+}

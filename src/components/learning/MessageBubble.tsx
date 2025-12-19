@@ -5,19 +5,11 @@ import { Message } from '../../types/learning'
 interface MessageBubbleProps {
   message: Message
   onCopy: () => void
-  onLike: () => void
-  onSaveAsNote: () => void
-  onCreateFlashcard: () => void
-  onDelete: () => void
 }
 
 export const MessageBubble = memo(function MessageBubble({
   message,
-  onCopy,
-  onLike,
-  onSaveAsNote,
-  onCreateFlashcard,
-  onDelete
+  onCopy
 }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false)
   const [showActions, setShowActions] = useState(false)

@@ -62,7 +62,7 @@ export function TasksStats({ tasks, last7DaysStats, completedToday, onStatClick 
       
       <StatCard
         title="Productivité"
-        value={analytics.tasksPerDay}
+        value={`${analytics.completionRate}%`}
         icon={LayoutGrid}
         iconColor="text-amber-400"
         iconBg="bg-amber-500/20"

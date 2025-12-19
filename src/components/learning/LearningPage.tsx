@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useStore } from '../../store/useStore'
 import { useLearningData } from '../../hooks/useLearningData'
 import { CourseList } from './CourseList'
 import { CourseChat } from './CourseChat'
@@ -28,8 +27,6 @@ function useLocalToast() {
 // REMOVED: Simulated AI Response - Now using real Gemini API
 
 export function LearningPage() {
-  const { setView, projects, addToast } = useStore()
-  
   const {
     uiState,
     filteredCourses,
@@ -42,9 +39,6 @@ export function LearningPage() {
     sendMessage,
     addAIResponse,
     deleteMessage,
-    toggleMessageLike,
-    createFlashcard,
-    createNote,
     setActiveCourse,
     setSearchQuery,
     setFilterStatus,
@@ -222,60 +216,8 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
     }
   }, [activeCourse, sendMessage, setIsTyping, addAIResponse, showToast])
 
-  const handleCopyMessage = useCallback((_messageId: string) => {
+  const handleCopyMessage = useCallback(() => {
     showToast('Message copié !', 'success')
-  }, [showToast])
-
-  const handleLikeMessage = useCallback((messageId: string) => {
-    if (!activeCourse) return
-    toggleMessageLike(activeCourse.id, messageId)
-  }, [activeCourse, toggleMessageLike])
-
-  const handleSaveAsNote = useCallback((messageId: string) => {
-    if (!activeCourse) return
-    const message = activeCourse.messages.find(m => m.id === messageId)
-    if (message) {
-      createNote(activeCourse.id, 'Note depuis conversation', message.content, messageId)
-      showToast('Sauvegardé en note !', 'success')
-    }
-  }, [activeCourse, createNote, showToast])
-
-  const handleCreateFlashcard = useCallback((messageId: string) => {
-    if (!activeCourse) return
-    const message = activeCourse.messages.find(m => m.id === messageId)
-    if (message) {
-      // Simple extraction: first line as question, rest as answer
-      const lines = message.content.split('\n')
-      const front = lines[0].replace(/[*#]/g, '').trim()
-      const back = lines.slice(1).join('\n').trim() || 'À compléter...'
-      
-      createFlashcard(activeCourse.id, front, back, messageId)
-      showToast('Flashcard créée !', 'success')
-    }
-  }, [activeCourse, createFlashcard, showToast])
-
-  const handleDeleteMessage = useCallback((messageId: string) => {
-    if (!activeCourse) return
-    setConfirmDelete({ type: 'message', id: messageId, courseId: activeCourse.id })
-  }, [activeCourse])
-
-  const handleArchiveCourse = useCallback(() => {
-    if (!activeCourse) return
-    archiveCourse(activeCourse.id)
-    showToast('Cours archivé', 'info')
-  }, [activeCourse, archiveCourse, showToast])
-
-  const handleSettingsCourse = useCallback(() => {
-    if (!activeCourse) return
-    setEditingCourse(activeCourse)
-    setShowCourseModal(true)
-  }, [activeCourse])
-
-  // handleQuickChat supprimé - non utilisé dans l'interface simplifiée
-
-  const handleFlashcards = useCallback(() => {
-    // Flashcards: afficher un toast informatif (feature optionnelle)
-    showToast('Les flashcards sont générées dans chaque cours', 'info')
   }, [showToast])
 
   return (
@@ -312,10 +254,6 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
               isTyping={uiState.isTyping}
               onSendMessage={handleSendMessage}
               onCopyMessage={handleCopyMessage}
-              onLikeMessage={handleLikeMessage}
-              onSaveAsNote={handleSaveAsNote}
-              onCreateFlashcard={handleCreateFlashcard}
-              onDeleteMessage={handleDeleteMessage}
             />
           </>
         ) : (

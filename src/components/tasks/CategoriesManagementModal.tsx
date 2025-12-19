@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Plus, Edit2, Trash2, AlertCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, AlertCircle } from 'lucide-react'
 import { useStore, DEFAULT_CATEGORIES } from '../../store/useStore'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'

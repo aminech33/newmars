@@ -47,6 +47,9 @@ export interface Course {
   isProgramming?: boolean      // Active le split view avec éditeur
   programmingLanguage?: string // python, javascript, typescript, etc.
   
+  // Terminal
+  isTerminal?: boolean         // Active le split view avec terminal
+  
   // Chat
   messages: Message[]
   systemPrompt?: string        // Contexte personnalisé pour l'IA
@@ -210,6 +213,7 @@ export interface CreateCourseData {
   topics?: string[]
   isProgramming?: boolean
   programmingLanguage?: string
+  isTerminal?: boolean
 }
 
 export interface UpdateCourseData {

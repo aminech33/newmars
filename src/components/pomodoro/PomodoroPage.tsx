@@ -5,32 +5,21 @@ import {
   Pause, 
   RotateCcw, 
   Settings, 
-  TrendingUp, 
   Clock, 
   Target,
   Coffee,
   Zap,
   Calendar,
-  BarChart3,
   CheckSquare,
   Folder,
-  ChevronLeft,
-  ChevronRight,
   Timer,
-  Award,
   ArrowLeft,
-  Flame,
-  Activity,
   BookOpen
 } from 'lucide-react'
 import { 
   formatTime, 
   formatDuration, 
-  calculatePomodoroStats,
-  calculateProjectStats,
-  calculateTaskStats,
-  getDaySchedule,
-  analyzeProductivityPatterns
+  getDaySchedule
 } from '../../utils/pomodoroUtils'
 import { TimerState, PomodoroSettings } from '../../types/pomodoro'
 import { Course } from '../../types/learning'
@@ -107,7 +96,7 @@ export function PomodoroPage() {
   const [customDuration, setCustomDuration] = useState<number>(25)
 
   // History view
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedDate] = useState(new Date().toISOString().split('T')[0])
 
   // Timer interval ref
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -139,11 +128,7 @@ export function PomodoroPage() {
   }, [])
 
   // Stats calculations
-  const stats = useMemo(() => calculatePomodoroStats(pomodoroSessions), [pomodoroSessions])
-  const projectStats = useMemo(() => calculateProjectStats(pomodoroSessions, projects), [pomodoroSessions, projects])
-  const taskStats = useMemo(() => calculateTaskStats(pomodoroSessions, tasks), [pomodoroSessions, tasks])
   const daySchedule = useMemo(() => getDaySchedule(pomodoroSessions, selectedDate), [pomodoroSessions, selectedDate])
-  const patterns = useMemo(() => analyzeProductivityPatterns(pomodoroSessions), [pomodoroSessions])
 
   // Timer logic
   useEffect(() => {
@@ -374,15 +359,6 @@ export function PomodoroPage() {
   // Incomplete tasks for selection
   const incompleteTasks = tasks.filter(t => !t.completed)
 
-  // Navigate dates
-  const navigateDate = (direction: 'prev' | 'next') => {
-    const currentDate = new Date(selectedDate)
-    currentDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1))
-    setSelectedDate(currentDate.toISOString().split('T')[0])
-  }
-
-  const isToday = selectedDate === new Date().toISOString().split('T')[0]
-
   const { setView } = useStore()
 
   return (
@@ -519,9 +495,9 @@ export function PomodoroPage() {
                     }`}
                   >
                     {timerState.status === 'running' ? (
-                      <Pause className={timerState.status === 'idle' || timerState.status === 'completed' ? 'w-10 h-10' : 'w-6 h-6'} />
+                      <Pause className="w-6 h-6" />
                     ) : (
-                      <Play className={`${timerState.status === 'idle' || timerState.status === 'completed' ? 'w-10 h-10 ml-1' : 'w-6 h-6 ml-0.5'}`} />
+                      <Play className={`${timerState.status === 'idle' ? 'w-10 h-10 ml-1' : 'w-6 h-6 ml-0.5'}`} />
                     )}
                   </button>
 

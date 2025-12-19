@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Plus, Trash2, FolderPlus, X, ArrowLeft, Settings } from 'lucide-react'
+import { Plus, Trash2, FolderPlus, ArrowLeft } from 'lucide-react'
 import { PROJECT_COLORS, PROJECT_ICONS, TaskCategory, useStore } from '../../store/useStore'
 import { Button } from '../ui/Button'
 

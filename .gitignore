@@ -49,4 +49,4 @@ coverage/
 # Tauri build artifacts
 src-tauri/target/
 src-tauri/Cargo.lock
-src-tauri/gen/
+src-tauri/gen/backend/.env

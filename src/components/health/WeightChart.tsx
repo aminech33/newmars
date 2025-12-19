@@ -13,7 +13,7 @@ interface WeightChartProps {
 }
 
 // Custom Tooltip Component
-const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload }: TooltipProps<number, string> & { payload?: any[] }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as any
     return (

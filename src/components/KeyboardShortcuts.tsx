@@ -42,7 +42,7 @@ export function KeyboardShortcuts() {
             break
           case 'i':
             e.preventDefault()
-            setView('ai')
+            setView('learning')
             break
           case 'h':
             e.preventDefault()

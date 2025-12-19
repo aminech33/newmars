@@ -4,26 +4,11 @@ import { downloadExport, importData, readFile } from '../utils/dataExport'
 import { 
   ArrowLeft, 
   Palette, 
-  Bell, 
-  Timer, 
   Database, 
-  Target, 
-  Keyboard, 
-  Monitor, 
-  Shield, 
-  Info,
   ChevronRight,
-  Moon,
-  Sun,
-  Volume2,
-  VolumeX,
   Download,
   Upload,
   Trash2,
-  RefreshCw,
-  ExternalLink,
-  Github,
-  Heart,
   Check,
   AlertTriangle,
   Settings as SettingsIcon
@@ -68,29 +53,6 @@ function Toggle({ enabled, onChange, label }: { enabled: boolean; onChange: (v: 
   )
 }
 
-// Composant Slider
-function Slider({ value, onChange, min, max, step = 1, label }: { 
-  value: number; 
-  onChange: (v: number) => void; 
-  min: number; 
-  max: number; 
-  step?: number;
-  label?: string 
-}) {
-  return (
-    <input
-      type="range"
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      min={min}
-      max={max}
-      step={step}
-      className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-      aria-label={label}
-    />
-  )
-}
-
 // Composant Section Card
 function SettingCard({ children, title, description }: { children: React.ReactNode; title: string; description?: string }) {
   return (
@@ -118,7 +80,7 @@ function SettingRow({ label, description, children }: { label: string; descripti
 }
 
 export function SettingsPage() {
-  const { setView, accentTheme, setAccentTheme, readingGoal, setReadingGoal, addToast } = useStore()
+  const { setView, accentTheme, setAccentTheme, addToast } = useStore()
   const [activeSection, setActiveSection] = useState<SettingsSection>('appearance')
   
   // États locaux pour les paramètres essentiels

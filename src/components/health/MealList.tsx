@@ -24,7 +24,7 @@ const MEAL_LABELS = {
   snack: 'Collation'
 }
 
-export const MealList = memo(function MealList({ entries, onDelete, onDuplicate, compact = false }: MealListProps) {
+export const MealList = memo(function MealList({ entries, onDelete, onDuplicate }: MealListProps) {
   if (entries.length === 0) {
     return (
       <div className="text-center py-12">

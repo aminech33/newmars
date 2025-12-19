@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Filter, X, ChevronDown } from 'lucide-react'
 import { TaskCategory, TaskPriority, TaskStatus } from '../../store/useStore'
-import { QuickFilter } from '../../hooks/useTaskFilters'
+
+export type QuickFilter = 'all' | 'today' | 'this-week' | 'next-week' | 'this-month' | 'no-deadline' | 'overdue'
 
 export interface TaskFilterState {
   categories: TaskCategory[]

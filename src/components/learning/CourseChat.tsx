@@ -1,8 +1,9 @@
-import { memo, useRef, useEffect, useState, useMemo } from 'react'
+import { memo, useRef, useEffect, useState, useCallback } from 'react'
 import { Course } from '../../types/learning'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { CodeEditor } from './CodeEditor'
+import { TerminalEmulator } from './TerminalEmulator'
 import { Sparkles } from 'lucide-react'
 
 interface CourseChatProps {
@@ -10,10 +11,6 @@ interface CourseChatProps {
   isTyping: boolean
   onSendMessage: (content: string, codeContext?: { code: string; language: string }) => void
   onCopyMessage: (messageId: string) => void
-  onLikeMessage: (messageId: string) => void
-  onSaveAsNote: (messageId: string) => void
-  onCreateFlashcard: (messageId: string) => void
-  onDeleteMessage: (messageId: string) => void
 }
 
 // Code de démarrage selon le langage
@@ -37,11 +34,7 @@ export const CourseChat = memo(function CourseChat({
   course,
   isTyping,
   onSendMessage,
-  onCopyMessage,
-  onLikeMessage,
-  onSaveAsNote,
-  onCreateFlashcard,
-  onDeleteMessage
+  onCopyMessage
 }: CourseChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -49,6 +42,50 @@ export const CourseChat = memo(function CourseChat({
   const [editorCode, setEditorCode] = useState(() => getStarterCode(language, course.name))
   const [includeCode, setIncludeCode] = useState(true)
   const [showSuggestions, setShowSuggestions] = useState(true)
+  const [editorWidth, setEditorWidth] = useState(60) // pourcentage
+  const [isResizing, setIsResizing] = useState(false)
+  const splitContainerRef = useRef<HTMLDivElement>(null)
+
+  // Gestion du redimensionnement style VSCode
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }, [])
+
+  useEffect(() => {
+    if (!isResizing) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!splitContainerRef.current) return
+      // Utiliser requestAnimationFrame pour un rendu smooth
+      requestAnimationFrame(() => {
+        const container = splitContainerRef.current
+        if (!container) return
+        const rect = container.getBoundingClientRect()
+        const newWidth = ((e.clientX - rect.left) / rect.width) * 100
+        // Limiter : éditeur entre 30% et 70%, chat entre 30% et 70%
+        setEditorWidth(Math.min(70, Math.max(30, newWidth)))
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizing])
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -63,7 +100,9 @@ export const CourseChat = memo(function CourseChat({
   }, [course.messages.length])
 
   const hasMessages = course.messages.length > 0
-  const showSplitView = course.isProgramming === true
+  const showCodeEditor = course.isProgramming === true
+  const showTerminal = course.isTerminal === true
+  const showSplitView = showCodeEditor || showTerminal
 
   // Gestion de l'envoi - le code est passé en contexte, jamais affiché dans le chat
   const handleSendWithCode = (message: string) => {
@@ -81,26 +120,36 @@ export const CourseChat = memo(function CourseChat({
   }
 
 
-  // En mode programmation : éditeur à gauche (60%), chat à droite (40%)
+  // En mode split view (code ou terminal) : panneau gauche + chat redimensionnables
   if (showSplitView) {
     return (
-      <div className="flex h-full overflow-hidden bg-black">
-        {/* Code Editor (left side - principal) */}
-        <div className="w-[60%] flex flex-col h-full overflow-hidden">
-          <CodeEditor
-            language={language}
-            value={editorCode}
-            onChange={setEditorCode}
-            readOnly={false}
-            showHeader={true}
-            courseName={course.name}
-            onRun={handleRunCode}
-            isTyping={isTyping}
-          />
+      <div ref={splitContainerRef} className="h-full flex bg-black select-none">
+        {/* Left Panel: Code Editor OR Terminal */}
+        <div style={{ width: `${editorWidth}%` }} className="flex flex-col h-full overflow-hidden">
+          {showCodeEditor ? (
+            <CodeEditor
+              language={language}
+              value={editorCode}
+              onChange={setEditorCode}
+              readOnly={false}
+              showHeader={true}
+              courseName={course.name}
+              onRun={handleRunCode}
+              isTyping={isTyping}
+            />
+          ) : showTerminal ? (
+            <TerminalEmulator sessionId={course.id} />
+          ) : null}
         </div>
 
-        {/* Chat Area (right side - assistant) */}
-        <div className="w-[40%] flex flex-col h-full border-l border-zinc-800/50">
+        {/* Resize Handle - invisible par défaut, visible au survol */}
+        <div
+          onMouseDown={handleMouseDown}
+          className="w-[4px] bg-transparent hover:bg-zinc-600 cursor-col-resize flex-shrink-0 transition-colors"
+        />
+
+        {/* Chat Area (right panel) */}
+        <div style={{ width: `${100 - editorWidth}%` }} className="flex flex-col h-full">
           {/* Messages */}
           <div 
             ref={containerRef}
@@ -114,24 +163,46 @@ export const CourseChat = memo(function CourseChat({
                 // État vide discret
                 <div className="py-8">
                   <p className="text-zinc-500 text-sm text-center mb-4">
-                    Écris du code et clique sur <span className="text-green-400 font-medium">Analyser</span> pour commencer.
+                    {showTerminal 
+                      ? "Utilise le terminal et pose des questions à l'IA."
+                      : <>Écris du code et clique sur <span className="text-green-400 font-medium">Analyser</span> pour commencer.</>
+                    }
                   </p>
                   
                   {/* Suggestions discrètes */}
                   {showSuggestions && (
                     <div className="flex flex-wrap justify-center gap-2">
-                      <button 
-                        onClick={() => onSendMessage(`Montre-moi un exemple simple en ${language}`)}
-                        className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-                      >
-                        Exemple
-                      </button>
-                      <button 
-                        onClick={() => onSendMessage(`Explique la syntaxe de base de ${language}`)}
-                        className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-                      >
-                        Syntaxe
-                      </button>
+                      {showTerminal ? (
+                        <>
+                          <button 
+                            onClick={() => onSendMessage("Quelles sont les commandes shell essentielles ?")}
+                            className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                          >
+                            Commandes de base
+                          </button>
+                          <button 
+                            onClick={() => onSendMessage("Comment naviguer dans les dossiers ?")}
+                            className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                          >
+                            Navigation
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => onSendMessage(`Montre-moi un exemple simple en ${language}`)}
+                            className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                          >
+                            Exemple
+                          </button>
+                          <button 
+                            onClick={() => onSendMessage(`Explique la syntaxe de base de ${language}`)}
+                            className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                          >
+                            Syntaxe
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -143,10 +214,6 @@ export const CourseChat = memo(function CourseChat({
                       key={message.id}
                       message={message}
                       onCopy={() => onCopyMessage(message.id)}
-                      onLike={() => onLikeMessage(message.id)}
-                      onSaveAsNote={() => onSaveAsNote(message.id)}
-                      onCreateFlashcard={() => onCreateFlashcard(message.id)}
-                      onDelete={() => onDeleteMessage(message.id)}
                     />
                   ))}
                   
@@ -174,22 +241,24 @@ export const CourseChat = memo(function CourseChat({
 
           {/* Input compact */}
           <div className="border-t border-zinc-800/50 bg-zinc-900/30 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <label className="flex items-center gap-1.5 text-[10px] text-zinc-500 cursor-pointer hover:text-zinc-400">
-                <input
-                  type="checkbox"
-                  checked={includeCode}
-                  onChange={(e) => setIncludeCode(e.target.checked)}
-                  className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-zinc-400 accent-zinc-500"
-                />
-                Inclure le code
-              </label>
-            </div>
+            {showCodeEditor && (
+              <div className="flex items-center gap-2 mb-2">
+                <label className="flex items-center gap-1.5 text-[10px] text-zinc-500 cursor-pointer hover:text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={includeCode}
+                    onChange={(e) => setIncludeCode(e.target.checked)}
+                    className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-zinc-400 accent-zinc-500"
+                  />
+                  Inclure le code
+                </label>
+              </div>
+            )}
             <ChatInput
               onSend={handleSendWithCode}
               isTyping={isTyping}
               disabled={false}
-              placeholder="Pose une question sur ton code..."
+              placeholder={showTerminal ? "Pose une question sur le terminal..." : "Pose une question sur ton code..."}
               hasMessages={hasMessages}
             />
           </div>
@@ -249,10 +318,6 @@ export const CourseChat = memo(function CourseChat({
                     key={message.id}
                     message={message}
                     onCopy={() => onCopyMessage(message.id)}
-                    onLike={() => onLikeMessage(message.id)}
-                    onSaveAsNote={() => onSaveAsNote(message.id)}
-                    onCreateFlashcard={() => onCreateFlashcard(message.id)}
-                    onDelete={() => onDeleteMessage(message.id)}
                   />
                 ))}
                 

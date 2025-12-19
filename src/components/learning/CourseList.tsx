@@ -22,18 +22,7 @@ interface CourseListProps {
   onHideSidebar?: () => void
 }
 
-const COLOR_CLASSES: Record<string, string> = {
-  indigo: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
-  emerald: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  rose: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
-  amber: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  cyan: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  violet: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
-  orange: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  teal: 'bg-teal-500/20 text-teal-400 border-teal-500/30'
-}
-
-// STATUS_FILTERS et SORT_OPTIONS supprimés - interface simplifiée
+// Interface simplifiée - filtres et tri supprimés
 
 export const CourseList = memo(function CourseList({
   courses,

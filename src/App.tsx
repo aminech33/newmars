@@ -3,7 +3,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { LoadingFallback } from './components/LoadingFallback'
 import { useStore } from './store/useStore'
 
-// Lazy load des composants lourds pour éviter les erreurs au chargement initial
+// Lazy load des composants lourds
 const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.HubV2 })))
 const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
 const HealthPage = lazy(() => import('./components/health/HealthPage').then(m => ({ default: m.HealthPage })))
@@ -14,7 +14,6 @@ const LearningPage = lazy(() => import('./components/learning/LearningPage').the
 const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m => ({ default: m.LibraryPage })))
 const PomodoroPage = lazy(() => import('./components/pomodoro/PomodoroPage').then(m => ({ default: m.PomodoroPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const WidgetShowcase = lazy(() => import('./components/WidgetShowcase').then(m => ({ default: m.WidgetShowcase })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
@@ -24,14 +23,8 @@ import { Confetti } from './components/Confetti'
 import { OfflineIndicator } from './components/OfflineIndicator'
 import { useAutoBackup } from './hooks/useAutoBackup'
 
-// Debug book cover (dev only)
-if (import.meta.env.DEV) {
-  import('./utils/debugBookCover')
-}
-
 function AppContent() {
   const currentView = useStore((state) => state.currentView)
-  const setView = useStore((state) => state.setView)
   const isFocusMode = useStore((state) => state.isFocusMode)
   
   const [showConfetti, setShowConfetti] = useState(false)
@@ -92,7 +85,6 @@ function AppContent() {
             {currentView === 'library' && <LibraryPage />}
             {currentView === 'pomodoro' && <PomodoroPage />}
             {currentView === 'settings' && <SettingsPage />}
-            {currentView === 'widget-showcase' && <WidgetShowcase />}
           </>
         )}
       </Suspense>
