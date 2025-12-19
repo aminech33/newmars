@@ -641,12 +641,15 @@ function DefineProjectZone({
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
 
-        {/* État de chargement */}
+        {/* État de chargement amélioré */}
         {isAnalyzing && (
           <div className="text-center py-8">
             <Loader2 className="w-8 h-8 mx-auto mb-3 text-indigo-400 animate-spin" />
-            <p className={`text-[13px] text-zinc-400 ${fontStack}`}>
-              Analyse de <span className="text-zinc-200 font-medium">{domain}</span>...
+            <p className={`text-[12px] text-zinc-400 ${fontStack}`}>
+              Analyse de <span className="text-zinc-200 font-medium">{domain}</span> en cours...
+            </p>
+            <p className={`text-[10px] text-zinc-600 mt-1 ${fontStack}`}>
+              Identification des compétences par niveau
             </p>
           </div>
         )}
@@ -676,14 +679,14 @@ function DefineProjectZone({
                           {level.name}
                         </span>
                         {level.isCore && (
-                          <span className={`px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-medium rounded ${fontStack}`}>
+                          <span className={`px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] font-medium rounded ${fontStack}`}>
                             INCLUS
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
-                      <span className={`text-[11px] text-zinc-400 ${fontStack}`}>
+                      <span className={`text-[10px] text-zinc-500 ${fontStack}`}>
                         {selectedInLevel}/{level.skills.length}
                       </span>
                       {level.expanded ? (
@@ -729,7 +732,7 @@ function DefineProjectZone({
                               {skill.selected && <Check className="w-2.5 h-2.5 text-white" />}
                             </div>
                           )}
-                          <span className={`text-[13px] ${level.isCore ? 'text-emerald-300/80' : skill.selected ? 'text-zinc-200' : 'text-zinc-400'} ${fontStack}`}>
+                          <span className={`text-[12px] ${level.isCore ? 'text-emerald-300/80' : skill.selected ? 'text-zinc-200' : 'text-zinc-400'} ${fontStack}`}>
                             {skill.name}
                           </span>
                         </div>
@@ -758,8 +761,11 @@ function DefineProjectZone({
             <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-900 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-zinc-600" />
             </div>
-            <p className={`text-[13px] text-zinc-500 ${fontStack}`}>
+            <p className={`text-[12px] text-zinc-500 ${fontStack}`}>
               Entre un domaine à maîtriser
+            </p>
+            <p className={`text-[10px] text-zinc-600 mt-1 ${fontStack}`}>
+              Ex: Python, JavaScript, Design UX...
             </p>
           </div>
         )}
@@ -770,8 +776,11 @@ function DefineProjectZone({
             <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-indigo-500/10 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-indigo-400" />
             </div>
-            <p className={`text-[13px] text-zinc-400 ${fontStack}`}>
-              Clique sur <span className="text-indigo-400 font-medium">Analyser</span> pour <span className="text-zinc-200">{domain}</span>
+            <p className={`text-[12px] text-zinc-400 ${fontStack}`}>
+              Clique sur <span className="text-indigo-400 font-medium">Analyser</span> pour découvrir
+            </p>
+            <p className={`text-[12px] text-zinc-400 ${fontStack}`}>
+              les compétences de <span className="text-zinc-200 font-medium">{domain}</span>
             </p>
           </div>
         )}
