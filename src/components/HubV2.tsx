@@ -2,7 +2,6 @@ import { useStore } from '../store/useStore'
 
 const pages = [
   { id: 'tasks', label: 'Tâches' },
-  { id: 'pomodoro', label: 'Pomodoro' },
   { id: 'health', label: 'Santé' },
   { id: 'myday', label: 'Ma journée' },
   { id: 'learning', label: 'Apprentissage' },

@@ -4,8 +4,13 @@
  */
 
 // Gemini 2.0 Flash - Latest official model (December 2024)
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBFlZdThjH9z3ciJVSIJwfPDfmTpZeN85w'
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
 const MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash-exp'
+
+// Vérification de sécurité
+if (!API_KEY && typeof window !== 'undefined') {
+  console.warn('⚠️ VITE_GEMINI_API_KEY manquante. Ajoutez-la dans votre fichier .env')
+}
 
 interface ConversationMessage {
   role: 'user' | 'assistant'

@@ -51,6 +51,7 @@ export function LearningPage() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'course' | 'message'; id: string; courseId?: string } | null>(null)
   const [sidebarHidden, setSidebarHidden] = useState(false)
+  const [showTasks, setShowTasks] = useState(false)
   
   const { toast, showToast, hideToast } = useLocalToast()
 

@@ -54,7 +54,11 @@ function loadSettings(): PomodoroSettings {
   return DEFAULT_SETTINGS
 }
 
-export function PomodoroPage() {
+interface PomodoroPageProps {
+  embedded?: boolean
+}
+
+export function PomodoroPage({ embedded = false }: PomodoroPageProps) {
   const {
     tasks,
     projects,
@@ -362,26 +366,55 @@ export function PomodoroPage() {
   const { setView } = useStore()
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden text-zinc-100">
-      {/* Header - Standard */}
-      <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setView('hub')}
-              className="p-1.5 hover:bg-zinc-800/50 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 text-zinc-400" />
-            </button>
-            <Timer className="w-4 h-4 text-red-400" />
-            <h1 className="text-lg font-semibold text-zinc-200">Pomodoro</h1>
-          </div>
+    <div className={`${embedded ? 'h-full' : 'h-screen'} w-full flex flex-col overflow-hidden text-zinc-100`}>
+      {/* Header - Masqué si embedded */}
+      {!embedded && (
+        <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setView('hub')}
+                className="p-1.5 hover:bg-zinc-800/50 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4 text-zinc-400" />
+              </button>
+              <Timer className="w-4 h-4 text-red-400" />
+              <h1 className="text-lg font-semibold text-zinc-200">Pomodoro</h1>
+            </div>
 
-          {/* Tabs - Réduits pour focus sur l'action */}
-          <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-0.5" role="tablist">
+            {/* Tabs - Réduits pour focus sur l'action */}
+            <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-0.5" role="tablist">
+              {[
+                { id: 'timer' as const, label: 'Focus', icon: Timer },
+                { id: 'history' as const, label: 'Aujourd\'hui', icon: Calendar },
+                { id: 'settings' as const, label: 'Réglages', icon: Settings }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                    activeTab === tab.id
+                      ? 'bg-zinc-700 text-zinc-100'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
+      )}
+      
+      {/* Tabs internes quand embedded */}
+      {embedded && (
+        <div className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/30">
+          <div className="flex items-center gap-1 bg-zinc-800/40 rounded-lg p-0.5 w-fit" role="tablist">
             {[
-              { id: 'timer' as const, label: 'Focus', icon: Timer },
-              { id: 'history' as const, label: 'Aujourd\'hui', icon: Calendar },
+              { id: 'timer' as const, label: 'Timer', icon: Timer },
+              { id: 'history' as const, label: 'Historique', icon: Calendar },
               { id: 'settings' as const, label: 'Réglages', icon: Settings }
             ].map(tab => (
               <button
@@ -395,12 +428,12 @@ export function PomodoroPage() {
                 }`}
               >
                 <tab.icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
         </div>
-      </header>
+      )}
 
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-4 py-3">

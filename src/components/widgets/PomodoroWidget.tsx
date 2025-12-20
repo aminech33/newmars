@@ -80,7 +80,7 @@ export const PomodoroWidget = memo(function PomodoroWidget({ widget }: PomodoroW
   const progress = ((totalTime - timeLeft) / totalTime) * 100
 
   return (
-    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('pomodoro')}>
+    <WidgetContainer id={id} title="" currentSize="notification" onClick={() => setView('tasks')}>
       <div className="h-full flex flex-col p-4 gap-2 overflow-hidden">
         {/* Header compact */}
         <div className="flex items-center justify-between flex-shrink-0">

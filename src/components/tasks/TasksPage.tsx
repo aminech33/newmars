@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ArrowLeft, Plus, Check, Star, Sparkles, Loader2, ChevronDown, ChevronRight, X } from 'lucide-react'
+import { ArrowLeft, Plus, Check, Star, Sparkles, Loader2, ChevronDown, ChevronRight, X, Timer, ListTodo } from 'lucide-react'
+import { PomodoroPage } from '../pomodoro/PomodoroPage'
 
 // Typography: Inter / SF Pro for optimal dark mode readability
 const fontStack = 'font-[Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,SF_Pro_Display,Segoe_UI,Roboto,sans-serif]'
@@ -557,26 +558,6 @@ function DefineProjectZone({
     })
   }
 
-  // Toggle tout sélectionner/désélectionner un niveau
-  const toggleAllInLevel = (levelIndex: number) => {
-    if (!domainMap) return
-    const level = domainMap.levels[levelIndex]
-    if (level.isCore) return
-    
-    // Si toutes sont sélectionnées, tout désélectionner. Sinon, tout sélectionner.
-    const allSelected = level.skills.every(s => s.selected)
-    
-    setDomainMap({
-      ...domainMap,
-      levels: domainMap.levels.map((lvl, i) => 
-        i === levelIndex ? {
-          ...lvl,
-          skills: lvl.skills.map(skill => ({ ...skill, selected: !allSelected }))
-        } : lvl
-      )
-    })
-  }
-
   // Compter les compétences sélectionnées
   const getSelectedCount = () => {
     if (!domainMap) return 0
@@ -706,36 +687,6 @@ function DefineProjectZone({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
-                      {/* Checkbox "Tout" pour sélectionner/désélectionner tout le niveau */}
-                      {!level.isCore && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleAllInLevel(levelIndex)
-                          }}
-                          className={`
-                            flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all
-                            ${selectedInLevel === level.skills.length 
-                              ? 'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30' 
-                              : 'bg-zinc-800/50 text-zinc-500 hover:bg-zinc-700/50 hover:text-zinc-400'
-                            }
-                          `}
-                          title={selectedInLevel === level.skills.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-                        >
-                          <div className={`
-                            w-3 h-3 rounded-sm flex items-center justify-center transition-all
-                            ${selectedInLevel === level.skills.length 
-                              ? 'bg-indigo-500' 
-                              : selectedInLevel > 0 
-                                ? 'bg-indigo-500/50' 
-                                : 'border border-zinc-600'
-                            }
-                          `}>
-                            {selectedInLevel > 0 && <Check className="w-2 h-2 text-white" />}
-                          </div>
-                          Tout
-                        </button>
-                      )}
                       <span className={`text-[10px] text-zinc-500 ${fontStack}`}>
                         {selectedInLevel}/{level.skills.length}
                       </span>
@@ -858,14 +809,6 @@ function PlanningZone({
   const [editableTasks, setEditableTasks] = useState<EditableTask[]>([])
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
-  const [editingTaskIdx, setEditingTaskIdx] = useState<number | null>(null)
-  
-  // Mettre à jour le titre d'une tâche
-  const updateTaskTitle = (idx: number, newTitle: string) => {
-    setEditableTasks(prev => prev.map((task, i) => 
-      i === idx ? { ...task, title: newTitle } : task
-    ))
-  }
   
   // Si des compétences sont présélectionnées, générer automatiquement
   const hasPreselection = preselectedSkills && preselectedSkills.length > 0
@@ -1326,45 +1269,20 @@ function PlanningZone({
                                     )}
                                   </div>
                                   
-                                  {/* Titre de tâche - éditable au clic */}
+                                  {/* Titre de tâche - multiline autorisé */}
                                   <div className="flex-1 min-w-0">
                                     {isValidation && (
                                       <span className={`text-[10px] text-emerald-400 font-medium uppercase tracking-wider ${fontStack}`}>
                                         Validation
                                       </span>
                                     )}
-                                    {editingTaskIdx === task.idx ? (
-                                      <input
-                                        type="text"
-                                        value={task.title}
-                                        onChange={(e) => updateTaskTitle(task.idx, e.target.value)}
-                                        onBlur={() => setEditingTaskIdx(null)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter' || e.key === 'Escape') {
-                                            setEditingTaskIdx(null)
-                                          }
-                                        }}
-                                        className={`w-full bg-transparent border-b border-indigo-500/50 text-[14px] leading-relaxed focus:outline-none ${
-                                          isValidation ? 'text-emerald-200' : 'text-zinc-200'
-                                        } ${fontStack}`}
-                                        autoFocus
-                                      />
-                                    ) : (
-                                      <span 
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          setEditingTaskIdx(task.idx)
-                                        }}
-                                        className={`block text-[14px] leading-relaxed cursor-text hover:bg-white/5 rounded px-1 -mx-1 transition-colors ${
-                                          isValidation 
-                                            ? 'text-emerald-200' 
-                                            : isFirst ? 'text-zinc-200' : 'text-zinc-400'
-                                        } ${fontStack}`}
-                                        title="Cliquer pour modifier"
-                                      >
-                                        {task.title}
-                                      </span>
-                                    )}
+                                    <span className={`block text-[14px] leading-relaxed ${
+                                      isValidation 
+                                        ? 'text-emerald-200' 
+                                        : isFirst ? 'text-zinc-200' : 'text-zinc-400'
+                                    } ${fontStack}`}>
+                                      {task.title}
+                                    </span>
                                   </div>
                                   
                                   {/* Badge effort */}
@@ -1477,9 +1395,12 @@ interface PlanningContext {
   selectedSkills: string[]
 }
 
+type TasksTab = 'tasks' | 'focus'
+
 export function TasksPage() {
   const { tasks, addTask, toggleTask, deleteTask, setView, selectedTaskId, setSelectedTaskId } = useStore()
   
+  const [activeTab, setActiveTab] = useState<TasksTab>('tasks')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -1566,132 +1487,169 @@ export function TasksPage() {
           <ArrowLeft className="w-[18px] h-[18px]" />
         </button>
         
-        <h1 className={`text-[17px] font-semibold text-zinc-200 ${fontStack}`}>Tâches</h1>
+        {/* Onglets Tâches / Focus */}
+        <div className="flex items-center gap-1 bg-zinc-800/40 rounded-lg p-0.5">
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 flex items-center gap-1.5 ${
+              activeTab === 'tasks'
+                ? 'bg-zinc-700 text-zinc-100'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <ListTodo className="w-4 h-4" />
+            <span className="hidden sm:inline">Tâches</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('focus')}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 flex items-center gap-1.5 ${
+              activeTab === 'focus'
+                ? 'bg-red-500/20 text-red-400'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <Timer className="w-4 h-4" />
+            <span className="hidden sm:inline">Focus</span>
+          </button>
+        </div>
         
         <div className="flex-1" />
         
-        <Tooltip content="Créer un projet d'apprentissage" side="bottom">
-          <button
-            onClick={() => setPlanningStep('define')}
-            disabled={planningStep !== 'none'}
-            className={`h-10 px-4 ${planningStep !== 'none' ? 'text-indigo-400 bg-indigo-500/20 border-indigo-500/50' : 'text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-500/30'} border rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2 active:scale-[0.98] ${fontStack}`}
-          >
-            <Sparkles className="w-[16px] h-[16px]" />
-            <span className="hidden sm:inline">Nouveau projet</span>
-          </button>
-        </Tooltip>
-        
-        <Tooltip content="⌘N" side="bottom">
-          <button
-            onClick={() => setShowQuickAdd(true)}
-            className={`h-10 px-4 text-zinc-100 bg-zinc-800/80 hover:bg-zinc-700/90 rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2.5 active:scale-[0.98] hover:shadow-lg hover:shadow-black/20 ${fontStack}`}
-          >
-            <Plus className="w-[18px] h-[18px]" />
-            <span className="hidden sm:inline">Nouvelle tâche</span>
-          </button>
-        </Tooltip>
+        {activeTab === 'tasks' && (
+          <>
+            <Tooltip content="Créer un projet d'apprentissage" side="bottom">
+              <button
+                onClick={() => setPlanningStep('define')}
+                disabled={planningStep !== 'none'}
+                className={`h-10 px-4 ${planningStep !== 'none' ? 'text-indigo-400 bg-indigo-500/20 border-indigo-500/50' : 'text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-500/30'} border rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2 active:scale-[0.98] ${fontStack}`}
+              >
+                <Sparkles className="w-[16px] h-[16px]" />
+                <span className="hidden sm:inline">Nouveau projet</span>
+              </button>
+            </Tooltip>
+            
+            <Tooltip content="⌘N" side="bottom">
+              <button
+                onClick={() => setShowQuickAdd(true)}
+                className={`h-10 px-4 text-zinc-100 bg-zinc-800/80 hover:bg-zinc-700/90 rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2.5 active:scale-[0.98] hover:shadow-lg hover:shadow-black/20 ${fontStack}`}
+              >
+                <Plus className="w-[18px] h-[18px]" />
+                <span className="hidden sm:inline">Nouvelle tâche</span>
+              </button>
+            </Tooltip>
+          </>
+        )}
       </header>
       
-      {/* Quick Add */}
-      <div className={`
-        overflow-hidden border-b border-zinc-800/30 bg-zinc-900/30
-        transition-all duration-200 ease-out
-        ${showQuickAdd ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}
-      `}>
-        <div className="px-5 py-3 flex items-center gap-3">
-          <input
-            type="text"
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleQuickAdd()
-              if (e.key === 'Escape') { setShowQuickAdd(false); setNewTaskTitle('') }
-            }}
-            placeholder="Que devez-vous faire ?"
-            className={`flex-1 h-12 px-4 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-500 rounded-xl border border-zinc-700/50 focus:outline-none focus:border-zinc-600 focus:ring-2 focus:ring-zinc-600/20 text-[16px] transition-all duration-150 ${fontStack}`}
-            autoFocus={showQuickAdd}
-          />
-          <button
-            onClick={handleQuickAdd}
-            disabled={!newTaskTitle.trim()}
-            className={`h-12 px-6 bg-zinc-100 text-zinc-900 rounded-xl text-[15px] font-semibold disabled:opacity-25 disabled:cursor-not-allowed hover:bg-white transition-all duration-150 active:scale-[0.98] ${fontStack}`}
-          >
-            Ajouter
-          </button>
-        </div>
-      </div>
-      
-      {/* Columns */}
-      <div className="flex-1 flex overflow-hidden">
-        {COLUMNS.map((config) => {
-          // Remplacer Lointain par la zone de définition/planification si active
-          if (config.id === 'distant' && planningStep !== 'none') {
-            return (
-              <div key="planning" className="flex-1 min-w-0 relative">
-                <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" />
-                
-                {/* Étape 1 : Définir le projet (cercles de compétences) */}
-                {planningStep === 'define' && (
-                  <DefineProjectZone
-                    onCancel={() => setPlanningStep('none')}
-                    onPlanify={(domain, selectedSkills) => {
-                      setPlanningContext({ domain, selectedSkills })
-                      setPlanningStep('plan')
-                    }}
-                  />
-                )}
-                
-                {/* Étape 2 : Planifier les tâches */}
-                {planningStep === 'plan' && (
-                  <PlanningZone 
-                    onProjectCreated={() => {
-                      setPlanningStep('none')
-                      setPlanningContext(null)
-                    }}
-                    onCancel={() => {
-                      setPlanningStep('none')
-                      setPlanningContext(null)
-                    }}
-                    preselectedSkills={planningContext?.selectedSkills}
-                    preselectedDomain={planningContext?.domain}
-                  />
-                )}
-              </div>
-            )
-          }
+      {/* Contenu selon l'onglet actif */}
+      {activeTab === 'tasks' ? (
+        <>
+          {/* Quick Add */}
+          <div className={`
+            overflow-hidden border-b border-zinc-800/30 bg-zinc-900/30
+            transition-all duration-200 ease-out
+            ${showQuickAdd ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}
+          `}>
+            <div className="px-5 py-3 flex items-center gap-3">
+              <input
+                type="text"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleQuickAdd()
+                  if (e.key === 'Escape') { setShowQuickAdd(false); setNewTaskTitle('') }
+                }}
+                placeholder="Que devez-vous faire ?"
+                className={`flex-1 h-12 px-4 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-500 rounded-xl border border-zinc-700/50 focus:outline-none focus:border-zinc-600 focus:ring-2 focus:ring-zinc-600/20 text-[16px] transition-all duration-150 ${fontStack}`}
+                autoFocus={showQuickAdd}
+              />
+              <button
+                onClick={handleQuickAdd}
+                disabled={!newTaskTitle.trim()}
+                className={`h-12 px-6 bg-zinc-100 text-zinc-900 rounded-xl text-[15px] font-semibold disabled:opacity-25 disabled:cursor-not-allowed hover:bg-white transition-all duration-150 active:scale-[0.98] ${fontStack}`}
+              >
+                Ajouter
+              </button>
+            </div>
+          </div>
           
-          return (
-            <TemporalColumn
-              key={config.id}
-              config={config}
-              tasks={tasksByColumn[config.id]}
-              onTaskClick={setSelectedTask}
-              onTaskToggle={toggleTask}
+          {/* Columns */}
+          <div className="flex-1 flex overflow-hidden">
+            {COLUMNS.map((config) => {
+              // Remplacer Lointain par la zone de définition/planification si active
+              if (config.id === 'distant' && planningStep !== 'none') {
+                return (
+                  <div key="planning" className="flex-1 min-w-0 relative">
+                    <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" />
+                    
+                    {/* Étape 1 : Définir le projet (cercles de compétences) */}
+                    {planningStep === 'define' && (
+                      <DefineProjectZone
+                        onCancel={() => setPlanningStep('none')}
+                        onPlanify={(domain, selectedSkills) => {
+                          setPlanningContext({ domain, selectedSkills })
+                          setPlanningStep('plan')
+                        }}
+                      />
+                    )}
+                    
+                    {/* Étape 2 : Planifier les tâches */}
+                    {planningStep === 'plan' && (
+                      <PlanningZone 
+                        onProjectCreated={() => {
+                          setPlanningStep('none')
+                          setPlanningContext(null)
+                        }}
+                        onCancel={() => {
+                          setPlanningStep('none')
+                          setPlanningContext(null)
+                        }}
+                        preselectedSkills={planningContext?.selectedSkills}
+                        preselectedDomain={planningContext?.domain}
+                      />
+                    )}
+                  </div>
+                )
+              }
+              
+              return (
+                <TemporalColumn
+                  key={config.id}
+                  config={config}
+                  tasks={tasksByColumn[config.id]}
+                  onTaskClick={setSelectedTask}
+                  onTaskToggle={toggleTask}
+                />
+              )
+            })}
+          </div>
+          
+          {/* Task Details */}
+          {selectedTask && (
+            <TaskDetails
+              task={selectedTask}
+              onClose={() => setSelectedTask(null)}
             />
-          )
-        })}
-      </div>
-      
-      {/* Task Details */}
-      {selectedTask && (
-        <TaskDetails
-          task={selectedTask}
-          onClose={() => setSelectedTask(null)}
-        />
+          )}
+
+          {/* Confirm Delete */}
+          <ConfirmDialog
+            isOpen={!!confirmDelete}
+            onClose={() => setConfirmDelete(null)}
+            onConfirm={() => { if (confirmDelete) { deleteTask(confirmDelete.task.id); setConfirmDelete(null) } }}
+            title="Supprimer ?"
+            message={`"${confirmDelete?.task.title}"`}
+            confirmText="Supprimer"
+            cancelText="Annuler"
+            variant="danger"
+          />
+        </>
+      ) : (
+        /* Onglet Focus - Pomodoro intégré */
+        <div className="flex-1 overflow-hidden">
+          <PomodoroPage embedded />
+        </div>
       )}
-
-
-      {/* Confirm Delete */}
-      <ConfirmDialog
-        isOpen={!!confirmDelete}
-        onClose={() => setConfirmDelete(null)}
-        onConfirm={() => { if (confirmDelete) { deleteTask(confirmDelete.task.id); setConfirmDelete(null) } }}
-        title="Supprimer ?"
-        message={`"${confirmDelete?.task.title}"`}
-        confirmText="Supprimer"
-        cancelText="Annuler"
-        variant="danger"
-      />
     </div>
   )
 }

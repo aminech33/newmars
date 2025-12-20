@@ -56,10 +56,6 @@ export function KeyboardShortcuts() {
             e.preventDefault()
             setView('library')
             break
-          case 'p':
-            e.preventDefault()
-            setView('pomodoro')
-            break
           case 'z':
             e.preventDefault()
             if (e.shiftKey) {

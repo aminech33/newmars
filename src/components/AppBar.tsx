@@ -17,7 +17,6 @@ import {
 const apps = [
   { icon: CheckSquare, label: 'Tâches', view: 'tasks', color: 'emerald', shortcut: '⌘T' },
   { icon: CalendarDays, label: 'Ma Journée', view: 'myday', color: 'violet', shortcut: '⌘J' },
-  { icon: Timer, label: 'Pomodoro', view: 'pomodoro', color: 'rose', shortcut: '⌘P' },
   { icon: Library, label: 'Bibliothèque', view: 'library', color: 'indigo', shortcut: '⌘L' },
   { icon: Heart, label: 'Santé', view: 'health', color: 'pink', shortcut: '' },
   { icon: GraduationCap, label: 'Apprentissage', view: 'learning', color: 'purple', shortcut: '' },
@@ -30,7 +29,7 @@ const mobileApps = [
   { icon: Home, label: 'Hub', view: 'hub', color: 'indigo' },
   { icon: CheckSquare, label: 'Tâches', view: 'tasks', color: 'emerald' },
   { icon: CalendarDays, label: 'Journée', view: 'myday', color: 'violet' },
-  { icon: Timer, label: 'Focus', view: 'pomodoro', color: 'rose' },
+  { icon: Library, label: 'Livres', view: 'library', color: 'indigo' },
 ]
 
 const colorClasses = {

@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Settings, Trash2, Archive, BarChart3, BookOpen, Clock, Flame, ChevronLeft, Timer, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { Settings, Trash2, Archive, BarChart3, BookOpen, Clock, Flame, ChevronLeft, Timer, PanelLeftClose, PanelLeft, ListTodo } from 'lucide-react'
 import { Course, COURSE_LEVELS } from '../../types/learning'
 import { Tooltip } from '../ui/Tooltip'
 import { useStore } from '../../store/useStore'
@@ -12,6 +12,8 @@ interface CourseHeaderProps {
   onDelete: () => void
   onToggleSidebar: () => void
   sidebarCollapsed: boolean
+  showTasks?: boolean
+  onToggleTasks?: () => void
 }
 
 const COLOR_CLASSES: Record<string, string> = {
@@ -32,7 +34,9 @@ export const CourseHeader = memo(function CourseHeader({
   onArchive,
   onDelete,
   onToggleSidebar,
-  sidebarCollapsed
+  sidebarCollapsed,
+  showTasks = false,
+  onToggleTasks
 }: CourseHeaderProps) {
   const { setView, projects, addToast } = useStore()
   const levelInfo = COURSE_LEVELS.find(l => l.value === course.level)
@@ -60,23 +64,17 @@ export const CourseHeader = memo(function CourseHeader({
   }
 
   const startPomodoroForCourse = () => {
-    if (!linkedProject) {
-      addToast('⚠️ Aucun projet lié à ce cours', 'warning')
-      return
-    }
-    
-    // Naviguer vers Pomodoro avec le projet pré-sélectionné
-    // Le store devrait sauvegarder ces infos pour la page Pomodoro
+    // Naviguer vers Tâches > Focus avec le cours pré-sélectionné
     localStorage.setItem('pomodoro-preselect', JSON.stringify({
-      projectId: course.linkedProjectId,
-      projectName: linkedProject.name,
+      projectId: course.linkedProjectId || undefined,
+      projectName: linkedProject?.name,
       taskTitle: `Étudier ${course.name}`,
       courseId: course.id,
       courseName: course.name
     }))
     
-    addToast(`🍅 Pomodoro prêt pour "${course.name}"`, 'success')
-    setView('pomodoro')
+    addToast(`🍅 Focus prêt pour "${course.name}"`, 'success')
+    setView('tasks')
   }
 
   return (
@@ -163,7 +161,25 @@ export const CourseHeader = memo(function CourseHeader({
 
             {/* Actions */}
             <div className="flex items-center gap-0.5">
-              {/* Pomodoro Button - NEW */}
+              {/* Toggle Tasks Button */}
+              {course.linkedProjectId && onToggleTasks && (
+                <Tooltip content={showTasks ? "Masquer les tâches" : "Afficher les tâches"}>
+                  <button
+                    onClick={onToggleTasks}
+                    className={`p-1.5 rounded-lg transition-[background-color,color] duration-200 ${
+                      showTasks 
+                        ? 'text-emerald-400 bg-emerald-500/10' 
+                        : 'text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10'
+                    }`}
+                    aria-label={showTasks ? "Masquer les tâches" : "Afficher les tâches"}
+                    aria-pressed={showTasks}
+                  >
+                    <ListTodo className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* Pomodoro Button */}
               <Tooltip content={`Étudier ${course.name} (25min)`}>
                 <button
                   onClick={startPomodoroForCourse}

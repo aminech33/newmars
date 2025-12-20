@@ -322,6 +322,21 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
           )}
         </div>
 
+        {/* Projet lié - Visible directement */}
+        <Select
+          label="Lier à un projet (optionnel)"
+          value={linkedProjectId}
+          onChange={(e) => setLinkedProjectId(e.target.value)}
+          options={[
+            { value: '', label: '-- Aucun projet --' },
+            ...projects.map(project => ({
+              value: project.id,
+              label: `${project.icon} ${project.name}`
+            }))
+          ]}
+          hint="📋 Les tâches du projet seront affichées dans le cours et synchronisées."
+        />
+
         {/* Advanced Options - Collapsed by default */}
         <div className="pt-2">
           <button
@@ -335,20 +350,6 @@ export function CourseModal({ isOpen, course, onClose, onSubmit }: CourseModalPr
 
           {showAdvanced && (
             <div className="mt-4 space-y-4 animate-fade-in">
-              {/* Projet lié */}
-              <Select
-                label="Projet lié"
-                value={linkedProjectId}
-                onChange={(e) => setLinkedProjectId(e.target.value)}
-                options={[
-                  { value: '', label: '-- Aucun projet --' },
-                  ...projects.map(project => ({
-                    value: project.id,
-                    label: `${project.icon} ${project.name}`
-                  }))
-                ]}
-                hint="💡 Les tâches et concepts de ce projet seront accessibles pendant le chat via un widget flottant."
-              />
 
               {/* Icon & Color */}
               <div className="grid grid-cols-2 gap-4">

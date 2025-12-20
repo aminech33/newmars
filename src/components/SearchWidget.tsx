@@ -70,9 +70,8 @@ export function SearchWidget() {
     // Recherche dans les pages/fonctionnalités (toutes les pages)
     const pages = [
       { id: 'hub', name: 'Hub', desc: 'Accueil, widgets', icon: Sparkles, view: 'hub' as const },
-      { id: 'tasks', name: 'Tâches', desc: 'Gestion des tâches, Kanban', icon: CheckSquare, view: 'tasks' as const },
+      { id: 'tasks', name: 'Tâches', desc: 'Gestion des tâches, Kanban, Focus', icon: CheckSquare, view: 'tasks' as const },
       { id: 'myday', name: 'Ma Journée', desc: 'Habitudes, journal, réflexion, gratitude', icon: BookOpen, view: 'myday' as const },
-      { id: 'pomodoro', name: 'Pomodoro', desc: 'Timer, focus, productivité', icon: Timer, view: 'pomodoro' as const },
       { id: 'library', name: 'Bibliothèque', desc: 'Lectures, livres, citations', icon: BookMarked, view: 'library' as const },
       { id: 'health', name: 'Santé', desc: 'Poids, nutrition, bien-être', icon: Heart, view: 'health' as const },
       { id: 'learning', name: 'Apprentissage', desc: 'Cours, IA, flashcards', icon: GraduationCap, view: 'learning' as const },

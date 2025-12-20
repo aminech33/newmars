@@ -3,7 +3,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { LoadingFallback } from './components/LoadingFallback'
 import { useStore } from './store/useStore'
 
-// Lazy load des composants lourds
+// Lazy load des composants lourds pour éviter les erreurs au chargement initial
 const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.HubV2 })))
 const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
 const HealthPage = lazy(() => import('./components/health/HealthPage').then(m => ({ default: m.HealthPage })))
@@ -12,7 +12,6 @@ const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ defau
 const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const LibraryPage = lazy(() => import('./components/library/LibraryPage').then(m => ({ default: m.LibraryPage })))
-const PomodoroPage = lazy(() => import('./components/pomodoro/PomodoroPage').then(m => ({ default: m.PomodoroPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
 
 // Composants légers chargés directement
@@ -83,7 +82,6 @@ function AppContent() {
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'learning' && <LearningPage />}
             {currentView === 'library' && <LibraryPage />}
-            {currentView === 'pomodoro' && <PomodoroPage />}
             {currentView === 'settings' && <SettingsPage />}
           </>
         )}

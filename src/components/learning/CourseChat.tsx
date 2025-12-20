@@ -4,7 +4,8 @@ import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { CodeEditor } from './CodeEditor'
 import { TerminalEmulator } from './TerminalEmulator'
-import { Sparkles } from 'lucide-react'
+import { LinkedTasks } from './LinkedTasks'
+import { Sparkles, ListTodo } from 'lucide-react'
 
 interface CourseChatProps {
   course: Course
@@ -44,6 +45,7 @@ export const CourseChat = memo(function CourseChat({
   const [showSuggestions, setShowSuggestions] = useState(true)
   const [editorWidth, setEditorWidth] = useState(60) // pourcentage
   const [isResizing, setIsResizing] = useState(false)
+  const [showTasks, setShowTasks] = useState(false)
   const splitContainerRef = useRef<HTMLDivElement>(null)
 
   // Gestion du redimensionnement style VSCode
@@ -242,7 +244,7 @@ export const CourseChat = memo(function CourseChat({
           {/* Input compact */}
           <div className="border-t border-zinc-800/50 bg-zinc-900/30 p-3">
             {showCodeEditor && (
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center justify-between mb-2">
                 <label className="flex items-center gap-1.5 text-[10px] text-zinc-500 cursor-pointer hover:text-zinc-400">
                   <input
                     type="checkbox"
@@ -252,8 +254,41 @@ export const CourseChat = memo(function CourseChat({
                   />
                   Inclure le code
                 </label>
+                
+                {/* Toggle Tasks Button (split view) */}
+                {course.linkedProjectId && (
+                  <button
+                    onClick={() => setShowTasks(!showTasks)}
+                    className={`p-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 text-[10px] ${
+                      showTasks 
+                        ? 'bg-emerald-500/20 text-emerald-400' 
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <ListTodo className="w-3 h-3" />
+                    Tâches
+                  </button>
+                )}
               </div>
             )}
+            
+            {/* Toggle pour terminal (pas de checkbox code) */}
+            {showTerminal && course.linkedProjectId && (
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={() => setShowTasks(!showTasks)}
+                  className={`p-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 text-[10px] ${
+                    showTasks 
+                      ? 'bg-emerald-500/20 text-emerald-400' 
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <ListTodo className="w-3 h-3" />
+                  Tâches
+                </button>
+              </div>
+            )}
+            
             <ChatInput
               onSend={handleSendWithCode}
               isTyping={isTyping}
@@ -261,6 +296,13 @@ export const CourseChat = memo(function CourseChat({
               placeholder={showTerminal ? "Pose une question sur le terminal..." : "Pose une question sur ton code..."}
               hasMessages={hasMessages}
             />
+            
+            {/* Tâches liées (compact en mode split) */}
+            {course.linkedProjectId && showTasks && (
+              <div className="mt-3 pt-3 border-t border-zinc-800/30">
+                <LinkedTasks projectId={course.linkedProjectId} collapsed />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -270,7 +312,7 @@ export const CourseChat = memo(function CourseChat({
   // Mode normal (sans programmation) - chat classique
   return (
     <div className="flex h-full overflow-hidden bg-black">
-      <div className="flex flex-col w-full h-full">
+      <div className="flex flex-col flex-1 h-full min-w-0">
         {/* Messages */}
         <div 
           ref={containerRef}
@@ -346,16 +388,42 @@ export const CourseChat = memo(function CourseChat({
         {/* Input */}
         <div className="bg-black/50 backdrop-blur-sm">
           <div className="max-w-3xl mx-auto px-6 py-4">
-            <ChatInput
-              onSend={handleSendWithCode}
-              isTyping={isTyping}
-              disabled={false}
-              placeholder={hasMessages ? "Continuez la conversation..." : `Posez une question sur ${course.name}...`}
-              hasMessages={hasMessages}
-            />
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <ChatInput
+                  onSend={handleSendWithCode}
+                  isTyping={isTyping}
+                  disabled={false}
+                  placeholder={hasMessages ? "Continuez la conversation..." : `Posez une question sur ${course.name}...`}
+                  hasMessages={hasMessages}
+                />
+              </div>
+              
+              {/* Toggle Tasks Button */}
+              {course.linkedProjectId && (
+                <button
+                  onClick={() => setShowTasks(!showTasks)}
+                  className={`p-2.5 rounded-xl transition-all duration-200 flex-shrink-0 ${
+                    showTasks 
+                      ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30' 
+                      : 'bg-zinc-800/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                  }`}
+                  title={showTasks ? "Masquer les tâches" : "Afficher les tâches"}
+                >
+                  <ListTodo className="w-5 h-5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Panneau des tâches liées (si projet lié ET showTasks) */}
+      {course.linkedProjectId && showTasks && (
+        <div className="hidden lg:block w-72 border-l border-zinc-800/50 bg-zinc-950 p-3 overflow-y-auto">
+          <LinkedTasks projectId={course.linkedProjectId} />
+        </div>
+      )}
     </div>
   )
 })
