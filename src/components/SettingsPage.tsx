@@ -11,8 +11,7 @@ import {
   Trash2,
   Check,
   AlertTriangle,
-  Settings as SettingsIcon,
-  Network
+  Settings as SettingsIcon
 } from 'lucide-react'
 
 type SettingsSection = 'appearance' | 'data' | 'advanced'

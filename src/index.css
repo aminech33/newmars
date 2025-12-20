@@ -1,6 +1,51 @@
+/* Google Fonts - Crimson Pro & Source Sans 3 */
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================
+   SOFT PAPER THEME - Elegant Journal Aesthetic
+   ============================================ */
+
+:root {
+  /* Soft Paper Palette */
+  --paper-cream: #FDF8F3;
+  --paper-warm: #F9F3EC;
+  --paper-beige: #EDE4D9;
+  --paper-tan: #D4C4B0;
+  
+  /* Ink Colors */
+  --ink-dark: #2C2416;
+  --ink-medium: #4A3F2F;
+  --ink-light: #7A6B5A;
+  --ink-muted: #A89B8A;
+  
+  /* Accent - Terracotta */
+  --terracotta: #C4785C;
+  --terracotta-light: #D4947A;
+  --terracotta-dark: #A85E42;
+  
+  /* Accent - Sage */
+  --sage: #7B9E87;
+  --sage-light: #9CB8A5;
+  --sage-dark: #5C7A66;
+  
+  /* Accent - Dusty Blue */
+  --dusty-blue: #8BA4B4;
+  --dusty-blue-light: #A8BDC9;
+  --dusty-blue-dark: #6B8494;
+  
+  /* Shadows - Warm */
+  --shadow-soft: 0 2px 8px rgba(44, 36, 22, 0.08);
+  --shadow-medium: 0 4px 16px rgba(44, 36, 22, 0.12);
+  --shadow-lifted: 0 8px 32px rgba(44, 36, 22, 0.16);
+  
+  /* Typography */
+  --font-serif: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+}
 
 * {
   margin: 0;
@@ -16,9 +61,9 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #0A0A0B;
-  color: #E5E5E7;
+  font-family: var(--font-sans);
+  background-color: var(--paper-cream);
+  color: var(--ink-dark);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* iOS PWA - safe areas for notch/home indicator */
@@ -167,8 +212,123 @@ textarea:focus-visible {
 
 /* Selection */
 ::selection {
-  background: rgba(113, 113, 122, 0.3);
-  color: #fafafa;
+  background: rgba(196, 120, 92, 0.25);
+  color: var(--ink-dark);
+}
+
+/* ============================================
+   SOFT PAPER THEME UTILITIES
+   ============================================ */
+
+/* Paper backgrounds */
+.bg-paper { background-color: var(--paper-cream); }
+.bg-paper-warm { background-color: var(--paper-warm); }
+.bg-paper-beige { background-color: var(--paper-beige); }
+
+/* Ink text colors */
+.text-ink { color: var(--ink-dark); }
+.text-ink-medium { color: var(--ink-medium); }
+.text-ink-light { color: var(--ink-light); }
+.text-ink-muted { color: var(--ink-muted); }
+
+/* Accent colors */
+.text-terracotta { color: var(--terracotta); }
+.bg-terracotta { background-color: var(--terracotta); }
+.border-terracotta { border-color: var(--terracotta); }
+
+.text-sage { color: var(--sage); }
+.bg-sage { background-color: var(--sage); }
+.border-sage { border-color: var(--sage); }
+
+/* Paper card style */
+.paper-card {
+  background: var(--paper-warm);
+  border: 1px solid var(--paper-beige);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.2s ease;
+}
+
+.paper-card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+/* Soft input style */
+.paper-input {
+  background: var(--paper-cream);
+  border: 1.5px solid var(--paper-beige);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+  color: var(--ink-dark);
+  transition: all 0.2s ease;
+}
+
+.paper-input:focus {
+  outline: none;
+  border-color: var(--terracotta-light);
+  box-shadow: 0 0 0 3px rgba(196, 120, 92, 0.15);
+}
+
+.paper-input::placeholder {
+  color: var(--ink-muted);
+}
+
+/* Serif headings */
+.font-serif { font-family: var(--font-serif); }
+.font-sans { font-family: var(--font-sans); }
+
+/* Terracotta button */
+.btn-terracotta {
+  background: linear-gradient(135deg, var(--terracotta) 0%, var(--terracotta-dark) 100%);
+  color: var(--paper-cream);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(168, 94, 66, 0.3);
+}
+
+.btn-terracotta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(168, 94, 66, 0.4);
+}
+
+.btn-terracotta:active {
+  transform: translateY(0);
+}
+
+/* Sage button */
+.btn-sage {
+  background: linear-gradient(135deg, var(--sage) 0%, var(--sage-dark) 100%);
+  color: var(--paper-cream);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(92, 122, 102, 0.3);
+}
+
+/* Decorative line */
+.paper-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--paper-tan), transparent);
+  border: none;
+  margin: 24px 0;
+}
+
+/* Handwritten style accent */
+.handwritten {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
 }
 
 /* Focus styles */
