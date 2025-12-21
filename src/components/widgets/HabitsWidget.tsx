@@ -85,7 +85,7 @@ export const HabitsWidget = memo(function HabitsWidget({ widget }: HabitsWidgetP
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <div 
-                    className={`w-full rounded-t transition-colors hover:scale-105 ${
+                    className={`w-full rounded-t transition-transform hover:scale-105 will-change-transform ${
                       isToday 
                         ? 'chart-bar-amber' 
                         : 'bg-amber-500/50'

@@ -97,7 +97,7 @@ export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetP
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
                       <div 
-                        className="w-full chart-bar-rose rounded-t transition-colors hover:scale-105"
+                        className="w-full chart-bar-rose rounded-t transition-transform hover:scale-105 will-change-transform"
                         style={{ height: `${Math.max(30, height)}%` }}
                       />
                       <div className="text-[8px] text-zinc-600 font-semibold">
@@ -181,7 +181,7 @@ export const HealthWidget = memo(function HealthWidget({ widget }: HealthWidgetP
                         bg-gradient-to-br from-rose-500 to-rose-600
                         shadow-lg shadow-rose-500/30
                         hover:shadow-xl hover:shadow-rose-500/40
-                        hover:scale-105 transition-colors duration-200"
+                        hover:scale-105 transition-transform duration-200"
             >
               <Plus className="w-4 h-4 text-white" strokeWidth={2.5} />
               <span className="text-xs font-bold text-white uppercase tracking-wide">

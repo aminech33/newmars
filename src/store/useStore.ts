@@ -1530,3 +1530,26 @@ if (typeof window !== 'undefined') {
     migrateBooksData()
   }, 100)
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SÉLECTEURS OPTIMISÉS (pour éviter re-renders inutiles)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Sélecteurs mémoïsés pour performances optimales
+ * Utiliser comme : const count = useStore(selectVisibleTasksCount)
+ */
+export const selectVisibleTasksCount = (state: AppState) => 
+  state.tasks.filter((t: Task) => !t.completed && (t.isVisible === undefined || t.isVisible === true)).length
+
+export const selectHiddenTasksCount = (state: AppState) =>
+  state.tasks.filter((t: Task) => !t.completed && t.isVisible === false).length
+
+export const selectTaskQuota = (state: AppState) => state.taskQuota
+
+export const selectIsQuotaFull = (state: AppState) => {
+  const visibleCount = state.tasks.filter((t: Task) => !t.completed && (t.isVisible === undefined || t.isVisible === true)).length
+  return visibleCount >= state.taskQuota
+}
+
+

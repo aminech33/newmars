@@ -567,7 +567,6 @@ button:active:not(:disabled) {
   }
 }
 
-/* Test debug - enlever plus tard */
 .glass-widget {
   animation: none;
 }

@@ -123,3 +123,4 @@ Pour les détails techniques, voir le document de référence complet.
   - Barre de recherche repositionnée de 20px à 12px du haut
 - **Amélioration UX** : Gain de ~40px d'espace vertical (moins imposant sur petits écrans)
 
+

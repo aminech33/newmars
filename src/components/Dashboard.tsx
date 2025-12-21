@@ -66,7 +66,7 @@ function SimpleBarChart({ data, color = 'emerald' }: BarChartProps) {
           <div key={i} className="flex-1 flex flex-col items-center gap-2">
             <div className="w-full flex items-end justify-center h-24">
               <div 
-                className={`w-full rounded-t-lg transition-all duration-500 ${
+                className={`w-full rounded-t-lg ${
                   isLast 
                     ? `bg-gradient-to-t ${colorClasses[color]}` 
                     : 'bg-zinc-700'

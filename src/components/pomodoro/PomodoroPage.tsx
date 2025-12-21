@@ -129,7 +129,7 @@ export function PomodoroPage({ embedded = false }: PomodoroPageProps) {
         // Ignore parsing errors
       }
     }
-  }, [])
+  }, [addToast]) // Ajout de addToast dans les dépendances
 
   // Stats calculations
   const daySchedule = useMemo(() => getDaySchedule(pomodoroSessions, selectedDate), [pomodoroSessions, selectedDate])

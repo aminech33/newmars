@@ -34,7 +34,7 @@ export function ProductReference() {
         {/* Footer */}
         <footer className="mt-24 pt-12 border-t border-gray-800 text-center text-gray-500 text-sm">
           <p>
-            NewMars v{appMetadata.version} — Document de référence produit
+            NewMars v{appMetadata.version} — Diagramme interactif de l'application
           </p>
           <p className="mt-2">
             Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}

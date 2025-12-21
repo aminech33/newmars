@@ -1,5 +1,5 @@
 import { Lock, Unlock, Settings } from 'lucide-react'
-import { useStore } from '../../store/useStore'
+import { useStore, selectVisibleTasksCount, selectHiddenTasksCount, selectTaskQuota } from '../../store/useStore'
 import { Tooltip } from '../ui/Tooltip'
 
 interface TaskQuotaDisplayProps {
@@ -7,19 +7,15 @@ interface TaskQuotaDisplayProps {
 }
 
 export function TaskQuotaDisplay({ onSettingsClick }: TaskQuotaDisplayProps) {
-  const { taskQuota, getVisibleTasks, getHiddenTasks, unlockNextTasks } = useStore()
+  // Utilisation des sélecteurs optimisés pour éviter re-renders
+  const visibleCount = useStore(selectVisibleTasksCount)
+  const hiddenCount = useStore(selectHiddenTasksCount)
+  const taskQuota = useStore(selectTaskQuota)
+  const unlockNextTasks = useStore((state) => state.unlockNextTasks)
   
-  const visibleTasks = getVisibleTasks()
-  const hiddenTasks = getHiddenTasks()
-  const visibleCount = visibleTasks.length
-  const hiddenCount = hiddenTasks.length
-  
-  // Debug: vérifier les tâches visibles vs quota
   const progress = taskQuota > 0 ? Math.min((visibleCount / taskQuota) * 100, 100) : 0
   const isFull = visibleCount >= taskQuota
   const isEmpty = visibleCount === 0 && hiddenCount === 0
-  
-  console.log('TaskQuota Debug:', { visibleCount, hiddenCount, taskQuota, progress, isFull })
 
   // Ne rien afficher si pas de tâches
   if (isEmpty) {

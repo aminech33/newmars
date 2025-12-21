@@ -1,10 +1,10 @@
 # 📋 Document de Référence Produit — NewMars v1
 
-> **Version** : 1.0.0  
+> **Version** : 1.0.1  
 > **Date de création** : 20 décembre 2024  
-> **Dernière mise à jour** : 20 décembre 2024  
+> **Dernière mise à jour** : 21 décembre 2024  
 > **Auteur** : Product Team  
-> **Statut** : Document officiel de référence
+> **Statut** : Document officiel de référence — **Audit complet effectué**
 
 ---
 
@@ -16,7 +16,7 @@ Il sert de **contrat produit** : une fonctionnalité non listée ici n'existe pa
 ### Légende des statuts
 
 | Statut | Signification |
-|--------|---------------|
+|:-------|:--------------|
 | ✅ **Implémenté** | Fonctionnalité opérationnelle en production |
 | 🔄 **En cours** | Développement actif, non finalisé |
 | 📋 **À faire** | Prévu pour v1, non commencé |
@@ -35,7 +35,7 @@ Point d'entrée central de l'application, permettant la navigation vers tous les
 ### Fonctionnalités
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Affichage date et salutation personnalisée | ✅ Implémenté | Salutation contextuelle (Bonjour/Bon après-midi/Bonsoir) + nom utilisateur |
 | Navigation vers modules | ✅ Implémenté | Liens vers 8 modules : Tâches, Ma journée, Apprentissage, Bibliothèque, Dashboard, Documentation, Paramètres |
 | Affichage nom utilisateur | ✅ Implémenté | Nom configurable dans les paramètres |
@@ -109,7 +109,7 @@ Gestion des tâches avec organisation temporelle en colonnes (Aujourd'hui, En co
 ### Fonctionnalités
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Vue en 4 colonnes temporelles | ✅ Implémenté | Aujourd'hui, En cours, À venir, Lointain |
 | Création rapide de tâche | ✅ Implémenté | Raccourci ⌘N, saisie rapide |
 | Complétion de tâche | ✅ Implémenté | Toggle avec animation, confetti optionnel |
@@ -147,7 +147,7 @@ Espace de réflexion quotidienne combinant intention du jour, habitudes et notes
 ### Fonctionnalités — Onglet Journal
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Intention du jour | ✅ Implémenté | Champ texte pour l'objectif principal |
 | Première action | ✅ Implémenté | Suggestion depuis tâche prioritaire, éditable |
 | Sélection humeur | ✅ Implémenté | 5 niveaux d'emoji (😢 😐 🙂 😊 🤩) |
@@ -181,7 +181,7 @@ Suivi du poids, de la nutrition et de l'hydratation.
 ### Fonctionnalités — Onglet Nutrition
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Ajout de repas | ✅ Implémenté | Modal avec détails nutritionnels |
 | Suivi calories | ✅ Implémenté | Total journalier vs objectif |
 | Suivi macros | ✅ Implémenté | Protéines, glucides, lipides avec graphique circulaire |
@@ -192,7 +192,7 @@ Suivi du poids, de la nutrition et de l'hydratation.
 ### Fonctionnalités — Onglet Poids
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Ajout pesée | ✅ Implémenté | Poids avec date et note optionnelle |
 | Graphique évolution | ✅ Implémenté | Courbe de tendance du poids |
 | Historique pesées | ✅ Implémenté | Liste des entrées récentes |
@@ -202,7 +202,7 @@ Suivi du poids, de la nutrition et de l'hydratation.
 ### Fonctionnalités — Profil santé
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Profil utilisateur | ✅ Implémenté | Taille, âge, genre, niveau d'activité |
 | Objectifs santé | ✅ Implémenté | Objectif poids, calories |
 
@@ -228,7 +228,7 @@ Plateforme d'apprentissage assistée par IA avec tuteur conversationnel.
 ### Fonctionnalités
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Création de cours | ✅ Implémenté | Nom, description, niveau, sujets |
 | Liste des cours | ✅ Implémenté | Avec recherche, filtres, tri |
 | Chat IA tuteur | ✅ Implémenté | Conversation avec Gemini AI |
@@ -263,7 +263,7 @@ Timer de focus basé sur la technique Pomodoro, intégré aux tâches et à l'ap
 ### Fonctionnalités
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Timer circulaire | ✅ Implémenté | Affichage visuel du temps restant |
 | Durées préréglées | ✅ Implémenté | 15, 25, 30, 45, 60 minutes |
 | Pause courte/longue | ✅ Implémenté | Configurable (défaut 5/15 min) |
@@ -300,7 +300,7 @@ Gestion de la bibliothèque personnelle avec suivi de lecture.
 ### Fonctionnalités
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Ajout de livre | ✅ Implémenté | Titre, auteur, pages, genre, couverture |
 | Statuts de lecture | ✅ Implémenté | À lire, En cours, Terminé |
 | Progression pages | ✅ Implémenté | Page actuelle / total |
@@ -339,7 +339,7 @@ Vue d'ensemble des indicateurs de continuité et tendances globales.
 ### Fonctionnalités
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | États du jour | ✅ Implémenté | Actif/Inactif pour Tâches, Habitudes, Journal, Focus |
 | Séries de consistance | ✅ Implémenté | Streaks : Tâches, Habitudes, Journal, Pomodoro, Santé, Lecture |
 | Indicateur continuité globale | ✅ Implémenté | Forte/Partielle/Faible selon streaks actifs |
@@ -368,7 +368,7 @@ Configuration de l'application et gestion des données.
 ### Fonctionnalités — Section Apparence
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Mode sombre | ✅ Implémenté | Toggle (actuellement fixe sur sombre) |
 | Couleur d'accent | ✅ Implémenté | 4 choix : Indigo, Violet, Cyan, Émeraude |
 | Toggle animations | ✅ Implémenté | Activer/désactiver les animations |
@@ -376,7 +376,7 @@ Configuration de l'application et gestion des données.
 ### Fonctionnalités — Section Données
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Export JSON | ✅ Implémenté | Téléchargement de toutes les données |
 | Import JSON | ✅ Implémenté | Restauration depuis fichier |
 | Réinitialisation complète | ✅ Implémenté | Suppression de toutes les données (avec confirmation) |
@@ -384,7 +384,7 @@ Configuration de l'application et gestion des données.
 ### Fonctionnalités — Section Avancé
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Toggle confettis | ✅ Implémenté | Animations de célébration (désactivé par défaut) |
 | Affichage version | ✅ Implémenté | Numéro de version de l'application |
 
@@ -403,7 +403,7 @@ Configuration de l'application et gestion des données.
 ### Système global
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Persistance localStorage | ✅ Implémenté | Sauvegarde automatique des données |
 | Recherche globale | ✅ Implémenté | Command palette (⌘K) |
 | Raccourcis clavier | ✅ Implémenté | Navigation et actions rapides |
@@ -417,7 +417,7 @@ Configuration de l'application et gestion des données.
 ### Cerveau algorithmique (Brain)
 
 | Fonctionnalité | Statut | Description |
-|----------------|--------|-------------|
+|:---------------|:-------|:------------|
 | Observation des événements | ✅ Implémenté | Collecte silencieuse des actions utilisateur |
 | Mémoire persistante | ✅ Implémenté | Stockage des 7 derniers jours d'événements |
 | Analyse des patterns | ✅ Implémenté | Détection heures productives, habitudes, corrélations |
@@ -433,7 +433,7 @@ Configuration de l'application et gestion des données.
 ### Stack technologique
 
 | Composant | Technologie |
-|-----------|-------------|
+|:----------|:------------|
 | Framework | React 18 + TypeScript |
 | State Management | Zustand avec persist |
 | Styling | Tailwind CSS |
@@ -445,7 +445,7 @@ Configuration de l'application et gestion des données.
 ### Structure des données
 
 | Entité | Stockage |
-|--------|----------|
+|:-------|:---------|
 | Tâches | localStorage via Zustand |
 | Projets | localStorage via Zustand |
 | Habitudes | localStorage via Zustand |
@@ -460,7 +460,7 @@ Configuration de l'application et gestion des données.
 ## 12. Résumé des modules v1
 
 | Module | Statut global | Fonctionnalités clés |
-|--------|---------------|---------------------|
+|:-------|:--------------|:---------------------|
 | Hub | ✅ Complet | Navigation, salutation |
 | Tâches | ✅ Complet | Colonnes temporelles, projets, génération IA |
 | Journal | ✅ Complet | Intention, habitudes, humeur |
