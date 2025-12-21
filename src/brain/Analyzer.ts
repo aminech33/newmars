@@ -498,3 +498,4 @@ export function quickAnalyze(memory: BrainMemory): {
 }
 
 
+

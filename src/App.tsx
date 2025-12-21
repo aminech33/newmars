@@ -11,6 +11,7 @@ const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ defau
 const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const ProductReference = lazy(() => import('./components/docs/ProductReference').then(m => ({ default: m.ProductReference })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
@@ -81,6 +82,7 @@ function AppContent() {
             {currentView === 'learning' && <LearningPage />}
             {currentView === 'library' && <LearningPage />}
             {currentView === 'settings' && <SettingsPage />}
+            {currentView === 'docs' && <ProductReference />}
           </>
         )}
       </Suspense>

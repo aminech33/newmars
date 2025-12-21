@@ -128,7 +128,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'health' | 'myday' | 'learning' | 'library' | 'settings'
+type View = 'hub' | 'tasks' | 'dashboard' | 'health' | 'myday' | 'learning' | 'library' | 'settings' | 'docs'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 

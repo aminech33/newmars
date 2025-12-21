@@ -7,6 +7,7 @@ const pages = [
   { id: 'learning', label: 'Apprentissage' },
   { id: 'library', label: 'Bibliothèque' },
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'docs', label: 'Documentation' },
   { id: 'settings', label: 'Paramètres' },
 ]
 
