@@ -269,3 +269,5 @@ echo ""
 echo "${PURPLE}${INFO} Pour plus d'infos : Consulter SETUP_CHATGPT.md${NC}"
 echo ""
 
+
+

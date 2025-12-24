@@ -226,3 +226,5 @@ Impact UX : 🔥 Très élevé (game changer pour la gestion manuelle)
 
 **Prochain objectif :** Phase 2 (TBD)
 
+
+

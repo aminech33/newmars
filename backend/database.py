@@ -441,3 +441,5 @@ from datetime import timedelta
 # Instance globale
 db = LearningDatabase()
 
+
+

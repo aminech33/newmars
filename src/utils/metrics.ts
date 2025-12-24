@@ -247,3 +247,5 @@ export function calculateJournalMetrics(journalEntries: JournalEntry[]): Journal
   }
 }
 
+
+

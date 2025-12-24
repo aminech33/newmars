@@ -35,3 +35,5 @@ Créer .env avec : OPENAI_API_KEY=sk-votre_clé
 
 ./show_summary.sh             # Voir le résumé complet
 
+
+

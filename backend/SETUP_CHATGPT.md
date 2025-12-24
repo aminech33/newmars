@@ -123,3 +123,5 @@ Votre backend utilise maintenant ChatGPT pour toutes les fonctionnalités d'IA.
 2. Connecter votre frontend
 3. Personnaliser les prompts si besoin
 
+
+

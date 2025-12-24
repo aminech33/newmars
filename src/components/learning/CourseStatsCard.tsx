@@ -7,6 +7,14 @@ interface CourseStatsCardProps {
 }
 
 export const CourseStatsCard = memo(function CourseStatsCard({ course }: CourseStatsCardProps) {
+  // Valeurs par défaut pour éviter les erreurs avec les données existantes
+  const currentMastery = course.currentMastery ?? 0
+  const streak = course.streak ?? 0
+  const longestStreak = course.longestStreak ?? 0
+  const totalReviews = course.totalReviews ?? 0
+  const totalTimeSpent = course.totalTimeSpent ?? 0
+  const sessionsCount = course.sessionsCount ?? 0
+  
   const masteryTrend = course.masteryHistory?.slice(-7) || []
   const hasTrend = masteryTrend.length >= 2
   
@@ -27,7 +35,7 @@ export const CourseStatsCard = memo(function CourseStatsCard({ course }: CourseS
             <p className="text-xs text-zinc-500 mb-1">Maîtrise</p>
             <div className="flex items-baseline gap-2">
               <p className="text-2xl font-bold text-white">
-                {course.currentMastery}%
+                {currentMastery}%
               </p>
               {hasTrend && trendDelta !== 0 && (
                 <span className={`text-xs ${
@@ -74,23 +82,23 @@ export const CourseStatsCard = memo(function CourseStatsCard({ course }: CourseS
             <p className="text-xs text-zinc-500 mb-1">Série active</p>
             <div className="flex items-baseline gap-2">
               <p className="text-2xl font-bold text-white">
-                {course.streak}
+                {streak}
               </p>
               <span className="text-xs text-zinc-400">jours</span>
             </div>
-            {course.longestStreak > course.streak && (
+            {longestStreak > streak && (
               <p className="text-xs text-zinc-600 mt-1">
-                Record: {course.longestStreak} jours
+                Record: {longestStreak} jours
               </p>
             )}
           </div>
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-            course.streak >= 7 
+            streak >= 7 
               ? 'bg-orange-500/10' 
               : 'bg-zinc-800'
           }`}>
             <Flame className={`w-4 h-4 ${
-              course.streak >= 7 
+              streak >= 7 
                 ? 'text-orange-400' 
                 : 'text-zinc-600'
             }`} />
@@ -98,18 +106,18 @@ export const CourseStatsCard = memo(function CourseStatsCard({ course }: CourseS
         </div>
         
         {/* Barre de progression vers le prochain palier */}
-        {course.streak < 30 && (
+        {streak < 30 && (
           <div className="space-y-1">
             <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-500"
                 style={{ 
-                  width: `${(course.streak % 7) * 100 / 7}%` 
+                  width: `${(streak % 7) * 100 / 7}%` 
                 }}
               />
             </div>
             <p className="text-[10px] text-zinc-600">
-              {7 - (course.streak % 7)} jours avant palier
+              {7 - (streak % 7)} jours avant palier
             </p>
           </div>
         )}
@@ -122,7 +130,7 @@ export const CourseStatsCard = memo(function CourseStatsCard({ course }: CourseS
             <p className="text-xs text-zinc-500 mb-1">Révisions</p>
             <div className="flex items-baseline gap-2">
               <p className="text-2xl font-bold text-white">
-                {course.totalReviews}
+                {totalReviews}
               </p>
               <span className="text-xs text-zinc-400">total</span>
             </div>
@@ -134,14 +142,14 @@ export const CourseStatsCard = memo(function CourseStatsCard({ course }: CourseS
         
         {/* Stats flashcards */}
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-zinc-500">{course.flashcards.length} cartes</span>
-          {course.flashcards.length > 0 && (
+          <span className="text-zinc-500">{course.flashcards?.length ?? 0} cartes</span>
+          {(course.flashcards?.length ?? 0) > 0 && (
             <>
               <span className="text-zinc-700">•</span>
               <span className="text-zinc-500">
-                {course.flashcards.filter(f => 
+                {course.flashcards?.filter(f => 
                   new Date(f.nextReview).getTime() <= Date.now()
-                ).length} à réviser
+                ).length ?? 0} à réviser
               </span>
             </>
           )}
@@ -155,7 +163,7 @@ export const CourseStatsCard = memo(function CourseStatsCard({ course }: CourseS
             <p className="text-xs text-zinc-500 mb-1">Temps total</p>
             <div className="flex items-baseline gap-2">
               <p className="text-2xl font-bold text-white">
-                {Math.floor(course.totalTimeSpent / 60)}
+                {Math.floor(totalTimeSpent / 60)}
               </p>
               <span className="text-xs text-zinc-400">heures</span>
             </div>
@@ -166,13 +174,15 @@ export const CourseStatsCard = memo(function CourseStatsCard({ course }: CourseS
         </div>
         
         {/* Moyenne par session */}
-        {course.sessionsCount > 0 && (
+        {sessionsCount > 0 && (
           <div className="text-xs text-zinc-500">
-            ~{Math.round(course.totalTimeSpent / course.sessionsCount)} min/session
+            ~{Math.round(totalTimeSpent / sessionsCount)} min/session
           </div>
         )}
       </div>
     </div>
   )
 })
+
+
 

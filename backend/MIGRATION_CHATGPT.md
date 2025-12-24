@@ -94,3 +94,5 @@ self.model = "gpt-4o-mini"  # ou "gpt-4o", "gpt-4-turbo", etc.
 
 Le backend utilise maintenant exclusivement ChatGPT (OpenAI) pour toutes les fonctionnalités d'IA.
 
+
+

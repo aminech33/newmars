@@ -263,7 +263,12 @@ export function useLearningData() {
       })),
       progress: 0,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      // Nouvelles propriétés V1.2.1 (avec valeurs par défaut)
+      currentMastery: 0,
+      longestStreak: 0,
+      totalReviews: 0,
+      masteryHistory: []
     }
 
     addLearningCourse(newCourse)
