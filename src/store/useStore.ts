@@ -34,6 +34,8 @@ export interface SubTask {
   completed: boolean
 }
 
+export type TemporalColumn = 'today' | 'inProgress' | 'upcoming' | 'distant'
+
 export interface Task {
   id: string
   title: string
@@ -52,6 +54,10 @@ export interface Task {
   projectId?: string // ID du projet associé
   isVisible?: boolean // Pour le système de quota (true = visible, false = cachée)
   isPriority?: boolean // Tâche prioritaire unique pour le hub
+  temporalColumn?: TemporalColumn // Colonne temporelle assignée manuellement
+  effort?: 'XS' | 'S' | 'M' | 'L' // Effort estimé (pour les projets générés)
+  phaseIndex?: number // Index de phase (pour les projets générés)
+  isValidation?: boolean // Tâche de validation de phase (déblocage progressif)
 }
 
 // Interface pour les projets personnalisés
@@ -62,6 +68,9 @@ export interface Project {
   icon: string
   createdAt: number
   linkedCourseId?: string // Lien vers un cours d'apprentissage
+  hasPhases?: boolean // Projet généré par IA avec phases
+  phaseCount?: number // Nombre de phases (pour projets IA)
+  archived?: boolean // Projet archivé
 }
 
 // Couleurs disponibles pour les projets
@@ -128,7 +137,7 @@ export interface DailyStats {
   pomodoroSessions: number
 }
 
-type View = 'hub' | 'tasks' | 'dashboard' | 'health' | 'myday' | 'learning' | 'library' | 'settings' | 'docs'
+type View = 'hub' | 'tasks' | 'projects' | 'health' | 'myday' | 'learning' | 'library' | 'settings' | 'docs' | 'documentation' | 'architecture'
 
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 

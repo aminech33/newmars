@@ -1,21 +1,13 @@
 /**
- * 🧠 BRAIN - Point d'entrée unique
+ * 🧠 BRAIN - Point d'entrée unique (SIMPLIFIÉ)
  * 
  * Le cerveau de l'application qui :
  * - Observe chaque action (silencieusement)
- * - Analyse les patterns de comportement
- * - Prédit les besoins
- * - Guide avec bienveillance
+ * - Calcule le Wellbeing Score pour le Dashboard
  * 
  * Usage:
  * ```tsx
- * const { 
- *   patterns, 
- *   predictions, 
- *   suggestions, 
- *   wellbeing,
- *   observe 
- * } = useBrain()
+ * const { patterns, wellbeing, observe } = useBrain()
  * ```
  */
 
@@ -24,18 +16,14 @@ import {
   BrainState, 
   BrainEventType, 
   UserPatterns, 
-  CurrentPredictions, 
-  ContextualSuggestions, 
   WellbeingScore,
   DEFAULT_BRAIN_CONFIG 
 } from './types'
 import { 
   loadMemory, 
   saveMemory, 
-  addEvent, 
   updatePatterns as updateMemoryPatterns,
   addScoreToHistory,
-  dismissSuggestion as dismissMemorySuggestion,
   BrainMemory 
 } from './Memory'
 import { 
@@ -69,8 +57,6 @@ import {
   observeAppClosed,
 } from './Observer'
 import { analyzePatterns, quickAnalyze } from './Analyzer'
-import { predict, generateDetailedPredictions } from './Predictor'
-import { generateSuggestions, generateWelcomeMessage, generateEveningMessage } from './Guide'
 import { calculateWellbeingScore, getScoreDescription, getScoreColor, getScoreEmoji, getTrendEmoji } from './Wellbeing'
 
 // ═══════════════════════════════════════════════════════════════
@@ -97,16 +83,6 @@ export function useBrain(): BrainState {
     // Sinon, recalculer
     return analyzePatterns(memory)
   }, [memory])
-  
-  // Prédictions (basées sur les patterns)
-  const predictions = useMemo<CurrentPredictions>(() => {
-    return predict(memory, patterns)
-  }, [memory, patterns])
-  
-  // Suggestions (basées sur patterns + prédictions)
-  const suggestions = useMemo<ContextualSuggestions>(() => {
-    return generateSuggestions(memory, patterns, predictions)
-  }, [memory, patterns, predictions])
   
   // Score de bien-être
   const wellbeing = useMemo<WellbeingScore>(() => {
@@ -135,13 +111,6 @@ export function useBrain(): BrainState {
     setMemory(finalMemory)
     setIsAnalyzing(false)
     setLastUpdate(Date.now())
-  }, [memory])
-  
-  // Dismisser une suggestion
-  const dismissSuggestion = useCallback((id: string) => {
-    const newMemory = dismissMemorySuggestion(memory, id)
-    saveMemory(newMemory)
-    setMemory(newMemory)
   }, [memory])
   
   // Rafraîchir
@@ -175,14 +144,11 @@ export function useBrain(): BrainState {
   
   return {
     patterns,
-    predictions,
-    suggestions,
     wellbeing,
     isAnalyzing,
     lastUpdate,
     observe,
     analyze,
-    dismissSuggestion,
     refresh,
   }
 }
@@ -225,9 +191,6 @@ export {
 
 // Helpers d'affichage
 export {
-  generateWelcomeMessage,
-  generateEveningMessage,
-  generateDetailedPredictions,
   getScoreDescription,
   getScoreColor,
   getScoreEmoji,
@@ -236,7 +199,3 @@ export {
 
 // Quick analyze (pour usage léger)
 export { quickAnalyze }
-
-
-
-

@@ -4,6 +4,7 @@ import { useStore, Project, PROJECT_COLORS, PROJECT_ICONS } from '../../store/us
 import { AddProjectModal } from './AddProjectModal'
 import { CreateProjectWithTasksPage } from './CreateProjectWithTasksPage'
 import { AssignTasksToProjectModal } from './AssignTasksToProjectModal'
+import { ProjectDetailsPage } from './ProjectDetailsPage'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 interface ProjectsManagementPageProps {
@@ -18,6 +19,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [assigningProject, setAssigningProject] = useState<Project | null>(null)
+  const [viewingProject, setViewingProject] = useState<Project | null>(null)
   
   // Form states
   const [projectName, setProjectName] = useState('')
@@ -119,7 +121,14 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
   }
 
   return (
-    <div className="min-h-screen w-full bg-mars-bg overflow-y-auto">
+    <>
+      {viewingProject ? (
+        <ProjectDetailsPage
+          project={viewingProject}
+          onBack={() => setViewingProject(null)}
+        />
+      ) : (
+        <div className="min-h-screen w-full bg-mars-bg overflow-y-auto">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -190,7 +199,8 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
               return (
                 <div
                   key={project.id}
-                  className="group relative p-6 bg-zinc-900/30 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 transition-colors"
+                  className="group relative p-6 bg-zinc-900/30 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 transition-colors cursor-pointer"
+                  onClick={() => setViewingProject(project)}
                 >
                   {/* Project Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -212,21 +222,30 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                     {/* Actions */}
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => setAssigningProject(project)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setAssigningProject(project)
+                        }}
                         className="p-2 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
                         title="Assigner des tâches"
                       >
                         <Link className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleOpenEditModal(project)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenEditModal(project)
+                        }}
                         className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
                         title="Modifier"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => setConfirmDelete(project.id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setConfirmDelete(project.id)
+                        }}
                         className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                         title="Supprimer"
                       >
@@ -264,7 +283,10 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
 
                   {/* Assign Tasks Button */}
                   <button
-                    onClick={() => setAssigningProject(project)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setAssigningProject(project)
+                    }}
                     className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors text-sm font-medium"
                   >
                     <Link className="w-4 h-4" />
@@ -330,7 +352,9 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         cancelText="Annuler"
         variant="warning"
       />
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 

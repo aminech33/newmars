@@ -22,7 +22,6 @@ class OpenAIService:
     def generate_content(self, prompt: str) -> str:
         """
         Génère du contenu via GPT
-        Compatible avec l'ancienne interface Gemini
         """
         response = self.client.chat.completions.create(
             model=self.model,
@@ -144,7 +143,7 @@ Génère UNIQUEMENT le JSON."""
         return descriptions.get(difficulty, descriptions["medium"])
     
     def _parse_response(self, response_text: str) -> Dict[str, Any]:
-        """Parse et valide la réponse JSON de GPT"""
+        """Parse la réponse JSON de GPT (pour questions)"""
         try:
             clean_text = response_text.strip()
             if clean_text.startswith("```json"):
@@ -156,29 +155,9 @@ Génère UNIQUEMENT le JSON."""
             
             data = json.loads(clean_text.strip())
             
-            # Validation du schéma obligatoire
-            required_fields = ["projectName", "phases"]
-            for field in required_fields:
-                if field not in data:
-                    raise ValueError(f"Champ obligatoire manquant: {field}")
-            
-            if not isinstance(data["phases"], list) or len(data["phases"]) == 0:
-                raise ValueError("Le plan doit contenir au moins une phase")
-            
-            # Valider chaque phase
-            for i, phase in enumerate(data["phases"]):
-                if "name" not in phase:
-                    raise ValueError(f"Phase {i+1}: champ 'name' manquant")
-                if "tasks" not in phase or not isinstance(phase["tasks"], list):
-                    raise ValueError(f"Phase {i+1}: champ 'tasks' manquant ou invalide")
-                if len(phase["tasks"]) == 0:
-                    raise ValueError(f"Phase '{phase['name']}': aucune tâche")
-                
-                # Valider chaque tâche
-                for j, task in enumerate(phase["tasks"]):
-                    if "title" not in task:
-                        raise ValueError(f"Phase '{phase['name']}', tâche {j+1}: champ 'title' manquant")
-            
+            # Validation simple pour les questions
+            # Les champs requis dépendent du contexte (question vs projet)
+            # On retourne directement les données parsées
             return data
             
         except json.JSONDecodeError as e:
@@ -214,17 +193,39 @@ Génère UNIQUEMENT le JSON."""
     ) -> str:
         """Génère un message d'encouragement personnalisé"""
         
-        prompt = f"""Tu es un coach motivant.
+        prompt = f"""Tu es un coach motivant pour procrastinateurs.
 
 SITUATION:
 - Réponse: {"✅ CORRECTE" if is_correct else "❌ Incorrecte"}
 - Streak: {streak} jours
 - Changement maîtrise: {mastery_change:+d} points
 
-Génère un message court (max 2 phrases), positif et énergique."""
+Génère un message court (max 2 phrases), positif et énergique.
+Réponds UNIQUEMENT avec le message, sans JSON, sans formatage."""
 
         try:
-            return self.generate_content(prompt).strip()
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "Tu es un coach motivant. Réponds uniquement avec le message d'encouragement, sans JSON ni formatage."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=100
+            )
+            message = response.choices[0].message.content.strip()
+            # Nettoyer les balises JSON si présentes
+            if message.startswith("```"):
+                message = message.split("```")[1] if "```" in message[3:] else message
+            if message.startswith("{") or message.startswith("["):
+                # Essayer d'extraire le texte du JSON
+                try:
+                    import json
+                    data = json.loads(message)
+                    message = data.get("message", message) if isinstance(data, dict) else message
+                except:
+                    pass
+            return message.strip()
         except:
             if is_correct:
                 return f"🎉 Excellent ! Streak de {streak} jours !" if streak > 0 else "👏 Bien joué !"

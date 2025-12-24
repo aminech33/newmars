@@ -87,6 +87,7 @@ export function SettingsPage() {
   const [darkMode, setDarkMode] = useState(true)
   const [animationsEnabled, setAnimationsEnabled] = useState(true)
   const [confettiEnabled, setConfettiEnabled] = useState(false) // Désactivé par défaut
+  const [interleavingEnabled, setInterleavingEnabled] = useState(false) // Interleaving désactivé par défaut (opt-in)
   
   // Export/Import
   const [exportStatus, setExportStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -275,9 +276,27 @@ export function SettingsPage() {
               </SettingRow>
             </SettingCard>
 
+            <SettingCard title="Apprentissage avancé">
+              <SettingRow 
+                label="Mode Interleaving" 
+                description="Mélange 2-3 sujets pour +10-15% rétention (opt-in, power users)"
+              >
+                <Toggle enabled={interleavingEnabled} onChange={setInterleavingEnabled} label="Interleaving" />
+              </SettingRow>
+              {interleavingEnabled && (
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-xs text-emerald-400">
+                    🔀 Interleaving actif : les révisions mélangeront automatiquement 2-3 sujets 
+                    pour améliorer la rétention à long terme.
+                  </p>
+                </div>
+              )}
+            </SettingCard>
+
             <SettingCard title="Application">
               <div className="text-center py-6 border-b border-zinc-800/50">
-                <p className="text-sm text-zinc-400">Version 1.0.0</p>
+                <p className="text-sm text-zinc-400">Version 1.1.0</p>
+                <p className="text-xs text-zinc-600 mt-1">5 algorithmes IA • Brain complet</p>
               </div>
             </SettingCard>
           </div>

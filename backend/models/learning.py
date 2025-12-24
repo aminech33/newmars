@@ -14,7 +14,7 @@ class QuestionOption(BaseModel):
 
 
 class Question(BaseModel):
-    """Question générée par Gemini"""
+    """Question générée par ChatGPT (OpenAI)"""
     id: str
     topic_id: str
     difficulty: str  # "easy" | "medium" | "hard"
@@ -35,7 +35,9 @@ class SessionStartRequest(BaseModel):
     """Requête pour démarrer une session"""
     course_id: str
     topic_id: Optional[str] = None
+    topic_ids: Optional[List[str]] = None  # Pour interleaving de plusieurs topics
     user_id: Optional[str] = "demo-user"
+    use_interleaving: bool = False  # Interleaving désactivé par défaut (opt-in)
 
 
 class AnswerSubmission(BaseModel):
@@ -60,3 +62,41 @@ class AdaptiveFeedback(BaseModel):
     xp_earned: int
     mastery_change: int
     streak_info: Dict[str, Any]
+    
+    # Interleaving info
+    current_topic_id: Optional[str] = None
+    next_topic_id: Optional[str] = None
+    interleaving_benefit: Optional[float] = None  # % bonus de rétention estimé
+
+
+class TopicMastery(BaseModel):
+    """Données de maîtrise d'un topic avec sub-concepts"""
+    topic_id: str
+    mastery_level: int = 0  # 0-100
+    ease_factor: float = 2.5
+    interval: int = 1  # jours
+    repetitions: int = 0
+    success_rate: float = 0.0
+    consecutive_skips: int = 0
+    total_attempts: int = 0
+    correct_attempts: int = 0
+    last_practiced: Optional[datetime] = None
+    next_review: Optional[datetime] = None
+    
+    # Sub-concepts tracking (granularité fine)
+    concepts: Dict[str, Dict[str, Any]] = {}
+    # Format: {"concept_name": {"mastery": 0-100, "last_seen": datetime, "attempts": int}}
+
+
+class InterleavingSession(BaseModel):
+    """Session avec interleaving de plusieurs topics"""
+    session_id: str
+    user_id: str
+    course_id: str
+    topic_ids: List[str]  # Topics à pratiquer en interleaving
+    current_topic_idx: int = 0
+    question_history: List[str] = []  # Historique des topic_ids des questions
+    switch_frequency: int = 2  # Changer de topic tous les N questions
+    interleaving_enabled: bool = True
+    estimated_benefit: float = 0.0  # % bonus de rétention
+    started_at: datetime = datetime.now()

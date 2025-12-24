@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     """Configuration de l'application"""
     
     # API Keys (à définir dans .env)
-    GEMINI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     
     # Algorithme SM-2++

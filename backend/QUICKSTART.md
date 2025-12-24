@@ -5,7 +5,7 @@ Guide de démarrage rapide en 5 minutes.
 ## 🎯 Prérequis
 
 - Python 3.10+ installé
-- Clé API Gemini ([obtenir ici](https://makersuite.google.com/app/apikey))
+- Clé API OpenAI ([obtenir ici](https://platform.openai.com/api-keys))
 
 ## 📦 Installation Express
 
@@ -17,7 +17,7 @@ cd backend
 pip install -r requirements.txt
 
 # 3. Configurer la clé API
-echo "GEMINI_API_KEY=votre_clé_ici" > .env
+echo "OPENAI_API_KEY=votre_clé_ici" > .env
 
 # 4. Lancer le serveur
 python main.py
@@ -71,10 +71,10 @@ Ton backend adaptatif fonctionne !
 pip install -r requirements.txt
 ```
 
-### Erreur "Gemini API Key"
+### Erreur "OpenAI API Key"
 Vérifier que `.env` contient bien :
 ```
-GEMINI_API_KEY=ta_vraie_clé
+OPENAI_API_KEY=ta_vraie_clé
 ```
 
 ### Port 8000 déjà utilisé

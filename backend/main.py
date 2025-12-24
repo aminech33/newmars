@@ -1,5 +1,5 @@
 """
-Backend FastAPI - Apprentissage Adaptatif avec Gemini
+Backend FastAPI - Apprentissage Adaptatif avec ChatGPT
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +11,7 @@ from routes.skills import router as skills_router
 
 app = FastAPI(
     title="Adaptive Learning API",
-    description="Backend Python pour apprentissage adaptatif propulsé par Gemini AI",
+    description="Backend Python pour apprentissage adaptatif propulsé par ChatGPT (OpenAI)",
     version="1.0.0"
 )
 
@@ -39,14 +39,14 @@ async def root():
         "version": "1.0.0",
         "status": "running",
         "docs": "/docs",
-        "algo": "SM-2++ avec Gemini AI"
+        "algo": "SM-2++ avec ChatGPT AI"
     }
 
 
 @app.get("/health")
 async def health_check():
     """Health check"""
-    return {"status": "healthy", "gemini": "connected"}
+    return {"status": "healthy", "chatgpt": "connected"}
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useStore } from '../store/useStore'
 import {
   Course,
@@ -33,8 +33,17 @@ export function useLearningData() {
     addLearningFlashcard,
     deleteLearningFlashcard,
     addLearningNote,
-    deleteLearningNote
+    deleteLearningNote,
+    // Interconnexion C: Auto-toggle habitude après 30min
+    habits,
+    addHabit,
+    toggleHabitToday,
+    addToast
   } = useStore()
+  
+  // Track session start time for auto-habit toggle
+  const sessionStartRef = useRef<number | null>(null)
+  const habitToggledRef = useRef<boolean>(false)
 
   // UI State
   const [uiState, setUIState] = useState<LearningUIState>({
@@ -45,6 +54,66 @@ export function useLearningData() {
     sidebarCollapsed: false,
     isTyping: false
   })
+
+  // ============================================
+  // INTERCONNEXION C: Auto-toggle habitude après 30min
+  // ============================================
+  
+  // Start session timer when course is active
+  useEffect(() => {
+    if (uiState.activeCourseId && !sessionStartRef.current) {
+      sessionStartRef.current = Date.now()
+      habitToggledRef.current = false
+    } else if (!uiState.activeCourseId) {
+      sessionStartRef.current = null
+      habitToggledRef.current = false
+    }
+  }, [uiState.activeCourseId])
+
+  // Check for 30min threshold
+  useEffect(() => {
+    if (!uiState.activeCourseId || habitToggledRef.current) return
+
+    const checkDuration = () => {
+      if (!sessionStartRef.current || habitToggledRef.current) return
+      
+      const elapsed = Date.now() - sessionStartRef.current
+      const thirtyMinutes = 30 * 60 * 1000
+      
+      if (elapsed >= thirtyMinutes) {
+        // Find or create "Apprentissage" habit
+        const today = new Date().toISOString().split('T')[0]
+        let learningHabit = habits.find(h => 
+          h.name.toLowerCase().includes('apprentissage') || 
+          h.name.toLowerCase().includes('cours') ||
+          h.name.toLowerCase().includes('learning')
+        )
+        
+        if (!learningHabit) {
+          // Create the habit if it doesn't exist
+          addHabit('Apprentissage')
+          // Get the newly created habit
+          setTimeout(() => {
+            const newHabit = useStore.getState().habits.find(h => h.name === 'Apprentissage')
+            if (newHabit && !newHabit.completedDates.includes(today)) {
+              toggleHabitToday(newHabit.id)
+              addToast('✅ Habitude "Apprentissage" validée (30min)', 'success')
+            }
+          }, 100)
+        } else if (!learningHabit.completedDates.includes(today)) {
+          toggleHabitToday(learningHabit.id)
+          addToast('✅ Habitude "Apprentissage" validée (30min)', 'success')
+        }
+        
+        habitToggledRef.current = true
+      }
+    }
+
+    // Check every minute
+    const interval = setInterval(checkDuration, 60 * 1000)
+    
+    return () => clearInterval(interval)
+  }, [uiState.activeCourseId, habits, addHabit, toggleHabitToday, addToast])
 
   // ============================================
   // COMPUTED VALUES (Memoized)

@@ -7,20 +7,20 @@ import {
   Library, 
   Heart, 
   GraduationCap, 
-  BarChart3,
   Settings,
   Home,
   MoreHorizontal,
-  X
+  X,
+  FolderKanban
 } from 'lucide-react'
 
 const apps = [
   { icon: CheckSquare, label: 'Tâches', view: 'tasks', color: 'emerald', shortcut: '⌘T' },
+  { icon: FolderKanban, label: 'Projets', view: 'projects', color: 'blue', shortcut: '⌘P' },
   { icon: CalendarDays, label: 'Ma Journée', view: 'myday', color: 'violet', shortcut: '⌘J' },
   { icon: Library, label: 'Bibliothèque', view: 'library', color: 'indigo', shortcut: '⌘L' },
   { icon: Heart, label: 'Santé', view: 'health', color: 'pink', shortcut: '' },
   { icon: GraduationCap, label: 'Apprentissage', view: 'learning', color: 'purple', shortcut: '' },
-  { icon: BarChart3, label: 'Stats', view: 'dashboard', color: 'teal', shortcut: '⌘D' },
   { icon: Settings, label: 'Paramètres', view: 'settings', color: 'zinc', shortcut: '⌘,' },
 ]
 
@@ -28,6 +28,7 @@ const apps = [
 const mobileApps = [
   { icon: Home, label: 'Hub', view: 'hub', color: 'indigo' },
   { icon: CheckSquare, label: 'Tâches', view: 'tasks', color: 'emerald' },
+  { icon: FolderKanban, label: 'Projets', view: 'projects', color: 'blue' },
   { icon: CalendarDays, label: 'Journée', view: 'myday', color: 'violet' },
   { icon: Library, label: 'Livres', view: 'library', color: 'indigo' },
 ]

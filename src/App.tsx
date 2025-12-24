@@ -6,12 +6,10 @@ import { useStore } from './store/useStore'
 // Lazy load des composants lourds pour éviter les erreurs au chargement initial
 const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.HubV2 })))
 const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
+const ProjectsManagementPage = lazy(() => import('./components/tasks/ProjectsManagementPage').then(m => ({ default: m.ProjectsManagementPage })))
 const MyDayPage = lazy(() => import('./components/myday/MyDayPage').then(m => ({ default: m.MyDayPage })))
-const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
-const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const ProductReference = lazy(() => import('./components/docs/ProductReference').then(m => ({ default: m.ProductReference })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
@@ -23,7 +21,6 @@ import { useAutoBackup } from './hooks/useAutoBackup'
 
 function AppContent() {
   const currentView = useStore((state) => state.currentView)
-  const isFocusMode = useStore((state) => state.isFocusMode)
   
   const [showConfetti, setShowConfetti] = useState(false)
   const [isReady, setIsReady] = useState(false)
@@ -70,21 +67,16 @@ function AppContent() {
   return (
     <div className="h-full w-full bg-mars-bg noise-bg overflow-hidden">
       <Suspense fallback={<LoadingFallback />}>
-        {isFocusMode ? (
-          <FocusMode />
-        ) : (
-          <>
-            {currentView === 'hub' && <HubV2 />}
-            {currentView === 'tasks' && <TasksPage />}
-            {currentView === 'myday' && <MyDayPage />}
-            {currentView === 'health' && <MyDayPage />}
-            {currentView === 'dashboard' && <Dashboard />}
-            {currentView === 'learning' && <LearningPage />}
-            {currentView === 'library' && <LearningPage />}
-            {currentView === 'settings' && <SettingsPage />}
-            {currentView === 'docs' && <ProductReference />}
-          </>
-        )}
+        <>
+          {currentView === 'hub' && <HubV2 />}
+          {currentView === 'tasks' && <TasksPage />}
+          {currentView === 'projects' && <ProjectsManagementPage onBack={() => useStore.getState().setView('hub')} />}
+          {currentView === 'myday' && <MyDayPage />}
+          {currentView === 'health' && <MyDayPage />}
+          {currentView === 'learning' && <LearningPage />}
+          {currentView === 'library' && <LearningPage />}
+          {currentView === 'settings' && <SettingsPage />}
+        </>
       </Suspense>
 
       {/* Composants globaux - toujours chargés */}

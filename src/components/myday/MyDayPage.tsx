@@ -3,28 +3,28 @@ import {
   ArrowLeft, 
   Feather, 
   Check, 
-  Sun,
   Sparkles,
   BookOpen,
   Heart,
   Plus,
-  ChevronDown,
-  ChevronUp,
   Apple,
   Scale,
-  Utensils
+  Utensils,
+  CheckCircle2,
+  ExternalLink
 } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { MoodEmoji } from '../../types/journal'
 import { 
   moodEmojiToLevel,
-  getTodayEntry,
-  formatRelativeDate
+  getTodayEntry
 } from '../../utils/journalUtils'
 import { AddHabitModal } from '../habits/AddHabitModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { useHabitsStats, useJournalStats } from '../../hooks/useGlobalStats'
+import { useHabitsStats } from '../../hooks/useGlobalStats'
 import { useHealthData } from '../../hooks/useHealthData'
+import { JournalHistoryModal } from './JournalHistoryModal'
+import { calculateTaskMetrics, calculateHabitMetrics, calculateJournalMetrics } from '../../utils/metrics'
 
 // Health components
 import { WeightChart } from '../health/WeightChart'
@@ -35,7 +35,7 @@ import { MealModal } from '../health/MealModal'
 import { MacrosCircularChart } from '../health/MacrosCircularChart'
 import { UndoToast } from '../ui/UndoToast'
 
-type PageTab = 'journal' | 'nutrition' | 'weight'
+type PageTab = 'journal' | 'sante'
 
 export function MyDayPage() {
   const { 
@@ -52,6 +52,8 @@ export function MyDayPage() {
     tasks,
     getPriorityTask
   } = useStore()
+  
+  const learningCourses = useStore(state => state.learningCourses || [])
 
   // Tab state
   const [activeTab, setActiveTab] = useState<PageTab>('journal')
@@ -60,7 +62,7 @@ export function MyDayPage() {
   const [showAddHabitModal, setShowAddHabitModal] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [showStats, setShowStats] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
 
   // Health data
   const {
@@ -95,7 +97,11 @@ export function MyDayPage() {
   }), [todayMeals])
 
   const habitsStats = useHabitsStats()
-  const journalStats = useJournalStats()
+  
+  // Calcul des métriques
+  const taskMetrics = calculateTaskMetrics(tasks)
+  const habitMetrics = calculateHabitMetrics(habits)
+  const journalMetrics = calculateJournalMetrics(journalEntries)
 
   // Journal states
   const [intention, setIntention] = useState('')
@@ -180,6 +186,14 @@ export function MyDayPage() {
     }
   }
 
+  const handleSelectHistoryEntry = (entry: typeof journalEntries[0]) => {
+    setIntention(entry.intention || entry.mainGoal || '')
+    setAction(entry.action || '')
+    setMood(entry.moodEmoji || '🙂')
+    setFreeNotes(entry.freeNotes || entry.reflection || '')
+    addToast('Entrée chargée', 'info')
+  }
+
   // Health handlers
   const handleWeightSubmit = useCallback((data: { weight: number; date: string; note?: string }) => {
     const result = handleAddWeight(data)
@@ -245,80 +259,77 @@ export function MyDayPage() {
   const priorityTask = getPriorityTask()
   const firstTask = priorityTask || tasks.filter(t => !t.completed)[0]
 
-  const formattedDate = new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
-  })
-
   const { todayCompleted } = habitsStats
+
+  // Tâches accomplies aujourd'hui (Interconnexion A)
+  const tasksCompletedToday = useMemo(() => {
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    return tasks.filter(t => 
+      t.completed && 
+      t.createdAt >= todayStart.getTime()
+    )
+  }, [tasks])
 
   const TABS: { id: PageTab; label: string; icon: typeof Feather }[] = [
     { id: 'journal', label: 'Journal', icon: Feather },
-    { id: 'nutrition', label: 'Nutrition', icon: Apple },
-    { id: 'weight', label: 'Poids', icon: Scale }
+    { id: 'sante', label: 'Santé', icon: Heart }
   ]
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-[#0C0A09]">
-      {/* Background texture */}
-      <div 
-        className="fixed inset-0 pointer-events-none opacity-20"
-        style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(196, 120, 92, 0.08) 0%, transparent 50%),
-                           radial-gradient(circle at 75% 75%, rgba(123, 158, 135, 0.06) 0%, transparent 50%)`,
-        }}
-      />
-
+    <div className="h-screen w-full flex flex-col overflow-hidden bg-black">
       {/* Header */}
-      <header className="relative flex-shrink-0 px-6 py-4 border-b border-stone-800/50">
-        <div className="flex items-center justify-between max-w-3xl mx-auto">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setView('hub')}
-              className="p-2 -ml-2 rounded-xl text-stone-500 hover:text-stone-300 hover:bg-stone-800/50 transition-all"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="font-serif text-xl font-semibold text-stone-100 tracking-tight">
-                Ma Journée
-              </h1>
-              <p className="text-xs text-stone-500 capitalize">
-                {formattedDate}
-              </p>
-            </div>
+      <header className="flex items-center justify-between h-14 px-6 border-b border-zinc-800/40 bg-zinc-900/25 backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setView('hub')}
+            className="p-2 -ml-2 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 rounded-xl transition-all duration-150"
+          >
+            <ArrowLeft className="w-[18px] h-[18px]" />
+          </button>
+          <div>
+            <h1 className="font-serif text-base font-semibold text-zinc-100 tracking-tight">
+              Ma Journée
+            </h1>
           </div>
+        </div>
 
+        {/* Tabs à droite */}
+        <div className="flex items-center gap-2">
+          {/* Streak badge */}
+          {habitsStats.globalStreak > 0 && activeTab === 'journal' && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-xs font-medium text-amber-300">{habitsStats.globalStreak} jours</span>
+            </div>
+          )}
+          
           {/* Tabs */}
-          <div className="flex gap-1 bg-stone-900/60 rounded-xl p-1 border border-stone-800/50">
+          <div className="flex items-center gap-1 bg-zinc-800/40 rounded-lg p-0.5">
             {TABS.map((tab) => {
               const Icon = tab.icon
+              const badgeCount = tab.id === 'journal' ? tasksCompletedToday.length : 0
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all ${
                     activeTab === tab.id 
-                      ? 'bg-stone-800 text-stone-100' 
-                      : 'text-stone-500 hover:text-stone-300'
+                      ? 'bg-zinc-700/60 text-zinc-100' 
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                  {badgeCount > 0 && (
+                    <span className="w-5 h-5 flex items-center justify-center text-xs bg-emerald-500/20 text-emerald-400 rounded-full font-medium">
+                      {badgeCount}
+                    </span>
+                  )}
                 </button>
               )
             })}
           </div>
-
-          {habitsStats.globalStreak > 0 && activeTab === 'journal' && (
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
-              <Sun className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-semibold text-amber-300">
-                {habitsStats.globalStreak}j
-              </span>
-            </div>
-          )}
         </div>
       </header>
 
@@ -329,7 +340,11 @@ export function MyDayPage() {
         {/* JOURNAL TAB */}
         {/* ═══════════════════════════════════════════════════════════════ */}
         {activeTab === 'journal' && (
-          <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
+          <div className="px-6 py-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-8">
+              
+              {/* ===== COLONNE GAUCHE : JOURNAL (2/3) ===== */}
+              <div className="xl:col-span-2 space-y-8">
             
             {/* INTENTION DU JOUR */}
             <section className="space-y-4">
@@ -338,10 +353,10 @@ export function MyDayPage() {
                   <Feather className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <h2 className="font-serif text-lg font-medium text-stone-200">
+                  <h2 className="font-serif text-lg font-medium text-zinc-200">
                     Intention du jour
                   </h2>
-                  <p className="text-sm text-stone-500">
+                  <p className="text-sm text-zinc-500">
                     Qu'est-ce qui compte vraiment aujourd'hui ?
                   </p>
                 </div>
@@ -352,12 +367,12 @@ export function MyDayPage() {
                 value={intention}
                 onChange={(e) => setIntention(e.target.value)}
                 placeholder="Écrire mon intention..."
-                className="w-full bg-stone-900/50 border-2 border-stone-800 focus:border-amber-500/40 rounded-xl px-5 py-4 text-lg text-stone-100 placeholder:text-stone-600 focus:outline-none transition-all font-serif italic"
+                className="w-full bg-zinc-900/50 border-2 border-zinc-800 focus:border-amber-500/40 rounded-xl px-5 py-4 text-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none transition-all font-serif italic"
                 autoFocus
               />
             </section>
 
-            <div className="h-px bg-gradient-to-r from-transparent via-stone-700/50 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-zinc-700/50 to-transparent" />
 
             {/* ACTION CONCRÈTE */}
             <section className="space-y-4">
@@ -365,7 +380,7 @@ export function MyDayPage() {
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center border border-emerald-500/20">
                   <Sparkles className="w-5 h-5 text-emerald-400" />
                 </div>
-                <h2 className="font-serif text-lg font-medium text-stone-200">
+                <h2 className="font-serif text-lg font-medium text-zinc-200">
                   Première action
                 </h2>
               </div>
@@ -377,7 +392,7 @@ export function MyDayPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-stone-400 group-hover:text-stone-200 transition-colors">
+                    <span className="text-zinc-400 group-hover:text-zinc-200 transition-colors">
                       {firstTask.title}
                     </span>
                     {priorityTask && (
@@ -394,7 +409,7 @@ export function MyDayPage() {
                 value={action}
                 onChange={(e) => setAction(e.target.value)}
                 placeholder="Quelle est la première chose à faire ?"
-                className="w-full bg-stone-900/50 border border-stone-800 focus:border-emerald-500/40 rounded-xl px-5 py-3.5 text-stone-200 placeholder:text-stone-600 focus:outline-none transition-all"
+                className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-emerald-500/40 rounded-xl px-5 py-3.5 text-zinc-200 placeholder:text-zinc-600 focus:outline-none transition-all"
               />
             </section>
 
@@ -407,17 +422,17 @@ export function MyDayPage() {
                       <Heart className="w-5 h-5 text-rose-400" />
                     </div>
                     <div>
-                      <h2 className="font-serif text-lg font-medium text-stone-200">
+                      <h2 className="font-serif text-lg font-medium text-zinc-200">
                         Rituels
                       </h2>
-                      <p className="text-sm text-stone-500">
+                      <p className="text-sm text-zinc-500">
                         {todayCompleted}/{habits.length} accomplis
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowAddHabitModal(true)}
-                    className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-amber-400 transition-colors"
+                    className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-amber-400 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Ajouter
@@ -434,16 +449,16 @@ export function MyDayPage() {
                         className={`flex items-center gap-3 p-4 rounded-xl transition-all ${
                           isCompleted 
                             ? 'bg-emerald-500/10 border-2 border-emerald-500/30' 
-                            : 'bg-stone-900/50 border border-stone-800 hover:border-stone-700'
+                            : 'bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700'
                         }`}
                       >
                         <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                          isCompleted ? 'bg-emerald-500 text-white' : 'border-2 border-stone-600'
+                          isCompleted ? 'bg-emerald-500 text-white' : 'border-2 border-zinc-600'
                         }`}>
                           {isCompleted && <Check className="w-3 h-3" strokeWidth={3} />}
                         </div>
                         <span className={`text-sm font-medium truncate ${
-                          isCompleted ? 'text-emerald-300' : 'text-stone-400'
+                          isCompleted ? 'text-emerald-300' : 'text-zinc-400'
                         }`}>
                           {habit.name}
                         </span>
@@ -457,7 +472,7 @@ export function MyDayPage() {
             {habits.length === 0 && (
               <button
                 onClick={() => setShowAddHabitModal(true)}
-                className="w-full p-5 bg-stone-900/30 border-2 border-dashed border-stone-700 rounded-xl text-stone-500 hover:text-amber-400 hover:border-amber-500/30 transition-all flex items-center justify-center gap-2"
+                className="w-full p-5 bg-zinc-900/30 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-500 hover:text-amber-400 hover:border-amber-500/30 transition-all flex items-center justify-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 <span className="font-medium">Créer un premier rituel</span>
@@ -470,7 +485,7 @@ export function MyDayPage() {
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/20 to-blue-500/10 flex items-center justify-center border border-sky-500/20">
                   <BookOpen className="w-5 h-5 text-sky-400" />
                 </div>
-                <h2 className="font-serif text-lg font-medium text-stone-200">
+                <h2 className="font-serif text-lg font-medium text-zinc-200">
                   Notes & réflexions
                 </h2>
               </div>
@@ -480,13 +495,64 @@ export function MyDayPage() {
                 onChange={(e) => setFreeNotes(e.target.value)}
                 placeholder="Pensées, gratitudes, apprentissages du jour..."
                 rows={4}
-                className="w-full bg-stone-900/50 border border-stone-800 focus:border-sky-500/40 rounded-xl px-5 py-4 text-stone-300 placeholder:text-stone-600 focus:outline-none transition-all resize-none font-serif leading-relaxed"
+                className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-sky-500/40 rounded-xl px-5 py-4 text-zinc-300 placeholder:text-zinc-600 focus:outline-none transition-all resize-none font-serif leading-relaxed"
               />
             </section>
 
+            {/* TÂCHES ACCOMPLIES AUJOURD'HUI - Interconnexion A */}
+            {tasksCompletedToday.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center border border-emerald-500/20">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h2 className="font-serif text-lg font-medium text-zinc-200">
+                        Tâches accomplies
+                      </h2>
+                      <p className="text-sm text-zinc-500">
+                        {tasksCompletedToday.length} tâche{tasksCompletedToday.length > 1 ? 's' : ''} aujourd'hui
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setView('tasks')}
+                    className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-emerald-400 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Voir tout
+                  </button>
+                </div>
+                
+                <div className="space-y-2">
+                  {tasksCompletedToday.slice(0, 5).map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl"
+                    >
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                      </div>
+                      <span className="text-sm text-emerald-300 line-through opacity-80">
+                        {task.title}
+                      </span>
+                    </div>
+                  ))}
+                  {tasksCompletedToday.length > 5 && (
+                    <p className="text-xs text-zinc-500 text-center">
+                      +{tasksCompletedToday.length - 5} autres tâches
+                    </p>
+                  )}
+                </div>
+              </section>
+            )}
+
+            <div className="h-px bg-gradient-to-r from-transparent via-zinc-700/50 to-transparent" />
+
             {/* HUMEUR */}
             <section className="text-center py-4">
-              <p className="text-sm text-stone-500 mb-4">Comment te sens-tu ?</p>
+              <p className="text-sm text-zinc-500 mb-4">Comment te sens-tu ?</p>
               <div className="flex items-center justify-center gap-4">
                 {moods.map((m) => (
                   <button
@@ -511,183 +577,299 @@ export function MyDayPage() {
               className={`w-full py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-base font-medium ${
                 canSave && !isSaving
                   ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-stone-900 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5'
-                  : 'bg-stone-800 text-stone-500 cursor-not-allowed'
+                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
               }`}
             >
               {isSaving ? 'Sauvegarde...' : hasChanges ? <><Feather className="w-4 h-4" />Sauvegarder</> : <><Check className="w-4 h-4" />Sauvegardé</>}
             </button>
 
-            {/* Stats - Pliables */}
-            <section className="border-t border-stone-800/50 pt-6">
-              <button
-                onClick={() => setShowStats(!showStats)}
-                className="w-full flex items-center justify-between text-sm text-stone-500 hover:text-stone-400 transition-colors"
-              >
-                <span>Statistiques & historique</span>
-                {showStats ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
+            {/* Historique complet */}
+            <button
+              onClick={() => setShowHistoryModal(true)}
+              className="w-full py-3 mt-4 bg-zinc-900/50 hover:bg-zinc-800/50 border border-zinc-800 hover:border-zinc-700 rounded-xl text-sm text-zinc-400 hover:text-zinc-200 transition-all flex items-center justify-center gap-2"
+            >
+              <BookOpen className="w-4 h-4" />
+              Voir l'historique complet
+            </button>
+          </div>
 
-              {showStats && (
-                <div className="mt-6 space-y-4 animate-in fade-in duration-200">
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="bg-stone-900/50 rounded-xl p-4 text-center border border-stone-800">
-                      <div className="text-2xl mb-1">🔥</div>
-                      <div className="text-xl font-bold text-stone-200">{journalStats.currentStreak}</div>
-                      <div className="text-xs text-stone-500">jours</div>
-                    </div>
-                    <div className="bg-stone-900/50 rounded-xl p-4 text-center border border-stone-800">
-                      <div className="text-2xl mb-1">{mood}</div>
-                      <div className="text-xl font-bold text-stone-200">{journalStats.averageMood.toFixed(1)}</div>
-                      <div className="text-xs text-stone-500">humeur</div>
-                    </div>
-                    <div className="bg-stone-900/50 rounded-xl p-4 text-center border border-stone-800">
-                      <div className="text-xl font-bold text-stone-200">{journalStats.totalEntries}</div>
-                      <div className="text-xs text-stone-500">entrées</div>
-                    </div>
-                    <div className="bg-stone-900/50 rounded-xl p-4 text-center border border-stone-800">
-                      <div className="text-xl font-bold text-stone-200">{habits.length}</div>
-                      <div className="text-xs text-stone-500">rituels</div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-medium text-stone-400">Dernières entrées</h3>
-                    {journalEntries.slice(-5).reverse().map((entry) => (
-                      <div
-                        key={entry.id}
-                        className="flex items-center justify-between p-3 bg-stone-900/50 rounded-xl border border-stone-800 hover:border-stone-700 transition-colors group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl">{entry.moodEmoji}</span>
-                          <div>
-                            <p className="text-sm text-stone-300 line-clamp-1">{entry.intention || entry.mainGoal}</p>
-                            <p className="text-xs text-stone-500">{formatRelativeDate(entry.date)}</p>
-                          </div>
-                        </div>
-                        <button onClick={() => toggleJournalFavorite(entry.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Heart className={`w-4 h-4 ${entry.isFavorite ? 'fill-rose-400 text-rose-400' : 'text-stone-600'}`} />
-                        </button>
-                      </div>
-                    ))}
+          {/* ===== COLONNE DROITE : MÉTRIQUES (1/3) ===== */}
+          <div className="space-y-3">
+            
+            {/* Card TÂCHES */}
+            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <h3 className="text-sm font-medium text-zinc-400">Tâches</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Aujourd'hui</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-zinc-200">{taskMetrics.today}</span>
+                    {taskMetrics.vsYesterday !== 0 && (
+                      <span className={`text-xs ${taskMetrics.vsYesterday > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                        {taskMetrics.vsYesterday > 0 ? '+' : ''}{taskMetrics.vsYesterday}
+                      </span>
+                    )}
                   </div>
                 </div>
-              )}
-            </section>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* NUTRITION TAB */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'nutrition' && (
-          <div className="h-full flex flex-col p-6">
-            {/* Action principale */}
-            <div className="flex items-center justify-center mb-6">
-              <button
-                onClick={() => setShowMealModal(true)}
-                className="flex items-center gap-3 px-8 py-4 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-300 rounded-2xl transition-all text-lg font-medium shadow-lg shadow-emerald-500/10"
-              >
-                <Plus className="w-6 h-6" />
-                Ajouter un repas
-              </button>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Moyenne 7j</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-zinc-400">{taskMetrics.avg7d}</span>
+                    {taskMetrics.vsWeekBefore !== 0 && (
+                      <span className={`text-xs ${taskMetrics.vsWeekBefore > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                        {taskMetrics.vsWeekBefore > 0 ? '+' : ''}{taskMetrics.vsWeekBefore}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Cette semaine</span>
+                  <span className="text-sm text-zinc-400">{taskMetrics.thisWeek}</span>
+                </div>
+                {taskMetrics.vsYesterday !== 0 && (
+                  <div className="pt-2 border-t border-zinc-800/50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-500">vs hier</span>
+                      <span className={`text-xs ${taskMetrics.vsYesterdayPercent > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                        {taskMetrics.vsYesterdayPercent > 0 ? '+' : ''}{taskMetrics.vsYesterdayPercent}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {mealEntries.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-stone-600 max-w-md">
-                  <Utensils className="w-16 h-16 mx-auto mb-4 text-stone-700" />
-                  <p className="text-lg mb-2 text-stone-400">Commencez à suivre vos repas</p>
-                  <p className="text-sm">Ajoutez votre premier repas pour débuter le suivi nutritionnel</p>
-                </div>
+            {/* Card HABITUDES */}
+            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="w-4 h-4 text-rose-500" />
+                <h3 className="text-sm font-medium text-zinc-400">Habitudes</h3>
               </div>
-            ) : (
-              <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
-                {/* Calories & Macros */}
-                <div className="space-y-4">
-                  <div className="bg-stone-900/50 rounded-xl p-4 border border-stone-800">
-                    <p className="text-xs text-stone-500 mb-2">Aujourd'hui</p>
-                    <div className="text-2xl font-bold text-stone-200">
-                      {todayCalories}
-                      <span className="text-sm text-stone-600 ml-1 font-normal">/ {targetCalories} kcal</span>
-                    </div>
-                    <div className="h-2 bg-stone-800 rounded-full overflow-hidden mt-3">
-                      <div 
-                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all" 
-                        style={{ width: `${Math.min(100, (todayCalories / targetCalories) * 100)}%` }} 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-stone-900/50 rounded-xl p-4 border border-stone-800">
-                    <p className="text-xs text-stone-500 mb-3">Macros</p>
-                    <MacrosCircularChart 
-                      protein={todayMacros.protein} 
-                      carbs={todayMacros.carbs} 
-                      fat={todayMacros.fat} 
-                    />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Aujourd'hui</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-zinc-200">
+                      {habitMetrics.today.completed}/{habitMetrics.today.total}
+                    </span>
+                    {habitMetrics.vsYesterday !== 0 && (
+                      <span className={`text-xs ${habitMetrics.vsYesterday > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                        {habitMetrics.vsYesterday > 0 ? '+' : ''}{habitMetrics.vsYesterday}%
+                      </span>
+                    )}
                   </div>
                 </div>
-
-                {/* Liste des repas */}
-                <div className="lg:col-span-2 bg-stone-900/50 rounded-xl p-4 border border-stone-800 overflow-hidden flex flex-col">
-                  <p className="text-xs text-stone-500 mb-3">Historique</p>
-                  <div className="flex-1 overflow-y-auto">
-                    <MealList 
-                      entries={filteredMealEntries} 
-                      onDelete={handleDeleteMeal} 
-                      onDuplicate={handleDuplicateMeal} 
-                      compact 
-                    />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Moyenne 7j</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-zinc-400">{habitMetrics.avg7d}%</span>
+                    {habitMetrics.vsWeekBefore !== 0 && (
+                      <span className={`text-xs ${habitMetrics.vsWeekBefore > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                        {habitMetrics.vsWeekBefore > 0 ? '+' : ''}{habitMetrics.vsWeekBefore}%
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Card JOURNAL */}
+            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <Feather className="w-4 h-4 text-amber-500" />
+                <h3 className="text-sm font-medium text-zinc-400">Journal</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Série active</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-lg font-bold text-zinc-200">{journalMetrics.currentStreak}</span>
+                    <span className="text-xs text-zinc-500">jours</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Cette semaine</span>
+                  <span className="text-sm text-zinc-400">
+                    {journalMetrics.thisWeek.completed}/{journalMetrics.thisWeek.total}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card RÉVISIONS */}
+            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <BookOpen className="w-4 h-4 text-violet-500" />
+                <h3 className="text-sm font-medium text-zinc-400">Révisions</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">En retard</span>
+                  <span className="text-lg font-bold text-rose-400">
+                    {learningCourses.flatMap((c: any) => c.flashcards || []).filter((f: any) => {
+                      if (!f.nextReview) return false
+                      return new Date(f.nextReview) < new Date()
+                    }).length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Prévues</span>
+                  <span className="text-sm text-zinc-400">
+                    {learningCourses.flatMap((c: any) => c.flashcards || []).filter((f: any) => {
+                      if (!f.nextReview) return false
+                      const next = new Date(f.nextReview)
+                      const tomorrow = new Date()
+                      tomorrow.setDate(tomorrow.getDate() + 1)
+                      return next >= new Date() && next <= tomorrow
+                    }).length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Maîtrise</span>
+                  <span className="text-sm text-zinc-400">
+                    {learningCourses.flatMap((c: any) => c.flashcards || []).length > 0
+                      ? Math.round(
+                          learningCourses.flatMap((c: any) => c.flashcards || [])
+                            .reduce((sum: any, f: any) => sum + (f.mastery || 0), 0) /
+                          learningCourses.flatMap((c: any) => c.flashcards || []).length
+                        )
+                      : 0}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
           </div>
+
+        </div>
+      </div>
         )}
 
         {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* WEIGHT TAB */}
+        {/* SANTÉ TAB (Nutrition + Poids fusionnés) */}
         {/* ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'weight' && (
-          <div className="h-full flex flex-col p-6">
-            {/* Action principale */}
-            <div className="flex items-center justify-center mb-6">
+        {activeTab === 'sante' && (
+          <div className="h-full flex flex-col p-6 overflow-y-auto">
+            
+            {/* Actions principales */}
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
+              <button
+                onClick={() => setShowMealModal(true)}
+                className="flex items-center gap-3 px-6 py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-300 rounded-xl transition-all font-medium shadow-lg shadow-emerald-500/10"
+              >
+                <Plus className="w-5 h-5" />
+                Ajouter un repas
+              </button>
               <button
                 onClick={() => setShowWeightModal(true)}
-                className="flex items-center gap-3 px-8 py-4 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 hover:border-rose-500/50 text-rose-300 rounded-2xl transition-all text-lg font-medium shadow-lg shadow-rose-500/10"
+                className="flex items-center gap-3 px-6 py-3 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 hover:border-rose-500/50 text-rose-300 rounded-xl transition-all font-medium shadow-lg shadow-rose-500/10"
               >
-                <Plus className="w-6 h-6" />
+                <Plus className="w-5 h-5" />
                 Ajouter une pesée
               </button>
             </div>
 
-            {weightEntries.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-stone-600 max-w-md">
-                  <Scale className="w-16 h-16 mx-auto mb-4 text-stone-700" />
-                  <p className="text-lg mb-2 text-stone-400">Commencez à suivre votre poids</p>
-                  <p className="text-sm">Ajoutez votre première pesée pour débuter le suivi</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
-                {/* Graphique */}
-                <div className="lg:col-span-2 bg-stone-900/50 rounded-xl p-4 border border-stone-800 flex flex-col">
-                  <p className="text-xs text-stone-500 mb-3">Évolution</p>
-                  <div className="flex-1 min-h-[200px]">
-                    <WeightChart entries={weightEntries} trend={trend} />
-                  </div>
-                </div>
+            {/* Layout 2 colonnes : Nutrition (gauche) + Poids (droite) */}
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+              
+              {/* ===== NUTRITION (3/5) ===== */}
+              <div className="xl:col-span-3 space-y-4">
+                <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                  <Apple className="w-4 h-4" />
+                  Nutrition
+                </h3>
 
-                {/* Liste */}
-                <div className="bg-stone-900/50 rounded-xl p-4 border border-stone-800 overflow-hidden flex flex-col">
-                  <p className="text-xs text-stone-500 mb-3">Historique</p>
-                  <div className="flex-1 overflow-y-auto">
-                    <WeightList entries={filteredWeightEntries} onDelete={handleDeleteWeight} compact />
+                {mealEntries.length === 0 ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center text-zinc-600 max-w-md">
+                      <Utensils className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
+                      <p className="text-sm mb-1 text-zinc-400">Aucun repas enregistré</p>
+                      <p className="text-xs">Ajoutez votre premier repas</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* Calories & Macros */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                        <p className="text-xs text-zinc-500 mb-2">Aujourd'hui</p>
+                        <div className="text-2xl font-bold text-zinc-200">
+                          {todayCalories}
+                          <span className="text-sm text-zinc-600 ml-1 font-normal">/ {targetCalories} kcal</span>
+                        </div>
+                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mt-3">
+                          <div 
+                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all" 
+                            style={{ width: `${Math.min(100, (todayCalories / targetCalories) * 100)}%` }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                        <p className="text-xs text-zinc-500 mb-3">Macros</p>
+                        <MacrosCircularChart 
+                          protein={todayMacros.protein} 
+                          carbs={todayMacros.carbs} 
+                          fat={todayMacros.fat} 
+                        />
+                      </div>
+                    </div>
+
+                    {/* Liste des repas */}
+                    <div className="lg:col-span-2 bg-zinc-900/50 rounded-xl p-4 border border-zinc-800 max-h-[500px] overflow-hidden flex flex-col">
+                      <p className="text-xs text-zinc-500 mb-3">Historique</p>
+                      <div className="flex-1 overflow-y-auto">
+                        <MealList 
+                          entries={filteredMealEntries} 
+                          onDelete={handleDeleteMeal} 
+                          onDuplicate={handleDuplicateMeal} 
+                          compact 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* ===== POIDS (2/5) ===== */}
+              <div className="xl:col-span-2 space-y-4">
+                <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                  <Scale className="w-4 h-4" />
+                  Poids
+                </h3>
+
+                {weightEntries.length === 0 ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center text-zinc-600 max-w-md">
+                      <Scale className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
+                      <p className="text-sm mb-1 text-zinc-400">Aucune pesée enregistrée</p>
+                      <p className="text-xs">Ajoutez votre première pesée</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Graphique */}
+                    <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                      <p className="text-xs text-zinc-500 mb-3">Évolution</p>
+                      <div className="h-[200px]">
+                        <WeightChart entries={weightEntries} trend={trend} />
+                      </div>
+                    </div>
+
+                    {/* Liste */}
+                    <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800 max-h-[260px] overflow-hidden flex flex-col">
+                      <p className="text-xs text-zinc-500 mb-3">Historique</p>
+                      <div className="flex-1 overflow-y-auto">
+                        <WeightList entries={filteredWeightEntries} onDelete={handleDeleteWeight} compact />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -737,6 +919,15 @@ export function MyDayPage() {
         message={`${undoData?.type === 'weight' ? 'Poids' : 'Repas'} supprimé`}
         onUndo={handleUndo}
         isVisible={showUndo}
+      />
+
+      {/* Journal History Modal */}
+      <JournalHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        entries={journalEntries}
+        onSelectEntry={handleSelectHistoryEntry}
+        toggleFavorite={toggleJournalFavorite}
       />
     </div>
   )

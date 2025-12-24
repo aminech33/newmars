@@ -1,15 +1,22 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ArrowLeft, Plus, Check, Star, Sparkles, Loader2, ChevronDown, ChevronRight, X, Timer, ListTodo } from 'lucide-react'
+import { ArrowLeft, Plus, Check, Star, Sparkles, Loader2, ChevronDown, ChevronRight, X, Timer, ListTodo, FolderKanban } from 'lucide-react'
 import { PomodoroPage } from '../pomodoro/PomodoroPage'
+import { PomodoroOverlay } from '../pomodoro/PomodoroOverlay'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 
 // Typography: Inter / SF Pro for optimal dark mode readability
 const fontStack = 'font-[Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,SF_Pro_Display,Segoe_UI,Roboto,sans-serif]'
 
-import { useStore, Task, TaskCategory } from '../../store/useStore'
+import { useStore, Task, TaskCategory, type TemporalColumn } from '../../store/useStore'
 import { TaskDetails } from './TaskDetails'
 import { Tooltip } from '../ui/Tooltip'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { autoCategorizeTasks, estimateTaskDuration, detectPriority } from '../../utils/taskIntelligence'
+import { 
+  autoCategorizeTasks, 
+  estimateTaskDuration, 
+  detectPriority,
+  sortTasksForColumn
+} from '../../utils/taskIntelligence'
 
 // Types pour la planification intégrée
 interface TaskPlan {
@@ -48,8 +55,6 @@ const EFFORT_COLORS: Record<string, string> = {
   L: 'bg-rose-500/20 text-rose-400',
 }
 
-type TemporalColumn = 'today' | 'inProgress' | 'upcoming' | 'distant'
-
 interface ColumnConfig {
   id: TemporalColumn
   title: string
@@ -62,7 +67,27 @@ const COLUMNS: ColumnConfig[] = [
   { id: 'distant', title: 'Lointain' }
 ]
 
-function categorizeTask(task: Task): TemporalColumn {
+// ═══════════════════════════════════════════════════════════════
+// PROGRESSIVE UNLOCKING - Calcule la phase actuelle débloquée
+// ═══════════════════════════════════════════════════════════════
+function getCurrentPhase(tasks: Task[]): number {
+  // Trouve la phase la plus élevée dont la validation est complétée
+  const completedValidations = tasks.filter(t => 
+    t.isValidation && t.completed && t.phaseIndex !== undefined
+  )
+  
+  if (completedValidations.length === 0) {
+    return 0 // Phase 0 (ou 1) active par défaut
+  }
+  
+  const maxPhaseValidated = Math.max(
+    ...completedValidations.map(t => t.phaseIndex!)
+  )
+  
+  return maxPhaseValidated + 1 // Phase suivante débloquée
+}
+
+function categorizeTask(task: Task, allTasks: Task[]): TemporalColumn {
   // Tâches terminées → restent dans Aujourd'hui pour feedback
   if (task.completed) return 'today'
   
@@ -71,6 +96,18 @@ function categorizeTask(task: Task): TemporalColumn {
   
   // Si la tâche a une colonne assignée manuellement, l'utiliser
   if (task.temporalColumn) return task.temporalColumn
+  
+  // ═══════════════════════════════════════════════════════════════
+  // PROGRESSIVE UNLOCKING - Bloquer les phases non débloquées
+  // ═══════════════════════════════════════════════════════════════
+  if (task.phaseIndex !== undefined) {
+    const currentPhase = getCurrentPhase(allTasks)
+    
+    // Si la tâche appartient à une phase future non débloquée → Lointain (bloqué)
+    if (task.phaseIndex > currentPhase) {
+      return 'distant'
+    }
+  }
   
   // Tâche prioritaire → Aujourd'hui
   if (task.isPriority || task.priority === 'urgent' || task.priority === 'high') return 'today'
@@ -97,13 +134,17 @@ function categorizeTask(task: Task): TemporalColumn {
 function TaskRow({ 
   task, 
   column,
+  index,
   onClick,
-  onToggle
+  onToggle,
+  onFocus
 }: { 
   task: Task
   column: TemporalColumn
+  index: number
   onClick: () => void
   onToggle: () => void
+  onFocus?: (task: Task) => void
 }) {
   const { projects, setPriorityTask, updateTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
@@ -111,6 +152,7 @@ function TaskRow({
   
   const isUpcoming = column === 'upcoming'
   const isDistant = column === 'distant'
+  const isToday = column === 'today'
   const isOverdue = task.dueDate && new Date(task.dueDate).getTime() < Date.now() && !task.completed
   
   const handleToggle = (e: React.MouseEvent) => {
@@ -219,73 +261,111 @@ function TaskRow({
   }
 
   return (
-    <div
-      onClick={onClick}
-      className={`
-        group flex items-center gap-3 h-12 px-3.5 rounded-xl cursor-pointer
-        transition-all duration-150 ease-out
-        ${config.row} ${config.rowHover} ${config.opacity}
-        ${task.isPriority && !task.completed && !isDistant ? 'ring-1 ring-amber-500/20 bg-amber-500/[0.04]' : ''}
-        ${task.completed ? 'opacity-45' : ''}
-        ${isChecking ? 'scale-[0.99]' : ''}
-      `}
-    >
-      <Checkbox />
-      
-      {/* Project indicator */}
-      {project && (
-        <div 
-          className={`w-1 h-5 rounded-full flex-shrink-0 transition-opacity duration-150
-            ${isDistant ? 'opacity-40' : isUpcoming ? 'opacity-60' : 'opacity-80'}
-          `}
-          style={{ backgroundColor: project.color }}
-        />
-      )}
-      
-      {/* Title */}
-      <span className={`
-        flex-1 min-w-0 text-[17px] leading-normal truncate
-        transition-all duration-200 ${fontStack}
-        ${task.completed ? 'line-through opacity-70' : ''} 
-        ${config.text}
-        ${isDistant && !task.completed ? 'blur-[0.6px] group-hover:blur-0' : ''}
-      `}>
-        {task.title}
-      </span>
-      
-      {/* Date badge */}
-      {task.dueDate && !task.completed && (
-        <span className={`
-          flex-shrink-0 text-[13px] leading-none tabular-nums px-2.5 py-1 rounded-md
-          transition-all duration-150 ${fontStack}
-          ${isOverdue ? 'text-rose-400 bg-rose-500/15 font-medium' : config.dateBadge}
-          ${isDistant ? 'opacity-60 group-hover:opacity-90' : ''}
-        `}>
-          {formatDate(task.dueDate)}
-        </span>
-      )}
-      
-      {/* Priority star */}
-      {!isDistant && !task.completed && (
-        <button
-          onClick={handlePriority}
+    <Draggable draggableId={task.id} index={index} isDragDisabled={task.completed}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          onClick={onClick}
           className={`
-            flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
-            transition-all duration-150
-            ${task.isPriority ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-            hover:bg-white/10 active:scale-90
+            group flex items-center gap-3 h-12 px-3.5 rounded-xl cursor-pointer
+            transition-all duration-150 ease-out relative
+            ${config.row} ${config.rowHover} ${config.opacity}
+            ${task.isPriority && !task.completed && !isDistant ? 'ring-1 ring-amber-500/20 bg-amber-500/[0.04]' : ''}
+            ${task.completed ? 'opacity-45' : ''}
+            ${isChecking ? 'scale-[0.99]' : ''}
+            ${snapshot.isDragging ? 'shadow-2xl shadow-black/50 scale-105 rotate-2 ring-2 ring-indigo-500/50' : ''}
+            ${task.isValidation && !task.completed ? 'ring-1 ring-emerald-500/30' : ''}
           `}
         >
-          <Star 
-            className={`w-3.5 h-3.5 transition-all duration-150 ${
-              task.isPriority 
-                ? 'text-amber-400 fill-amber-400' 
-                : 'text-zinc-500 group-hover:text-zinc-400'
-            }`}
-          />
-        </button>
+          {/* Badge VALIDATION */}
+          {task.isValidation && !task.completed && (
+            <div className="absolute -top-1.5 -right-1.5 px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-bold rounded-md shadow-lg flex items-center gap-0.5">
+              <Check className="w-2.5 h-2.5" strokeWidth={3} />
+              VALIDATION
+            </div>
+          )}
+          
+          <Checkbox />
+          
+          {/* Project indicator */}
+          {project && (
+            <div 
+              className={`w-1 h-5 rounded-full flex-shrink-0 transition-opacity duration-150
+                ${isDistant ? 'opacity-40' : isUpcoming ? 'opacity-60' : 'opacity-80'}
+              `}
+              style={{ backgroundColor: project.color }}
+            />
+          )}
+          
+          {/* Title */}
+          <span className={`
+            flex-1 min-w-0 text-[17px] leading-normal truncate
+            transition-all duration-200 ${fontStack}
+            ${task.completed ? 'line-through opacity-70' : ''} 
+            ${config.text}
+            ${isDistant && !task.completed ? 'blur-[0.6px] group-hover:blur-0' : ''}
+          `}>
+            {task.title}
+          </span>
+          
+          {/* Date badge */}
+          {task.dueDate && !task.completed && (
+            <span className={`
+              flex-shrink-0 text-[13px] leading-none tabular-nums px-2.5 py-1 rounded-md
+              transition-all duration-150 ${fontStack}
+              ${isOverdue ? 'text-rose-400 bg-rose-500/15 font-medium' : config.dateBadge}
+              ${isDistant ? 'opacity-60 group-hover:opacity-90' : ''}
+            `}>
+              {formatDate(task.dueDate)}
+            </span>
+          )}
+          
+          {/* Priority star */}
+          {!isDistant && !task.completed && !snapshot.isDragging && (
+            <button
+              onClick={handlePriority}
+              className={`
+                flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
+                transition-all duration-150
+                ${task.isPriority ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                hover:bg-white/10 active:scale-90
+              `}
+            >
+              <Star 
+                className={`w-3.5 h-3.5 transition-all duration-150 ${
+                  task.isPriority 
+                    ? 'text-amber-400 fill-amber-400' 
+                    : 'text-zinc-500 group-hover:text-zinc-400'
+                }`}
+              />
+            </button>
+          )}
+          
+          {/* Focus button (Aujourd'hui only) */}
+          {isToday && !task.completed && !snapshot.isDragging && onFocus && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onFocus(task)
+              }}
+              className={`
+                flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
+                transition-all duration-150
+                opacity-0 group-hover:opacity-100
+                hover:bg-red-500/10 active:scale-90
+              `}
+              title="Démarrer un Pomodoro"
+            >
+              <Timer 
+                className="w-3.5 h-3.5 text-red-400 group-hover:text-red-300"
+              />
+            </button>
+          )}
+        </div>
       )}
-    </div>
+    </Draggable>
   )
 }
 
@@ -293,18 +373,38 @@ function TemporalColumn({
   config, 
   tasks, 
   onTaskClick,
-  onTaskToggle
+  onTaskToggle,
+  allTasks,
+  onFocus
 }: { 
   config: ColumnConfig
   tasks: Task[]
   onTaskClick: (task: Task) => void
   onTaskToggle: (taskId: string) => void
+  allTasks: Task[]
+  onFocus?: (task: Task) => void
 }) {
   const column = config.id
   const isToday = column === 'today'
+  const isDistant = column === 'distant'
   
   const todoTasks = tasks.filter(t => !t.completed)
   const doneTasks = tasks.filter(t => t.completed)
+  
+  // Calcul des phases bloquées pour la colonne Lointain
+  const currentPhase = getCurrentPhase(allTasks)
+  const blockedTasks = isDistant ? allTasks.filter(t => 
+    t.phaseIndex !== undefined && 
+    t.phaseIndex > currentPhase && 
+    !t.completed
+  ) : []
+  const hasBlockedPhases = blockedTasks.length > 0
+  const nextPhaseToUnlock = hasBlockedPhases ? currentPhase + 1 : null
+  const validationTasksRemaining = allTasks.filter(t => 
+    t.phaseIndex === currentPhase && 
+    t.isValidation && 
+    !t.completed
+  ).length
 
   // Configuration visuelle par colonne
   const columnStyles = {
@@ -337,75 +437,113 @@ function TemporalColumn({
   const styles = columnStyles[column]
   
   return (
-    <div className={`flex-1 min-w-0 flex flex-col h-full relative ${styles.bg}`}>
-      {/* Separator */}
-      {!isToday && (
-        <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" />
-      )}
-      
-      {/* Header */}
-      <div className="px-4 pt-5 pb-3">
-        <div className="flex items-center gap-3">
-          <h2 className={`text-[19px] font-semibold leading-tight tracking-tight ${fontStack} ${styles.header}`}>
-            {config.title}
-          </h2>
-          {todoTasks.length > 0 && (
-            <span className={`text-[14px] leading-none tabular-nums px-2 py-1 rounded-md ${fontStack} ${styles.count}`}>
-              {todoTasks.length}
-            </span>
+    <Droppable droppableId={config.id}>
+      {(provided, snapshot) => (
+        <div 
+          ref={provided.innerRef}
+          {...provided.droppableProps}
+          className={`flex-1 min-w-0 flex flex-col h-full relative ${styles.bg} ${
+            snapshot.isDraggingOver ? 'ring-2 ring-inset ring-indigo-500/50' : ''
+          }`}
+        >
+          {/* Separator */}
+          {!isToday && (
+            <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" />
           )}
-        </div>
-        
-      </div>
-      
-      {/* Tasks list */}
-      <div className="flex-1 overflow-y-auto px-2.5 pb-4">
-        {todoTasks.length === 0 && doneTasks.length === 0 ? (
-          <div className="h-20 flex items-center justify-center">
-            <span className={`text-[15px] ${fontStack} ${styles.empty}`}>
-              {isToday ? "Journée libre" : '—'}
-            </span>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            {todoTasks.map(task => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                column={column}
-                onClick={() => onTaskClick(task)}
-                onToggle={() => onTaskToggle(task.id)}
-              />
-            ))}
+          
+          {/* Header */}
+          <div className="px-4 pt-5 pb-3">
+            <div className="flex items-center gap-3">
+              <h2 className={`text-[19px] font-semibold leading-tight tracking-tight ${fontStack} ${styles.header}`}>
+                {config.title}
+              </h2>
+              {todoTasks.length > 0 && (
+                <span className={`text-[14px] leading-none tabular-nums px-2 py-1 rounded-md ${fontStack} ${styles.count}`}>
+                  {todoTasks.length}
+                </span>
+              )}
+            </div>
             
-            {/* Completed section - Today only */}
-            {isToday && doneTasks.length > 0 && (
-              <div className="mt-6 pt-4 border-t border-zinc-800/50">
-                <p className={`text-[12px] text-zinc-600 uppercase tracking-wider mb-3 px-1 font-semibold ${fontStack}`}>
-                  Terminées
-                </p>
-                <div className="space-y-1">
-                  {doneTasks.slice(0, 4).map(task => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      column={column}
-                      onClick={() => onTaskClick(task)}
-                      onToggle={() => onTaskToggle(task.id)}
-                    />
-                  ))}
-                </div>
-                {doneTasks.length > 4 && (
-                  <button className={`w-full mt-2 py-2 text-[13px] text-zinc-600 hover:text-zinc-400 transition-colors ${fontStack}`}>
-                    +{doneTasks.length - 4} autres
-                  </button>
+          </div>
+          
+          {/* Tasks list */}
+          <div className="flex-1 overflow-y-auto px-2.5 pb-4">
+            {todoTasks.length === 0 && doneTasks.length === 0 ? (
+              <div className="h-20 flex items-center justify-center">
+                <span className={`text-[15px] ${fontStack} ${styles.empty}`}>
+                  {isToday ? "Journée libre" : snapshot.isDraggingOver ? "Déposer ici" : '—'}
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {/* Message de phases bloquées (colonne Lointain uniquement) */}
+                {isDistant && hasBlockedPhases && (
+                  <div className="mb-4 px-4 py-3 bg-zinc-900/60 border border-zinc-800/50 rounded-xl">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-800/60 flex items-center justify-center flex-shrink-0">
+                        <span className="text-lg">🔒</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[13px] font-medium text-zinc-400 mb-1 ${fontStack}`}>
+                          Phase {nextPhaseToUnlock! + 1} bloquée
+                        </p>
+                        <p className={`text-[12px] text-zinc-600 leading-relaxed ${fontStack}`}>
+                          {validationTasksRemaining > 0 ? (
+                            <>Complète la validation de Phase {currentPhase + 1} pour débloquer {blockedTasks.length} tâches</>
+                          ) : (
+                            <>Complète toutes les tâches de Phase {currentPhase + 1} pour débloquer la suite</>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {todoTasks.map((task, index) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    column={column}
+                    index={index}
+                    onClick={() => onTaskClick(task)}
+                    onToggle={() => onTaskToggle(task.id)}
+                    onFocus={onFocus}
+                  />
+                ))}
+                
+                {provided.placeholder}
+                
+                {/* Completed section - Today only */}
+                {isToday && doneTasks.length > 0 && (
+                  <div className="mt-6 pt-4 border-t border-zinc-800/50">
+                    <p className={`text-[12px] text-zinc-600 uppercase tracking-wider mb-3 px-1 font-semibold ${fontStack}`}>
+                      Terminées
+                    </p>
+                    <div className="space-y-1">
+                      {doneTasks.slice(0, 4).map((task, index) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          column={column}
+                          index={todoTasks.length + index}
+                          onClick={() => onTaskClick(task)}
+                          onToggle={() => onTaskToggle(task.id)}
+                        />
+                      ))}
+                    </div>
+                    {doneTasks.length > 4 && (
+                      <button className={`w-full mt-2 py-2 text-[13px] text-zinc-600 hover:text-zinc-400 transition-colors ${fontStack}`}>
+                        +{doneTasks.length - 4} autres
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </Droppable>
   )
 }
 
@@ -907,7 +1045,9 @@ function PlanningZone({
     const projectId = addProject({
       name: generatedPlan.projectName,
       color: '#6366f1',
-      icon: '✨'
+      icon: '✨',
+      hasPhases: (generatedPlan.phases?.length || 0) > 0,
+      phaseCount: generatedPlan.phases?.length || 0
     })
     
     // ═══════════════════════════════════════════════════════════════
@@ -1398,15 +1538,56 @@ interface PlanningContext {
 type TasksTab = 'tasks' | 'focus'
 
 export function TasksPage() {
-  const { tasks, addTask, toggleTask, deleteTask, setView, selectedTaskId, setSelectedTaskId } = useStore()
+  const { tasks, addTask, toggleTask, deleteTask, setView, selectedTaskId, setSelectedTaskId, updateTask, addToast } = useStore()
   
   const [activeTab, setActiveTab] = useState<TasksTab>('tasks')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [focusTask, setFocusTask] = useState<Task | null>(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<{ task: Task } | null>(null)
   const [planningStep, setPlanningStep] = useState<PlanningStep>('none')
   const [planningContext, setPlanningContext] = useState<PlanningContext | null>(null)
+  const [lastCurrentPhase, setLastCurrentPhase] = useState(0)
+  
+  // ═══════════════════════════════════════════════════════════════
+  // DÉTECTION DE DÉBLOCAGE - Déclencher un toast quand une phase se débloque
+  // ═══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    const currentPhase = getCurrentPhase(tasks)
+    
+    // Si la phase a augmenté, c'est qu'une validation vient d'être complétée
+    if (currentPhase > lastCurrentPhase && lastCurrentPhase > 0) {
+      const phaseName = `Phase ${currentPhase + 1}`
+      const unlockedTasksCount = tasks.filter(t => t.phaseIndex === currentPhase).length
+      
+      addToast(
+        `🎉 ${phaseName} débloquée ! ${unlockedTasksCount} nouvelles tâches disponibles`,
+        'success'
+      )
+    }
+    
+    setLastCurrentPhase(currentPhase)
+  }, [tasks, lastCurrentPhase, addToast])
+  
+  // ═══════════════════════════════════════════════════════════════
+  // DRAG & DROP HANDLER
+  // ═══════════════════════════════════════════════════════════════
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result
+    
+    // Dropped outside a valid droppable
+    if (!destination) return
+    
+    // Dropped in the same position
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return
+    }
+    
+    // Update the task's temporal column
+    const newColumn = destination.droppableId as TemporalColumn
+    updateTask(draggableId, { temporalColumn: newColumn })
+  }
   
   useEffect(() => {
     if (selectedTaskId) {
@@ -1425,26 +1606,18 @@ export function TasksPage() {
     }
     
     tasks.forEach(task => {
-      result[categorizeTask(task)].push(task)
+      result[categorizeTask(task, tasks)].push(task)
     })
     
-    const sortTasks = (list: Task[]) => list.sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1
-      if (a.isPriority && !b.isPriority) return -1
-      if (!a.isPriority && b.isPriority) return 1
-      if (a.priority === 'urgent' && b.priority !== 'urgent') return -1
-      if (b.priority === 'urgent' && a.priority !== 'urgent') return 1
-      if (a.dueDate && b.dueDate) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-      if (a.dueDate && !b.dueDate) return -1
-      if (!a.dueDate && b.dueDate) return 1
-      return b.createdAt - a.createdAt
+    // Utiliser le tri intelligent basé sur Smart Score
+    Object.keys(result).forEach(key => {
+      result[key as TemporalColumn] = sortTasksForColumn(result[key as TemporalColumn])
     })
     
-    Object.keys(result).forEach(key => sortTasks(result[key as TemporalColumn]))
     return result
   }, [tasks])
   
-  
+  // Suggestion de la prochaine tâche à faire
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
@@ -1475,6 +1648,34 @@ export function TasksPage() {
     setNewTaskTitle('')
     setShowQuickAdd(false)
   }
+  
+  // ═══════════════════════════════════════════════════════════════
+  // TIMELINE DE PROGRESSION - Stats pour affichage dans le header
+  // ═══════════════════════════════════════════════════════════════
+  const progressionStats = useMemo(() => {
+    const currentPhase = getCurrentPhase(tasks)
+    const phaseTasks = tasks.filter(t => t.phaseIndex !== undefined)
+    
+    if (phaseTasks.length === 0) {
+      return null // Pas de projet avec phases
+    }
+    
+    const totalPhases = Math.max(...phaseTasks.map(t => t.phaseIndex!)) + 1
+    const tasksInCurrentPhase = tasks.filter(t => t.phaseIndex === currentPhase)
+    const completedInCurrentPhase = tasksInCurrentPhase.filter(t => t.completed).length
+    const totalInCurrentPhase = tasksInCurrentPhase.length
+    const progressPercent = totalInCurrentPhase > 0 
+      ? Math.round((completedInCurrentPhase / totalInCurrentPhase) * 100) 
+      : 0
+    
+    return {
+      currentPhase: currentPhase + 1, // Affichage humain (Phase 1, 2, 3...)
+      totalPhases,
+      completedInCurrentPhase,
+      totalInCurrentPhase,
+      progressPercent
+    }
+  }, [tasks])
 
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden bg-zinc-950">
@@ -1514,6 +1715,39 @@ export function TasksPage() {
         </div>
         
         <div className="flex-1" />
+        
+        {/* Bouton Gestion des projets */}
+        <button
+          onClick={() => setView('projects')}
+          className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-lg text-blue-400 hover:text-blue-300 text-sm font-medium transition-all duration-150"
+          title="Gérer mes projets"
+        >
+          <FolderKanban className="w-4 h-4" />
+          <span className="hidden md:inline">Projets</span>
+        </button>
+        
+        {/* Timeline de progression (si projet avec phases) */}
+        {activeTab === 'tasks' && progressionStats && (
+          <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 bg-zinc-800/40 rounded-lg border border-zinc-700/50">
+            <div className="flex items-center gap-2">
+              <span className={`text-[12px] font-medium text-zinc-400 ${fontStack}`}>
+                Phase {progressionStats.currentPhase}/{progressionStats.totalPhases}
+              </span>
+              <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500"
+                  style={{ width: `${progressionStats.progressPercent}%` }}
+                />
+              </div>
+              <span className={`text-[11px] text-zinc-500 tabular-nums ${fontStack}`}>
+                {progressionStats.progressPercent}%
+              </span>
+            </div>
+            <div className={`text-[11px] text-zinc-600 ${fontStack}`}>
+              {progressionStats.completedInCurrentPhase}/{progressionStats.totalInCurrentPhase}
+            </div>
+          </div>
+        )}
         
         {activeTab === 'tasks' && (
           <>
@@ -1574,61 +1808,74 @@ export function TasksPage() {
           </div>
           
           {/* Columns */}
-          <div className="flex-1 flex overflow-hidden">
-            {COLUMNS.map((config) => {
-              // Remplacer Lointain par la zone de définition/planification si active
-              if (config.id === 'distant' && planningStep !== 'none') {
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="flex-1 flex overflow-hidden">
+              {COLUMNS.map((config) => {
+                // Remplacer Lointain par la zone de définition/planification si active
+                if (config.id === 'distant' && planningStep !== 'none') {
+                  return (
+                    <div key="planning" className="flex-1 min-w-0 relative">
+                      <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" />
+                      
+                      {/* Étape 1 : Définir le projet (cercles de compétences) */}
+                      {planningStep === 'define' && (
+                        <DefineProjectZone
+                          onCancel={() => setPlanningStep('none')}
+                          onPlanify={(domain, selectedSkills) => {
+                            setPlanningContext({ domain, selectedSkills })
+                            setPlanningStep('plan')
+                          }}
+                        />
+                      )}
+                      
+                      {/* Étape 2 : Planifier les tâches */}
+                      {planningStep === 'plan' && (
+                        <PlanningZone 
+                          onProjectCreated={() => {
+                            setPlanningStep('none')
+                            setPlanningContext(null)
+                          }}
+                          onCancel={() => {
+                            setPlanningStep('none')
+                            setPlanningContext(null)
+                          }}
+                          preselectedSkills={planningContext?.selectedSkills}
+                          preselectedDomain={planningContext?.domain}
+                        />
+                      )}
+                    </div>
+                  )
+                }
+                
                 return (
-                  <div key="planning" className="flex-1 min-w-0 relative">
-                    <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" />
-                    
-                    {/* Étape 1 : Définir le projet (cercles de compétences) */}
-                    {planningStep === 'define' && (
-                      <DefineProjectZone
-                        onCancel={() => setPlanningStep('none')}
-                        onPlanify={(domain, selectedSkills) => {
-                          setPlanningContext({ domain, selectedSkills })
-                          setPlanningStep('plan')
-                        }}
-                      />
-                    )}
-                    
-                    {/* Étape 2 : Planifier les tâches */}
-                    {planningStep === 'plan' && (
-                      <PlanningZone 
-                        onProjectCreated={() => {
-                          setPlanningStep('none')
-                          setPlanningContext(null)
-                        }}
-                        onCancel={() => {
-                          setPlanningStep('none')
-                          setPlanningContext(null)
-                        }}
-                        preselectedSkills={planningContext?.selectedSkills}
-                        preselectedDomain={planningContext?.domain}
-                      />
-                    )}
-                  </div>
+                  <TemporalColumn
+                    key={config.id}
+                    config={config}
+                    tasks={tasksByColumn[config.id]}
+                    onTaskClick={setSelectedTask}
+                    onTaskToggle={toggleTask}
+                    allTasks={tasks}
+                    onFocus={setFocusTask}
+                  />
                 )
-              }
-              
-              return (
-                <TemporalColumn
-                  key={config.id}
-                  config={config}
-                  tasks={tasksByColumn[config.id]}
-                  onTaskClick={setSelectedTask}
-                  onTaskToggle={toggleTask}
-                />
-              )
-            })}
-          </div>
+              })}
+            </div>
+          </DragDropContext>
           
           {/* Task Details */}
           {selectedTask && (
             <TaskDetails
               task={selectedTask}
               onClose={() => setSelectedTask(null)}
+            />
+          )}
+
+          {/* Pomodoro Overlay */}
+          {focusTask && (
+            <PomodoroOverlay
+              task={focusTask}
+              onClose={() => setFocusTask(null)}
+              onComplete={() => setFocusTask(null)}
             />
           )}
 

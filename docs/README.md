@@ -1,196 +1,92 @@
-# 📚 Documentation NewMars
+# 📚 Documentation NewMars - Structure
 
-Ce dossier contient toute la documentation officielle du projet NewMars.
+## 🎯 Documents principaux
 
-## 📄 Fichiers disponibles
+### 1. **V1_FREEZE.md**
+**Rôle :** Snapshot officiel figé de la V1  
+**Contenu :**
+- État des 6 modules
+- 5 algorithmes IA
+- Brain système
+- Interconnexions actives
+- Raccourcis clavier
+- Stack technique
 
-### Documents principaux
-
-| Fichier | Description | Format | Statut |
-|---------|-------------|--------|--------|
-| **PRODUCT_REFERENCE_V1.md** | Document de référence produit v1 (source) | Markdown | ✅ À jour |
-| **product-reference-v1.html** | Version interactive HTML avec recherche | HTML/CSS/JS | ✅ À jour |
-| **CHANGELOG.md** | Historique des versions et roadmap | Markdown | ✅ À jour |
-
-### Documents complémentaires
-
-| Fichier | Description | Statut |
-|---------|-------------|--------|
-| **GOOGLE_BOOKS_API.md** | Documentation API Google Books | 📖 Référence |
-| **VISUAL_COMPARISON.md** | Comparaisons visuelles de design | 📊 Référence |
+**Quand le lire :** Pour comprendre ce qui EST fait
 
 ---
 
-## 🚀 Utilisation
+### 2. **AUDIT_COMPLET.md** 
+**Rôle :** Changements, objectifs, idées, roadmap V1.1  
+**Contenu :**
+- Analyse code vs documentation
+- Ce qui manque (6 items)
+- Efforts estimés
+- Priorités
+- Plan d'action V1.1
+- Code snippets pour démarrer
 
-### Consultation du document produit
-
-**Option 1 : Version interactive (recommandée)**
-```bash
-# Ouvrir dans un navigateur
-open docs/product-reference-v1.html
-```
-
-Fonctionnalités :
-- 🔍 Recherche intégrée (Ctrl/Cmd+K)
-- 🌓 Toggle dark/light mode
-- 🖨️ Export PDF optimisé
-- 📱 Responsive mobile avec menu hamburger
-- 🔗 Liens cliquables vers code source
-- ♿ Support accessibilité (ARIA labels)
-
-**Option 2 : Version Markdown (éditable)**
-```bash
-# Lire/éditer avec votre éditeur préféré
-code docs/PRODUCT_REFERENCE_V1.md
-```
-
-### Export en PDF
-
-1. Ouvrir `product-reference-v1.html` dans un navigateur
-2. Cliquer sur le bouton 🖨️ ou utiliser Ctrl/Cmd+P
-3. Sélectionner "Enregistrer au format PDF"
-4. Les styles d'impression sont optimisés automatiquement
+**Quand le lire :** Pour savoir quoi faire ensuite
 
 ---
 
-## 📝 Maintenance
+### 3. **backend/README.md**
+**Rôle :** Quick start backend  
+**Contenu :**
+- Installation
+- Configuration
+- Lancer le serveur
+- Endpoints principaux
+- Algorithmes disponibles
 
-### Mise à jour de la documentation
-
-**Workflow recommandé :**
-
-1. **Éditer le Markdown source**
-   ```bash
-   vim docs/PRODUCT_REFERENCE_V1.md
-   ```
-
-2. **Regénérer le HTML** (si nécessaire)
-   - Actuellement manuel
-   - TODO : Script de conversion automatique
-
-3. **Mettre à jour le changelog**
-   ```bash
-   vim docs/CHANGELOG.md
-   ```
-
-4. **Versionner les changements**
-   ```bash
-   git add docs/
-   git commit -m "docs: mise à jour document produit v1.0.1"
-   ```
-
-### Conventions de nommage
-
-- **Majuscules** : Documents officiels permanents (`PRODUCT_REFERENCE_V1.md`)
-- **Minuscules** : Versions dérivées ou temporaires (`product-reference-v1.html`)
-- **Versioning** : Format `vX.Y.Z` dans le nom ou contenu
+**Quand le lire :** Pour setup le backend
 
 ---
 
-## 🎯 Structure du document produit
+### 4. **backend/INTERLEAVING_README.md**
+**Rôle :** Guide technique spécifique Interleaving  
+**Contenu :**
+- Comment ça marche
+- Comment l'utiliser (API)
+- Configuration
+- Tests
+- Troubleshooting
 
-### Sections principales
-
-1. **Vue d'ensemble** - Objectif, légende des statuts
-2. **Flux applicatif** - Diagramme de navigation
-3. **Modules** - Cards résumés des 9 modules
-4. **Détails par module** - Fonctionnalités exhaustives
-   - Hub
-   - Tâches
-   - Journal
-   - Santé
-   - Apprentissage
-   - Pomodoro
-   - Bibliothèque
-   - Dashboard
-   - Paramètres
-   - Brain
-5. **Architecture technique** - Stack et structure
-6. **Glossaire** - Définitions des termes clés
-7. **Changelog** - Historique et roadmap
-8. **Résumé** - Table récapitulative
-
-### Format des statuts
-
-| Icône | Statut | Signification |
-|-------|--------|---------------|
-| ✅ | **Implémenté** | Fonctionnel en production |
-| 🔄 | **En cours** | Développement actif |
-| 📋 | **À faire** | Prévu pour la version actuelle |
-| ⛔ | **Hors scope** | Explicitement exclu |
+**Quand le lire :** Pour implémenter/utiliser l'interleaving
 
 ---
 
-## 🔧 Configuration
+## 📖 Navigation rapide
 
-### Variables à personnaliser
+**Je veux comprendre l'app :**
+→ `V1_FREEZE.md`
 
-Dans `product-reference-v1.html`, ligne ~3510 :
-```javascript
-// GitHub repository base URL (update this to your actual repo)
-const GITHUB_REPO = 'https://github.com/yourusername/newmars/blob/main';
-```
+**Je veux coder V1.1 :**
+→ `AUDIT_COMPLET.md`
 
-**Action requise :** Remplacer `yourusername` par votre nom d'utilisateur GitHub réel.
+**Je veux setup le backend :**
+→ `backend/README.md`
 
----
-
-## 📊 Statistiques
-
-- **Modules documentés** : 9
-- **Fonctionnalités détaillées** : ~95
-- **Termes dans glossaire** : 10
-- **Lignes de code HTML** : ~2400
-- **Taille totale docs** : ~350 KB
+**Je veux utiliser l'interleaving :**
+→ `backend/INTERLEAVING_README.md`
 
 ---
 
-## 🤝 Contribution
+## 🧹 Nettoyage effectué
 
-Pour contribuer à la documentation :
+**Supprimé (redondants) :**
+- ❌ `docs/CHANGELOG_DOC_23DEC.md`
+- ❌ `docs/RECAP_FINAL.md`
+- ❌ `docs/AI_ASSISTANT.md`
+- ❌ `backend/SUMMARY_V1.1.md`
+- ❌ `backend/CHANGELOG_INTERLEAVING_V1.1.md`
+- ❌ `backend/DOCUMENTATION_UPDATE.md`
+- ❌ `backend/IMPLEMENTATION_SUMMARY.md`
 
-1. **Identifier le besoin**
-   - Fonctionnalité manquante
-   - Information obsolète
-   - Clarification nécessaire
-
-2. **Créer une issue**
-   ```
-   Titre: [DOCS] Description du problème
-   Label: documentation
-   ```
-
-3. **Proposer une PR**
-   - Éditer le(s) fichier(s) concerné(s)
-   - Respecter le format existant
-   - Ajouter une entrée au changelog si pertinent
-
-4. **Validation**
-   - Vérifier l'orthographe (français)
-   - Tester les liens
-   - Valider le HTML (W3C)
+**Résultat : 4 docs essentiels** au lieu de 13
 
 ---
 
-## 📚 Ressources externes
-
-- [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) - Format du changelog
-- [Semantic Versioning](https://semver.org/lang/fr/) - Conventions de versioning
-- [Microsoft Fluent Design](https://fluent2.microsoft.design/) - Système de design utilisé
-- [WCAG 2.1](https://www.w3.org/WAI/WCAG21/quickref/) - Standards d'accessibilité
-
----
-
-## 📞 Contact
-
-Pour toute question sur la documentation :
-- Créer une issue GitHub
-- Consulter le canal #documentation (si applicable)
-
----
-
-**Dernière mise à jour** : 20 Décembre 2024  
-**Mainteneur** : Product Team
-
+**Date :** 23 décembre 2024  
+**Maintenu par :** @aminecb
 

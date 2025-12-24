@@ -1,5 +1,5 @@
 /**
- * 🧠 BRAIN - Memory
+ * 🧠 BRAIN - Memory (SIMPLIFIÉ)
  * 
  * Stockage persistant des patterns et événements.
  * Utilise localStorage comme le reste de l'app.
@@ -8,47 +8,24 @@
 import { BrainMemory, BrainEvent, UserPatterns, DEFAULT_BRAIN_CONFIG } from './types'
 
 const STORAGE_KEY = 'iku-brain-memory'
-const CURRENT_VERSION = 1
+const CURRENT_VERSION = 2 // Incrémenté pour migration
 
 // Patterns par défaut (utilisateur nouveau)
 const DEFAULT_PATTERNS: UserPatterns = {
-  peakHours: [10, 14, 16],
-  lowHours: [13, 22, 23],
-  bestDays: [1, 2, 3],  // Lun, Mar, Mer
-  averageSessionStart: 9,
-  averageSessionEnd: 18,
-  
   avgTasksPerDay: 0,
   avgFocusDuration: 25,
-  preferredCategories: [],
-  avoidedCategories: [],
   taskCompletionRate: 0,
-  avgTaskDelay: 0,
   
-  mealTimes: {
-    breakfast: null,
-    lunch: null,
-    dinner: null,
-  },
   avgCaloriesPerDay: 0,
   weightTrend: 'stable',
   
   avgMood: 6,
-  moodByHour: {},
-  moodByDay: {},
   journalFrequency: 0,
   
   habitCompletionRate: 0,
-  mostConsistentHabits: [],
-  strugglingHabits: [],
-  
-  avgStudyDuration: 30,
-  preferredLearningTime: 10,
   
   correlations: {
     moodProductivity: 0,
-    sleepProductivity: 0,
-    exerciseEnergy: 0,
   }
 }
 
@@ -57,7 +34,6 @@ const DEFAULT_MEMORY: BrainMemory = {
   recentEvents: [],
   patterns: DEFAULT_PATTERNS,
   scoreHistory: [],
-  dismissedSuggestions: [],
   lastFullAnalysis: 0,
   version: CURRENT_VERSION,
 }
@@ -70,7 +46,7 @@ export function loadMemory(): BrainMemory {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (!stored) return { ...DEFAULT_MEMORY }
     
-    const parsed = JSON.parse(stored) as BrainMemory
+    const parsed = JSON.parse(stored)
     
     // Migration si version différente
     if (parsed.version !== CURRENT_VERSION) {
@@ -79,7 +55,7 @@ export function loadMemory(): BrainMemory {
     
     // Nettoyer les événements trop vieux (> 7 jours)
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-    parsed.recentEvents = parsed.recentEvents.filter(e => e.timestamp > sevenDaysAgo)
+    parsed.recentEvents = parsed.recentEvents.filter((e: BrainEvent) => e.timestamp > sevenDaysAgo)
     
     // Limiter le nombre d'événements
     if (parsed.recentEvents.length > DEFAULT_BRAIN_CONFIG.maxRecentEvents) {
@@ -165,35 +141,10 @@ export function addScoreToHistory(memory: BrainMemory, score: number): BrainMemo
 }
 
 /**
- * Marque une suggestion comme dismissée
- */
-export function dismissSuggestion(memory: BrainMemory, suggestionId: string): BrainMemory {
-  if (memory.dismissedSuggestions.includes(suggestionId)) {
-    return memory
-  }
-  
-  // Garder max 50 suggestions dismissées
-  const newDismissed = [...memory.dismissedSuggestions, suggestionId].slice(-50)
-  
-  return {
-    ...memory,
-    dismissedSuggestions: newDismissed,
-  }
-}
-
-/**
  * Obtient les événements d'un type spécifique
  */
 export function getEventsByType(memory: BrainMemory, type: string): BrainEvent[] {
   return memory.recentEvents.filter(e => e.type === type)
-}
-
-/**
- * Obtient les événements des X dernières heures
- */
-export function getRecentEvents(memory: BrainMemory, hours: number): BrainEvent[] {
-  const cutoff = Date.now() - hours * 60 * 60 * 1000
-  return memory.recentEvents.filter(e => e.timestamp > cutoff)
 }
 
 /**
@@ -210,18 +161,29 @@ export function getTodayEvents(memory: BrainMemory): BrainEvent[] {
 /**
  * Migration de mémoire (pour futures versions)
  */
-function migrateMemory(oldMemory: BrainMemory): BrainMemory {
-  // Pour l'instant, on reset simplement
-  // Plus tard, on pourra migrer les données
+function migrateMemory(oldMemory: any): BrainMemory {
   console.log('[Brain] Migration mémoire v' + oldMemory.version + ' → v' + CURRENT_VERSION)
   
+  // Migrer les patterns (garder seulement ce qui existe dans le nouveau format)
+  const migratedPatterns: UserPatterns = {
+    avgTasksPerDay: oldMemory.patterns?.avgTasksPerDay ?? 0,
+    avgFocusDuration: oldMemory.patterns?.avgFocusDuration ?? 25,
+    taskCompletionRate: oldMemory.patterns?.taskCompletionRate ?? 0,
+    avgCaloriesPerDay: oldMemory.patterns?.avgCaloriesPerDay ?? 0,
+    weightTrend: oldMemory.patterns?.weightTrend ?? 'stable',
+    avgMood: oldMemory.patterns?.avgMood ?? 6,
+    journalFrequency: oldMemory.patterns?.journalFrequency ?? 0,
+    habitCompletionRate: oldMemory.patterns?.habitCompletionRate ?? 0,
+    correlations: {
+      moodProductivity: oldMemory.patterns?.correlations?.moodProductivity ?? 0,
+    }
+  }
+  
   return {
-    ...DEFAULT_MEMORY,
     recentEvents: oldMemory.recentEvents || [],
-    patterns: {
-      ...DEFAULT_PATTERNS,
-      ...oldMemory.patterns,
-    },
+    patterns: migratedPatterns,
+    scoreHistory: oldMemory.scoreHistory || [],
+    lastFullAnalysis: oldMemory.lastFullAnalysis || 0,
     version: CURRENT_VERSION,
   }
 }
@@ -233,7 +195,3 @@ export function resetMemory(): BrainMemory {
   localStorage.removeItem(STORAGE_KEY)
   return { ...DEFAULT_MEMORY }
 }
-
-
-
-

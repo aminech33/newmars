@@ -36,6 +36,10 @@ export function KeyboardShortcuts() {
             e.preventDefault()
             setView('tasks')
             break
+          case 'p':
+            e.preventDefault()
+            setView('projects')
+            break
           case 'd':
             e.preventDefault()
             setView('dashboard')

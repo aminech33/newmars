@@ -62,8 +62,17 @@ export interface Course {
   totalTimeSpent: number       // Minutes
   lastActiveAt: number         // Timestamp
   streak: number               // Jours consécutifs
+  longestStreak: number        // Record de streak
+  totalReviews: number         // Nombre total de révisions
   sessionsCount: number
   messagesCount: number
+  
+  // Mastery tracking (historique des 30 derniers jours)
+  masteryHistory?: Array<{
+    date: string              // YYYY-MM-DD
+    masteryLevel: number      // 0-100
+  }>
+  currentMastery: number       // 0-100 (maîtrise actuelle)
   
   // Objectifs
   topics?: CourseTopic[]       // Sujets à couvrir

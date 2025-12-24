@@ -5,7 +5,11 @@ import { ChatInput } from './ChatInput'
 import { CodeEditor } from './CodeEditor'
 import { TerminalEmulator } from './TerminalEmulator'
 import { LinkedTasks } from './LinkedTasks'
-import { Sparkles, ListTodo } from 'lucide-react'
+import { FlashcardModal } from './FlashcardModal'
+import { CourseStatsCard } from './CourseStatsCard'
+import { Sparkles, ListTodo, Brain, BarChart3 } from 'lucide-react'
+import { useLearningData } from '../../hooks/useLearningData'
+import { useStore } from '../../store/useStore'
 
 interface CourseChatProps {
   course: Course
@@ -37,6 +41,9 @@ export const CourseChat = memo(function CourseChat({
   onSendMessage,
   onCopyMessage
 }: CourseChatProps) {
+  const { createFlashcard, deleteFlashcard } = useLearningData()
+  const { addToast } = useStore()
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const language = course.programmingLanguage || 'python'
@@ -46,7 +53,43 @@ export const CourseChat = memo(function CourseChat({
   const [editorWidth, setEditorWidth] = useState(60) // pourcentage
   const [isResizing, setIsResizing] = useState(false)
   const [showTasks, setShowTasks] = useState(false)
+  const [showFlashcards, setShowFlashcards] = useState(false)
+  const [showStats, setShowStats] = useState(false)
+  const [lastTopicSwitchNotified, setLastTopicSwitchNotified] = useState<string | null>(null)
   const splitContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Flashcard handlers
+  const handleAddFlashcard = useCallback((front: string, back: string) => {
+    createFlashcard(course.id, front, back)
+  }, [course.id, createFlashcard])
+  
+  const handleDeleteFlashcard = useCallback((flashcardId: string) => {
+    deleteFlashcard(course.id, flashcardId)
+  }, [course.id, deleteFlashcard])
+  
+  // Topic switch detection (pour interleaving feedback)
+  useEffect(() => {
+    if (course.messages.length >= 2) {
+      const lastMessage = course.messages[course.messages.length - 1]
+      const prevMessage = course.messages[course.messages.length - 2]
+      
+      // Si les 2 derniers messages de l'IA contiennent des indices de switch
+      // (détection basique - en prod, on recevrait ça de l'API)
+      if (lastMessage.role === 'assistant' && prevMessage.role === 'assistant') {
+        const topicPattern = /Topic (\w+)/i
+        const lastMatch = lastMessage.content.match(topicPattern)
+        const prevMatch = prevMessage.content.match(topicPattern)
+        
+        if (lastMatch && prevMatch && lastMatch[1] !== prevMatch[1]) {
+          const newTopic = lastMatch[1]
+          if (lastTopicSwitchNotified !== newTopic) {
+            addToast(`🔄 Switch: ${prevMatch[1]} → ${newTopic}`, 'info')
+            setLastTopicSwitchNotified(newTopic)
+          }
+        }
+      }
+    }
+  }, [course.messages, addToast, lastTopicSwitchNotified])
 
   // Gestion du redimensionnement style VSCode
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -125,7 +168,15 @@ export const CourseChat = memo(function CourseChat({
   // En mode split view (code ou terminal) : panneau gauche + chat redimensionnables
   if (showSplitView) {
     return (
-      <div ref={splitContainerRef} className="h-full flex bg-black select-none">
+      <div className="h-full flex flex-col bg-black">
+        {/* Stats Card (collapsible) */}
+        {showStats && (
+          <div className="border-b border-zinc-800/50 p-4 bg-zinc-950/50">
+            <CourseStatsCard course={course} />
+          </div>
+        )}
+        
+        <div ref={splitContainerRef} className="flex-1 flex bg-black select-none min-h-0">
         {/* Left Panel: Code Editor OR Terminal */}
         <div style={{ width: `${editorWidth}%` }} className="flex flex-col h-full overflow-hidden">
           {showCodeEditor ? (
@@ -255,7 +306,64 @@ export const CourseChat = memo(function CourseChat({
                   Inclure le code
                 </label>
                 
-                {/* Toggle Tasks Button (split view) */}
+                <div className="flex items-center gap-1">
+                  {/* Stats Button */}
+                  <button
+                    onClick={() => setShowStats(!showStats)}
+                    className={`p-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 text-[10px] ${
+                      showStats 
+                        ? 'bg-cyan-500/20 text-cyan-400' 
+                        : 'text-zinc-500 hover:text-cyan-400 hover:bg-cyan-500/10'
+                    }`}
+                    title="Statistiques"
+                  >
+                    <BarChart3 className="w-3 h-3" />
+                  </button>
+                  
+                  {/* Flashcards Button */}
+                  <button
+                    onClick={() => setShowFlashcards(true)}
+                    className="p-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 text-[10px] text-zinc-500 hover:text-violet-400 hover:bg-violet-500/10"
+                    title="Flashcards"
+                  >
+                    <Brain className="w-3 h-3" />
+                    {course.flashcards.length > 0 && (
+                      <span className="text-violet-400">{course.flashcards.length}</span>
+                    )}
+                  </button>
+                  
+                  {/* Toggle Tasks Button (split view) */}
+                  {course.linkedProjectId && (
+                    <button
+                      onClick={() => setShowTasks(!showTasks)}
+                      className={`p-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 text-[10px] ${
+                        showTasks 
+                          ? 'bg-emerald-500/20 text-emerald-400' 
+                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                      }`}
+                    >
+                      <ListTodo className="w-3 h-3" />
+                      Tâches
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Toggle pour terminal (pas de checkbox code) */}
+            {showTerminal && (
+              <div className="flex justify-end gap-2 mb-2">
+                <button
+                  onClick={() => setShowFlashcards(true)}
+                  className="p-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 text-[10px] text-zinc-500 hover:text-violet-400 hover:bg-violet-500/10"
+                  title="Flashcards"
+                >
+                  <Brain className="w-3 h-3" />
+                  {course.flashcards.length > 0 && (
+                    <span className="text-violet-400">{course.flashcards.length}</span>
+                  )}
+                </button>
+                
                 {course.linkedProjectId && (
                   <button
                     onClick={() => setShowTasks(!showTasks)}
@@ -269,23 +377,6 @@ export const CourseChat = memo(function CourseChat({
                     Tâches
                   </button>
                 )}
-              </div>
-            )}
-            
-            {/* Toggle pour terminal (pas de checkbox code) */}
-            {showTerminal && course.linkedProjectId && (
-              <div className="flex justify-end mb-2">
-                <button
-                  onClick={() => setShowTasks(!showTasks)}
-                  className={`p-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 text-[10px] ${
-                    showTasks 
-                      ? 'bg-emerald-500/20 text-emerald-400' 
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-                  }`}
-                >
-                  <ListTodo className="w-3 h-3" />
-                  Tâches
-                </button>
               </div>
             )}
             
@@ -305,6 +396,17 @@ export const CourseChat = memo(function CourseChat({
             )}
           </div>
         </div>
+        
+        {/* Flashcard Modal */}
+        <FlashcardModal
+          isOpen={showFlashcards}
+          onClose={() => setShowFlashcards(false)}
+          flashcards={course.flashcards}
+          onAddFlashcard={handleAddFlashcard}
+          onDeleteFlashcard={handleDeleteFlashcard}
+          courseName={course.name}
+          course={course}
+        />
       </div>
     )
   }
@@ -399,6 +501,20 @@ export const CourseChat = memo(function CourseChat({
                 />
               </div>
               
+              {/* Flashcards Button */}
+              <button
+                onClick={() => setShowFlashcards(true)}
+                className="p-2.5 rounded-xl transition-all duration-200 flex-shrink-0 bg-zinc-800/50 text-zinc-500 hover:text-violet-400 hover:bg-violet-500/10 relative"
+                title="Flashcards"
+              >
+                <Brain className="w-5 h-5" />
+                {course.flashcards.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] bg-violet-500 text-white rounded-full">
+                    {course.flashcards.length}
+                  </span>
+                )}
+              </button>
+              
               {/* Toggle Tasks Button */}
               {course.linkedProjectId && (
                 <button
@@ -424,6 +540,17 @@ export const CourseChat = memo(function CourseChat({
           <LinkedTasks projectId={course.linkedProjectId} />
         </div>
       )}
+      
+      {/* Flashcard Modal */}
+      <FlashcardModal
+        isOpen={showFlashcards}
+        onClose={() => setShowFlashcards(false)}
+        flashcards={course.flashcards}
+        onAddFlashcard={handleAddFlashcard}
+        onDeleteFlashcard={handleDeleteFlashcard}
+        courseName={course.name}
+        course={course}
+      />
     </div>
   )
 })

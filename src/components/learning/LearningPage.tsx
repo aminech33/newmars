@@ -454,7 +454,7 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
   }
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-zinc-950">
+    <div className="h-screen w-full flex flex-col overflow-hidden bg-black">
       {/* Header avec onglets */}
       <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50 bg-zinc-900/50">
         <div className="flex items-center gap-3">

@@ -6,8 +6,6 @@
  * - Santé
  * - Mental
  * - Constance
- * 
- * Transparent et explicable.
  */
 
 import { BrainMemory, UserPatterns, WellbeingScore } from './types'
@@ -255,7 +253,3 @@ export function getTrendEmoji(trend: 'improving' | 'stable' | 'declining'): stri
     default: return '➡️'
   }
 }
-
-
-
-

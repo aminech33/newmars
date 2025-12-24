@@ -31,7 +31,7 @@ def test_adaptive_learning():
     print(f"🔑 Session ID: {session_id}\n")
     
     # 3. Obtenir une question
-    print("3️⃣ Génération d'une question par Gemini...")
+    print("3️⃣ Génération d'une question par ChatGPT...")
     response = requests.get(f"{BASE_URL}/api/learning/next-question/{session_id}")
     print(f"✅ Status: {response.status_code}")
     question_result = response.json()

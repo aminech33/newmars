@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, BookOpen, Star, Clock, Play, Quote, FileText, Search, Image } from 'lucide-react'
+import { X, BookOpen, Star, Clock, Play, Quote, FileText, Search, Image, GraduationCap } from 'lucide-react'
 import { Book, Quote as QuoteType, ReadingNote } from '../../../types/library'
 import { getBookProgress, formatReadingTimeDetailed, formatDateShort } from '../../../utils/libraryFormatters'
 import { Button } from '../../ui/Button'
 import { Textarea } from '../../ui/Input'
 import { fetchMultipleBookCovers, BookCoverResult } from '../../../utils/bookCoverAPI'
 import { GenreBadge } from './GenreBadge'
+import { useStore } from '../../../store/useStore'
 
 type ModalTab = 'details' | 'quotes' | 'notes'
 
@@ -23,6 +24,13 @@ interface BookDetailModalProps {
   isReadingSession: boolean
 }
 
+// Genres considérés comme "techniques/éducatifs" pour l'interconnexion B
+const TECHNICAL_GENRES = [
+  'programming', 'science', 'mathematics', 'technology', 
+  'education', 'business', 'psychology', 'philosophy',
+  'self-help', 'non-fiction', 'technical', 'computer-science'
+]
+
 export function BookDetailModal({ 
   book, 
   onClose, 
@@ -36,6 +44,8 @@ export function BookDetailModal({
   onStartReading,
   isReadingSession
 }: BookDetailModalProps) {
+  const { addLearningCourse, setView, addToast, projects, addProject } = useStore()
+  
   const [activeTab, setActiveTab] = useState<ModalTab>('details')
   const [isEditingProgress, setIsEditingProgress] = useState(false)
   const [currentPage, setCurrentPage] = useState(book.currentPage || 0)
@@ -54,6 +64,62 @@ export function BookDetailModal({
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   const progress = getBookProgress(book.currentPage, book.pages)
+  
+  // Interconnexion B: Vérifier si le livre est technique/éducatif
+  const isTechnicalBook = book.genre && TECHNICAL_GENRES.some(g => 
+    book.genre?.toLowerCase().includes(g)
+  )
+  
+  // Créer un cours depuis ce livre
+  const handleCreateCourse = useCallback(() => {
+    // Créer un projet lié si nécessaire
+    const projectName = `📚 ${book.title}`
+    const existingProject = projects.find(p => p.name === projectName)
+    let projectId = existingProject?.id
+    
+    if (!existingProject) {
+      projectId = addProject({
+        name: projectName,
+        color: '#8b5cf6', // Violet
+        icon: '📚'
+      })
+    }
+    
+    // Créer le cours
+    const now = Date.now()
+    const newCourse = {
+      id: `course-${now}`,
+      name: book.title,
+      description: `Cours basé sur "${book.title}" de ${book.author}`,
+      icon: '📖',
+      color: book.coverColor || 'from-violet-500 to-purple-500',
+      level: 'intermediate' as const,
+      status: 'active' as const,
+      linkedProjectId: projectId,
+      isProgramming: false,
+      messages: [],
+      flashcards: [],
+      notes: [],
+      totalTimeSpent: 0,
+      lastActiveAt: now,
+      streak: 0,
+      sessionsCount: 0,
+      messagesCount: 0,
+      topics: [
+        { id: `topic-1-${now}`, name: 'Introduction', status: 'pending' as const },
+        { id: `topic-2-${now}`, name: 'Concepts clés', status: 'pending' as const },
+        { id: `topic-3-${now}`, name: 'Application pratique', status: 'pending' as const }
+      ],
+      progress: 0,
+      createdAt: now,
+      updatedAt: now
+    }
+    
+    addLearningCourse(newCourse)
+    addToast(`Cours "${book.title}" créé !`, 'success')
+    onClose()
+    setView('learning')
+  }, [book, projects, addProject, addLearningCourse, addToast, onClose, setView])
 
   // Fermeture avec Escape
   useEffect(() => {
@@ -226,6 +292,19 @@ export function BookDetailModal({
                 onClick={onStartReading}
               >
                 Lire
+              </Button>
+            )}
+            
+            {/* Interconnexion B: Bouton créer cours (pour livres techniques) */}
+            {isTechnicalBook && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={GraduationCap}
+                onClick={handleCreateCourse}
+                title="Créer un cours d'apprentissage basé sur ce livre"
+              >
+                Créer cours
               </Button>
             )}
           </div>

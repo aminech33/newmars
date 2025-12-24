@@ -1,6 +1,6 @@
 """
 Services pour l'apprentissage adaptatif
 """
-from .gemini_service import gemini_service
+from .openai_service import openai_service
 
-__all__ = ["gemini_service"]
+__all__ = ["openai_service"]
