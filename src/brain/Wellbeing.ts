@@ -2,10 +2,11 @@
  * 🧠 BRAIN - Wellbeing Score
  * 
  * Score global de bien-être qui combine :
- * - Productivité
- * - Santé
- * - Mental
- * - Constance
+ * - Productivité (33%)
+ * - Mental (33%)
+ * - Constance (33%)
+ * 
+ * Note: La santé a été retirée car elle mesure le tracking, pas le bien-être réel
  */
 
 import { BrainMemory, UserPatterns, WellbeingScore } from './types'
@@ -13,17 +14,23 @@ import { getTodayEvents } from './Memory'
 
 /**
  * Calcule le score de bien-être global (0-100)
+ * Basé sur 3 piliers égaux de 33 points chacun
  */
 export function calculateWellbeingScore(
   memory: BrainMemory,
   patterns: UserPatterns
 ): WellbeingScore {
-  const productivity = calculateProductivityScore(memory, patterns)
-  const health = calculateHealthScore(memory, patterns)
-  const mental = calculateMentalScore(memory, patterns)
-  const consistency = calculateConsistencyScore(memory, patterns)
+  // Calcul sur 3 piliers (0-25 chacun)
+  const productivityRaw = calculateProductivityScore(memory, patterns)
+  const mentalRaw = calculateMentalScore(memory, patterns)
+  const consistencyRaw = calculateConsistencyScore(memory, patterns)
   
-  const overall = productivity + health + mental + consistency
+  // Normaliser sur 100 (chaque pilier vaut ~33%)
+  const productivity = Math.round(productivityRaw * 1.32)  // 0-33
+  const mental = Math.round(mentalRaw * 1.32)              // 0-33
+  const consistency = Math.round(consistencyRaw * 1.32)    // 0-33
+  
+  const overall = Math.min(100, productivity + mental + consistency)
   
   // Calculer la tendance
   const trend = calculateTrend(memory, overall)
@@ -32,7 +39,7 @@ export function calculateWellbeingScore(
     overall,
     breakdown: {
       productivity,
-      health,
+      health: 0, // Deprecated - toujours 0
       mental,
       consistency,
     },
@@ -71,40 +78,6 @@ function calculateProductivityScore(memory: BrainMemory, patterns: UserPatterns)
   score += patterns.taskCompletionRate * 5
   
   return Math.round(score)
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SCORE SANTÉ (0-25)
-// ═══════════════════════════════════════════════════════════════
-
-function calculateHealthScore(memory: BrainMemory, patterns: UserPatterns): number {
-  let score = 0
-  const todayEvents = getTodayEvents(memory)
-  
-  // Repas enregistrés (0-10)
-  const meals = todayEvents.filter(e => e.type === 'meal:added').length
-  if (meals >= 3) score += 10
-  else if (meals >= 2) score += 7
-  else if (meals >= 1) score += 4
-  
-  // Tendance poids positive (0-5)
-  if (patterns.weightTrend === 'stable') score += 5
-  else if (patterns.weightTrend === 'losing') score += 5 // Selon objectif
-  else score += 2 // Gaining peut être bien aussi
-  
-  // Hydratation (0-5)
-  const water = todayEvents.filter(e => e.type === 'water:added').length
-  if (water >= 4) score += 5
-  else if (water >= 2) score += 3
-  else if (water >= 1) score += 1
-  
-  // Calories dans la cible (0-5)
-  if (patterns.avgCaloriesPerDay > 0) {
-    // Approximation : si on a des repas, on est dans la cible
-    if (meals >= 2) score += 5
-  }
-  
-  return Math.round(Math.min(25, score))
 }
 
 // ═══════════════════════════════════════════════════════════════

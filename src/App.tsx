@@ -8,6 +8,7 @@ const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.Hu
 const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
 const ProjectsManagementPage = lazy(() => import('./components/tasks/ProjectsManagementPage').then(m => ({ default: m.ProjectsManagementPage })))
 const MyDayPage = lazy(() => import('./components/myday/MyDayPage').then(m => ({ default: m.MyDayPage })))
+const HealthPage = lazy(() => import('./components/health/HealthPage').then(m => ({ default: m.HealthPage })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
 
@@ -72,7 +73,7 @@ function AppContent() {
           {currentView === 'tasks' && <TasksPage />}
           {currentView === 'projects' && <ProjectsManagementPage onBack={() => useStore.getState().setView('hub')} />}
           {currentView === 'myday' && <MyDayPage />}
-          {currentView === 'health' && <MyDayPage />}
+          {currentView === 'health' && <HealthPage />}
           {currentView === 'learning' && <LearningPage />}
           {currentView === 'library' && <LearningPage />}
           {currentView === 'settings' && <SettingsPage />}

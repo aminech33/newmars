@@ -396,6 +396,7 @@ export const CourseChat = memo(function CourseChat({
             )}
           </div>
         </div>
+        </div>
         
         {/* Flashcard Modal */}
         <FlashcardModal

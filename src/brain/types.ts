@@ -65,7 +65,7 @@ export interface UserPatterns {
   avgFocusDuration: number               // Durée Pomodoro réelle moyenne
   taskCompletionRate: number             // 0-1
   
-  // 🍽️ Santé
+  // 🍽️ Santé (deprecated - gardé pour compatibilité)
   avgCaloriesPerDay: number
   weightTrend: 'losing' | 'gaining' | 'stable'
   
@@ -89,10 +89,10 @@ export interface UserPatterns {
 export interface WellbeingScore {
   overall: number                        // 0-100
   breakdown: {
-    productivity: number                 // 0-25
-    health: number                       // 0-25
-    mental: number                       // 0-25
-    consistency: number                  // 0-25
+    productivity: number                 // 0-33 (33%)
+    health: number                       // Deprecated (toujours 0)
+    mental: number                       // 0-33 (33%)
+    consistency: number                  // 0-33 (33%)
   }
   trend: 'improving' | 'stable' | 'declining'
   trendPercent: number                   // % changement vs semaine dernière

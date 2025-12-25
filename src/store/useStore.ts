@@ -6,6 +6,30 @@ import { JournalEntry } from '../types/journal'
 import { TaskRelation } from '../types/taskRelation'
 import { Course, Message, Flashcard, Note as LearningNote } from '../types/learning'
 import { Book, DEMO_BOOKS, Quote, ReadingNote, ReadingSession, ReadingGoal } from '../types/library'
+// Recalcul automatique des objectifs
+import { recalculateNutritionObjectives, shouldRecalculateObjectives, getRecalculationMessage } from '../utils/autoRecalculateGoals'
+// 🧠 Brain - Connexions pour l'observation
+import {
+  observeTaskCreated,
+  observeTaskCompleted,
+  observeTaskDeleted,
+  observeTaskMoved,
+  observePomodoroCompleted,
+  observePomodoroInterrupted,
+  observeWeightAdded,
+  observeMealAdded,
+  observeWaterAdded,
+  observeJournalWritten,
+  observeMoodSet,
+  observeHabitChecked,
+  observeHabitUnchecked,
+  observeBookStarted,
+  observeBookFinished,
+  observeReadingSession,
+  observeCourseStarted,
+  observeCourseMessage,
+  observeFlashcardReviewed,
+} from '../brain'
 
 export type TaskCategory = string // Changé pour accepter n'importe quelle string
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
@@ -462,6 +486,14 @@ export const useStore = create<AppState>()(
         set((state) => ({ tasks: [...state.tasks, newTask] }))
         get().addToHistory({ type: 'add', task: newTask })
         
+        // 🧠 Brain: Observer création de tâche
+        observeTaskCreated({
+          id: newTask.id,
+          title: newTask.title,
+          category: newTask.category,
+          priority: newTask.priority
+        })
+        
         if (isVisible) {
           get().addToast('Tâche créée', 'success')
         } else {
@@ -477,6 +509,15 @@ export const useStore = create<AppState>()(
           }))
           get().addToHistory({ type: 'toggle', task, previousState: task.completed })
           get().addToast(wasCompleted ? 'Tâche réouverte' : 'Tâche terminée ✓', 'success')
+          
+          // 🧠 Brain: Observer complétion de tâche
+          if (!wasCompleted) {
+            observeTaskCompleted({
+              id: task.id,
+              title: task.title,
+              duration: task.actualTime
+            })
+          }
           
           // Trigger confetti on completion
           if (!wasCompleted) {
@@ -497,6 +538,9 @@ export const useStore = create<AppState>()(
           set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }))
           get().addToHistory({ type: 'delete', task })
           get().addToast('Tâche supprimée', 'info')
+          
+          // 🧠 Brain: Observer suppression de tâche
+          observeTaskDeleted(id)
         }
       },
       updateTask: (id, updates) => {
@@ -510,11 +554,29 @@ export const useStore = create<AppState>()(
         }
       },
       moveTask: (taskId, newStatus) => {
+        const task = get().tasks.find(t => t.id === taskId)
+        const oldStatus = task?.status
+        
         set((state) => ({
           tasks: state.tasks.map((t) => 
             t.id === taskId ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
           )
         }))
+        
+        // 🧠 Brain: Observer déplacement de tâche
+        if (oldStatus && task) {
+          observeTaskMoved(taskId, oldStatus, newStatus)
+          
+          // Si déplacé vers "done", c'est aussi une complétion
+          if (newStatus === 'done') {
+            observeTaskCompleted({
+              id: task.id,
+              title: task.title,
+              duration: task.actualTime
+            })
+          }
+        }
+        
         if (newStatus === 'done') {
           window.dispatchEvent(new CustomEvent('task-completed'))
         }
@@ -698,6 +760,23 @@ export const useStore = create<AppState>()(
           completedAt: Date.now(),
           date: today
         }
+        
+        // 🧠 Brain: Observer session Pomodoro
+        if (session.type === 'focus') {
+          if (session.interrupted) {
+            observePomodoroInterrupted({
+              taskId: session.taskId,
+              afterMinutes: Math.round((session.actualDuration || session.duration))
+            })
+          } else {
+            observePomodoroCompleted({
+              taskId: session.taskId,
+              duration: session.duration,
+              actualDuration: session.actualDuration || session.duration
+            })
+          }
+        }
+        
         set((state) => {
           // Update daily stats
           const existingStatIndex = state.dailyStats.findIndex(s => s.date === today)
@@ -942,6 +1021,9 @@ export const useStore = create<AppState>()(
       })),
       toggleHabitToday: (id) => {
         const today = new Date().toISOString().split('T')[0]
+        const habit = get().habits.find(h => h.id === id)
+        const wasCompleted = habit?.completedDates.includes(today)
+        
         set((state) => ({
           habits: state.habits.map(h => {
             if (h.id === id) {
@@ -957,6 +1039,15 @@ export const useStore = create<AppState>()(
             return h
           })
         }))
+        
+        // 🧠 Brain: Observer toggle habitude
+        if (habit) {
+          if (!wasCompleted) {
+            observeHabitChecked(habit.id, habit.name)
+          } else {
+            observeHabitUnchecked(habit.id)
+          }
+        }
       },
       deleteHabit: (id) => set((state) => ({
         habits: state.habits.filter(h => h.id !== id)
@@ -999,8 +1090,45 @@ export const useStore = create<AppState>()(
       weightEntries: [],
       addWeightEntry: (entry) => {
         const newEntry = { ...entry, id: generateId(), createdAt: Date.now() }
+        const state = get()
+        
+        // Sauvegarder l'ancien poids et objectif pour la notification
+        const oldWeight = state.weightEntries.length > 0
+          ? [...state.weightEntries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].weight
+          : 0
+        const oldCaloriesGoal = state.healthGoals.find(g => g.type === 'calories' && g.active)
+        const oldCalories = oldCaloriesGoal?.target || 0
+        
         set((state) => ({ weightEntries: [...state.weightEntries, newEntry] }))
-        get().addToast('Poids enregistré', 'success')
+        
+        // 🧠 Brain: Observer ajout de poids
+        observeWeightAdded(entry.weight)
+        
+        // 🔄 Recalcul automatique des objectifs si changement significatif
+        if (shouldRecalculateObjectives(entry.weight, state.weightEntries, 2)) {
+          recalculateNutritionObjectives({
+            newWeight: entry.weight,
+            profile: state.userProfile,
+            currentGoals: state.healthGoals,
+            updateHealthGoal: (id, updates) => {
+              set((state) => ({
+                healthGoals: state.healthGoals.map((g) => g.id === id ? { ...g, ...updates } : g)
+              }))
+            }
+          })
+          
+          // Notification explicative
+          const newState = get()
+          const newCaloriesGoal = newState.healthGoals.find(g => g.type === 'calories' && g.active)
+          const newCalories = newCaloriesGoal?.target || 0
+          
+          if (oldCalories > 0 && newCalories !== oldCalories) {
+            const message = getRecalculationMessage(oldWeight, entry.weight, oldCalories, newCalories)
+            get().addToast(`✨ Objectifs recalculés ! ${message}`, 'success')
+          }
+        } else {
+          get().addToast('Poids enregistré', 'success')
+        }
       },
       updateWeightEntry: (id, updates) => {
         set((state) => ({
@@ -1018,6 +1146,12 @@ export const useStore = create<AppState>()(
         const newEntry = { ...entry, id: generateId(), createdAt: Date.now() }
         set((state) => ({ mealEntries: [...state.mealEntries, newEntry] }))
         get().addToast('Repas enregistré', 'success')
+        
+        // 🧠 Brain: Observer ajout de repas
+        observeMealAdded({
+          calories: entry.calories || 0,
+          type: entry.type || 'autre'
+        })
       },
       updateMealEntry: (id, updates) => {
         set((state) => ({
@@ -1052,6 +1186,9 @@ export const useStore = create<AppState>()(
         const newEntry = { ...entry, id: generateId(), createdAt: Date.now() }
         set((state) => ({ hydrationEntries: [...state.hydrationEntries, newEntry] }))
         get().addToast('Hydratation enregistrée', 'success')
+        
+        // 🧠 Brain: Observer ajout d'eau
+        observeWaterAdded(entry.amount || 250)
       },
       deleteHydrationEntry: (id) => {
         set((state) => ({ hydrationEntries: state.hydrationEntries.filter((e) => e.id !== id) }))
@@ -1101,6 +1238,17 @@ export const useStore = create<AppState>()(
         const newEntry = { ...entry, id: generateId(), createdAt: now, updatedAt: now }
         set((state) => ({ journalEntries: [...state.journalEntries, newEntry] }))
         get().addToast('Entrée journal créée', 'success')
+        
+        // 🧠 Brain: Observer écriture journal
+        observeJournalWritten({
+          mood: entry.mood,
+          hasContent: !!(entry.content && entry.content.trim().length > 0)
+        })
+        
+        // Observer mood si présent
+        if (entry.mood !== undefined && entry.mood !== null) {
+          observeMoodSet(entry.mood)
+        }
       },
       updateJournalEntry: (id, updates) => {
         set((state) => ({
@@ -1109,6 +1257,11 @@ export const useStore = create<AppState>()(
           )
         }))
         get().addToast('Entrée mise à jour', 'success')
+        
+        // 🧠 Brain: Observer mise à jour mood si changé
+        if (updates.mood !== undefined && updates.mood !== null) {
+          observeMoodSet(updates.mood)
+        }
       },
       deleteJournalEntry: (id) => {
         set((state) => ({ journalEntries: state.journalEntries.filter((e) => e.id !== id) }))
@@ -1142,6 +1295,9 @@ export const useStore = create<AppState>()(
       learningCourses: [],
       addLearningCourse: (course) => {
         set((state) => ({ learningCourses: [...state.learningCourses, course] }))
+        
+        // 🧠 Brain: Observer démarrage de cours
+        observeCourseStarted(course.id, course.name)
       },
       updateLearningCourse: (id, updates) => {
         set((state) => ({
@@ -1159,6 +1315,9 @@ export const useStore = create<AppState>()(
             c.id === courseId ? { ...c, messages: [...c.messages, message] } : c
           )
         }))
+        
+        // 🧠 Brain: Observer message dans cours
+        observeCourseMessage(courseId, message.role === 'user')
       },
       deleteLearningMessage: (courseId, messageId) => {
         set((state) => ({
@@ -1231,11 +1390,23 @@ export const useStore = create<AppState>()(
         }))
       },
       updateBook: (id, updates) => {
+        const book = get().books.find(b => b.id === id)
+        const oldStatus = book?.status
+        
         set((state) => ({
           books: state.books.map((b) =>
             b.id === id ? { ...b, ...updates, updatedAt: Date.now() } : b
           )
         }))
+        
+        // 🧠 Brain: Observer changement de statut livre
+        if (book && updates.status && oldStatus !== updates.status) {
+          if (updates.status === 'reading' && oldStatus === 'to-read') {
+            observeBookStarted(book.id, book.title)
+          } else if (updates.status === 'finished') {
+            observeBookFinished(book.id, book.title)
+          }
+        }
       },
       deleteBook: (id) => {
         set((state) => ({ 
@@ -1321,6 +1492,12 @@ export const useStore = create<AppState>()(
           date: new Date().toISOString().split('T')[0],
           completedAt: Date.now()
         }
+        
+        // 🧠 Brain: Observer session de lecture
+        observeReadingSession({
+          bookId: book.id,
+          minutes: duration
+        })
         
         set((s) => ({
           readingSessions: [...s.readingSessions, session],

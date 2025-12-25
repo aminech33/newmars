@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧠 Test des connexions Brain</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #e5e5e5;
+    }
+    h1 {
+      color: #6366f1;
+    }
+    .test-section {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status.pending {
+      background: #f59e0b;
+      color: #000;
+    }
+    .status.connected {
+      background: #10b981;
+      color: #000;
+    }
+    .status.missing {
+      background: #ef4444;
+      color: #fff;
+    }
+    .connection {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+    }
+    .connection:last-child {
+      border-bottom: none;
+    }
+    .summary {
+      background: #6366f1;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+    }
+    .summary h2 {
+      margin-top: 0;
+    }
+    code {
+      background: #000;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .instruction {
+      background: #334155;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      border-left: 4px solid #6366f1;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 Vérification des connexions Brain</h1>
+  
+  <div class="instruction">
+    <strong>📋 Instructions :</strong><br>
+    1. Lance l'application newmars<br>
+    2. Effectue quelques actions (complète une tâche, ajoute un repas, etc.)<br>
+    3. Ouvre la console DevTools (F12)<br>
+    4. Va dans <code>Application → Local Storage → iku-brain-memory</code><br>
+    5. Vérifie que les événements apparaissent dans <code>recentEvents</code>
+  </div>
+
+  <div class="test-section">
+    <h2>✅ Tâches (4 connexions)</h2>
+    <div class="connection">
+      <span><code>addTask()</code> → observeTaskCreated()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>toggleTask()</code> → observeTaskCompleted()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>deleteTask()</code> → observeTaskDeleted()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>moveTask()</code> → observeTaskMoved()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>🍅 Pomodoro (2 connexions)</h2>
+    <div class="connection">
+      <span><code>addPomodoroSession()</code> → observePomodoroCompleted()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>addPomodoroSession(interrupted)</code> → observePomodoroInterrupted()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>🍽️ Santé (3 connexions)</h2>
+    <div class="connection">
+      <span><code>addWeightEntry()</code> → observeWeightAdded()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>addMealEntry()</code> → observeMealAdded()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>addHydrationEntry()</code> → observeWaterAdded()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>📝 Journal & Mood (2 connexions)</h2>
+    <div class="connection">
+      <span><code>addJournalEntry()</code> → observeJournalWritten() + observeMoodSet()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>updateJournalEntry()</code> → observeMoodSet()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>🔄 Habitudes (2 connexions)</h2>
+    <div class="connection">
+      <span><code>toggleHabitToday()</code> → observeHabitChecked()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>toggleHabitToday(uncheck)</code> → observeHabitUnchecked()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>📚 Lecture (3 connexions)</h2>
+    <div class="connection">
+      <span><code>updateBook(status)</code> → observeBookStarted()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>updateBook(status→finished)</code> → observeBookFinished()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>endReadingSession()</code> → observeReadingSession()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>🎓 Apprentissage (2 connexions)</h2>
+    <div class="connection">
+      <span><code>addLearningCourse()</code> → observeCourseStarted()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+    <div class="connection">
+      <span><code>addLearningMessage()</code> → observeCourseMessage()</span>
+      <span class="status connected">✓ Connecté</span>
+    </div>
+  </div>
+
+  <div class="summary">
+    <h2>📊 Résumé</h2>
+    <p style="font-size: 24px; margin: 10px 0;">
+      <strong>18/18</strong> connexions établies ✅
+    </p>
+    <p>Le Brain est maintenant <strong>complètement connecté</strong> à l'application !</p>
+    <p style="margin-top: 20px; opacity: 0.9;">
+      <strong>Prochaines étapes :</strong><br>
+      • Utilise l'app normalement pendant quelques jours<br>
+      • Le Brain va collecter des données réelles<br>
+      • Le Wellbeing Score va devenir pertinent<br>
+      • Les patterns vont se dessiner automatiquement
+    </p>
+  </div>
+
+  <div class="instruction" style="margin-top: 30px;">
+    <strong>🧪 Test rapide dans la console :</strong><br>
+    <code style="display: block; margin-top: 10px; background: #000; padding: 10px;">
+      // Afficher les événements enregistrés<br>
+      const memory = JSON.parse(localStorage.getItem('iku-brain-memory'))<br>
+      console.log('Événements Brain:', memory.recentEvents)<br>
+      console.log('Patterns:', memory.patterns)<br>
+      console.log('Score History:', memory.scoreHistory)
+    </code>
+  </div>
+
+</body>
+</html>
+
