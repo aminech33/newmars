@@ -153,3 +153,6 @@ npm run dev
 **Version attendue** : V2.5  
 **Fichier modifié** : `/src/components/HubV2.tsx`
 
+
+
+

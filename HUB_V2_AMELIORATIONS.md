@@ -366,3 +366,6 @@ Utilisateur ouvre l'app
 **Designer :** AI Assistant (Claude Sonnet 4.5)  
 **Status :** ✅ Implémenté et testé
 
+
+
+

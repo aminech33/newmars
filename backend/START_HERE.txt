@@ -37,3 +37,6 @@ Créer .env avec : OPENAI_API_KEY=sk-votre_clé
 
 
 
+
+
+

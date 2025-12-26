@@ -178,3 +178,6 @@ displayBrainStatus();
 console.log('🎉 Brain Dashboard chargé !');
 console.log('   Tape displayBrainStatus() pour rafraîchir.\n');
 
+
+
+

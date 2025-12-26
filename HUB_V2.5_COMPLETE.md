@@ -538,3 +538,6 @@ const completedTasksToday = useMemo(() => { /* ... */ }, [tasks])
 **Fichier modifié** : `/src/components/HubV2.tsx`  
 **Aucune erreur de linting** ✅
 
+
+
+

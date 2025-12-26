@@ -280,3 +280,6 @@ const HealthPage = lazy(() => import('./components/health/HealthPage'))
 **Prêt pour utilisation immédiate.** 🚀  
 *Prochain sprint : Enrichissement base alimentaire + Module Exercice*
 
+
+
+

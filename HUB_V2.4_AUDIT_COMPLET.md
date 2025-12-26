@@ -736,3 +736,6 @@ Le Hub V2.4 est **déjà très solide** (8.2/10). Avec **2h30 d'optimisations ci
 **Version** : V2.4  
 **Prochaine étape** : Implémenter Phase 1 (Quick Wins) ?
 
+
+
+

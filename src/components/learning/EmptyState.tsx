@@ -49,3 +49,6 @@ export function EmptyState({ onCreateCourse }: EmptyStateProps) {
 
 
 
+
+
+

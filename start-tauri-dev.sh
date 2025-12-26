@@ -11,3 +11,6 @@ cd /Users/aminecb/Desktop/newmars
 # Lancer Tauri dev
 npm run tauri dev
 
+
+
+

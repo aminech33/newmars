@@ -592,3 +592,6 @@ Le système actuel peut tracker basiquement les repas, mais n'est **PAS** un out
 **Fin de l'audit**  
 *"La vérité blesse, mais elle soigne." - Proverbe développeur*
 
+
+
+

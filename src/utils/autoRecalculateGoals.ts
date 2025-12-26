@@ -109,3 +109,6 @@ export function getRecalculationMessage(
   return `Poids: ${weightText} → Objectif recalculé: ${caloriesText}`
 }
 
+
+
+

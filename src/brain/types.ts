@@ -128,6 +128,18 @@ export interface BrainState {
   patterns: UserPatterns
   wellbeing: WellbeingScore
   
+  // Historique
+  scoreHistory: { date: string; score: number }[]
+  
+  // Stats rapides
+  quickStats: {
+    todayTaskCount: number
+    lastMood: number | null
+  }
+  
+  // Mémoire complète (pour accès avancé)
+  memory: BrainMemory
+  
   // État interne
   isAnalyzing: boolean
   lastUpdate: number

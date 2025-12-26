@@ -1,4 +1,5 @@
 // Intelligence IA pour le système de santé
+// Inclut des algorithmes avancés de calcul calorique avec données Withings
 
 import { WeightEntry, MealEntry, UserProfile, HealthStats } from '../types/health'
 
@@ -330,4 +331,315 @@ export const detectMealType = (time: string): 'breakfast' | 'lunch' | 'dinner' |
   if (hour >= 11 && hour < 15) return 'lunch'
   if (hour >= 18 && hour < 22) return 'dinner'
   return 'snack'
+}
+
+// ============================================
+// CALCULS AVANCÉS - TDEE RÉEL (SOLUTION 3)
+// ============================================
+
+/**
+ * Calculer le BMR avec composition corporelle (Formule Katch-McArdle)
+ * Plus précis que Mifflin-St Jeor car basé sur la masse maigre
+ * 
+ * @param weight - Poids en kg
+ * @param fatMassPercent - Pourcentage de masse grasse (ex: 20 pour 20%)
+ * @returns BMR en kcal/jour
+ */
+export const calculateBMRWithBodyComposition = (
+  weight: number,
+  fatMassPercent: number
+): number => {
+  // Masse maigre = Poids total - Masse grasse
+  const fatMass = weight * (fatMassPercent / 100)
+  const leanBodyMass = weight - fatMass
+  
+  // Formule Katch-McArdle
+  // BMR = 370 + (21.6 × masse maigre en kg)
+  const bmr = 370 + (21.6 * leanBodyMass)
+  
+  return Math.round(bmr)
+}
+
+/**
+ * Calculer le TDEE réel basé sur l'historique de poids et calories
+ * Méthode la plus précise car basée sur VOS résultats réels
+ * 
+ * Principe : Si vous perdez 0.5kg/semaine en mangeant 2000 kcal,
+ * alors votre TDEE réel est 2000 + (0.5 × 7700 / 7) = 2550 kcal
+ * 
+ * @param weightEntries - Historique des pesées
+ * @param mealEntries - Historique des repas
+ * @param daysToAnalyze - Nombre de jours à analyser (défaut: 30)
+ * @returns TDEE réel en kcal/jour ou null si pas assez de données
+ */
+export const calculateRealTDEE = (
+  weightEntries: WeightEntry[],
+  mealEntries: MealEntry[],
+  daysToAnalyze: number = 30
+): { tdee: number; confidence: number; dataPoints: number } | null => {
+  // Filtrer les derniers X jours
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - daysToAnalyze)
+  const cutoffTime = cutoffDate.getTime()
+  
+  const recentWeights = weightEntries.filter(
+    w => new Date(w.date).getTime() >= cutoffTime
+  ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  const recentMeals = mealEntries.filter(
+    m => new Date(m.date).getTime() >= cutoffTime
+  )
+  
+  // Besoin d'au moins 2 semaines de données pour une estimation fiable
+  const minWeights = 5
+  const minMealDays = 10
+  
+  const uniqueMealDays = new Set(recentMeals.map(m => m.date)).size
+  
+  if (recentWeights.length < minWeights || uniqueMealDays < minMealDays) {
+    return null // Pas assez de données
+  }
+  
+  // 1. Calculer le changement de poids hebdomadaire moyen
+  const firstWeight = recentWeights[0].weight
+  const lastWeight = recentWeights[recentWeights.length - 1].weight
+  const weightChange = lastWeight - firstWeight
+  
+  const firstDate = new Date(recentWeights[0].date)
+  const lastDate = new Date(recentWeights[recentWeights.length - 1].date)
+  const daysDiff = Math.max(1, (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24))
+  
+  // Changement de poids par semaine
+  const weeklyWeightChange = (weightChange / daysDiff) * 7
+  
+  // 2. Calculer les calories moyennes consommées par jour
+  const totalCalories = recentMeals.reduce((sum, m) => sum + m.calories, 0)
+  const avgDailyCalories = totalCalories / uniqueMealDays
+  
+  // 3. Calculer le déficit/surplus calorique quotidien
+  // 1 kg de graisse ≈ 7700 kcal (consensus scientifique)
+  const dailyCalorieChange = (weeklyWeightChange * 7700) / 7
+  
+  // 4. TDEE réel = Calories consommées - Déficit (ou + Surplus)
+  // Si vous perdez du poids, dailyCalorieChange est négatif
+  // Donc TDEE = calories consommées + |déficit|
+  const realTDEE = avgDailyCalories - dailyCalorieChange
+  
+  // 5. Calculer un score de confiance (0-100%)
+  // Basé sur la quantité et la régularité des données
+  const weightDataScore = Math.min(100, (recentWeights.length / 20) * 100)
+  const mealDataScore = Math.min(100, (uniqueMealDays / daysToAnalyze) * 100)
+  const timeRangeScore = Math.min(100, (daysDiff / 21) * 100) // 21 jours = 100%
+  
+  const confidence = Math.round((weightDataScore + mealDataScore + timeRangeScore) / 3)
+  
+  return {
+    tdee: Math.round(realTDEE),
+    confidence,
+    dataPoints: recentWeights.length + uniqueMealDays
+  }
+}
+
+/**
+ * Obtenir les besoins caloriques avec le meilleur algorithme disponible
+ * Priorité : TDEE réel > Katch-McArdle (Withings) > Mifflin-St Jeor (standard)
+ * 
+ * @returns Objet avec TDEE, target, méthode utilisée et niveau de confiance
+ */
+export const getOptimalCalorieTarget = (
+  profile: UserProfile,
+  currentWeight: number,
+  goal: 'lose' | 'maintain' | 'gain',
+  withingsData?: {
+    fatMassPercent?: number
+    muscleMass?: number
+  },
+  history?: {
+    weightEntries: WeightEntry[]
+    mealEntries: MealEntry[]
+  }
+): {
+  tdee: number
+  targetCalories: number
+  method: 'real' | 'body_composition' | 'standard'
+  methodLabel: string
+  confidence: number
+  explanation: string
+} => {
+  let tdee: number = 0
+  let method: 'real' | 'body_composition' | 'standard' = 'standard'
+  let methodLabel: string = ''
+  let confidence: number = 0
+  let explanation: string = ''
+  
+  // Méthode 1 : TDEE réel basé sur historique (le plus précis) 🎯
+  if (history && history.weightEntries.length > 0 && history.mealEntries.length > 0) {
+    const realTDEEResult = calculateRealTDEE(
+      history.weightEntries,
+      history.mealEntries,
+      30 // Analyser les 30 derniers jours
+    )
+    
+    if (realTDEEResult && realTDEEResult.confidence >= 50) {
+      tdee = realTDEEResult.tdee
+      method = 'real'
+      methodLabel = 'Calcul basé sur vos résultats réels'
+      confidence = realTDEEResult.confidence
+      explanation = `Basé sur ${realTDEEResult.dataPoints} points de données (pesées + repas). C'est la méthode la plus précise car elle s'adapte à VOTRE métabolisme unique.`
+    }
+  }
+  
+  // Méthode 2 : Composition corporelle Withings (précis) 💪
+  if (tdee === 0 && withingsData?.fatMassPercent && withingsData.fatMassPercent > 0) {
+    const bmr = calculateBMRWithBodyComposition(
+      currentWeight,
+      withingsData.fatMassPercent
+    )
+    tdee = calculateTDEE(bmr, profile.activityLevel)
+    method = 'body_composition'
+    methodLabel = 'Calcul avec composition corporelle (Withings)'
+    confidence = 75
+    explanation = `Basé sur votre masse musculaire et masse grasse. Plus précis que le calcul standard car la masse musculaire brûle 6x plus de calories.`
+  }
+  
+  // Méthode 3 : Standard Mifflin-St Jeor (approximatif) 📏
+  if (tdee === 0) {
+    const bmr = calculateBMR(
+      currentWeight,
+      profile.height,
+      profile.age,
+      profile.gender
+    )
+    tdee = calculateTDEE(bmr, profile.activityLevel)
+    method = 'standard'
+    methodLabel = 'Calcul standard (Mifflin-St Jeor)'
+    confidence = 50
+    explanation = `Estimation basée sur votre poids, taille, âge et sexe. Pour plus de précision, trackez vos repas pendant 2 semaines.`
+  }
+  
+  // Ajuster selon l'objectif
+  let targetCalories = tdee
+  if (goal === 'lose') {
+    targetCalories = tdee - 500 // Déficit de 500 kcal = -0.5 kg/semaine
+  } else if (goal === 'gain') {
+    targetCalories = tdee + 500 // Surplus de 500 kcal = +0.5 kg/semaine
+  }
+  
+  return {
+    tdee,
+    targetCalories,
+    method,
+    methodLabel,
+    confidence,
+    explanation
+  }
+}
+
+/**
+ * Obtenir des insights intelligents sur les besoins caloriques
+ */
+export const getCalorieInsights = (
+  profile: UserProfile,
+  currentWeight: number,
+  goal: 'lose' | 'maintain' | 'gain',
+  withingsData?: {
+    fatMassPercent?: number
+    muscleMass?: number
+  },
+  history?: {
+    weightEntries: WeightEntry[]
+    mealEntries: MealEntry[]
+  }
+): {
+  insights: string[]
+  recommendations: string[]
+  warnings: string[]
+} => {
+  const insights: string[] = []
+  const recommendations: string[] = []
+  const warnings: string[] = []
+  
+  // Insight sur la composition corporelle
+  if (withingsData?.fatMassPercent && withingsData?.muscleMass) {
+    const leanMass = currentWeight * (1 - withingsData.fatMassPercent / 100)
+    const fatMass = currentWeight - leanMass
+    
+    insights.push(
+      `Votre corps : ${leanMass.toFixed(1)}kg de masse maigre + ${fatMass.toFixed(1)}kg de masse grasse`
+    )
+    
+    // Catégorisation de la masse grasse
+    const isMale = profile.gender === 'male'
+    const fatPercent = withingsData.fatMassPercent
+    
+    if (isMale) {
+      if (fatPercent < 6) warnings.push('⚠️ Masse grasse dangereusement basse')
+      else if (fatPercent < 14) insights.push('💪 Excellent niveau de masse grasse (athlète)')
+      else if (fatPercent < 18) insights.push('✅ Très bon niveau de masse grasse (fitness)')
+      else if (fatPercent < 25) insights.push('👍 Niveau de masse grasse acceptable')
+      else warnings.push('⚠️ Masse grasse élevée - Objectif de perte recommandé')
+    } else {
+      if (fatPercent < 14) warnings.push('⚠️ Masse grasse dangereusement basse')
+      else if (fatPercent < 21) insights.push('💪 Excellent niveau de masse grasse (athlète)')
+      else if (fatPercent < 25) insights.push('✅ Très bon niveau de masse grasse (fitness)')
+      else if (fatPercent < 32) insights.push('👍 Niveau de masse grasse acceptable')
+      else warnings.push('⚠️ Masse grasse élevée - Objectif de perte recommandé')
+    }
+  }
+  
+  // Insight sur l'historique
+  if (history?.weightEntries.length && history.weightEntries.length >= 5) {
+    const realTDEE = calculateRealTDEE(
+      history.weightEntries,
+      history.mealEntries,
+      30
+    )
+    
+    if (realTDEE) {
+      insights.push(
+        `Votre TDEE réel : ${realTDEE.tdee} kcal/jour (confiance: ${realTDEE.confidence}%)`
+      )
+      
+      if (realTDEE.confidence >= 80) {
+        recommendations.push(
+          '🎯 Données excellentes ! Vos objectifs caloriques sont très précis.'
+        )
+      } else if (realTDEE.confidence >= 60) {
+        recommendations.push(
+          '📊 Continuez à tracker pour améliorer la précision.'
+        )
+      } else {
+        recommendations.push(
+          '📝 Trackez vos repas plus régulièrement pour des objectifs plus précis.'
+        )
+      }
+    }
+  } else {
+    recommendations.push(
+      '🚀 Pesez-vous et trackez vos repas pendant 2 semaines pour un calcul ultra-précis de vos besoins!'
+    )
+  }
+  
+  // Recommandations selon l'objectif
+  if (goal === 'lose') {
+    recommendations.push(
+      '🎯 Objectif perte : Déficit de 500 kcal/jour = -0.5 kg/semaine (recommandé)'
+    )
+    recommendations.push(
+      '💡 Augmentez les protéines (30-35% des calories) pour préserver la masse musculaire'
+    )
+  } else if (goal === 'gain') {
+    recommendations.push(
+      '🎯 Objectif prise de masse : Surplus de 500 kcal/jour = +0.5 kg/semaine'
+    )
+    recommendations.push(
+      '💡 Assurez-vous de consommer assez de protéines (2g/kg de poids)'
+    )
+  }
+  
+  return {
+    insights,
+    recommendations,
+    warnings
+  }
 }

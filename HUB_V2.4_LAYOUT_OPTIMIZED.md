@@ -322,3 +322,6 @@ Contexte (coin) → Métriques (centre) → Actions (bas)
 **Statut** : ✅ **COMPLET** — Layout optimisé  
 **Version** : 2.4
 
+
+
+

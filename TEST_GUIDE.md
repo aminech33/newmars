@@ -227,3 +227,6 @@ Maintenant tu peux utiliser l'app normalement, et le Brain va apprendre de ton c
 **Version :** newmars V1.2.1  
 **Statut serveur :** ✅ http://localhost:5173/
 
+
+
+

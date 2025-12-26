@@ -28,11 +28,13 @@ import { DailyCalorieTracker } from './DailyCalorieTracker'
 import { UndoToast } from '../ui/UndoToast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Tooltip } from '../ui/Tooltip'
+import { getOptimalCalorieTarget, getCalorieInsights, calculateBMRWithBodyComposition } from '../../utils/healthIntelligence'
+import { WithingsConnect } from './WithingsConnect'
 
 type HealthTab = 'overview' | 'nutrition' | 'weight' | 'water' | 'profile'
 
 export function HealthPage() {
-  const { setView, userProfile, healthGoals } = useStore()
+  const { setView, userProfile, healthGoals, weightEntries, mealEntries } = useStore()
   
   // Tab state
   const [activeTab, setActiveTab] = useState<HealthTab>('overview')
@@ -220,6 +222,9 @@ export function HealthPage() {
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <>
+              {/* Connexion Withings */}
+              <WithingsConnect />
+              
               {/* Stats cards */}
               <HealthStats
                 latestWeight={latestWeight}
@@ -384,54 +389,112 @@ export function HealthPage() {
             <div className="max-w-4xl mx-auto">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-zinc-200 mb-2">Configuration du profil</h2>
-                <p className="text-zinc-500">Personnalisez vos objectifs nutritionnels</p>
+                <p className="text-zinc-500">Personnalisez vos informations et objectifs nutritionnels</p>
               </div>
               
-              {/* Current Profile Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="p-6 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
-                  <h3 className="text-lg font-medium text-zinc-300 mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-indigo-400" />
-                    Informations physiques
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Taille</span>
-                      <span className="text-zinc-200 font-medium">{userProfile.height} cm</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Âge</span>
-                      <span className="text-zinc-200 font-medium">{userProfile.age} ans</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Genre</span>
-                      <span className="text-zinc-200 font-medium">
-                        {userProfile.gender === 'male' ? '♂️ Homme' : userProfile.gender === 'female' ? '♀️ Femme' : '⚧️ Autre'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Poids actuel</span>
-                      <span className="text-zinc-200 font-medium">{latestWeight > 0 ? `${latestWeight} kg` : 'Non renseigné'}</span>
+              {/* Connexion Withings */}
+              <WithingsConnect />
+              
+              {/* Formulaire éditable */}
+              <div className="p-6 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 mb-6">
+                <h3 className="text-lg font-medium text-zinc-300 mb-6 flex items-center gap-2">
+                  <User className="w-5 h-5 text-indigo-400" />
+                  Informations physiques
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Taille */}
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">
+                      Taille (cm)
+                    </label>
+                    <input
+                      type="number"
+                      value={userProfile.height}
+                      onChange={(e) => useStore.getState().setUserProfile({ height: parseInt(e.target.value) || 0 })}
+                      min="100"
+                      max="250"
+                      className="w-full px-4 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  {/* Âge */}
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">
+                      Âge (ans)
+                    </label>
+                    <input
+                      type="number"
+                      value={userProfile.age}
+                      onChange={(e) => useStore.getState().setUserProfile({ age: parseInt(e.target.value) || 0 })}
+                      min="10"
+                      max="120"
+                      className="w-full px-4 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  {/* Genre */}
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">
+                      Genre
+                    </label>
+                    <select
+                      value={userProfile.gender}
+                      onChange={(e) => useStore.getState().setUserProfile({ gender: e.target.value as 'male' | 'female' | 'other' })}
+                      className="w-full px-4 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="male">♂️ Homme</option>
+                      <option value="female">♀️ Femme</option>
+                      <option value="other">⚧️ Autre</option>
+                    </select>
+                  </div>
+                  
+                  {/* Poids actuel (lecture seule) */}
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">
+                      Poids actuel (kg)
+                    </label>
+                    <div className="px-4 py-2 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-zinc-400 flex items-center justify-between">
+                      <span>{latestWeight > 0 ? `${latestWeight} kg` : 'Non renseigné'}</span>
+                      <button
+                        onClick={() => setShowWeightModal(true)}
+                        className="text-xs text-indigo-400 hover:text-indigo-300"
+                      >
+                        Ajouter
+                      </button>
                     </div>
                   </div>
                 </div>
+              </div>
+              
+              {/* Niveau d'activité */}
+              <div className="p-6 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 mb-6">
+                <h3 className="text-lg font-medium text-zinc-300 mb-4 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-emerald-400" />
+                  Niveau d'activité
+                </h3>
                 
-                <div className="p-6 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
-                  <h3 className="text-lg font-medium text-zinc-300 mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-emerald-400" />
-                    Niveau d'activité
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Activité</span>
-                      <span className="text-zinc-200 font-medium capitalize">
-                        {userProfile.activityLevel === 'sedentary' ? 'Sédentaire' :
-                         userProfile.activityLevel === 'light' ? 'Léger' :
-                         userProfile.activityLevel === 'moderate' ? 'Modéré' :
-                         userProfile.activityLevel === 'active' ? 'Actif' : 'Très actif'}
-                      </span>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {[
+                    { value: 'sedentary', label: 'Sédentaire', description: 'Peu ou pas d\'exercice' },
+                    { value: 'light', label: 'Léger', description: '1-3 jours/semaine' },
+                    { value: 'moderate', label: 'Modéré', description: '3-5 jours/semaine' },
+                    { value: 'active', label: 'Actif', description: '6-7 jours/semaine' },
+                    { value: 'very_active', label: 'Très actif', description: 'Exercice intense quotidien' }
+                  ].map((level) => (
+                    <button
+                      key={level.value}
+                      onClick={() => useStore.getState().setUserProfile({ activityLevel: level.value as any })}
+                      className={`p-4 rounded-lg border text-left transition-all ${
+                        userProfile.activityLevel === level.value
+                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                          : 'bg-zinc-800/30 border-zinc-700/50 text-zinc-400 hover:bg-zinc-800/50 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="font-medium">{level.label}</div>
+                      <div className="text-sm opacity-70 mt-1">{level.description}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
               
@@ -439,7 +502,7 @@ export function HealthPage() {
               <div className="p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl border border-indigo-500/20 mb-6">
                 <h3 className="text-lg font-medium text-zinc-300 mb-4 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-indigo-400" />
-                  Objectifs nutritionnels actuels
+                  Objectifs nutritionnels calculés
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
@@ -463,24 +526,124 @@ export function HealthPage() {
                     <p className="text-xs text-zinc-600">g/jour</p>
                   </div>
                 </div>
-              </div>
-              
-              {/* Action button */}
-              <div className="text-center">
-                <button
-                  onClick={() => setShowProfileModal(true)}
-                  className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-medium rounded-xl transition-all flex items-center gap-3 mx-auto shadow-lg"
-                >
-                  <Settings className="w-5 h-5" />
-                  <span>Modifier mon profil et mes objectifs</span>
-                </button>
-                <p className="text-sm text-zinc-500 mt-3">
-                  Raccourci clavier : <kbd className="px-2 py-1 bg-zinc-800 rounded text-zinc-400">Ctrl+U</kbd>
+                <p className="text-xs text-zinc-500 text-center mt-4">
+                  💡 Les objectifs se recalculent automatiquement quand tu modifies tes informations
                 </p>
               </div>
               
+              {/* Analyse avancée TDEE */}
+              {(() => {
+                const advancedCalories = getOptimalCalorieTarget(
+                  userProfile,
+                  latestWeight,
+                  'maintain',
+                  undefined,
+                  { weightEntries, mealEntries }
+                )
+                
+                const insights = getCalorieInsights(
+                  userProfile,
+                  latestWeight,
+                  'maintain',
+                  undefined,
+                  { weightEntries, mealEntries }
+                )
+                
+                return (
+                  <div className="p-6 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 rounded-2xl border border-emerald-500/20 mb-6">
+                    <h3 className="text-lg font-medium text-zinc-300 mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                      Analyse avancée de vos besoins
+                    </h3>
+                    
+                    {/* Méthode de calcul et confiance */}
+                    <div className="flex items-center justify-between mb-4 p-3 bg-zinc-900/30 rounded-lg">
+                      <div>
+                        <p className="text-sm text-zinc-400">{advancedCalories.methodLabel}</p>
+                        <p className="text-xs text-zinc-600 mt-1">{advancedCalories.explanation}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-zinc-500">Confiance</p>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full transition-all ${
+                                advancedCalories.confidence >= 75 ? 'bg-emerald-500' :
+                                advancedCalories.confidence >= 50 ? 'bg-amber-500' : 'bg-orange-500'
+                              }`}
+                              style={{ width: `${advancedCalories.confidence}%` }}
+                            />
+                          </div>
+                          <span className={`text-sm font-bold ${
+                            advancedCalories.confidence >= 75 ? 'text-emerald-400' :
+                            advancedCalories.confidence >= 50 ? 'text-amber-400' : 'text-orange-400'
+                          }`}>
+                            {advancedCalories.confidence}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* TDEE */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="p-4 bg-zinc-900/30 rounded-lg text-center">
+                        <p className="text-xs text-zinc-500 mb-1">Votre TDEE</p>
+                        <p className="text-3xl font-bold text-emerald-400">{advancedCalories.tdee}</p>
+                        <p className="text-xs text-zinc-600">kcal/jour</p>
+                      </div>
+                      <div className="p-4 bg-zinc-900/30 rounded-lg text-center">
+                        <p className="text-xs text-zinc-500 mb-1">Pour perdre (- 0.5kg/sem)</p>
+                        <p className="text-2xl font-bold text-rose-400">{advancedCalories.tdee - 500}</p>
+                        <p className="text-xs text-zinc-600">kcal/jour</p>
+                      </div>
+                      <div className="p-4 bg-zinc-900/30 rounded-lg text-center">
+                        <p className="text-xs text-zinc-500 mb-1">Pour gagner (+ 0.5kg/sem)</p>
+                        <p className="text-2xl font-bold text-cyan-400">{advancedCalories.tdee + 500}</p>
+                        <p className="text-xs text-zinc-600">kcal/jour</p>
+                      </div>
+                    </div>
+                    
+                    {/* Insights */}
+                    {insights.insights.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        {insights.insights.map((insight, i) => (
+                          <div key={i} className="flex items-start gap-2 p-2 bg-zinc-900/30 rounded-lg">
+                            <span className="text-emerald-400 text-sm">✓</span>
+                            <p className="text-xs text-zinc-400">{insight}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Recommendations */}
+                    {insights.recommendations.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        {insights.recommendations.map((rec, i) => (
+                          <div key={i} className="flex items-start gap-2 p-2 bg-cyan-500/10 rounded-lg">
+                            <span className="text-xs">{rec.split(' ')[0]}</span>
+                            <p className="text-xs text-cyan-300">{rec.substring(rec.indexOf(' ') + 1)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Warnings */}
+                    {insights.warnings.length > 0 && (
+                      <div className="space-y-2">
+                        {insights.warnings.map((warning, i) => (
+                          <div key={i} className="flex items-start gap-2 p-2 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+                            <span className="text-rose-400 text-sm">⚠️</span>
+                            <p className="text-xs text-rose-300">{warning}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+              
               {/* Info box */}
-              <div className="mt-8 p-6 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
+              <div className="p-6 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
                 <h3 className="text-lg font-medium text-zinc-300 mb-4">ℹ️ Comment ça marche ?</h3>
                 <div className="space-y-3 text-sm text-zinc-400">
                   <p>
@@ -492,16 +655,11 @@ export function HealthPage() {
                     votre dépense énergétique totale (TDEE).
                   </p>
                   <p>
-                    <strong className="text-zinc-300">3. Votre objectif</strong> ajuste automatiquement les calories :
+                    <strong className="text-zinc-300">3. Les macronutriments</strong> sont répartis automatiquement 
+                    pour optimiser vos résultats selon votre profil.
                   </p>
-                  <ul className="ml-4 space-y-1">
-                    <li>🎯 <strong className="text-rose-400">Perdre du poids</strong> : TDEE - 500 cal (-0.5kg/semaine)</li>
-                    <li>⚖️ <strong className="text-emerald-400">Maintenir</strong> : TDEE (poids stable)</li>
-                    <li>💪 <strong className="text-cyan-400">Prendre du muscle</strong> : TDEE + 500 cal (+0.5kg/semaine)</li>
-                  </ul>
-                  <p>
-                    <strong className="text-zinc-300">4. Les macronutriments</strong> sont répartis selon votre objectif 
-                    pour optimiser vos résultats.
+                  <p className="text-emerald-400 font-medium">
+                    ✨ Toutes les modifications sont sauvegardées automatiquement !
                   </p>
                 </div>
               </div>

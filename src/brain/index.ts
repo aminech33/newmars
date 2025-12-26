@@ -142,6 +142,9 @@ export function useBrain(): BrainState {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [])
   
+  // Quick stats pour le Hub
+  const quickStats = useMemo(() => quickAnalyze(memory), [memory])
+  
   return {
     patterns,
     wellbeing,
@@ -150,6 +153,9 @@ export function useBrain(): BrainState {
     observe,
     analyze,
     refresh,
+    scoreHistory: memory.scoreHistory,
+    quickStats, // Stats rapides aujourd'hui
+    memory, // Exposer memory pour accès avancé
   }
 }
 

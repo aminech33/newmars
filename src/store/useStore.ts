@@ -16,9 +16,6 @@ import {
   observeTaskMoved,
   observePomodoroCompleted,
   observePomodoroInterrupted,
-  observeWeightAdded,
-  observeMealAdded,
-  observeWaterAdded,
   observeJournalWritten,
   observeMoodSet,
   observeHabitChecked,
@@ -26,8 +23,6 @@ import {
   observeBookStarted,
   observeBookFinished,
   observeReadingSession,
-  observeCourseStarted,
-  observeCourseMessage,
   observeFlashcardReviewed,
 } from '../brain'
 
@@ -1101,9 +1096,6 @@ export const useStore = create<AppState>()(
         
         set((state) => ({ weightEntries: [...state.weightEntries, newEntry] }))
         
-        // 🧠 Brain: Observer ajout de poids
-        observeWeightAdded(entry.weight)
-        
         // 🔄 Recalcul automatique des objectifs si changement significatif
         if (shouldRecalculateObjectives(entry.weight, state.weightEntries, 2)) {
           recalculateNutritionObjectives({
@@ -1146,12 +1138,6 @@ export const useStore = create<AppState>()(
         const newEntry = { ...entry, id: generateId(), createdAt: Date.now() }
         set((state) => ({ mealEntries: [...state.mealEntries, newEntry] }))
         get().addToast('Repas enregistré', 'success')
-        
-        // 🧠 Brain: Observer ajout de repas
-        observeMealAdded({
-          calories: entry.calories || 0,
-          type: entry.type || 'autre'
-        })
       },
       updateMealEntry: (id, updates) => {
         set((state) => ({
@@ -1186,9 +1172,6 @@ export const useStore = create<AppState>()(
         const newEntry = { ...entry, id: generateId(), createdAt: Date.now() }
         set((state) => ({ hydrationEntries: [...state.hydrationEntries, newEntry] }))
         get().addToast('Hydratation enregistrée', 'success')
-        
-        // 🧠 Brain: Observer ajout d'eau
-        observeWaterAdded(entry.amount || 250)
       },
       deleteHydrationEntry: (id) => {
         set((state) => ({ hydrationEntries: state.hydrationEntries.filter((e) => e.id !== id) }))
@@ -1295,9 +1278,6 @@ export const useStore = create<AppState>()(
       learningCourses: [],
       addLearningCourse: (course) => {
         set((state) => ({ learningCourses: [...state.learningCourses, course] }))
-        
-        // 🧠 Brain: Observer démarrage de cours
-        observeCourseStarted(course.id, course.name)
       },
       updateLearningCourse: (id, updates) => {
         set((state) => ({
@@ -1315,9 +1295,6 @@ export const useStore = create<AppState>()(
             c.id === courseId ? { ...c, messages: [...c.messages, message] } : c
           )
         }))
-        
-        // 🧠 Brain: Observer message dans cours
-        observeCourseMessage(courseId, message.role === 'user')
       },
       deleteLearningMessage: (courseId, messageId) => {
         set((state) => ({

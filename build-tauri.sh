@@ -14,3 +14,6 @@ npm run tauri build
 echo "✅ Build terminé !"
 echo "📦 L'app est dans: src-tauri/target/release/bundle/"
 
+
+
+

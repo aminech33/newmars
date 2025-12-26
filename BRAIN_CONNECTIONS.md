@@ -33,18 +33,23 @@ Ce fichier documente toutes les connexions établies entre le Brain et les actio
 
 ---
 
-### 3. **Santé** (3 événements connectés)
+### 3. **~~Santé~~** ❌ DÉCONNECTÉ (V2.7)
 
-| Action | Événement Brain | Localisation |
-|--------|----------------|--------------|
-| `addWeightEntry()` | `observeWeightAdded()` | `useStore.ts:1077` |
-| `addMealEntry()` | `observeMealAdded()` | `useStore.ts:1094` |
-| `addHydrationEntry()` | `observeWaterAdded()` | `useStore.ts:1137` |
+| Action | Événement Brain | Statut |
+|--------|----------------|--------|
+| `addWeightEntry()` | ~~`observeWeightAdded()`~~ | ❌ Retiré |
+| `addMealEntry()` | ~~`observeMealAdded()`~~ | ❌ Retiré |
+| `addHydrationEntry()` | ~~`observeWaterAdded()`~~ | ❌ Retiré |
 
-**Détails :**
-- Poids : envoie la valeur en kg
-- Repas : envoie `{calories, type}`
-- Hydratation : envoie la quantité en ml (défaut 250ml)
+**Raison :**
+- Santé retirée du score Wellbeing (V2.1)
+- Pas affichée dans Hub (V2.6)
+- Doublon avec useGlobalStats (MyDay)
+- **→ Déconnexion complète le 25/12/2024**
+
+**Où voir les stats santé :**
+- ✅ MyDay (useGlobalStats)
+- ✅ Stats détaillées dans Settings
 
 ---
 
@@ -105,17 +110,17 @@ Ce fichier documente toutes les connexions établies entre le Brain et les actio
 
 ## 📊 Résumé
 
-**Total : 18 connexions établies**
+**Total : 15 connexions actives** (3 santé retirées)
 
-| Module | Événements connectés |
-|--------|---------------------|
-| Tâches | 4 |
-| Pomodoro | 2 |
-| Santé | 3 |
-| Journal/Mood | 2 |
-| Habitudes | 2 |
-| Lecture | 3 |
-| Apprentissage | 2 |
+| Module | Événements connectés | Statut |
+|--------|---------------------|---------|
+| Tâches | 4 | ✅ Actif |
+| Pomodoro | 2 | ✅ Actif |
+| ~~Santé~~ | ~~3~~ → 0 | ❌ Déconnecté |
+| Journal/Mood | 2 | ✅ Actif |
+| Habitudes | 2 | ✅ Actif |
+| Lecture | 3 | ✅ Actif |
+| Apprentissage | 2 | ✅ Actif |
 
 ## 🔍 Événements Brain disponibles mais non connectés
 
@@ -139,9 +144,9 @@ Avec ces connexions, le Brain peut maintenant :
 
 2. **Générer un Wellbeing Score précis**
    - Productivité (tâches + pomodoro)
-   - Santé (poids + repas + hydratation)
    - Mental (mood + journal)
    - Constance (habitudes)
+   - ~~Santé (poids + repas + hydratation)~~ ❌ Retiré
 
 3. **Détecter des corrélations**
    - Mood vs productivité
@@ -165,6 +170,9 @@ Le Brain analyse automatiquement toutes les 5 minutes et met à jour le Wellbein
 ---
 
 **Date de connexion :** 24 décembre 2024  
-**Version :** newmars V1.2.1  
+**Dernière mise à jour :** 25 décembre 2024 (V2.7 - Santé déconnectée)  
+**Version :** newmars V2.7  
 **Fichier modifié :** `src/store/useStore.ts`
+
+
 

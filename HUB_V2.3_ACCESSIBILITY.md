@@ -501,3 +501,6 @@ const PILLARS = [
 **Statut** : ✅ **COMPLET** — Accessible & Optimisé  
 **Version** : 2.3
 
+
+
+
