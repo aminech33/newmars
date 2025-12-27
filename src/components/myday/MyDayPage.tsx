@@ -33,6 +33,8 @@ import { MealList } from '../health/MealList'
 import { WeightModal } from '../health/WeightModal'
 import { MealModal } from '../health/MealModal'
 import { MacrosCircularChart } from '../health/MacrosCircularChart'
+import { WaterTracker } from '../health/WaterTracker'
+import { ProfileSetupModal } from '../health/ProfileSetupModal'
 import { UndoToast } from '../ui/UndoToast'
 
 type PageTab = 'journal' | 'sante'
@@ -82,6 +84,7 @@ export function MyDayPage() {
   // Health modal states
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [showMealModal, setShowMealModal] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [healthDeleteConfirm, setHealthDeleteConfirm] = useState<{ type: 'weight' | 'meal'; id: string } | null>(null)
   const [undoData, setUndoData] = useState<{ type: 'weight' | 'meal'; data: any } | null>(null)
   const [showUndo, setShowUndo] = useState(false)
@@ -752,6 +755,18 @@ export function MyDayPage() {
                 <Plus className="w-5 h-5" />
                 Ajouter une pesée
               </button>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="flex items-center gap-3 px-6 py-3 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 hover:border-indigo-500/50 text-indigo-300 rounded-xl transition-all font-medium shadow-lg shadow-indigo-500/10"
+              >
+                <Heart className="w-5 h-5" />
+                Configurer profil
+              </button>
+            </div>
+
+            {/* Hydratation */}
+            <div className="mb-6">
+              <WaterTracker />
             </div>
 
             {/* Layout 2 colonnes : Nutrition (gauche) + Poids (droite) */}
@@ -884,6 +899,11 @@ export function MyDayPage() {
         isOpen={showMealModal}
         onClose={() => setShowMealModal(false)}
         onSubmit={handleMealSubmit}
+      />
+
+      <ProfileSetupModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
       />
 
       <ConfirmDialog
