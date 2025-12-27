@@ -33,7 +33,6 @@ import { MealList } from '../health/MealList'
 import { WeightModal } from '../health/WeightModal'
 import { MealModal } from '../health/MealModal'
 import { MacrosCircularChart } from '../health/MacrosCircularChart'
-import { WaterTracker } from '../health/WaterTracker'
 import { ProfileSetupModal } from '../health/ProfileSetupModal'
 import { UndoToast } from '../ui/UndoToast'
 
@@ -762,11 +761,6 @@ export function MyDayPage() {
                 <Heart className="w-5 h-5" />
                 Configurer profil
               </button>
-            </div>
-
-            {/* Hydratation */}
-            <div className="mb-6">
-              <WaterTracker />
             </div>
 
             {/* Layout 2 colonnes : Nutrition (gauche) + Poids (droite) */}
