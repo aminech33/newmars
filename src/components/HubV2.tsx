@@ -13,7 +13,6 @@ const MODULES = [
   { id: 'projects', label: 'Projets' },
   { id: 'myday', label: 'Ma Journée' },
   { id: 'library', label: 'Bibliothèque' },
-  { id: 'health', label: 'Santé' },
   { id: 'learning', label: 'Apprentissage' },
 ]
 
