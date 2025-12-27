@@ -56,88 +56,64 @@ function getDayName(timestamp: number): string {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MÉTRIQUES TÂCHES
+// MÉTRIQUES TÂCHES — Version simplifiée (3 lignes factuelles)
 // ═══════════════════════════════════════════════════════════════
 
 export interface TaskMetrics {
-  today: number
-  vsYesterday: number
-  vsYesterdayPercent: number
-  avg7d: number
-  vsWeekBefore: number
-  thisWeek: number
-  bestDayThisWeek: { day: string; count: number } | null
-  currentStreak: number
+  // Volume : nombre de tâches terminées aujourd'hui
+  todayCount: number
+  
+  // Nature : type d'activité (avancée réelle ou préparation/maintenance)
+  activityType: 'avancée' | 'préparation'
+  
+  // Tendance 14 jours : stable, en hausse, en baisse
+  trend14d: 'stable' | 'en hausse' | 'en baisse'
 }
 
+/**
+ * Calcule les métriques tâches simplifiées
+ * - Volume : combien aujourd'hui
+ * - Nature : avancée réelle ou préparation/maintenance
+ * - Tendance : rythme sur 14 jours
+ */
 export function calculateTaskMetrics(tasks: Task[]): TaskMetrics {
   const completedTasks = tasks.filter(t => t.completed && t.completedAt)
   
-  // Aujourd'hui
-  const today = completedTasks.filter(t => isToday(t.completedAt!)).length
+  // 1. VOLUME — Tâches terminées aujourd'hui
+  const todayCount = completedTasks.filter(t => isToday(t.completedAt!)).length
   
-  // Hier
-  const yesterday = completedTasks.filter(t => isYesterday(t.completedAt!)).length
+  // 2. NATURE — Détermine le type d'activité
+  // Une tâche est "avancée" si effort M ou L, ou si elle a des subtasks complétées
+  const todayTasks = completedTasks.filter(t => isToday(t.completedAt!))
+  const hasAdvancedTask = todayTasks.some(t => 
+    t.effort === 'M' || 
+    t.effort === 'L' || 
+    (t.subtasks && t.subtasks.filter(s => s.completed).length >= 2)
+  )
+  const activityType: TaskMetrics['activityType'] = hasAdvancedTask ? 'avancée' : 'préparation'
   
-  // 7 derniers jours
-  const last7Days = completedTasks.filter(t => isInLast7Days(t.completedAt!))
-  const avg7d = last7Days.length / 7
+  // 3. TENDANCE 14 JOURS — Compare les 7 derniers jours vs les 7 d'avant
+  const last7Days = completedTasks.filter(t => isInLast7Days(t.completedAt!)).length
+  const last14Days = completedTasks.filter(t => isInLast14Days(t.completedAt!)).length
+  const days8to14 = last14Days - last7Days
   
-  // 7 jours d'avant (jour 8 à 14)
-  const last14Days = completedTasks.filter(t => isInLast14Days(t.completedAt!))
-  const days8to14 = last14Days.filter(t => !isInLast7Days(t.completedAt!))
-  const avgWeekBefore = days8to14.length / 7
-  
-  // Cette semaine
-  const thisWeek = completedTasks.filter(t => isThisWeek(t.completedAt!)).length
-  
-  // Meilleur jour cette semaine
-  const thisWeekTasks = completedTasks.filter(t => isThisWeek(t.completedAt!))
-  const tasksByDay = new Map<string, number>()
-  thisWeekTasks.forEach(t => {
-    const day = getDayName(t.completedAt!)
-    tasksByDay.set(day, (tasksByDay.get(day) || 0) + 1)
-  })
-  let bestDayThisWeek = null
-  if (tasksByDay.size > 0) {
-    const bestEntry = Array.from(tasksByDay.entries()).reduce((a, b) => 
-      b[1] > a[1] ? b : a
-    )
-    bestDayThisWeek = { day: bestEntry[0], count: bestEntry[1] }
-  }
-  
-  // Série actuelle (jours consécutifs avec au moins 1 tâche)
-  let currentStreak = 0
-  const sortedDates = Array.from(new Set(
-    completedTasks.map(t => new Date(t.completedAt!).toDateString())
-  )).sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-  
-  if (sortedDates.length > 0) {
-    const today = new Date().toDateString()
-    if (sortedDates[0] === today) {
-      currentStreak = 1
-      for (let i = 1; i < sortedDates.length; i++) {
-        const prevDate = new Date(sortedDates[i-1])
-        const currDate = new Date(sortedDates[i])
-        const diffDays = Math.floor((prevDate.getTime() - currDate.getTime()) / (24 * 60 * 60 * 1000))
-        if (diffDays === 1) {
-          currentStreak++
-        } else {
-          break
-        }
-      }
+  // Calcul de la tendance
+  let trend14d: TaskMetrics['trend14d'] = 'stable'
+  if (last7Days > 0 || days8to14 > 0) {
+    const diff = last7Days - days8to14
+    const threshold = Math.max(2, Math.round((last7Days + days8to14) / 2 * 0.2)) // 20% de variation
+    
+    if (diff > threshold) {
+      trend14d = 'en hausse'
+    } else if (diff < -threshold) {
+      trend14d = 'en baisse'
     }
   }
   
   return {
-    today,
-    vsYesterday: today - yesterday,
-    vsYesterdayPercent: yesterday > 0 ? Math.round(((today - yesterday) / yesterday) * 100) : 0,
-    avg7d: Math.round(avg7d * 10) / 10,
-    vsWeekBefore: Math.round((avg7d - avgWeekBefore) * 10) / 10,
-    thisWeek,
-    bestDayThisWeek,
-    currentStreak
+    todayCount,
+    activityType,
+    trend14d
   }
 }
 
@@ -246,6 +222,8 @@ export function calculateJournalMetrics(journalEntries: JournalEntry[]): Journal
     thisWeek: { completed: uniqueDaysThisWeek, total: expectedDays }
   }
 }
+
+
 
 
 

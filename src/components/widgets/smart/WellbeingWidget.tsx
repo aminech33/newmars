@@ -6,7 +6,7 @@
 
 import { memo } from 'react'
 import { SmartWidget } from '../SmartWidget'
-import { useBrain } from '../../../brain'
+import { useBrain } from '../../../insights'
 import { useStore } from '../../../store/useStore'
 
 export const WellbeingWidget = memo(function WellbeingWidget() {

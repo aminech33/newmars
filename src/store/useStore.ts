@@ -12,19 +12,12 @@ import { recalculateNutritionObjectives, shouldRecalculateObjectives, getRecalcu
 import {
   observeTaskCreated,
   observeTaskCompleted,
-  observeTaskDeleted,
-  observeTaskMoved,
   observePomodoroCompleted,
-  observePomodoroInterrupted,
   observeJournalWritten,
   observeMoodSet,
   observeHabitChecked,
   observeHabitUnchecked,
-  observeBookStarted,
-  observeBookFinished,
-  observeReadingSession,
-  observeFlashcardReviewed,
-} from '../brain'
+} from '../insights'
 
 export type TaskCategory = string // Changé pour accepter n'importe quelle string
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
@@ -533,9 +526,6 @@ export const useStore = create<AppState>()(
           set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }))
           get().addToHistory({ type: 'delete', task })
           get().addToast('Tâche supprimée', 'info')
-          
-          // 🧠 Brain: Observer suppression de tâche
-          observeTaskDeleted(id)
         }
       },
       updateTask: (id, updates) => {
@@ -558,18 +548,13 @@ export const useStore = create<AppState>()(
           )
         }))
         
-        // 🧠 Brain: Observer déplacement de tâche
-        if (oldStatus && task) {
-          observeTaskMoved(taskId, oldStatus, newStatus)
-          
-          // Si déplacé vers "done", c'est aussi une complétion
-          if (newStatus === 'done') {
-            observeTaskCompleted({
-              id: task.id,
-              title: task.title,
-              duration: task.actualTime
-            })
-          }
+        // 🧠 Brain: Observer complétion si déplacé vers "done"
+        if (oldStatus && task && newStatus === 'done') {
+          observeTaskCompleted({
+            id: task.id,
+            title: task.title,
+            duration: task.actualTime
+          })
         }
         
         if (newStatus === 'done') {
@@ -756,20 +741,13 @@ export const useStore = create<AppState>()(
           date: today
         }
         
-        // 🧠 Brain: Observer session Pomodoro
-        if (session.type === 'focus') {
-          if (session.interrupted) {
-            observePomodoroInterrupted({
-              taskId: session.taskId,
-              afterMinutes: Math.round((session.actualDuration || session.duration))
-            })
-          } else {
-            observePomodoroCompleted({
-              taskId: session.taskId,
-              duration: session.duration,
-              actualDuration: session.actualDuration || session.duration
-            })
-          }
+        // 🧠 Brain: Observer session Pomodoro complétée (pas les interruptions)
+        if (session.type === 'focus' && !session.interrupted) {
+          observePomodoroCompleted({
+            taskId: session.taskId,
+            duration: session.duration,
+            actualDuration: session.actualDuration || session.duration
+          })
         }
         
         set((state) => {
@@ -1376,14 +1354,6 @@ export const useStore = create<AppState>()(
           )
         }))
         
-        // 🧠 Brain: Observer changement de statut livre
-        if (book && updates.status && oldStatus !== updates.status) {
-          if (updates.status === 'reading' && oldStatus === 'to-read') {
-            observeBookStarted(book.id, book.title)
-          } else if (updates.status === 'finished') {
-            observeBookFinished(book.id, book.title)
-          }
-        }
       },
       deleteBook: (id) => {
         set((state) => ({ 
@@ -1469,12 +1439,6 @@ export const useStore = create<AppState>()(
           date: new Date().toISOString().split('T')[0],
           completedAt: Date.now()
         }
-        
-        // 🧠 Brain: Observer session de lecture
-        observeReadingSession({
-          bookId: book.id,
-          minutes: duration
-        })
         
         set((s) => ({
           readingSessions: [...s.readingSessions, session],

@@ -1,7 +1,7 @@
 /**
- * 🧠 BRAIN - Observer
+ * 📊 INSIGHTS - Observer
  * 
- * Observe silencieusement chaque action de l'utilisateur.
+ * Observe silencieusement les actions utilisées dans le Wellbeing Score.
  * Ne juge pas, ne bloque pas, enregistre simplement.
  */
 
@@ -18,7 +18,7 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null
 export function initObserver(): void {
   if (memory === null) {
     memory = loadMemory()
-    console.log('[Brain] 🧠 Observer initialisé avec', memory.recentEvents.length, 'événements en mémoire')
+    console.log('[Insights] 📊 Observer initialisé avec', memory.recentEvents.length, 'événements en mémoire')
   }
 }
 
@@ -70,85 +70,42 @@ export function flushMemory(): void {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HELPERS POUR OBSERVER FACILEMENT
+// HELPERS — Seulement ceux utilisés dans le Wellbeing Score
 // ═══════════════════════════════════════════════════════════════
 
-// Tâches
+// Tâches (utilisé dans Productivité)
 export const observeTaskCreated = (task: { id: string; title: string; category: string; priority: string }) => 
   observe('task:created', task)
 
 export const observeTaskCompleted = (task: { id: string; title: string; duration?: number }) => 
   observe('task:completed', task)
 
-export const observeTaskDeleted = (taskId: string) => 
-  observe('task:deleted', { taskId })
-
-export const observeTaskMoved = (taskId: string, from: string, to: string) => 
-  observe('task:moved', { taskId, from, to })
-
-// Pomodoro
-export const observePomodoroStarted = (data: { taskId?: string; duration: number }) => 
-  observe('pomodoro:started', data)
-
+// Pomodoro (utilisé dans Productivité)
 export const observePomodoroCompleted = (data: { taskId?: string; duration: number; actualDuration: number }) => 
   observe('pomodoro:completed', data)
 
-export const observePomodoroInterrupted = (data: { taskId?: string; afterMinutes: number }) => 
-  observe('pomodoro:interrupted', data)
-
-// Santé
-export const observeWeightAdded = (weight: number) => 
-  observe('weight:added', { weight })
-
-export const observeMealAdded = (data: { calories: number; type: string }) => 
-  observe('meal:added', data)
-
-export const observeWaterAdded = (ml: number) => 
-  observe('water:added', { ml })
-
-// Journal & Mood
+// Journal & Mood (utilisé dans Mental)
 export const observeJournalWritten = (data: { mood?: number; hasContent: boolean }) => 
   observe('journal:written', data)
 
 export const observeMoodSet = (mood: number) => 
   observe('mood:set', { mood })
 
-// Habitudes
+// Habitudes (utilisé dans Constance)
 export const observeHabitChecked = (habitId: string, habitName: string) => 
   observe('habit:checked', { habitId, habitName })
 
 export const observeHabitUnchecked = (habitId: string) => 
   observe('habit:unchecked', { habitId })
 
-// Lecture
-export const observeBookStarted = (bookId: string, bookTitle: string) => 
-  observe('book:started', { bookId, bookTitle })
-
-export const observeBookFinished = (bookId: string, bookTitle: string) => 
-  observe('book:finished', { bookId, bookTitle })
-
-export const observeReadingSession = (data: { bookId: string; minutes: number }) => 
-  observe('reading:session', data)
-
-// Apprentissage
-export const observeCourseStarted = (courseId: string, courseName: string) => 
-  observe('course:started', { courseId, courseName })
-
-export const observeCourseMessage = (courseId: string, isUser: boolean) => 
-  observe('course:message', { courseId, isUser })
-
-export const observeFlashcardReviewed = (data: { courseId: string; correct: boolean }) => 
-  observe('flashcard:reviewed', data)
-
-// Navigation
-export const observeViewChanged = (from: string, to: string) => 
-  observe('view:changed', { from, to })
-
+// App lifecycle (utilisé pour tracking)
 export const observeAppOpened = () => 
   observe('app:opened', {})
 
 export const observeAppClosed = () => 
   observe('app:closed', {})
+
+
 
 
 

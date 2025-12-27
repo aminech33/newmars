@@ -8,7 +8,13 @@
 import { useMemo } from 'react'
 import { useStore } from '../store/useStore'
 
-const fontStack = 'font-[Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,SF_Pro_Display,Segoe_UI,Roboto,sans-serif]'
+// Design system unifié (cohérent avec HubV2)
+const TYPO = {
+  sectionTitle: 'text-sm uppercase tracking-[0.12em] text-zinc-400 font-semibold',
+  label: 'text-[13px] text-zinc-400',
+  value: 'text-[13px] text-zinc-300 font-medium tabular-nums',
+  small: 'text-[11px] text-zinc-400',
+}
 
 export function ProjectsMiniView() {
   const projects = useStore((state) => state.projects)
@@ -79,7 +85,7 @@ export function ProjectsMiniView() {
   
   return (
     <div>
-      <p className={`text-[16px] uppercase tracking-[0.1em] text-zinc-400 mb-3 ml-0.5 font-bold ${fontStack}`}>
+      <p className={`${TYPO.sectionTitle} mb-3 ml-0.5`}>
         Projets ({activeProjects.length} actifs)
       </p>
       
@@ -87,27 +93,18 @@ export function ProjectsMiniView() {
         {activeProjects.map((project) => (
           <button
             key={project.id}
-            onClick={() => setView('tasks')} // Va à la page Tasks (à améliorer avec filtre projet)
-            className={`
-              w-full px-3 py-2.5 
-              bg-zinc-950/30 hover:bg-zinc-900/40
-              border border-zinc-800/30 hover:border-zinc-700/50
-              rounded-lg
-              transition-all duration-150
-              focus:outline-none focus:ring-2 focus:ring-zinc-500/50 focus:ring-offset-2 focus:ring-offset-black
-              text-left
-              ${fontStack}
-            `}
+            onClick={() => setView('tasks')}
+            className="w-full px-3 py-2.5 bg-zinc-950/30 hover:bg-zinc-900/40 border border-zinc-800/30 hover:border-zinc-700/50 rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-zinc-500/50 focus:ring-offset-2 focus:ring-offset-black text-left"
             aria-label={`Projet ${project.name}, ${project.progress}% complété`}
           >
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-[16px]">{project.icon}</span>
-                <span className="text-[14px] text-zinc-300 font-medium truncate">
+                <span className="text-base">{project.icon}</span>
+                <span className={`${TYPO.label} text-zinc-300 font-medium truncate`}>
                   {project.name}
                 </span>
               </div>
-              <span className="text-[13px] text-zinc-500 font-medium tabular-nums ml-2">
+              <span className={`${TYPO.value} ml-2`}>
                 {project.progress}%
               </span>
             </div>
@@ -128,7 +125,7 @@ export function ProjectsMiniView() {
             </div>
             
             {/* Infos supplémentaires */}
-            <div className="flex items-center gap-3 text-[11px] text-zinc-600">
+            <div className={`flex items-center gap-3 ${TYPO.small} text-zinc-500`}>
               {project.hasPhases && project.totalPhases > 0 && (
                 <span>
                   Phase {project.currentPhase}/{project.totalPhases}
@@ -138,7 +135,7 @@ export function ProjectsMiniView() {
                 {project.remainingTasks} tâche{project.remainingTasks > 1 ? 's' : ''}
               </span>
               {project.todayProjectTasks > 0 && (
-                <span className="text-emerald-500 font-medium">
+                <span className="text-emerald-400 font-medium">
                   • {project.todayProjectTasks} aujourd'hui
                 </span>
               )}

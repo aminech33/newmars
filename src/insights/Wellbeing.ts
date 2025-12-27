@@ -1,5 +1,5 @@
 /**
- * 🧠 BRAIN - Wellbeing Score
+ * 📊 INSIGHTS - Wellbeing Score
  * 
  * Score global de bien-être qui combine :
  * - Productivité (33%)
@@ -39,7 +39,6 @@ export function calculateWellbeingScore(
     overall,
     breakdown: {
       productivity,
-      health: 0, // Deprecated - toujours 0
       mental,
       consistency,
     },

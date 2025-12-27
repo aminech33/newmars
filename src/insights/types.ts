@@ -1,46 +1,27 @@
 /**
- * 🧠 BRAIN - Types centralisés (SIMPLIFIÉ)
+ * 📊 INSIGHTS - Types centralisés
  * 
- * Le cerveau observe et calcule le Wellbeing Score.
- * Pas de prédictions ni de suggestions - juste des stats.
+ * Module d'analyse qui calcule le Wellbeing Score.
+ * 3 piliers : Productivité, Mental, Constance
  */
 
 // ═══════════════════════════════════════════════════════════════
-// ÉVÉNEMENTS OBSERVÉS
+// ÉVÉNEMENTS OBSERVÉS (seulement ceux utilisés dans le score)
 // ═══════════════════════════════════════════════════════════════
 
 export type BrainEventType =
-  // Tâches
+  // Tâches (Productivité)
   | 'task:created'
   | 'task:completed'
-  | 'task:deleted'
-  | 'task:updated'
-  | 'task:moved'
-  // Pomodoro
-  | 'pomodoro:started'
+  // Pomodoro (Productivité)
   | 'pomodoro:completed'
-  | 'pomodoro:interrupted'
-  // Santé
-  | 'weight:added'
-  | 'meal:added'
-  | 'water:added'
-  // Journal & Mood
+  // Journal & Mood (Mental)
   | 'journal:written'
   | 'mood:set'
-  // Habitudes
+  // Habitudes (Constance)
   | 'habit:checked'
   | 'habit:unchecked'
-  | 'habit:created'
-  // Lecture
-  | 'book:started'
-  | 'book:finished'
-  | 'reading:session'
-  // Apprentissage
-  | 'course:started'
-  | 'course:message'
-  | 'flashcard:reviewed'
-  // Navigation
-  | 'view:changed'
+  // App lifecycle
   | 'app:opened'
   | 'app:closed'
 
@@ -60,23 +41,19 @@ export interface BrainEvent {
 // ═══════════════════════════════════════════════════════════════
 
 export interface UserPatterns {
-  // ✅ Productivité
+  // 🟢 Productivité (pilier 1)
   avgTasksPerDay: number
   avgFocusDuration: number               // Durée Pomodoro réelle moyenne
   taskCompletionRate: number             // 0-1
   
-  // 🍽️ Santé (deprecated - gardé pour compatibilité)
-  avgCaloriesPerDay: number
-  weightTrend: 'losing' | 'gaining' | 'stable'
-  
-  // 🧘 Mental
+  // 🔵 Mental (pilier 2)
   avgMood: number                        // 1-10
   journalFrequency: number               // Jours/semaine
   
-  // 🔄 Habitudes
+  // 🟡 Constance (pilier 3)
   habitCompletionRate: number            // 0-1
   
-  // 🔗 Corrélations (pour Dashboard)
+  // 🔗 Corrélations
   correlations: {
     moodProductivity: number             // -1 à 1
   }
@@ -90,7 +67,6 @@ export interface WellbeingScore {
   overall: number                        // 0-100
   breakdown: {
     productivity: number                 // 0-33 (33%)
-    health: number                       // Deprecated (toujours 0)
     mental: number                       // 0-33 (33%)
     consistency: number                  // 0-33 (33%)
   }
@@ -135,6 +111,7 @@ export interface BrainState {
   quickStats: {
     todayTaskCount: number
     lastMood: number | null
+    focusMinutes: number
   }
   
   // Mémoire complète (pour accès avancé)

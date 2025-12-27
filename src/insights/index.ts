@@ -1,9 +1,9 @@
 /**
- * 🧠 BRAIN - Point d'entrée unique (SIMPLIFIÉ)
+ * 📊 INSIGHTS - Point d'entrée unique
  * 
- * Le cerveau de l'application qui :
- * - Observe chaque action (silencieusement)
- * - Calcule le Wellbeing Score pour le Dashboard
+ * Module d'analyse qui :
+ * - Observe les actions utilisateur (silencieusement)
+ * - Calcule le Wellbeing Score (3 piliers)
  * 
  * Usage:
  * ```tsx
@@ -31,28 +31,14 @@ import {
   observe as observeEvent, 
   getMemory, 
   flushMemory,
-  // Re-export des helpers
+  // Observers utilisés dans le score
   observeTaskCreated,
   observeTaskCompleted,
-  observeTaskDeleted,
-  observeTaskMoved,
-  observePomodoroStarted,
   observePomodoroCompleted,
-  observePomodoroInterrupted,
-  observeWeightAdded,
-  observeMealAdded,
-  observeWaterAdded,
   observeJournalWritten,
   observeMoodSet,
   observeHabitChecked,
   observeHabitUnchecked,
-  observeBookStarted,
-  observeBookFinished,
-  observeReadingSession,
-  observeCourseStarted,
-  observeCourseMessage,
-  observeFlashcardReviewed,
-  observeViewChanged,
   observeAppOpened,
   observeAppClosed,
 } from './Observer'
@@ -169,30 +155,16 @@ export { useBrain as default }
 // Types
 export * from './types'
 
-// Fonctions d'observation (pour intégration dans useStore)
+// Fonctions d'observation (seulement celles utilisées dans le score)
 export {
-  observe as brainObserve,
+  observeEvent as brainObserve,
   observeTaskCreated,
   observeTaskCompleted,
-  observeTaskDeleted,
-  observeTaskMoved,
-  observePomodoroStarted,
   observePomodoroCompleted,
-  observePomodoroInterrupted,
-  observeWeightAdded,
-  observeMealAdded,
-  observeWaterAdded,
   observeJournalWritten,
   observeMoodSet,
   observeHabitChecked,
   observeHabitUnchecked,
-  observeBookStarted,
-  observeBookFinished,
-  observeReadingSession,
-  observeCourseStarted,
-  observeCourseMessage,
-  observeFlashcardReviewed,
-  observeViewChanged,
 }
 
 // Helpers d'affichage

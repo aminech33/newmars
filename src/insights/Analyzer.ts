@@ -1,8 +1,10 @@
 /**
- * 🧠 BRAIN - Analyzer (SIMPLIFIÉ)
+ * 📊 INSIGHTS - Analyzer
  * 
  * Analyse les événements pour calculer les patterns
  * utilisés par le Wellbeing Score.
+ * 
+ * 3 piliers : Productivité, Mental, Constance
  */
 
 import { BrainMemory, UserPatterns, BrainEvent } from './types'
@@ -23,9 +25,6 @@ export function analyzePatterns(memory: BrainMemory): UserPatterns {
     // Productivité
     ...analyzeProductivityPatterns(events),
     
-    // Santé
-    ...analyzeHealthPatterns(events),
-    
     // Mental
     ...analyzeMentalPatterns(events),
     
@@ -38,7 +37,7 @@ export function analyzePatterns(memory: BrainMemory): UserPatterns {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ANALYSE PRODUCTIVITÉ
+// ANALYSE PRODUCTIVITÉ (utilisé dans Wellbeing Score)
 // ═══════════════════════════════════════════════════════════════
 
 function analyzeProductivityPatterns(events: BrainEvent[]): Partial<UserPatterns> {
@@ -74,43 +73,7 @@ function analyzeProductivityPatterns(events: BrainEvent[]): Partial<UserPatterns
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ANALYSE SANTÉ
-// ═══════════════════════════════════════════════════════════════
-
-function analyzeHealthPatterns(events: BrainEvent[]): Partial<UserPatterns> {
-  const meals = events.filter(e => e.type === 'meal:added')
-  const weights = events.filter(e => e.type === 'weight:added')
-  
-  // Calories moyennes par jour
-  const caloriesByDay: Record<string, number> = {}
-  meals.forEach(e => {
-    const day = new Date(e.timestamp).toISOString().split('T')[0]
-    caloriesByDay[day] = (caloriesByDay[day] || 0) + (e.data.calories || 0)
-  })
-  
-  const avgCaloriesPerDay = Object.keys(caloriesByDay).length > 0
-    ? Math.round(Object.values(caloriesByDay).reduce((a, b) => a + b, 0) / Object.keys(caloriesByDay).length)
-    : 0
-  
-  // Tendance poids
-  let weightTrend: 'losing' | 'gaining' | 'stable' = 'stable'
-  if (weights.length >= 2) {
-    const sorted = [...weights].sort((a, b) => a.timestamp - b.timestamp)
-    const first = sorted[0].data.weight
-    const last = sorted[sorted.length - 1].data.weight
-    const diff = last - first
-    if (diff < -0.5) weightTrend = 'losing'
-    else if (diff > 0.5) weightTrend = 'gaining'
-  }
-  
-  return {
-    avgCaloriesPerDay,
-    weightTrend,
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ANALYSE MENTAL
+// ANALYSE MENTAL (utilisé dans Wellbeing Score)
 // ═══════════════════════════════════════════════════════════════
 
 function analyzeMentalPatterns(events: BrainEvent[]): Partial<UserPatterns> {
@@ -213,6 +176,7 @@ function analyzeCorrelations(events: BrainEvent[]): UserPatterns['correlations']
 export function quickAnalyze(memory: BrainMemory): {
   todayTaskCount: number
   lastMood: number | null
+  focusMinutes: number
 } {
   const todayEvents = getTodayEvents(memory)
   const todayTaskCount = todayEvents.filter(e => e.type === 'task:completed').length
@@ -223,8 +187,14 @@ export function quickAnalyze(memory: BrainMemory): {
     .sort((a, b) => b.timestamp - a.timestamp)
   const lastMood = moodEvents[0]?.data.mood ?? null
   
+  // Temps de focus aujourd'hui (Pomodoro)
+  const focusMinutes = todayEvents
+    .filter(e => e.type === 'pomodoro:completed')
+    .reduce((sum, e) => sum + (e.data.actualDuration || e.data.duration || 25), 0)
+  
   return {
     todayTaskCount,
     lastMood,
+    focusMinutes,
   }
 }

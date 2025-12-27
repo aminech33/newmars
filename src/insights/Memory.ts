@@ -1,5 +1,5 @@
 /**
- * 🧠 BRAIN - Memory (SIMPLIFIÉ)
+ * 📊 INSIGHTS - Memory
  * 
  * Stockage persistant des patterns et événements.
  * Utilise localStorage comme le reste de l'app.
@@ -8,22 +8,20 @@
 import { BrainMemory, BrainEvent, UserPatterns, DEFAULT_BRAIN_CONFIG } from './types'
 
 const STORAGE_KEY = 'iku-brain-memory'
-const CURRENT_VERSION = 2 // Incrémenté pour migration
+const CURRENT_VERSION = 3 // V3 = nettoyage patterns santé
 
 // Patterns par défaut (utilisateur nouveau)
 const DEFAULT_PATTERNS: UserPatterns = {
+  // Productivité
   avgTasksPerDay: 0,
   avgFocusDuration: 25,
   taskCompletionRate: 0,
-  
-  avgCaloriesPerDay: 0,
-  weightTrend: 'stable',
-  
+  // Mental
   avgMood: 6,
   journalFrequency: 0,
-  
+  // Constance
   habitCompletionRate: 0,
-  
+  // Corrélations
   correlations: {
     moodProductivity: 0,
   }
@@ -64,7 +62,7 @@ export function loadMemory(): BrainMemory {
     
     return parsed
   } catch (error) {
-    console.warn('[Brain] Erreur chargement mémoire:', error)
+    console.warn('[Insights] Erreur chargement mémoire:', error)
     return { ...DEFAULT_MEMORY }
   }
 }
@@ -76,7 +74,7 @@ export function saveMemory(memory: BrainMemory): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(memory))
   } catch (error) {
-    console.warn('[Brain] Erreur sauvegarde mémoire:', error)
+    console.warn('[Insights] Erreur sauvegarde mémoire:', error)
   }
 }
 
@@ -162,15 +160,14 @@ export function getTodayEvents(memory: BrainMemory): BrainEvent[] {
  * Migration de mémoire (pour futures versions)
  */
 function migrateMemory(oldMemory: any): BrainMemory {
-  console.log('[Brain] Migration mémoire v' + oldMemory.version + ' → v' + CURRENT_VERSION)
+  console.log('[Insights] Migration mémoire v' + oldMemory.version + ' → v' + CURRENT_VERSION)
   
   // Migrer les patterns (garder seulement ce qui existe dans le nouveau format)
+  // Note: avgCaloriesPerDay et weightTrend supprimés en V3
   const migratedPatterns: UserPatterns = {
     avgTasksPerDay: oldMemory.patterns?.avgTasksPerDay ?? 0,
     avgFocusDuration: oldMemory.patterns?.avgFocusDuration ?? 25,
     taskCompletionRate: oldMemory.patterns?.taskCompletionRate ?? 0,
-    avgCaloriesPerDay: oldMemory.patterns?.avgCaloriesPerDay ?? 0,
-    weightTrend: oldMemory.patterns?.weightTrend ?? 'stable',
     avgMood: oldMemory.patterns?.avgMood ?? 6,
     journalFrequency: oldMemory.patterns?.journalFrequency ?? 0,
     habitCompletionRate: oldMemory.patterns?.habitCompletionRate ?? 0,

@@ -96,3 +96,5 @@ trap "echo ''; echo 'Arrêt des services...'; kill $NGROK_PID $BACKEND_PID 2>/de
 # Attendre
 wait
 
+
+

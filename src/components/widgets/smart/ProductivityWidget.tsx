@@ -6,7 +6,7 @@
 
 import { memo } from 'react'
 import { SmartWidget } from '../SmartWidget'
-import { useBrain } from '../../../brain'
+import { useBrain } from '../../../insights'
 import { useGlobalStats } from '../../../hooks/useGlobalStats'
 import { useStore } from '../../../store/useStore'
 
