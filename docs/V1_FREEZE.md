@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 28 décembre 2024 (V1.2.5 - Tests Automatisés & Store Modulaire)  
-> **Version** : 1.2.5  
+> **Dernière mise à jour** : 28 décembre 2024 (V1.2.6 - TasksPage Refactorisée)  
+> **Version** : 1.2.6  
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -19,6 +19,7 @@
 - ✅ **4 Smart Widgets** (Wellbeing, Productivity, Streak, NextTask) - remplacent 7 anciens widgets
 - ✅ **Tests Automatisés V1.2.5** : 130 tests (106 frontend Vitest + 24 backend Pytest)
 - ✅ **Store Modulaire V1.2.5** : 6 slices indépendants (Tasks, Health, Journal, Learning, Library, UI)
+- ✅ **TasksPage Refactorisée V1.2.6** : 1902→280 lignes, 6 composants extraits
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -40,11 +41,11 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.2.5 COMPLET** — Tests automatisés, Store modulaire, architecture production-ready
+**Statut** : ✅ **V1.2.6 COMPLET** — Tests automatisés, Store modulaire, TasksPage refactorisée, architecture production-ready
 
 ---
 
-## 📊 Métriques V1.2.5
+## 📊 Métriques V1.2.6
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
@@ -78,7 +79,51 @@ Store slices           : 6 (Tasks, Health, Journal, Learning, Library, UI)
 Couverture tests       : Algos critiques (taskIntelligence, healthIntelligence, metrics, SM-2++)
 Framework tests FE     : Vitest + Testing Library
 Framework tests BE     : Pytest
+
+NOUVEAU V1.2.6 ⭐ :
+TasksPage refactorisée : 1902 → 280 lignes (-85%)
+Composants extraits    : 6 (TaskRow, TemporalColumn, DefineProjectZone, PlanningZone, TasksHeader, taskUtils)
 ```
+
+---
+
+## 🎯 V1.2.6 — TasksPage Refactorisée (28 déc 2024)
+
+### Découpage TasksPage
+
+**Problème** : `TasksPage.tsx` de 1902 lignes = fichier trop gros, difficile à maintenir
+
+**Solution** : Extraction en **6 composants** spécialisés
+
+**Nouvelle structure** :
+```
+src/components/tasks/
+├── TasksPage.tsx              # 280 lignes (vs 1902)
+├── taskUtils.ts               # Types et utilitaires partagés
+├── TaskRow.tsx                # Ligne de tâche draggable
+├── TemporalColumnComponent.tsx # Colonne temporelle avec D&D
+├── DefineProjectZone.tsx      # Zone définition projet (compétences)
+├── PlanningZone.tsx           # Zone planification IA
+└── TasksHeader.tsx            # Header avec navigation et actions
+```
+
+**Détail des composants** :
+
+| Composant | Lignes | Responsabilités |
+|-----------|--------|-----------------|
+| **TasksPage** | 280 | Orchestration, état global, drag & drop context |
+| **taskUtils** | 120 | Types, constantes, fonctions utilitaires |
+| **TaskRow** | 230 | Rendu tâche, checkbox, priorité, focus button |
+| **TemporalColumnComponent** | 180 | Colonne Droppable, liste tâches, phases bloquées |
+| **DefineProjectZone** | 300 | Analyse domaine, cercles compétences, sélection |
+| **PlanningZone** | 450 | Génération plan IA, phases, création projet |
+| **TasksHeader** | 130 | Navigation, onglets, timeline progression |
+
+**Avantages** :
+- ✅ **Lisibilité** : 280 lignes vs 1902 (-85%)
+- ✅ **Réutilisabilité** : Composants indépendants
+- ✅ **Testabilité** : Chaque composant testable isolément
+- ✅ **Maintenabilité** : Modifications ciblées
 
 ---
 
