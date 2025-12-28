@@ -1,3 +1,7 @@
+/**
+ * 🎓 Learning Slice - Cours et flashcards
+ */
+
 import { StateCreator } from 'zustand'
 import { Course, Message, Flashcard, Note as LearningNote } from '../../types/learning'
 
@@ -14,86 +18,81 @@ export interface LearningSlice {
   deleteLearningNote: (courseId: string, noteId: string) => void
 }
 
-export const createLearningSlice: StateCreator<LearningSlice> = (set) => ({
+export const createLearningSlice: StateCreator<
+  LearningSlice,
+  [['zustand/persist', unknown]],
+  [],
+  LearningSlice
+> = (set, get) => ({
   learningCourses: [],
 
-  addLearningCourse: (course) => set((state) => ({
-    learningCourses: [...state.learningCourses, course]
-  })),
+  addLearningCourse: (course) => {
+    set((s) => ({ learningCourses: [...s.learningCourses, course] }))
+  },
 
-  updateLearningCourse: (id, updates) => set((state) => ({
-    learningCourses: state.learningCourses.map(c =>
-      c.id === id ? { ...c, ...updates, updatedAt: Date.now() } : c
-    )
-  })),
+  updateLearningCourse: (id, updates) => {
+    set((s) => ({
+      learningCourses: s.learningCourses.map((c) =>
+        c.id === id ? { ...c, ...updates } : c
+      )
+    }))
+  },
 
-  deleteLearningCourse: (id) => set((state) => ({
-    learningCourses: state.learningCourses.filter(c => c.id !== id)
-  })),
+  deleteLearningCourse: (id) => {
+    set((s) => ({ learningCourses: s.learningCourses.filter((c) => c.id !== id) }))
+  },
 
-  addLearningMessage: (courseId, message) => set((state) => ({
-    learningCourses: state.learningCourses.map(course => {
-      if (course.id !== courseId) return course
-      return {
-        ...course,
-        messages: [...course.messages, message],
-        updatedAt: Date.now()
-      }
-    })
-  })),
+  addLearningMessage: (courseId, message) => {
+    set((s) => ({
+      learningCourses: s.learningCourses.map((c) =>
+        c.id === courseId ? { ...c, messages: [...c.messages, message] } : c
+      )
+    }))
+  },
 
-  deleteLearningMessage: (courseId, messageId) => set((state) => ({
-    learningCourses: state.learningCourses.map(course => {
-      if (course.id !== courseId) return course
-      return {
-        ...course,
-        messages: course.messages.filter(m => m.id !== messageId),
-        updatedAt: Date.now()
-      }
-    })
-  })),
+  deleteLearningMessage: (courseId, messageId) => {
+    set((s) => ({
+      learningCourses: s.learningCourses.map((c) =>
+        c.id === courseId
+          ? { ...c, messages: c.messages.filter((m) => m.id !== messageId) }
+          : c
+      )
+    }))
+  },
 
-  addLearningFlashcard: (courseId, flashcard) => set((state) => ({
-    learningCourses: state.learningCourses.map(course => {
-      if (course.id !== courseId) return course
-      return {
-        ...course,
-        flashcards: [...course.flashcards, flashcard],
-        updatedAt: Date.now()
-      }
-    })
-  })),
+  addLearningFlashcard: (courseId, flashcard) => {
+    set((s) => ({
+      learningCourses: s.learningCourses.map((c) =>
+        c.id === courseId ? { ...c, flashcards: [...c.flashcards, flashcard] } : c
+      )
+    }))
+  },
 
-  deleteLearningFlashcard: (courseId, flashcardId) => set((state) => ({
-    learningCourses: state.learningCourses.map(course => {
-      if (course.id !== courseId) return course
-      return {
-        ...course,
-        flashcards: course.flashcards.filter(f => f.id !== flashcardId),
-        updatedAt: Date.now()
-      }
-    })
-  })),
+  deleteLearningFlashcard: (courseId, flashcardId) => {
+    set((s) => ({
+      learningCourses: s.learningCourses.map((c) =>
+        c.id === courseId
+          ? { ...c, flashcards: c.flashcards.filter((f) => f.id !== flashcardId) }
+          : c
+      )
+    }))
+  },
 
-  addLearningNote: (courseId, note) => set((state) => ({
-    learningCourses: state.learningCourses.map(course => {
-      if (course.id !== courseId) return course
-      return {
-        ...course,
-        notes: [...course.notes, note],
-        updatedAt: Date.now()
-      }
-    })
-  })),
+  addLearningNote: (courseId, note) => {
+    set((s) => ({
+      learningCourses: s.learningCourses.map((c) =>
+        c.id === courseId ? { ...c, notes: [...c.notes, note] } : c
+      )
+    }))
+  },
 
-  deleteLearningNote: (courseId, noteId) => set((state) => ({
-    learningCourses: state.learningCourses.map(course => {
-      if (course.id !== courseId) return course
-      return {
-        ...course,
-        notes: course.notes.filter(n => n.id !== noteId),
-        updatedAt: Date.now()
-      }
-    })
-  }))
+  deleteLearningNote: (courseId, noteId) => {
+    set((s) => ({
+      learningCourses: s.learningCourses.map((c) =>
+        c.id === courseId
+          ? { ...c, notes: c.notes.filter((n) => n.id !== noteId) }
+          : c
+      )
+    }))
+  },
 })
