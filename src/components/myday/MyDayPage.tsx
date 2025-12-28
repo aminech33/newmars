@@ -25,7 +25,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useHabitsStats } from '../../hooks/useGlobalStats'
 import { useHealthData } from '../../hooks/useHealthData'
 import { JournalHistoryModal } from './JournalHistoryModal'
-import { calculateTaskMetrics, calculateHabitMetrics, calculateJournalMetrics } from '../../utils/metrics'
+import { calculateTaskMetrics } from '../../utils/metrics'
 import { calculatePomodoroMetrics } from '../../utils/pomodoroMetrics'
 
 // Health components
@@ -36,6 +36,7 @@ import { WeightModal } from '../health/WeightModal'
 import { MealModal } from '../health/MealModal'
 import { MacrosCircularChart } from '../health/MacrosCircularChart'
 import { ProfileSetupModal } from '../health/ProfileSetupModal'
+import { BodyCompositionDisplay } from '../health/BodyCompositionDisplay'
 import { UndoToast } from '../ui/UndoToast'
 
 type PageTab = 'journal' | 'sante'
@@ -105,8 +106,6 @@ export function MyDayPage() {
   
   // Calcul des métriques
   const taskMetrics = calculateTaskMetrics(tasks)
-  const habitMetrics = calculateHabitMetrics(habits)
-  const journalMetrics = calculateJournalMetrics(journalEntries)
   const pomodoroMetrics = calculatePomodoroMetrics(pomodoroSessions, tasks)
 
   // Journal states
@@ -658,106 +657,6 @@ export function MyDayPage() {
               </div>
             </div>
 
-            {/* Card HABITUDES */}
-            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <Heart className="w-4 h-4 text-rose-500" />
-                <h3 className="text-sm font-medium text-zinc-400">Habitudes</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Aujourd'hui</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-zinc-200">
-                      {habitMetrics.today.completed}/{habitMetrics.today.total}
-                    </span>
-                    {habitMetrics.vsYesterday !== 0 && (
-                      <span className={`text-xs ${habitMetrics.vsYesterday > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                        {habitMetrics.vsYesterday > 0 ? '+' : ''}{habitMetrics.vsYesterday}%
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Moyenne 7j</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-zinc-400">{habitMetrics.avg7d}%</span>
-                    {habitMetrics.vsWeekBefore !== 0 && (
-                      <span className={`text-xs ${habitMetrics.vsWeekBefore > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                        {habitMetrics.vsWeekBefore > 0 ? '+' : ''}{habitMetrics.vsWeekBefore}%
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Card JOURNAL */}
-            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <Feather className="w-4 h-4 text-amber-500" />
-                <h3 className="text-sm font-medium text-zinc-400">Journal</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Série active</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-lg font-bold text-zinc-200">{journalMetrics.currentStreak}</span>
-                    <span className="text-xs text-zinc-500">jours</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Cette semaine</span>
-                  <span className="text-sm text-zinc-400">
-                    {journalMetrics.thisWeek.completed}/{journalMetrics.thisWeek.total}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Card RÉVISIONS */}
-            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <BookOpen className="w-4 h-4 text-violet-500" />
-                <h3 className="text-sm font-medium text-zinc-400">Révisions</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">En retard</span>
-                  <span className="text-lg font-bold text-rose-400">
-                    {learningCourses.flatMap((c: any) => c.flashcards || []).filter((f: any) => {
-                      if (!f.nextReview) return false
-                      return new Date(f.nextReview) < new Date()
-                    }).length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Prévues</span>
-                  <span className="text-sm text-zinc-400">
-                    {learningCourses.flatMap((c: any) => c.flashcards || []).filter((f: any) => {
-                      if (!f.nextReview) return false
-                      const next = new Date(f.nextReview)
-                      const tomorrow = new Date()
-                      tomorrow.setDate(tomorrow.getDate() + 1)
-                      return next >= new Date() && next <= tomorrow
-                    }).length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Maîtrise</span>
-                  <span className="text-sm text-zinc-400">
-                    {learningCourses.flatMap((c: any) => c.flashcards || []).length > 0
-                      ? Math.round(
-                          learningCourses.flatMap((c: any) => c.flashcards || [])
-                            .reduce((sum: any, f: any) => sum + (f.mastery || 0), 0) /
-                          learningCourses.flatMap((c: any) => c.flashcards || []).length
-                        )
-                      : 0}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
           </div>
 
         </div>
@@ -874,6 +773,9 @@ export function MyDayPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* Composition corporelle (si données Withings) */}
+                    <BodyCompositionDisplay latestEntry={weightEntries[weightEntries.length - 1]} />
+                    
                     {/* Graphique */}
                     <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
                       <p className="text-xs text-zinc-500 mb-3">Évolution</p>

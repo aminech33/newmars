@@ -6,6 +6,16 @@ export interface WeightEntry {
   weight: number // kg
   note?: string
   createdAt: number
+  
+  // Données avancées de composition corporelle (Withings)
+  fatMassPercent?: number      // % de masse grasse
+  muscleMass?: number          // kg de masse musculaire
+  boneMass?: number            // kg de masse osseuse
+  waterPercent?: number        // % d'hydratation corporelle
+  heartRate?: number           // bpm - fréquence cardiaque
+  
+  // Métadonnées source
+  source?: 'manual' | 'withings' // D'où vient cette pesée
 }
 
 // Portion d'un aliment dans un repas

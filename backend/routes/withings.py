@@ -532,13 +532,22 @@ async def withings_webhook(request: Request):
     enddate = data.get('enddate')
     
     if appli == 1:  # Nouvelle mesure de poids
-        # TODO: Récupérer automatiquement les nouvelles mesures
-        # En utilisant la route /sync avec les dates du webhook
+        # TODO EN PRODUCTION: Récupérer les tokens de l'utilisateur depuis la DB
+        # user_tokens = get_user_tokens_from_db(userid)
+        
+        # Pour l'instant, on retourne juste un succès
+        # Le frontend devra appeler /sync manuellement
+        # Ou utiliser un système de WebSocket pour notifier le client
         
         return {
-            "status": "success",
+            "status": "notification_received",
             "message": f"Nouvelle pesée détectée pour l'utilisateur {userid}",
-            "action": "sync_triggered"
+            "action": "frontend_should_sync",
+            "webhook_data": {
+                "userid": userid,
+                "startdate": startdate,
+                "enddate": enddate
+            }
         }
     
     return {"status": "ignored", "message": "Type de notification non géré"}

@@ -26,6 +26,33 @@ export function WithingsConnect() {
     }
   }, [])
 
+  // Rafraîchir automatiquement les tokens avant expiration
+  useEffect(() => {
+    if (!tokens || !isConnected) return
+    
+    const checkTokenExpiry = async () => {
+      const now = Math.floor(Date.now() / 1000)
+      const timeUntilExpiry = tokens.expires_at - now
+      
+      // Rafraîchir 5 minutes (300s) avant expiration
+      if (timeUntilExpiry < 300 && timeUntilExpiry > 0) {
+        console.log('Token expire bientôt, rafraîchissement automatique...')
+        await refreshToken()
+      } else if (timeUntilExpiry <= 0) {
+        console.log('Token expiré, rafraîchissement automatique...')
+        await refreshToken()
+      }
+    }
+    
+    // Vérifier toutes les minutes
+    const interval = setInterval(checkTokenExpiry, 60000)
+    
+    // Vérifier immédiatement au chargement
+    checkTokenExpiry()
+    
+    return () => clearInterval(interval)
+  }, [tokens, isConnected])
+
   const handleConnect = async () => {
     setIsConnecting(true)
     
@@ -106,13 +133,57 @@ export function WithingsConnect() {
     }
   }
 
-  const syncWeights = async (accessToken: string) => {
+  const refreshToken = async () => {
+    if (!tokens || !tokens.refresh_token) {
+      console.error('Pas de refresh token disponible')
+      return
+    }
+    
+    try {
+      const res = await fetch(`${API_URL}/refresh-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: tokens.refresh_token })
+      })
+      
+      if (!res.ok) {
+        throw new Error('Échec du rafraîchissement du token')
+      }
+      
+      const newTokens = await res.json()
+      const updatedTokens = {
+        ...tokens,
+        ...newTokens,
+        user_id: tokens.user_id // Garder l'user_id
+      }
+      
+      setTokens(updatedTokens)
+      localStorage.setItem('withings_tokens', JSON.stringify(updatedTokens))
+      
+      console.log('Token Withings rafraîchi avec succès')
+    } catch (error) {
+      console.error('Erreur rafraîchissement token:', error)
+      // Si le rafraîchissement échoue, déconnecter l'utilisateur
+      handleDisconnect()
+      addToast('Session Withings expirée. Reconnectez-vous.', 'error')
+    }
+  }
+
+  const syncWeights = async (accessToken: string, retryOnError = true) => {
     setIsSyncing(true)
     
     try {
       const res = await fetch(
         `${API_URL}/sync?access_token=${accessToken}&days_back=90`
       )
+      
+      // Si token expiré, tenter de rafraîchir et réessayer
+      if (res.status === 401 && retryOnError) {
+        console.log('Token expiré pendant sync, rafraîchissement...')
+        await refreshToken()
+        // Réessayer avec le nouveau token (une seule fois)
+        return await syncWeights(tokens.access_token, false)
+      }
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
@@ -121,14 +192,18 @@ export function WithingsConnect() {
       
       const { measurements, count } = await res.json()
       
-      // Ajouter chaque pesée au store
+      // Ajouter chaque pesée au store avec toutes les métriques Withings
       if (measurements && measurements.length > 0) {
         measurements.forEach((m: any) => {
           addWeightEntry({
             weight: m.weight,
             date: m.date,
-            // Note: Pour l'instant, on stocke juste le poids
-            // Plus tard, on pourra ajouter fat_mass_percent, muscle_mass, etc.
+            fatMassPercent: m.fat_mass_percent,
+            muscleMass: m.muscle_mass,
+            boneMass: m.bone_mass,
+            waterPercent: m.water_percent,
+            heartRate: m.heart_rate,
+            source: 'withings'
           })
         })
         
@@ -139,7 +214,7 @@ export function WithingsConnect() {
       } else {
         addToast('Aucune pesée trouvée dans les 90 derniers jours', 'info')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur sync:', error)
       addToast(`Erreur de synchronisation: ${error.message}`, 'error')
     } finally {
