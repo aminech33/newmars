@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 28 décembre 2024 (V1.2.6 - TasksPage Refactorisée)  
-> **Version** : 1.2.6  
+> **Dernière mise à jour** : 29 décembre 2024 (V1.2.7 - MyDayPage Refactorisée)  
+> **Version** : 1.2.7  
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -19,7 +19,8 @@
 - ✅ **4 Smart Widgets** (Wellbeing, Productivity, Streak, NextTask) - remplacent 7 anciens widgets
 - ✅ **Tests Automatisés V1.2.5** : 130 tests (106 frontend Vitest + 24 backend Pytest)
 - ✅ **Store Modulaire V1.2.5** : 6 slices indépendants (Tasks, Health, Journal, Learning, Library, UI)
-- ✅ **TasksPage Refactorisée V1.2.6** : 1902→280 lignes, 6 composants extraits
+- ✅ **TasksPage Refactorisée V1.2.6** : 1902→280 lignes (-85%), 6 composants extraits
+- ✅ **MyDayPage Refactorisée V1.2.7** : 864→380 lignes (-56%), 4 composants extraits
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -41,11 +42,11 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.2.6 COMPLET** — Tests automatisés, Store modulaire, TasksPage refactorisée, architecture production-ready
+**Statut** : ✅ **V1.2.7 COMPLET** — Tests automatisés, Store modulaire, TasksPage + MyDayPage refactorisées, architecture production-ready
 
 ---
 
-## 📊 Métriques V1.2.6
+## 📊 Métriques V1.2.7
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
@@ -83,7 +84,47 @@ Framework tests BE     : Pytest
 NOUVEAU V1.2.6 ⭐ :
 TasksPage refactorisée : 1902 → 280 lignes (-85%)
 Composants extraits    : 6 (TaskRow, TemporalColumn, DefineProjectZone, PlanningZone, TasksHeader, taskUtils)
+
+NOUVEAU V1.2.7 ⭐ :
+MyDayPage refactorisée : 864 → 380 lignes (-56%)
+Composants extraits    : 4 (JournalTab, HealthTab, TasksMetricsCard, PomodoroMetricsCard)
 ```
+
+---
+
+## 🎯 V1.2.7 — MyDayPage Refactorisée (29 déc 2024)
+
+### Découpage MyDayPage
+
+**Problème** : `MyDayPage.tsx` de 864 lignes = fichier trop gros, mélange Journal + Santé
+
+**Solution** : Extraction en **4 composants** spécialisés
+
+**Nouvelle structure** :
+```
+src/components/myday/
+├── MyDayPage.tsx              # 380 lignes (vs 864)
+├── JournalTab.tsx             # Onglet Journal complet (intention, action, habitudes, notes)
+├── HealthTab.tsx              # Onglet Santé complet (nutrition, poids, graphiques)
+├── TasksMetricsCard.tsx       # Card métriques tâches
+└── PomodoroMetricsCard.tsx    # Card métriques Pomodoro
+```
+
+**Détail des composants** :
+
+| Composant | Lignes | Responsabilités |
+|-----------|--------|-----------------|
+| **MyDayPage** | 380 | Orchestration, état global, modals, handlers |
+| **JournalTab** | 350 | Intention, action, habitudes, notes, humeur, tâches accomplies |
+| **HealthTab** | 180 | Nutrition (repas, calories, macros), Poids (graphique, liste) |
+| **TasksMetricsCard** | 45 | Métriques tâches (volume, nature, tendance) |
+| **PomodoroMetricsCard** | 50 | Métriques Pomodoro (volume, focus, tendance) |
+
+**Avantages** :
+- ✅ **Lisibilité** : 380 lignes vs 864 (-56%)
+- ✅ **Séparation** : Journal et Santé bien isolés
+- ✅ **Réutilisabilité** : Cards métriques indépendantes
+- ✅ **Maintenabilité** : Modifications ciblées par onglet
 
 ---
 
