@@ -1,7 +1,10 @@
 /**
  * Gemini AI Integration
  * Handles communication with Google's Gemini API
+ * Includes rate limiting for quota protection
  */
+
+import { geminiRateLimiter, withRateLimit } from './rateLimiter'
 
 // Gemini 2.0 Flash - Latest official model (December 2024)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
@@ -44,7 +47,9 @@ export async function generateGeminiResponse(
     throw new Error('❌ Clé API Gemini manquante. Vérifiez votre fichier .env')
   }
 
-  try {
+  // Apply rate limiting
+  return withRateLimit(geminiRateLimiter, 'gemini_api', async () => {
+    try {
     // Build conversation history for Gemini format
     const contents = [
       // Add conversation history
@@ -138,7 +143,8 @@ export async function generateGeminiResponse(
 
     // Unknown error
     throw new Error('❌ Erreur inattendue lors de la communication avec Gemini.')
-  }
+    }
+  })
 }
 
 /**
@@ -184,7 +190,9 @@ export async function generateGeminiStreamingResponse(
     throw new Error('❌ Clé API Gemini manquante. Vérifiez votre fichier .env')
   }
 
-  try {
+  // Apply rate limiting
+  return withRateLimit(geminiRateLimiter, 'gemini_api', async () => {
+    try {
     // Build conversation history for Gemini format
     const contents = [
       ...history.map((msg) => ({
@@ -287,6 +295,7 @@ export async function generateGeminiStreamingResponse(
     }
 
     throw new Error('❌ Erreur inattendue lors de la communication avec Gemini.')
-  }
+    }
+  })
 }
 
