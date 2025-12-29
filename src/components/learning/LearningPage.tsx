@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { BookOpen, GraduationCap, Plus, Search, X, ChevronDown, MoreVertical, Target, Download, Upload, FileText } from 'lucide-react'
 import { useLearningData } from '../../hooks/useLearningData'
-import { CourseList } from './CourseList'
-import { CourseChat } from './CourseChat'
 import { CourseModal } from './CourseModal'
-import { EmptyState } from './EmptyState'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Toast, ToastType } from '../ui/Toast'
 import { CreateCourseData, Course } from '../../types/learning'
 import { generateGeminiStreamingResponse } from '../../utils/geminiAI'
+
+// New tab components
+import { CoursesTab } from './CoursesTab'
+import { LibraryTab } from './LibraryTab'
 
 // Library imports
 import { useStore } from '../../store/useStore'
@@ -18,7 +19,6 @@ import { useReadingSessionPersistence } from '../../hooks/useReadingSessionPersi
 import { useDebounce } from '../../hooks/useDebounce'
 import { exportLibrary, importLibrary, exportQuotesAsMarkdown } from '../../utils/libraryImportExport'
 import {
-  Bookshelf,
   ReadingSessionBar,
   BookDetailModal,
   AddBookModal,
@@ -97,7 +97,6 @@ export function LearningPage() {
   const [filterGenre, setFilterGenre] = useState<string | null>(null)
   const [sortByLib, setSortByLib] = useState<SortOption>('recent')
   const [sessionTime, setSessionTime] = useState(0)
-  const [showAllBooks, setShowAllBooks] = useState(false)
   
   // Dropdown states
   const [showMenu, setShowMenu] = useState(false)
@@ -682,158 +681,45 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
       {/* COURSES TAB */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       {activeTab === 'courses' && (
-        <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar - Course List */}
-          {!sidebarHidden && (
-            <CourseList
-              courses={filteredCourses}
-              activeCourseId={uiState.activeCourseId}
-              searchQuery={uiState.searchQuery}
-              filterStatus={uiState.filterStatus}
-              sortBy={uiState.sortBy}
-              collapsed={uiState.sidebarCollapsed}
-              onSelectCourse={setActiveCourse}
-              onSearchChange={setSearchQuery}
-              onFilterChange={setFilterStatus}
-              onSortChange={setSortBy}
-              onCreateCourse={() => setShowCourseModal(true)}
-              onEditCourse={handleEditCourse}
-              onDeleteCourse={handleDeleteCourse}
-              onPinCourse={togglePinCourse}
-              onArchiveCourse={archiveCourse}
-              onHideSidebar={() => setSidebarHidden(true)}
-            />
-          )}
-
-          {/* Main Content */}
-          <main className="flex-1 flex flex-col h-full">
-            {activeCourse ? (
-              <CourseChat
-                course={activeCourse}
-                isTyping={uiState.isTyping}
-                onSendMessage={handleSendMessage}
-                onCopyMessage={handleCopyMessage}
-              />
-            ) : (
-              <EmptyState onCreateCourse={() => setShowCourseModal(true)} />
-            )}
-          </main>
-        </div>
+        <CoursesTab
+          filteredCourses={filteredCourses}
+          activeCourse={activeCourse}
+          activeCourseId={uiState.activeCourseId}
+          searchQuery={uiState.searchQuery}
+          filterStatus={uiState.filterStatus}
+          sortBy={uiState.sortBy}
+          sidebarCollapsed={uiState.sidebarCollapsed}
+          sidebarHidden={sidebarHidden}
+          isTyping={uiState.isTyping}
+          setActiveCourse={setActiveCourse}
+          setSearchQuery={setSearchQuery}
+          setFilterStatus={setFilterStatus as (status: import('../../types/learning').CourseStatus | 'all') => void}
+          setSortBy={setSortBy as (sort: 'recent' | 'name' | 'progress' | 'streak') => void}
+          setSidebarHidden={setSidebarHidden}
+          onCreateCourse={() => setShowCourseModal(true)}
+          onEditCourse={handleEditCourse}
+          onDeleteCourse={handleDeleteCourse}
+          onPinCourse={togglePinCourse}
+          onArchiveCourse={archiveCourse}
+          onSendMessage={handleSendMessage}
+          onCopyMessage={handleCopyMessage}
+        />
       )}
 
       {/* ═══════════════════════════════════════════════════════════════ */}
       {/* LIBRARY TAB */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       {activeTab === 'library' && (
-        <main className="flex-1 overflow-auto px-4 py-6">
-          <div className="max-w-6xl mx-auto space-y-8">
-            
-            {/* En cours de lecture */}
-            {readingBooks.length > 0 && filterStatusLib === 'all' && (
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                    En cours de lecture
-                  </h2>
-                  {readingBooks.length === 1 && (
-                    <span className="text-xs text-zinc-500">Votre lecture active</span>
-                  )}
-                </div>
-                
-                {readingBooks.length === 1 ? (
-                  <div className="bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/20 rounded-2xl p-6">
-                    <Bookshelf 
-                      books={readingBooks} 
-                      onSelectBook={handleSelectBook}
-                      onStartReading={startReadingSession}
-                      isReadingSession={isReadingSession}
-                      currentReadingBookId={currentReadingBookId}
-                    />
-                  </div>
-                ) : (
-                  <Bookshelf 
-                    books={readingBooks} 
-                    onSelectBook={handleSelectBook}
-                    onStartReading={startReadingSession}
-                    isReadingSession={isReadingSession}
-                    currentReadingBookId={currentReadingBookId}
-                  />
-                )}
-              </section>
-            )}
-
-            {filterStatusLib === 'reading' && (
-              <section>
-                <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                  En cours de lecture ({readingBooks.length})
-                </h2>
-                <Bookshelf 
-                  books={filteredAndSortedBooks} 
-                  onSelectBook={handleSelectBook}
-                  onStartReading={startReadingSession}
-                  isReadingSession={isReadingSession}
-                  currentReadingBookId={currentReadingBookId}
-                />
-              </section>
-            )}
-
-            {/* Bibliothèque complète - pliable */}
-            {filterStatusLib === 'all' && (
-              <section className="border-t border-zinc-800/50 pt-6">
-                <button
-                  onClick={() => setShowAllBooks(!showAllBooks)}
-                  className="w-full flex items-center justify-between text-left mb-4 group"
-                >
-                  <h2 className="text-sm font-medium text-zinc-500 group-hover:text-zinc-400 transition-colors">
-                    Bibliothèque complète ({filteredAndSortedBooks.length} livres)
-                  </h2>
-                  <ChevronDown className={`w-4 h-4 text-zinc-600 transition-transform ${showAllBooks ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {showAllBooks && (
-                  <div className="animate-in fade-in duration-200">
-                    <Bookshelf 
-                      books={filteredAndSortedBooks} 
-                      onSelectBook={handleSelectBook}
-                      onStartReading={startReadingSession}
-                      isReadingSession={isReadingSession}
-                      currentReadingBookId={currentReadingBookId}
-                    />
-                  </div>
-                )}
-              </section>
-            )}
-
-            {/* Vue filtrée Terminés ou À lire */}
-            {(filterStatusLib === 'completed' || filterStatusLib === 'to-read') && (
-              <section>
-                <h2 className="text-sm font-medium text-zinc-500 mb-4">
-                  {filterStatusLib === 'completed' ? 'Terminés' : 'À lire'} ({filteredAndSortedBooks.length})
-                </h2>
-                <Bookshelf 
-                  books={filteredAndSortedBooks} 
-                  onSelectBook={handleSelectBook}
-                  onStartReading={startReadingSession}
-                  isReadingSession={isReadingSession}
-                  currentReadingBookId={currentReadingBookId}
-                />
-              </section>
-            )}
-
-            {/* État vide */}
-            {filteredAndSortedBooks.length === 0 && (
-              <div className="text-center py-12">
-                <BookOpen className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                <p className="text-sm text-zinc-600 mb-2">Aucun livre dans cette section</p>
-                <button onClick={() => setShowAddBookModal(true)} className="text-white text-sm hover:underline">
-                  + Ajouter un livre
-                </button>
-              </div>
-            )}
-          </div>
-        </main>
+        <LibraryTab
+          filteredAndSortedBooks={filteredAndSortedBooks}
+          readingBooks={readingBooks}
+          filterStatusLib={filterStatusLib}
+          isReadingSession={isReadingSession}
+          currentReadingBookId={currentReadingBookId}
+          onSelectBook={handleSelectBook}
+          onStartReading={startReadingSession}
+          onAddBook={() => setShowAddBookModal(true)}
+        />
       )}
 
       {/* ═══════════════════════════════════════════════════════════════ */}

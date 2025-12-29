@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 29 décembre 2024 (V1.2.7 - MyDayPage Refactorisée)  
-> **Version** : 1.2.7  
+> **Dernière mise à jour** : 29 décembre 2024 (V1.2.8 - LearningPage Refactorisée)  
+> **Version** : 1.2.8  
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -21,6 +21,7 @@
 - ✅ **Store Modulaire V1.2.5** : 6 slices indépendants (Tasks, Health, Journal, Learning, Library, UI)
 - ✅ **TasksPage Refactorisée V1.2.6** : 1902→280 lignes (-85%), 6 composants extraits
 - ✅ **MyDayPage Refactorisée V1.2.7** : 864→380 lignes (-56%), 4 composants extraits
+- ✅ **LearningPage Refactorisée V1.2.8** : 934→821 lignes (-12%), 2 onglets séparés (CoursesTab, LibraryTab)
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -42,15 +43,15 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.2.7 COMPLET** — Tests automatisés, Store modulaire, TasksPage + MyDayPage refactorisées, architecture production-ready
+**Statut** : ✅ **V1.2.8 COMPLET** — Tests automatisés, Store modulaire, TasksPage + MyDayPage + LearningPage refactorisées, architecture production-ready
 
 ---
 
-## 📊 Métriques V1.2.7
+## 📊 Métriques V1.2.8
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
-Composants React       : 100 fichiers TSX (confirmé)
+Composants React       : 102 fichiers TSX (+2 : CoursesTab, LibraryTab)
 Hooks customs          : 14 (useHealthData, useGlobalStats, useLearningData, etc.)
 Utilitaires            : 17 (healthIntelligence, metrics, flashcardExport, etc.)
 Routes API backend     : ~16 (+ /streak endpoint)
@@ -66,13 +67,16 @@ Persistence            : SQLite (3 tables) + localStorage
 Export formats         : 4 (Markdown, JSON, CSV, Anki)
 Aliments base données  : 168 (courants)
 Genres bibliothèque    : 100+ (Fiction, Tech, Art, etc.)
-Lignes HubV2           : 812 (refactorisé)
+Lignes HubV2           : 83 (refactorisé V1.2.4)
+Lignes TasksPage       : 280 (refactorisé V1.2.6)
+Lignes MyDayPage       : 380 (refactorisé V1.2.7)
+Lignes LearningPage    : 821 (refactorisé V1.2.8)
 Lignes HealthPage      : 725 (complet)
 Lignes code frontend   : ~15,000 (TypeScript/React)
 Lignes code backend    : ~2,200 (Python + SQLite)
 Dead code              : 0 ✅
 Dossier docs/ vide     : ✅ (nettoyé V1.2.3)
-Fichiers TS/TSX total  : 167 (+8 slices)
+Fichiers TS/TSX total  : 169 (+2 tabs)
 
 NOUVEAU V1.2.5 ⭐ :
 Tests automatisés      : 130 tests (106 frontend + 24 backend)
@@ -89,6 +93,40 @@ NOUVEAU V1.2.7 ⭐ :
 MyDayPage refactorisée : 864 → 380 lignes (-56%)
 Composants extraits    : 4 (JournalTab, HealthTab, TasksMetricsCard, PomodoroMetricsCard)
 ```
+
+---
+
+## 🎯 V1.2.8 — LearningPage Refactorisée (29 déc 2024)
+
+### Découpage LearningPage
+
+**Contexte** : `LearningPage.tsx` de 934 lignes = fusion UX intentionnelle (Cours IA + Bibliothèque)
+
+**Solution** : Extraction en **2 onglets** séparés pour meilleure lisibilité
+
+**Nouvelle structure** :
+```
+src/components/learning/
+├── LearningPage.tsx       # 821 lignes (vs 934) - Orchestration, header, modals
+├── CoursesTab.tsx         # Onglet Cours (sidebar + chat IA)
+└── LibraryTab.tsx         # Onglet Bibliothèque (livres, filtres, stats)
+```
+
+**Détail des composants** :
+
+| Composant | Lignes | Responsabilités |
+|-----------|--------|-----------------|
+| **LearningPage** | 821 | État global, handlers, modals, session lecture, keyboard shortcuts |
+| **CoursesTab** | 90 | CourseList sidebar + CourseChat principal + EmptyState |
+| **LibraryTab** | 150 | Bookshelf, filtres (status/genre/sort), sections pliables |
+
+**Avantages** :
+- ✅ **Lisibilité** : 821 lignes vs 934 (-12%)
+- ✅ **Séparation** : Cours et Bibliothèque bien isolés en onglets
+- ✅ **Maintenabilité** : Modifications ciblées par onglet
+- ✅ **Cohérence** : Garde la fusion UX intentionnelle (apprentissage actif + passif)
+
+**Note** : Contrairement à TasksPage et MyDayPage, LearningPage reste volontairement plus gros car il gère 2 domaines distincts (Cours + Bibliothèque) dans une seule page avec onglets. C'est une fusion UX intentionnelle, pas un défaut de design.
 
 ---
 
