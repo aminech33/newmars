@@ -123,3 +123,4 @@ export const levelStyles: Record<number, { emoji: string; borderColor: string; b
   3: { emoji: '🔴', borderColor: 'border-rose-500/30', bgColor: 'bg-rose-500/5' },
 }
 
+

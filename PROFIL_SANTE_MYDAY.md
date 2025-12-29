@@ -96,3 +96,4 @@ const [showProfileModal, setShowProfileModal] = useState(false)
 ✅ **Tout est fonctionnel et intégré dans une seule page cohérente !**
 
 
+

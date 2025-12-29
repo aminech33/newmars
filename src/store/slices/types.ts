@@ -151,3 +151,4 @@ export const generateId = () => Math.random().toString(36).substring(2, 9)
 // Type du store complet (sera défini plus tard, ici on utilise any pour éviter les dépendances circulaires)
 export type StoreState = any
 
+

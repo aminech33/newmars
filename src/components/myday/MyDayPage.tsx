@@ -1,43 +1,31 @@
+/**
+ * 📅 MyDayPage - Page Ma Journée (refactorisée)
+ * 
+ * Composants extraits :
+ * - JournalTab : Onglet journal complet
+ * - HealthTab : Onglet santé complet
+ * - TasksMetricsCard : Card métriques tâches
+ * - PomodoroMetricsCard : Card métriques pomodoro
+ */
+
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
-import { 
-  ArrowLeft, 
-  Feather, 
-  Check, 
-  Sparkles,
-  BookOpen,
-  Heart,
-  Plus,
-  Apple,
-  Scale,
-  Utensils,
-  CheckCircle2,
-  ExternalLink,
-  Timer
-} from 'lucide-react'
+import { ArrowLeft, Feather, Heart, Sparkles } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { MoodEmoji } from '../../types/journal'
-import { 
-  moodEmojiToLevel,
-  getTodayEntry
-} from '../../utils/journalUtils'
+import { moodEmojiToLevel, getTodayEntry } from '../../utils/journalUtils'
 import { AddHabitModal } from '../habits/AddHabitModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useHabitsStats } from '../../hooks/useGlobalStats'
 import { useHealthData } from '../../hooks/useHealthData'
 import { JournalHistoryModal } from './JournalHistoryModal'
-import { calculateTaskMetrics } from '../../utils/metrics'
-import { calculatePomodoroMetrics } from '../../utils/pomodoroMetrics'
-
-// Health components
-import { WeightChart } from '../health/WeightChart'
-import { WeightList } from '../health/WeightList'
-import { MealList } from '../health/MealList'
 import { WeightModal } from '../health/WeightModal'
 import { MealModal } from '../health/MealModal'
-import { MacrosCircularChart } from '../health/MacrosCircularChart'
 import { ProfileSetupModal } from '../health/ProfileSetupModal'
-import { BodyCompositionDisplay } from '../health/BodyCompositionDisplay'
 import { UndoToast } from '../ui/UndoToast'
+
+// Composants extraits
+import { JournalTab } from './JournalTab'
+import { HealthTab } from './HealthTab'
 
 type PageTab = 'journal' | 'sante'
 
@@ -57,7 +45,6 @@ export function MyDayPage() {
     getPriorityTask
   } = useStore()
   
-  const learningCourses = useStore(state => state.learningCourses || [])
   const pomodoroSessions = useStore(state => state.pomodoroSessions || [])
 
   // Tab state
@@ -103,10 +90,6 @@ export function MyDayPage() {
   }), [todayMeals])
 
   const habitsStats = useHabitsStats()
-  
-  // Calcul des métriques
-  const taskMetrics = calculateTaskMetrics(tasks)
-  const pomodoroMetrics = calculatePomodoroMetrics(pomodoroSessions, tasks)
 
   // Journal states
   const [intention, setIntention] = useState('')
@@ -260,13 +243,11 @@ export function MyDayPage() {
     setShowUndo(false)
   }, [undoData, handleAddWeight, handleAddMeal])
 
-  const moods: MoodEmoji[] = ['😢', '😐', '🙂', '😊', '🤩']
   const priorityTask = getPriorityTask()
   const firstTask = priorityTask || tasks.filter(t => !t.completed)[0]
-
   const { todayCompleted } = habitsStats
 
-  // Tâches accomplies aujourd'hui (Interconnexion A)
+  // Tâches accomplies aujourd'hui
   const tasksCompletedToday = useMemo(() => {
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
@@ -340,462 +321,51 @@ export function MyDayPage() {
 
       {/* Content */}
       <div className="relative flex-1 overflow-y-auto">
-        
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* JOURNAL TAB */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
         {activeTab === 'journal' && (
-          <div className="px-6 py-8">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-8">
-              
-              {/* ===== COLONNE GAUCHE : JOURNAL (2/3) ===== */}
-              <div className="xl:col-span-2 space-y-8">
-            
-            {/* INTENTION DU JOUR */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center border border-amber-500/20">
-                  <Feather className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <h2 className="font-serif text-lg font-medium text-zinc-200">
-                    Intention du jour
-                  </h2>
-                  <p className="text-sm text-zinc-500">
-                    Qu'est-ce qui compte vraiment aujourd'hui ?
-                  </p>
-                </div>
-              </div>
-              
-              <input
-                type="text"
-                value={intention}
-                onChange={(e) => setIntention(e.target.value)}
-                placeholder="Écrire mon intention..."
-                className="w-full bg-zinc-900/50 border-2 border-zinc-800 focus:border-amber-500/40 rounded-xl px-5 py-4 text-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none transition-all font-serif italic"
-                autoFocus
-              />
-            </section>
-
-            <div className="h-px bg-gradient-to-r from-transparent via-zinc-700/50 to-transparent" />
-
-            {/* ACTION CONCRÈTE */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center border border-emerald-500/20">
-                  <Sparkles className="w-5 h-5 text-emerald-400" />
-                </div>
-                <h2 className="font-serif text-lg font-medium text-zinc-200">
-                  Première action
-                </h2>
-              </div>
-              
-              {firstTask && !action && (
-                <button
-                  onClick={() => setAction(firstTask.title)}
-                  className="w-full text-left p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl hover:bg-emerald-500/10 transition-all group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-zinc-400 group-hover:text-zinc-200 transition-colors">
-                      {firstTask.title}
-                    </span>
-                    {priorityTask && (
-                      <span className="ml-auto text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                        Prioritaire
-                      </span>
-                    )}
-                  </div>
-                </button>
-              )}
-
-              <input
-                type="text"
-                value={action}
-                onChange={(e) => setAction(e.target.value)}
-                placeholder="Quelle est la première chose à faire ?"
-                className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-emerald-500/40 rounded-xl px-5 py-3.5 text-zinc-200 placeholder:text-zinc-600 focus:outline-none transition-all"
-              />
-            </section>
-
-            {/* HABITUDES */}
-            {habits.length > 0 && (
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/10 flex items-center justify-center border border-rose-500/20">
-                      <Heart className="w-5 h-5 text-rose-400" />
-                    </div>
-                    <div>
-                      <h2 className="font-serif text-lg font-medium text-zinc-200">
-                        Rituels
-                      </h2>
-                      <p className="text-sm text-zinc-500">
-                        {todayCompleted}/{habits.length} accomplis
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowAddHabitModal(true)}
-                    className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-amber-400 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Ajouter
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {habits.map((habit) => {
-                    const isCompleted = habit.completedDates.includes(today)
-                    return (
-                      <button
-                        key={habit.id}
-                        onClick={() => handleToggleHabit(habit.id)}
-                        className={`flex items-center gap-3 p-4 rounded-xl transition-all ${
-                          isCompleted 
-                            ? 'bg-emerald-500/10 border-2 border-emerald-500/30' 
-                            : 'bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700'
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                          isCompleted ? 'bg-emerald-500 text-white' : 'border-2 border-zinc-600'
-                        }`}>
-                          {isCompleted && <Check className="w-3 h-3" strokeWidth={3} />}
-                        </div>
-                        <span className={`text-sm font-medium truncate ${
-                          isCompleted ? 'text-emerald-300' : 'text-zinc-400'
-                        }`}>
-                          {habit.name}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </section>
-            )}
-
-            {habits.length === 0 && (
-              <button
-                onClick={() => setShowAddHabitModal(true)}
-                className="w-full p-5 bg-zinc-900/30 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-500 hover:text-amber-400 hover:border-amber-500/30 transition-all flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="font-medium">Créer un premier rituel</span>
-              </button>
-            )}
-
-            {/* NOTES LIBRES */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/20 to-blue-500/10 flex items-center justify-center border border-sky-500/20">
-                  <BookOpen className="w-5 h-5 text-sky-400" />
-                </div>
-                <h2 className="font-serif text-lg font-medium text-zinc-200">
-                  Notes & réflexions
-                </h2>
-              </div>
-              
-              <textarea
-                value={freeNotes}
-                onChange={(e) => setFreeNotes(e.target.value)}
-                placeholder="Pensées, gratitudes, apprentissages du jour..."
-                rows={4}
-                className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-sky-500/40 rounded-xl px-5 py-4 text-zinc-300 placeholder:text-zinc-600 focus:outline-none transition-all resize-none font-serif leading-relaxed"
-              />
-            </section>
-
-            {/* TÂCHES ACCOMPLIES AUJOURD'HUI - Interconnexion A */}
-            {tasksCompletedToday.length > 0 && (
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center border border-emerald-500/20">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    <div>
-                      <h2 className="font-serif text-lg font-medium text-zinc-200">
-                        Tâches accomplies
-                      </h2>
-                      <p className="text-sm text-zinc-500">
-                        {tasksCompletedToday.length} tâche{tasksCompletedToday.length > 1 ? 's' : ''} aujourd'hui
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setView('tasks')}
-                    className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-emerald-400 transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Voir tout
-                  </button>
-                </div>
-                
-                <div className="space-y-2">
-                  {tasksCompletedToday.slice(0, 5).map((task) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl"
-                    >
-                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                      </div>
-                      <span className="text-sm text-emerald-300 line-through opacity-80">
-                        {task.title}
-                      </span>
-                    </div>
-                  ))}
-                  {tasksCompletedToday.length > 5 && (
-                    <p className="text-xs text-zinc-500 text-center">
-                      +{tasksCompletedToday.length - 5} autres tâches
-                    </p>
-                  )}
-                </div>
-              </section>
-            )}
-
-            <div className="h-px bg-gradient-to-r from-transparent via-zinc-700/50 to-transparent" />
-
-            {/* HUMEUR */}
-            <section className="text-center py-4">
-              <p className="text-sm text-zinc-500 mb-4">Comment te sens-tu ?</p>
-              <div className="flex items-center justify-center gap-4">
-                {moods.map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMood(m)}
-                    className={`text-3xl transition-all duration-200 ${
-                      mood === m 
-                        ? 'scale-125 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]' 
-                        : 'opacity-40 hover:opacity-80 hover:scale-110 grayscale hover:grayscale-0'
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            {/* Bouton Sauvegarder */}
-            <button
-              onClick={handleSave}
-              disabled={!canSave || isSaving}
-              className={`w-full py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-base font-medium ${
-                canSave && !isSaving
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-stone-900 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5'
-                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-              }`}
-            >
-              {isSaving ? 'Sauvegarde...' : hasChanges ? <><Feather className="w-4 h-4" />Sauvegarder</> : <><Check className="w-4 h-4" />Sauvegardé</>}
-            </button>
-
-            {/* Historique complet */}
-            <button
-              onClick={() => setShowHistoryModal(true)}
-              className="w-full py-3 mt-4 bg-zinc-900/50 hover:bg-zinc-800/50 border border-zinc-800 hover:border-zinc-700 rounded-xl text-sm text-zinc-400 hover:text-zinc-200 transition-all flex items-center justify-center gap-2"
-            >
-              <BookOpen className="w-4 h-4" />
-              Voir l'historique complet
-            </button>
-          </div>
-
-          {/* ===== COLONNE DROITE : MÉTRIQUES (1/3) ===== */}
-          <div className="space-y-3">
-            
-            {/* Card TÂCHES — 3 lignes factuelles */}
-            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle2 className="w-4 h-4 text-zinc-500" />
-                <h3 className="text-sm font-medium text-zinc-400">Tâches</h3>
-              </div>
-              <div className="space-y-2.5">
-                {/* 1. Volume */}
-                <p className="text-sm text-zinc-300">
-                  Terminées aujourd'hui : <span className="text-zinc-100 font-medium">{taskMetrics.todayCount}</span>
-                </p>
-                
-                {/* 2. Nature de l'activité */}
-                <p className="text-sm text-zinc-300">
-                  Nature : <span className="text-zinc-100 font-medium">
-                    {taskMetrics.activityType === 'avancée' ? 'Avancée réelle' : 'Préparation / maintenance'}
-                  </span>
-                </p>
-                
-                {/* 3. Tendance 14 jours */}
-                <p className="text-sm text-zinc-300">
-                  Sur 14 jours : <span className="text-zinc-100 font-medium">
-                    rythme {taskMetrics.trend14d}
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            {/* Card POMODORO — 3 lignes de métriques focus */}
-            <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <Timer className="w-4 h-4 text-orange-500" />
-                <h3 className="text-sm font-medium text-zinc-400">Pomodoro</h3>
-              </div>
-              <div className="space-y-2.5">
-                {/* 1️⃣ Volume */}
-                <p className="text-sm text-zinc-300">
-                  Volume : <span className="text-zinc-100 font-medium">{pomodoroMetrics.todayVolume} tâche{pomodoroMetrics.todayVolume > 1 ? 's' : ''} terminée{pomodoroMetrics.todayVolume > 1 ? 's' : ''}</span>
-                </p>
-                
-                {/* 2️⃣ Qualité du focus */}
-                <p className="text-sm text-zinc-300">
-                  Focus : <span className={`font-medium ${pomodoroMetrics.hasQualityFocus ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {pomodoroMetrics.hasQualityFocus ? 'Focus de qualité' : 'Focus fragmenté'}
-                  </span>
-                </p>
-                
-                {/* 3️⃣ Tendance 14 jours */}
-                <p className="text-sm text-zinc-300">
-                  Tendance : <span className={`font-medium ${pomodoroMetrics.trend14d === 'stable' ? 'text-zinc-100' : 'text-amber-400'}`}>
-                    {pomodoroMetrics.trend14d}
-                  </span>
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </div>
+          <JournalTab
+            intention={intention}
+            setIntention={setIntention}
+            action={action}
+            setAction={setAction}
+            mood={mood}
+            setMood={setMood}
+            freeNotes={freeNotes}
+            setFreeNotes={setFreeNotes}
+            handleSave={handleSave}
+            canSave={canSave}
+            isSaving={isSaving}
+            hasChanges={hasChanges}
+            setShowHistoryModal={setShowHistoryModal}
+            habits={habits}
+            tasks={tasks}
+            today={today}
+            firstTask={firstTask}
+            priorityTask={priorityTask}
+            todayCompleted={todayCompleted}
+            pomodoroSessions={pomodoroSessions}
+            handleToggleHabit={handleToggleHabit}
+            setShowAddHabitModal={setShowAddHabitModal}
+            setView={setView}
+          />
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* SANTÉ TAB (Nutrition + Poids fusionnés) */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
         {activeTab === 'sante' && (
-          <div className="h-full flex flex-col p-6 overflow-y-auto">
-            
-            {/* Actions principales */}
-            <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
-              <button
-                onClick={() => setShowMealModal(true)}
-                className="flex items-center gap-3 px-6 py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-300 rounded-xl transition-all font-medium shadow-lg shadow-emerald-500/10"
-              >
-                <Plus className="w-5 h-5" />
-                Ajouter un repas
-              </button>
-              <button
-                onClick={() => setShowWeightModal(true)}
-                className="flex items-center gap-3 px-6 py-3 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 hover:border-rose-500/50 text-rose-300 rounded-xl transition-all font-medium shadow-lg shadow-rose-500/10"
-              >
-                <Plus className="w-5 h-5" />
-                Ajouter une pesée
-              </button>
-              <button
-                onClick={() => setShowProfileModal(true)}
-                className="flex items-center gap-3 px-6 py-3 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 hover:border-indigo-500/50 text-indigo-300 rounded-xl transition-all font-medium shadow-lg shadow-indigo-500/10"
-              >
-                <Heart className="w-5 h-5" />
-                Configurer profil
-              </button>
-            </div>
-
-            {/* Layout 2 colonnes : Nutrition (gauche) + Poids (droite) */}
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-              
-              {/* ===== NUTRITION (3/5) ===== */}
-              <div className="xl:col-span-3 space-y-4">
-                <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                  <Apple className="w-4 h-4" />
-                  Nutrition
-                </h3>
-
-                {mealEntries.length === 0 ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center text-zinc-600 max-w-md">
-                      <Utensils className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
-                      <p className="text-sm mb-1 text-zinc-400">Aucun repas enregistré</p>
-                      <p className="text-xs">Ajoutez votre premier repas</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    {/* Calories & Macros */}
-                    <div className="space-y-4">
-                      <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
-                        <p className="text-xs text-zinc-500 mb-2">Aujourd'hui</p>
-                        <div className="text-2xl font-bold text-zinc-200">
-                          {todayCalories}
-                          <span className="text-sm text-zinc-600 ml-1 font-normal">/ {targetCalories} kcal</span>
-                        </div>
-                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mt-3">
-                          <div 
-                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all" 
-                            style={{ width: `${Math.min(100, (todayCalories / targetCalories) * 100)}%` }} 
-                          />
-                        </div>
-                      </div>
-
-                      <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
-                        <p className="text-xs text-zinc-500 mb-3">Macros</p>
-                        <MacrosCircularChart 
-                          protein={todayMacros.protein} 
-                          carbs={todayMacros.carbs} 
-                          fat={todayMacros.fat} 
-                        />
-                      </div>
-                    </div>
-
-                    {/* Liste des repas */}
-                    <div className="lg:col-span-2 bg-zinc-900/50 rounded-xl p-4 border border-zinc-800 max-h-[500px] overflow-hidden flex flex-col">
-                      <p className="text-xs text-zinc-500 mb-3">Historique</p>
-                      <div className="flex-1 overflow-y-auto">
-                        <MealList 
-                          entries={filteredMealEntries} 
-                          onDelete={handleDeleteMeal} 
-                          onDuplicate={handleDuplicateMeal} 
-                          compact 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ===== POIDS (2/5) ===== */}
-              <div className="xl:col-span-2 space-y-4">
-                <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                  <Scale className="w-4 h-4" />
-                  Poids
-                </h3>
-
-                {weightEntries.length === 0 ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center text-zinc-600 max-w-md">
-                      <Scale className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
-                      <p className="text-sm mb-1 text-zinc-400">Aucune pesée enregistrée</p>
-                      <p className="text-xs">Ajoutez votre première pesée</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Composition corporelle (si données Withings) */}
-                    <BodyCompositionDisplay latestEntry={weightEntries[weightEntries.length - 1]} />
-                    
-                    {/* Graphique */}
-                    <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
-                      <p className="text-xs text-zinc-500 mb-3">Évolution</p>
-                      <div className="h-[200px]">
-                        <WeightChart entries={weightEntries} trend={trend} />
-                      </div>
-                    </div>
-
-                    {/* Liste */}
-                    <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800 max-h-[260px] overflow-hidden flex flex-col">
-                      <p className="text-xs text-zinc-500 mb-3">Historique</p>
-                      <div className="flex-1 overflow-y-auto">
-                        <WeightList entries={filteredWeightEntries} onDelete={handleDeleteWeight} compact />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <HealthTab
+            setShowMealModal={setShowMealModal}
+            setShowWeightModal={setShowWeightModal}
+            setShowProfileModal={setShowProfileModal}
+            mealEntries={mealEntries}
+            weightEntries={weightEntries}
+            filteredMealEntries={filteredMealEntries}
+            filteredWeightEntries={filteredWeightEntries}
+            todayCalories={todayCalories}
+            targetCalories={targetCalories}
+            todayMacros={todayMacros}
+            trend={trend}
+            handleDeleteMeal={handleDeleteMeal}
+            handleDeleteWeight={handleDeleteWeight}
+            handleDuplicateMeal={handleDuplicateMeal}
+          />
         )}
       </div>
 
@@ -851,7 +421,6 @@ export function MyDayPage() {
         isVisible={showUndo}
       />
 
-      {/* Journal History Modal */}
       <JournalHistoryModal
         isOpen={showHistoryModal}
         onClose={() => setShowHistoryModal(false)}
