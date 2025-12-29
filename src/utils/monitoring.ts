@@ -12,41 +12,44 @@ import { onCLS, onFID, onFCP, onLCP, onTTFB, Metric } from 'web-vitals'
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || ''
 const ENVIRONMENT = import.meta.env.VITE_ENV || import.meta.env.MODE || 'development'
-const ENABLE_SENTRY = import.meta.env.VITE_ENABLE_SENTRY !== 'false'
+const ENABLE_SENTRY = import.meta.env.VITE_ENABLE_SENTRY === 'true' // Désactivé par défaut
 
 /**
  * Initialise Sentry pour le tracking d'erreurs
  */
 export function initSentry() {
   if (!ENABLE_SENTRY) {
-    console.log('📊 Sentry désactivé (VITE_ENABLE_SENTRY=false)')
+    console.log('📊 Sentry désactivé (VITE_ENABLE_SENTRY non défini ou false)')
     return
   }
 
   if (!SENTRY_DSN) {
     console.warn('⚠️ Sentry DSN manquant. Ajoutez VITE_SENTRY_DSN dans .env')
+    console.log('📊 Sentry désactivé')
     return
   }
 
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: ENVIRONMENT,
-    
-    // Sample rate (production)
-    tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
-    
-    // Replay sessions (optionnel, pour debug)
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    
-    // Intégrations
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration({
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
+  try {
+
+    Sentry.init({
+      dsn: SENTRY_DSN,
+      environment: ENVIRONMENT,
+      
+      // Sample rate (production)
+      tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
+      
+      // Replay sessions (optionnel, pour debug)
+      replaysSessionSampleRate: 0.1,
+      replaysOnErrorSampleRate: 1.0,
+      
+      // Intégrations
+      integrations: [
+        Sentry.browserTracingIntegration(),
+        Sentry.replayIntegration({
+          maskAllText: true,
+          blockAllMedia: true,
+        }),
+      ],
     
     // Filtrer les données sensibles
     beforeSend(event) {
@@ -87,9 +90,13 @@ export function initSentry() {
       'chrome-extension://',
       'moz-extension://',
     ],
-  })
+    })
 
-  console.log('✅ Sentry initialisé :', ENVIRONMENT)
+    console.log('✅ Sentry initialisé :', ENVIRONMENT)
+  } catch (error) {
+    console.error('❌ Erreur initialisation Sentry:', error)
+    console.log('📊 Sentry désactivé suite à l\'erreur')
+  }
 }
 
 /**
