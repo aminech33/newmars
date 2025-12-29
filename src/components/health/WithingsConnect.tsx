@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Zap, Check, RefreshCw, X } from 'lucide-react'
 import { useStore } from '../../store/useStore'
+import { getWithingsTokens, saveWithingsTokens, clearSecureData } from '../../utils/secureStorage'
 
-const API_URL = 'http://localhost:8000/api/withings'
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const WITHINGS_API_URL = `${API_URL}/api/withings`
 
 export function WithingsConnect() {
   const [isConnecting, setIsConnecting] = useState(false)
@@ -13,16 +15,10 @@ export function WithingsConnect() {
 
   // Vérifier si déjà connecté au chargement
   useEffect(() => {
-    const storedTokens = localStorage.getItem('withings_tokens')
+    const storedTokens = getWithingsTokens()
     if (storedTokens) {
-      try {
-        const parsedTokens = JSON.parse(storedTokens)
-        setTokens(parsedTokens)
-        setIsConnected(true)
-      } catch (error) {
-        console.error('Erreur parsing tokens:', error)
-        localStorage.removeItem('withings_tokens')
-      }
+      setTokens(storedTokens)
+      setIsConnected(true)
     }
   }, [])
 
@@ -134,16 +130,16 @@ export function WithingsConnect() {
   }
 
   const refreshToken = async () => {
-    if (!tokens || !tokens.refresh_token) {
+    if (!tokens || !tokens.refreshToken) {
       console.error('Pas de refresh token disponible')
       return
     }
     
     try {
-      const res = await fetch(`${API_URL}/refresh-token`, {
+      const res = await fetch(`${WITHINGS_API_URL}/refresh-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: tokens.refresh_token })
+        body: JSON.stringify({ refresh_token: tokens.refreshToken })
       })
       
       if (!res.ok) {
@@ -152,13 +148,14 @@ export function WithingsConnect() {
       
       const newTokens = await res.json()
       const updatedTokens = {
-        ...tokens,
-        ...newTokens,
-        user_id: tokens.user_id // Garder l'user_id
+        accessToken: newTokens.access_token,
+        refreshToken: newTokens.refresh_token || tokens.refreshToken,
+        expiresIn: newTokens.expires_in,
+        createdAt: Date.now()
       }
       
       setTokens(updatedTokens)
-      localStorage.setItem('withings_tokens', JSON.stringify(updatedTokens))
+      saveWithingsTokens(updatedTokens)
       
       console.log('Token Withings rafraîchi avec succès')
     } catch (error) {
@@ -174,7 +171,7 @@ export function WithingsConnect() {
     
     try {
       const res = await fetch(
-        `${API_URL}/sync?access_token=${accessToken}&days_back=90`
+        `${WITHINGS_API_URL}/sync?access_token=${accessToken}&days_back=90`
       )
       
       // Si token expiré, tenter de rafraîchir et réessayer
@@ -182,7 +179,7 @@ export function WithingsConnect() {
         console.log('Token expiré pendant sync, rafraîchissement...')
         await refreshToken()
         // Réessayer avec le nouveau token (une seule fois)
-        return await syncWeights(tokens.access_token, false)
+        return await syncWeights(tokens.accessToken, false)
       }
       
       if (!res.ok) {
@@ -223,7 +220,7 @@ export function WithingsConnect() {
   }
 
   const handleDisconnect = () => {
-    localStorage.removeItem('withings_tokens')
+    clearSecureData()
     setTokens(null)
     setIsConnected(false)
     addToast('Balance Withings déconnectée', 'info')
@@ -250,7 +247,7 @@ export function WithingsConnect() {
         
         <div className="flex gap-3">
           <button 
-            onClick={() => syncWeights(tokens.access_token)}
+            onClick={() => syncWeights(tokens.accessToken)}
             disabled={isSyncing}
             className="flex-1 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >

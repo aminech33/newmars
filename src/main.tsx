@@ -18,6 +18,16 @@ console.log('🚀 NewMars starting...')
   }
 })()
 
+// Initialiser le backup automatique
+;(async () => {
+  try {
+    const { startAutoBackup } = await import('./utils/autoBackup')
+    startAutoBackup()
+  } catch (error) {
+    console.warn('⚠️ Backup automatique non disponible:', error)
+  }
+})()
+
 console.log('🎨 Rendering App...')
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
