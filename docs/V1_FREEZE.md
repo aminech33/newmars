@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 29 décembre 2024 (V1.2.9 - Sécurité Production-Ready)  
-> **Version** : 1.2.9  
+> **Dernière mise à jour** : 29 décembre 2024 (V1.3.0 - Tests E2E + Monitoring + CI/CD)  
+> **Version** : 1.3.0  
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -17,12 +17,13 @@
 - ✅ **8 interconnexions actives** (3 originales + 5 V1.1+)
 - ✅ **Hub Revolution V1.2.4** : Smart Widgets intelligents, Insights actionnables, ProjectsMiniView
 - ✅ **4 Smart Widgets** (Wellbeing, Productivity, Streak, NextTask) - remplacent 7 anciens widgets
-- ✅ **Tests Automatisés V1.2.5** : 130 tests (106 frontend Vitest + 24 backend Pytest)
+- ✅ **Tests Automatisés V1.2.5** : 130 tests unitaires (106 frontend Vitest + 24 backend Pytest)
 - ✅ **Store Modulaire V1.2.5** : 6 slices indépendants (Tasks, Health, Journal, Learning, Library, UI)
 - ✅ **TasksPage Refactorisée V1.2.6** : 1902→280 lignes (-85%), 6 composants extraits
 - ✅ **MyDayPage Refactorisée V1.2.7** : 864→380 lignes (-56%), 4 composants extraits
 - ✅ **LearningPage Refactorisée V1.2.8** : 934→821 lignes (-12%), 2 onglets séparés (CoursesTab, LibraryTab)
 - ✅ **Sécurité Production-Ready V1.2.9** : Chiffrement AES-256, Rate Limiting, Tokens sécurisés
+- ✅ **Tests E2E + Monitoring V1.3.0** : 5 tests Playwright, Sentry, Web Vitals, CI/CD GitHub Actions
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -44,7 +45,7 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.2.9 COMPLET** — Tests automatisés, Store modulaire, Pages refactorisées, Sécurité production-ready (chiffrement + rate limiting)
+**Statut** : ✅ **V1.3.0 COMPLET** — Tests E2E, Monitoring (Sentry + Web Vitals), CI/CD, Production-Ready
 
 ---
 
@@ -2828,8 +2829,16 @@ Voir AUDIT_COMPLET.md pour détails techniques
 - [x] **Store Modulaire (6 slices)** ✅ V1.2.5 ⭐
 - [x] **Vitest + Testing Library** ✅ V1.2.5 ⭐
 - [x] **Pytest Backend** ✅ V1.2.5 ⭐
+- [x] **TasksPage Refactorisée** ✅ V1.2.6 ⭐
+- [x] **MyDayPage Refactorisée** ✅ V1.2.7 ⭐
+- [x] **LearningPage Refactorisée** ✅ V1.2.8 ⭐
+- [x] **Sécurité Production-Ready** ✅ V1.2.9 ⭐
+- [x] **Tests E2E Playwright (5)** ✅ V1.3.0 ⭐
+- [x] **Monitoring Sentry** ✅ V1.3.0 ⭐
+- [x] **Web Vitals** ✅ V1.3.0 ⭐
+- [x] **CI/CD GitHub Actions** ✅ V1.3.0 ⭐
 
-**Verdict** : ✅ **V1.2.5 COMPLÈTE — TESTS & ARCHITECTURE PRODUCTION-READY**
+**Verdict** : ✅ **V1.3.0 COMPLÈTE — TESTS E2E, MONITORING & CI/CD PRODUCTION-READY**
 
 📄 **Voir GUIDE_SANTE_UTILISATEUR.md pour guide complet module santé**
 
@@ -2882,7 +2891,7 @@ Voir AUDIT_COMPLET.md pour détails techniques
 
 ## 🎉 Verdict Final
 
-**NewMars V1.2.5 = TESTÉ, MODULAIRE & PRODUCTION-READY ✅⭐**
+**NewMars V1.3.0 = TESTÉ, SÉCURISÉ, MONITORÉ & PRODUCTION-READY ✅⭐**
 
 **En résumé** :
 - 6 modules complets et interconnectés
@@ -2901,13 +2910,17 @@ Voir AUDIT_COMPLET.md pour détails techniques
 - **Gamification** : Streaks 🔥 + Sparkline + Badges achievements
 - **Backend SQLite** : Persistence complète (447 lignes)
 - **Code 100% propre** : 0 dead code, -2500 lignes obsolètes supprimées
-- **130 tests automatisés** : 106 frontend (Vitest) + 24 backend (Pytest) ⭐ V1.2.5
+- **135 tests automatisés** : 106 frontend (Vitest) + 24 backend (Pytest) + 5 E2E (Playwright) ⭐ V1.3.0
 - **Store modulaire** : 6 slices indépendants (1683 lignes → 8 fichiers) ⭐ V1.2.5
+- **Pages refactorisées** : TasksPage (-85%), MyDayPage (-56%), LearningPage (-12%) ⭐ V1.2.6-8
+- **Sécurité production** : Chiffrement AES-256, Rate Limiting, Tokens sécurisés ⭐ V1.2.9
+- **Monitoring complet** : Sentry (erreurs) + Web Vitals (performance) ⭐ V1.3.0
+- **CI/CD actif** : GitHub Actions (tests + build automatiques) ⭐ V1.3.0
 - Utilisable tous les jours sans friction
 
-**C'est prêt. Use it.**
+**C'est prêt. Use it. Ship it. 🚀**
 
-**V1.3 (futur) :**
+**V1.4 (futur) :**
 - Tests utilisateurs (3-5 personnes)
 - Métriques de rétention (Flashcards + Interleaving)
 - Métriques d'usage Hub (insights actionnés, widgets utilisés)
@@ -2915,12 +2928,15 @@ Voir AUDIT_COMPLET.md pour détails techniques
 - Métriques d'usage Tasks V2 (taux déblocage phases, sessions Pomodoro inline)
 - Métriques d'usage Health (profil configuré, calculs utilisés, tracking nutrition)
 - Métriques d'usage Library (sessions lecture, Google Books API usage)
-- Optimisations performance si nécessaire
+- Optimisations performance basées sur Web Vitals
 - Intégration Withings API (préparé dans healthIntelligence)
-- Tests E2E (Playwright/Cypress) si besoin
 
 📄 **Documentation complète :**
-- `V1_FREEZE.md` - Ce document (snapshot figé V1.2.4)
+- `V1_FREEZE.md` - Ce document (snapshot figé V1.3.0)
+- `TESTING.md` - Guide complet des tests (unitaires + E2E) ⭐ V1.3.0
+- `MONITORING.md` - Guide Sentry + Web Vitals ⭐ V1.3.0
+- `SECURITY.md` - Guide sécurité production ⭐ V1.2.9
+- `SECURITY_QUICKSTART.md` - Quick start sécurité ⭐ V1.2.9
 - `GUIDE_SANTE_UTILISATEUR.md` - Guide complet module santé
 - `LEARNING_IMPROVEMENTS_V1.2.1.md` - Détails améliorations Learning
 - `QUICKSTART_V1.2.1.md` - Guide démarrage rapide
@@ -2932,11 +2948,11 @@ Voir AUDIT_COMPLET.md pour détails techniques
 ---
 
 **Date de gel** : 22 décembre 2024  
-**Dernière mise à jour** : 28 décembre 2024 (V1.2.5 - Tests Automatisés & Store Modulaire)  
-**Version** : 1.2.5  
+**Dernière mise à jour** : 29 décembre 2024 (V1.3.0 - Tests E2E + Monitoring + CI/CD)  
+**Version** : 1.3.0  
 **Auteur** : Amine  
-**Statut** : ✅ **V1.2.5 COMPLÈTE** — Production ready, tests automatisés, architecture modulaire
+**Statut** : ✅ **V1.3.0 COMPLÈTE** — Production ready, tests E2E, monitoring, CI/CD, sécurité
 
 ---
 
-*Ce document fige officiellement NewMars V1.2.5. 130 tests automatisés, store modulaire en 6 slices, architecture production-ready.*
+*Ce document fige officiellement NewMars V1.3.0. 135 tests (130 unitaires + 5 E2E), monitoring Sentry + Web Vitals, CI/CD GitHub Actions, sécurité production-ready.*
