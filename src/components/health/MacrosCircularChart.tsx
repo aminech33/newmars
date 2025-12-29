@@ -4,13 +4,15 @@ interface MacrosCircularChartProps {
   protein: number
   carbs: number
   fat: number
+  totalCalories?: number // Optionnel : utiliser les calories réelles au lieu de recalculer
   size?: number
 }
 
 export function MacrosCircularChart({ 
   protein, 
   carbs, 
-  fat, 
+  fat,
+  totalCalories: providedCalories,
   size = 200 
 }: MacrosCircularChartProps) {
   
@@ -18,7 +20,10 @@ export function MacrosCircularChart({
   const caloriesFromProtein = protein * 4
   const caloriesFromCarbs = carbs * 4
   const caloriesFromFat = fat * 9
-  const totalCalories = caloriesFromProtein + caloriesFromCarbs + caloriesFromFat
+  const calculatedCalories = caloriesFromProtein + caloriesFromCarbs + caloriesFromFat
+  
+  // Utiliser les calories fournies si disponibles, sinon calculer
+  const totalCalories = providedCalories ?? calculatedCalories
 
   // Calculer les pourcentages
   const percentages = useMemo(() => {
@@ -138,16 +143,16 @@ export function MacrosCircularChart({
       <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-full">
         <div className="flex items-center justify-center gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-rose-400" />
-            <span className="text-xs text-zinc-400">P {percentages.protein}%</span>
+            <div className="w-3 h-3 rounded-full bg-rose-400" aria-hidden="true" />
+            <span className="text-xs text-zinc-400">P {percentages.protein}% ({protein}g)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-amber-400" />
-            <span className="text-xs text-zinc-400">G {percentages.carbs}%</span>
+            <div className="w-3 h-3 rounded-full bg-amber-400" aria-hidden="true" />
+            <span className="text-xs text-zinc-400">G {percentages.carbs}% ({carbs}g)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-yellow-400" />
-            <span className="text-xs text-zinc-400">L {percentages.fat}%</span>
+            <div className="w-3 h-3 rounded-full bg-yellow-400" aria-hidden="true" />
+            <span className="text-xs text-zinc-400">L {percentages.fat}% ({fat}g)</span>
           </div>
         </div>
       </div>

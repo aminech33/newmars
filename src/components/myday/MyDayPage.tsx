@@ -325,12 +325,8 @@ export function MyDayPage() {
           <JournalTab
             intention={intention}
             setIntention={setIntention}
-            action={action}
-            setAction={setAction}
             mood={mood}
             setMood={setMood}
-            freeNotes={freeNotes}
-            setFreeNotes={setFreeNotes}
             handleSave={handleSave}
             canSave={canSave}
             isSaving={isSaving}
@@ -339,13 +335,10 @@ export function MyDayPage() {
             habits={habits}
             tasks={tasks}
             today={today}
-            firstTask={firstTask}
-            priorityTask={priorityTask}
             todayCompleted={todayCompleted}
             pomodoroSessions={pomodoroSessions}
             handleToggleHabit={handleToggleHabit}
             setShowAddHabitModal={setShowAddHabitModal}
-            setView={setView}
           />
         )}
 

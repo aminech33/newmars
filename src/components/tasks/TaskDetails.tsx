@@ -1,4 +1,4 @@
-import { X, CheckSquare, Plus, Trash2, Flag } from 'lucide-react'
+import { X, CheckSquare, Plus, Trash2, Flag, MoveRight, Check, FolderKanban, Link as LinkIcon, Calendar } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Task, TaskPriority, useStore } from '../../store/useStore'
 import { Collapsible } from '../ui/Collapsible'
@@ -204,6 +204,60 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
                   <option key={p.value} value={p.value}>{p.label}</option>
                 ))}
               </select>
+            </div>
+          </Collapsible>
+          
+          {/* Move to Column (Accessibility) */}
+          <Collapsible title="Déplacer vers" icon={<MoveRight className="w-4 h-4 text-zinc-500" />} defaultOpen={false}>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => handleUpdate({ temporalColumn: 'today' })}
+                disabled={task.temporalColumn === 'today'}
+                className={`px-3 py-2 rounded-xl text-sm text-left transition-colors ${
+                  task.temporalColumn === 'today'
+                    ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                }`}
+                aria-label="Déplacer vers Aujourd'hui"
+              >
+                Aujourd'hui
+              </button>
+              <button
+                onClick={() => handleUpdate({ temporalColumn: 'inProgress' })}
+                disabled={task.temporalColumn === 'inProgress'}
+                className={`px-3 py-2 rounded-xl text-sm text-left transition-colors ${
+                  task.temporalColumn === 'inProgress'
+                    ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                }`}
+                aria-label="Déplacer vers En cours"
+              >
+                En cours
+              </button>
+              <button
+                onClick={() => handleUpdate({ temporalColumn: 'upcoming' })}
+                disabled={task.temporalColumn === 'upcoming'}
+                className={`px-3 py-2 rounded-xl text-sm text-left transition-colors ${
+                  task.temporalColumn === 'upcoming'
+                    ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                }`}
+                aria-label="Déplacer vers À venir"
+              >
+                À venir
+              </button>
+              <button
+                onClick={() => handleUpdate({ temporalColumn: 'distant' })}
+                disabled={task.temporalColumn === 'distant'}
+                className={`px-3 py-2 rounded-xl text-sm text-left transition-colors ${
+                  task.temporalColumn === 'distant'
+                    ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                }`}
+                aria-label="Déplacer vers Lointain"
+              >
+                Lointain
+              </button>
             </div>
           </Collapsible>
           

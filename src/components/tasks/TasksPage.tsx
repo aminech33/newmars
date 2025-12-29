@@ -235,6 +235,7 @@ export function TasksPage() {
                 placeholder="Que devez-vous faire ?"
                 className={`flex-1 h-12 px-4 bg-zinc-800/60 text-zinc-100 placeholder:text-zinc-500 rounded-xl border border-zinc-700/50 focus:outline-none focus:border-zinc-600 focus:ring-2 focus:ring-zinc-600/20 text-[16px] transition-all duration-150 ${fontStack}`}
                 autoFocus={showQuickAdd}
+                aria-label="Titre de la nouvelle tâche"
               />
               <button
                 onClick={handleQuickAdd}

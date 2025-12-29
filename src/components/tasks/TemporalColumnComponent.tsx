@@ -85,10 +85,12 @@ export function TemporalColumnComponent({
           className={`flex-1 min-w-0 flex flex-col h-full relative ${styles.bg} ${
             snapshot.isDraggingOver ? 'ring-2 ring-inset ring-indigo-500/50' : ''
           }`}
+          role="region"
+          aria-label={`Colonne ${config.title}, ${todoTasks.length} tâches à faire`}
         >
           {/* Separator */}
           {!isToday && (
-            <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" />
+            <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" aria-hidden="true" />
           )}
           
           {/* Header */}
@@ -98,7 +100,10 @@ export function TemporalColumnComponent({
                 {config.title}
               </h2>
               {todoTasks.length > 0 && (
-                <span className={`text-[14px] leading-none tabular-nums px-2 py-1 rounded-md ${fontStack} ${styles.count}`}>
+                <span 
+                  className={`text-[14px] leading-none tabular-nums px-2 py-1 rounded-md ${fontStack} ${styles.count}`}
+                  aria-label={`${todoTasks.length} tâches`}
+                >
                   {todoTasks.length}
                 </span>
               )}
@@ -107,7 +112,7 @@ export function TemporalColumnComponent({
           </div>
           
           {/* Tasks list */}
-          <div className="flex-1 overflow-y-auto px-2.5 pb-4">
+          <div className="flex-1 overflow-y-auto px-2.5 pb-4" role="list">
             {todoTasks.length === 0 && doneTasks.length === 0 ? (
               <div className="h-20 flex items-center justify-center">
                 <span className={`text-[15px] ${fontStack} ${styles.empty}`}>

@@ -4,7 +4,6 @@
 
 import { ArrowLeft, Plus, Sparkles, Timer, ListTodo, FolderKanban } from 'lucide-react'
 import { useStore } from '../../store/useStore'
-import { Tooltip } from '../ui/Tooltip'
 import { fontStack } from './taskUtils'
 
 type TasksTab = 'tasks' | 'focus'
@@ -108,26 +107,24 @@ export function TasksHeader({
       
       {activeTab === 'tasks' && (
         <>
-          <Tooltip content="Créer un projet d'apprentissage" side="bottom">
-            <button
-              onClick={() => setPlanningStep('define')}
-              disabled={planningStep !== 'none'}
-              className={`h-10 px-4 ${planningStep !== 'none' ? 'text-indigo-400 bg-indigo-500/20 border-indigo-500/50' : 'text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-500/30'} border rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2 active:scale-[0.98] ${fontStack}`}
-            >
-              <Sparkles className="w-[16px] h-[16px]" />
-              <span className="hidden sm:inline">Nouveau projet</span>
-            </button>
-          </Tooltip>
+          <button
+            onClick={() => setPlanningStep('define')}
+            disabled={planningStep !== 'none'}
+            className={`h-10 px-4 ${planningStep !== 'none' ? 'text-indigo-400 bg-indigo-500/20 border-indigo-500/50' : 'text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-500/30'} border rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2 active:scale-[0.98] ${fontStack}`}
+            aria-label="Créer un projet d'apprentissage"
+          >
+            <Sparkles className="w-[16px] h-[16px]" />
+            <span className="hidden sm:inline">Nouveau projet</span>
+          </button>
           
-          <Tooltip content="⌘N" side="bottom">
-            <button
-              onClick={() => setShowQuickAdd(true)}
-              className={`h-10 px-4 text-zinc-100 bg-zinc-800/80 hover:bg-zinc-700/90 rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2.5 active:scale-[0.98] hover:shadow-lg hover:shadow-black/20 ${fontStack}`}
-            >
-              <Plus className="w-[18px] h-[18px]" />
-              <span className="hidden sm:inline">Nouvelle tâche</span>
-            </button>
-          </Tooltip>
+          <button
+            onClick={() => setShowQuickAdd(true)}
+            className={`h-10 px-4 text-zinc-100 bg-zinc-800/80 hover:bg-zinc-700/90 rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2.5 active:scale-[0.98] hover:shadow-lg hover:shadow-black/20 ${fontStack}`}
+            aria-label="Nouvelle tâche (⌘N)"
+          >
+            <Plus className="w-[18px] h-[18px]" />
+            <span className="hidden sm:inline">Nouvelle tâche</span>
+          </button>
         </>
       )}
     </header>

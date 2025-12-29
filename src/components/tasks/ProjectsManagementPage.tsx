@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, TrendingUp, Link, ListPlus } from 'lucide-react'
 import { useStore, Project, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { AddProjectModal } from './AddProjectModal'
@@ -26,14 +26,20 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
   const [projectColor, setProjectColor] = useState(PROJECT_COLORS[0])
   const [projectIcon, setProjectIcon] = useState(PROJECT_ICONS[0])
 
-  // Calculate stats for each project
-  const getProjectStats = (projectId: string) => {
-    const projectTasks = tasks.filter(t => t.projectId === projectId)
-    const completed = projectTasks.filter(t => t.completed).length
-    const total = projectTasks.length
-    const progress = total > 0 ? Math.round((completed / total) * 100) : 0
-    return { completed, total, progress }
-  }
+  // Calculate stats for all projects (memoized for performance)
+  const projectsWithStats = useMemo(() => {
+    return projects.map(project => {
+      const projectTasks = tasks.filter(t => t.projectId === project.id)
+      const completed = projectTasks.filter(t => t.completed).length
+      const total = projectTasks.length
+      const progress = total > 0 ? Math.round((completed / total) * 100) : 0
+      
+      return {
+        ...project,
+        stats: { completed, total, progress }
+      }
+    })
+  }, [projects, tasks])
 
   const handleOpenAddModal = () => {
     setEditingProject(null)
@@ -155,16 +161,20 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
             <button
               onClick={handleOpenAddModal}
               className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors"
+              aria-label="Créer un projet simple"
             >
-              <Plus className="w-5 h-5" />
-              Projet simple
+              <Plus className="w-5 h-5" aria-hidden="true" />
+              <span className="hidden sm:inline">Projet simple</span>
+              <span className="sm:hidden">Simple</span>
             </button>
             <button
               onClick={() => setShowCreateWithTasks(true)}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
+              aria-label="Créer un projet avec des tâches"
             >
-              <ListPlus className="w-5 h-5" />
-              Projet + Tâches
+              <ListPlus className="w-5 h-5" aria-hidden="true" />
+              <span className="hidden sm:inline">Projet + Tâches</span>
+              <span className="sm:hidden">+ Tâches</span>
             </button>
           </div>
         </div>
@@ -193,14 +203,27 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => {
-              const stats = getProjectStats(project.id)
+          <div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            role="list"
+            aria-label="Liste des projets"
+          >
+            {projectsWithStats.map((project) => {
+              const { stats } = project
               return (
-                <div
+                <article
                   key={project.id}
                   className="group relative p-6 bg-zinc-900/30 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 transition-colors cursor-pointer"
                   onClick={() => setViewingProject(project)}
+                  role="listitem"
+                  aria-label={`Projet ${project.name}, ${stats.total} tâches, ${stats.progress}% complété`}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setViewingProject(project)
+                    }
+                  }}
                 >
                   {/* Project Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -208,6 +231,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                       <div
                         className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
                         style={{ backgroundColor: `${project.color}20`, border: `2px solid ${project.color}40` }}
+                        aria-hidden="true"
                       >
                         {project.icon}
                       </div>
@@ -219,17 +243,17 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Actions - Always visible on mobile, hover on desktop */}
+                    <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           setAssigningProject(project)
                         }}
                         className="p-2 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                        title="Assigner des tâches"
+                        aria-label={`Assigner des tâches au projet ${project.name}`}
                       >
-                        <Link className="w-4 h-4" />
+                        <Link className="w-4 h-4" aria-hidden="true" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -237,9 +261,9 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                           handleOpenEditModal(project)
                         }}
                         className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
-                        title="Modifier"
+                        aria-label={`Modifier le projet ${project.name}`}
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-4 h-4" aria-hidden="true" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -247,9 +271,9 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                           setConfirmDelete(project.id)
                         }}
                         className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Supprimer"
+                        aria-label={`Supprimer le projet ${project.name}`}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -258,9 +282,16 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                   <div className="mb-4">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-zinc-500">Progression</span>
-                      <span className="font-bold text-white">{stats.progress}%</span>
+                      <span className="font-bold text-white" aria-label={`${stats.progress} pourcent`}>{stats.progress}%</span>
                     </div>
-                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-2 bg-zinc-800 rounded-full overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={stats.progress}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`Progression du projet: ${stats.progress}%`}
+                    >
                       <div
                         className="h-full transition-colors duration-500"
                         style={{
@@ -274,7 +305,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                   {/* Stats */}
                   <div className="flex items-center justify-between pt-4 border-t border-white/5">
                     <div className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="w-4 h-4" style={{ color: project.color }} />
+                      <TrendingUp className="w-4 h-4" style={{ color: project.color }} aria-hidden="true" />
                       <span className="text-zinc-400">
                         {stats.completed}/{stats.total} complétées
                       </span>
@@ -288,11 +319,12 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                       setAssigningProject(project)
                     }}
                     className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors text-sm font-medium"
+                    aria-label={`Assigner des tâches au projet ${project.name}`}
                   >
-                    <Link className="w-4 h-4" />
+                    <Link className="w-4 h-4" aria-hidden="true" />
                     Assigner des tâches
                   </button>
-                </div>
+                </article>
               )
             })}
           </div>
