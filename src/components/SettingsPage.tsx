@@ -11,13 +11,18 @@ import {
   Trash2,
   Check,
   AlertTriangle,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  User,
+  HardDrive
 } from 'lucide-react'
+import { BackupSettings } from './settings/BackupSettings'
 
-type SettingsSection = 'appearance' | 'data' | 'advanced'
+type SettingsSection = 'appearance' | 'profile' | 'backup' | 'data' | 'advanced'
 
 const sections = [
   { id: 'appearance', label: 'Apparence', icon: Palette, color: 'violet' },
+  { id: 'profile', label: 'Profil', icon: User, color: 'indigo' },
+  { id: 'backup', label: 'Sauvegardes', icon: HardDrive, color: 'emerald' },
   { id: 'data', label: 'Données', icon: Database, color: 'cyan' },
   { id: 'advanced', label: 'Avancé', icon: SettingsIcon, color: 'zinc' },
 ] as const
@@ -80,7 +85,7 @@ function SettingRow({ label, description, children }: { label: string; descripti
 }
 
 export function SettingsPage() {
-  const { setView, accentTheme, setAccentTheme, addToast } = useStore()
+  const { setView, accentTheme, setAccentTheme, addToast, userName, setUserName } = useStore()
   const [activeSection, setActiveSection] = useState<SettingsSection>('appearance')
   
   // États locaux pour les paramètres essentiels
@@ -176,6 +181,44 @@ export function SettingsPage() {
                 <Toggle enabled={animationsEnabled} onChange={setAnimationsEnabled} label="Animations" />
               </SettingRow>
             </SettingCard>
+          </div>
+        )
+
+      case 'profile':
+        return (
+          <div className="space-y-4">
+            <SettingCard title="Informations personnelles" description="Personnalisez votre profil">
+              <SettingRow label="Nom d'affichage">
+                <input
+                  type="text"
+                  value={userName || ''}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="Votre nom"
+                  className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </SettingRow>
+            </SettingCard>
+            
+            <SettingCard title="Préférences" description="Ajustez votre expérience">
+              <SettingRow 
+                label="Langue" 
+                description="Français (par défaut)"
+              >
+                <select 
+                  className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled
+                >
+                  <option>Français</option>
+                </select>
+              </SettingRow>
+            </SettingCard>
+          </div>
+        )
+
+      case 'backup':
+        return (
+          <div className="space-y-4">
+            <BackupSettings />
           </div>
         )
 

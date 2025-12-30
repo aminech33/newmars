@@ -63,11 +63,18 @@ export interface TaskMetrics {
   // Volume : nombre de tâches terminées aujourd'hui
   todayCount: number
   
+  // Moyenne sur 14 jours
+  avg14d: number
+  
   // Nature : type d'activité (avancée réelle ou préparation/maintenance)
   activityType: 'avancée' | 'préparation'
   
   // Tendance 14 jours : stable, en hausse, en baisse
   trend14d: 'stable' | 'en hausse' | 'en baisse'
+  
+  // Détails pour la tendance
+  last7DaysCount: number
+  days8to14Count: number
 }
 
 /**
@@ -82,7 +89,11 @@ export function calculateTaskMetrics(tasks: Task[]): TaskMetrics {
   // 1. VOLUME — Tâches terminées aujourd'hui
   const todayCount = completedTasks.filter(t => isToday(t.completedAt!)).length
   
-  // 2. NATURE — Détermine le type d'activité
+  // 2. MOYENNE 14 JOURS
+  const last14Days = completedTasks.filter(t => isInLast14Days(t.completedAt!)).length
+  const avg14d = Math.round((last14Days / 14) * 10) / 10 // Arrondi à 1 décimale
+  
+  // 3. NATURE — Détermine le type d'activité
   // Une tâche est "avancée" si effort M ou L, ou si elle a des subtasks complétées
   const todayTasks = completedTasks.filter(t => isToday(t.completedAt!))
   const hasAdvancedTask = todayTasks.some(t => 
@@ -92,16 +103,15 @@ export function calculateTaskMetrics(tasks: Task[]): TaskMetrics {
   )
   const activityType: TaskMetrics['activityType'] = hasAdvancedTask ? 'avancée' : 'préparation'
   
-  // 3. TENDANCE 14 JOURS — Compare les 7 derniers jours vs les 7 d'avant
-  const last7Days = completedTasks.filter(t => isInLast7Days(t.completedAt!)).length
-  const last14Days = completedTasks.filter(t => isInLast14Days(t.completedAt!)).length
-  const days8to14 = last14Days - last7Days
+  // 4. TENDANCE 14 JOURS — Compare les 7 derniers jours vs les 7 d'avant
+  const last7DaysCount = completedTasks.filter(t => isInLast7Days(t.completedAt!)).length
+  const days8to14Count = last14Days - last7DaysCount
   
   // Calcul de la tendance
   let trend14d: TaskMetrics['trend14d'] = 'stable'
-  if (last7Days > 0 || days8to14 > 0) {
-    const diff = last7Days - days8to14
-    const threshold = Math.max(2, Math.round((last7Days + days8to14) / 2 * 0.2)) // 20% de variation
+  if (last7DaysCount > 0 || days8to14Count > 0) {
+    const diff = last7DaysCount - days8to14Count
+    const threshold = Math.max(2, Math.round((last7DaysCount + days8to14Count) / 2 * 0.2)) // 20% de variation
     
     if (diff > threshold) {
       trend14d = 'en hausse'
@@ -112,8 +122,11 @@ export function calculateTaskMetrics(tasks: Task[]): TaskMetrics {
   
   return {
     todayCount,
+    avg14d,
     activityType,
-    trend14d
+    trend14d,
+    last7DaysCount,
+    days8to14Count
   }
 }
 

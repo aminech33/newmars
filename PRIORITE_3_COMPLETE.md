@@ -359,3 +359,4 @@ docs/V1_FREEZE.md                          # Mise à jour V1.4.0
 
 *Priorité 3 (Intégrations) : 100% COMPLÉTÉE ✅*
 
+

@@ -66,8 +66,22 @@ export function LearningPage() {
     setIsTyping
   } = useLearningData()
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<PageTab>('courses')
+  // Détecter la vue actuelle pour afficher le bon onglet
+  const currentView = useStore((state) => state.currentView)
+  
+  // Tab state - Définir selon la vue
+  const [activeTab, setActiveTab] = useState<PageTab>(() => {
+    return currentView === 'library' ? 'library' : 'courses'
+  })
+  
+  // Synchroniser l'onglet avec la vue
+  useEffect(() => {
+    if (currentView === 'library') {
+      setActiveTab('library')
+    } else if (currentView === 'learning') {
+      setActiveTab('courses')
+    }
+  }, [currentView])
 
   // Local UI state
   const [showCourseModal, setShowCourseModal] = useState(false)
@@ -454,251 +468,39 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
 
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden bg-black">
-      {/* Header avec onglets */}
-      <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50 bg-zinc-900/50">
-        <div className="flex items-center gap-3">
-          {/* Tabs */}
-          <div className="flex gap-1 bg-zinc-800/50 rounded-lg p-0.5">
-            <button
-              onClick={() => setActiveTab('courses')}
-              className={`px-3 py-1.5 rounded-md text-sm flex items-center gap-2 transition-all ${
-                activeTab === 'courses' 
-                  ? 'bg-zinc-700 text-white' 
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <GraduationCap className="w-4 h-4" />
-              <span>Cours</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('library')}
-              className={`px-3 py-1.5 rounded-md text-sm flex items-center gap-2 transition-all ${
-                activeTab === 'library' 
-                  ? 'bg-zinc-700 text-white' 
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Livres</span>
-              {readingBooks.length > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              )}
-            </button>
+      {/* Header - Caché si bibliothèque (elle a son propre header) */}
+      {currentView !== 'library' && (
+        <header className="flex-shrink-0 px-4 py-2 border-b border-zinc-800/50 bg-zinc-900/50">
+          <div className="flex items-center gap-3">
+            <h1 className="text-base font-medium text-zinc-200">Apprentissage</h1>
+            <div className="flex-1" />
           </div>
-
-          <div className="flex-1" />
-
-          {/* Actions selon l'onglet */}
-          {activeTab === 'library' && (
-            <>
-              {/* Search */}
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/50 rounded-lg max-w-xs">
-                <Search className="w-3.5 h-3.5 text-zinc-500" />
-                <input
-                  type="text"
-                  value={librarySearch}
-                  onChange={(e) => setLibrarySearch(e.target.value)}
-                  placeholder="Rechercher..."
-                  className="flex-1 bg-transparent text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none w-24"
-                />
-                {librarySearch && (
-                  <button onClick={() => setLibrarySearch('')} className="text-zinc-500 hover:text-white">
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-
-              {/* Status Filter */}
-              <div className="relative" ref={statusRef}>
-                <button
-                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                    filterStatusLib !== 'all' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
-                  }`}
-                >
-                  {statusLabels[filterStatusLib]}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-                {showStatusDropdown && (
-                  <div className="absolute top-full mt-1 right-0 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
-                    {(Object.keys(statusLabels) as FilterStatus[]).map((status) => (
-                      <button
-                        key={status}
-                        onClick={() => { setFilterStatusLib(status); setShowStatusDropdown(false) }}
-                        className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                          filterStatusLib === status ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                        }`}
-                      >
-                        {statusLabels[status]} ({status === 'all' ? pageStats.total : status === 'reading' ? pageStats.reading : status === 'completed' ? pageStats.completed : pageStats.toRead})
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Genre Filter */}
-              {genresWithBooks.length > 0 && (
-                <div className="relative" ref={genreRef}>
-                  <button
-                    onClick={() => setShowGenreDropdown(!showGenreDropdown)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                      filterGenre ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
-                    }`}
-                  >
-                    {filterGenre ? BOOK_GENRES.find(g => g.id === filterGenre)?.emoji : 'Genre'}
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                  {showGenreDropdown && (
-                    <div className="absolute top-full mt-1 right-0 w-40 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1 max-h-64 overflow-y-auto">
-                      <button
-                        onClick={() => { setFilterGenre(null); setShowGenreDropdown(false) }}
-                        className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                          !filterGenre ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                        }`}
-                      >
-                        Tous genres
-                      </button>
-                      {genresWithBooks.map((genre) => (
-                        <button
-                          key={genre.id}
-                          onClick={() => { setFilterGenre(genre.id); setShowGenreDropdown(false) }}
-                          className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center gap-2 ${
-                            filterGenre === genre.id ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                          }`}
-                        >
-                          <span>{genre.emoji}</span>
-                          <span>{genre.label}</span>
-                          <span className="ml-auto text-zinc-600">{genreCounts[genre.id]}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Sort */}
-              <div className="relative" ref={sortRef}>
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                    sortByLib !== 'recent' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
-                  }`}
-                >
-                  {sortLabels[sortByLib]}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-                {showSortDropdown && (
-                  <div className="absolute top-full mt-1 right-0 w-32 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
-                    {(Object.keys(sortLabels) as SortOption[]).map((sort) => (
-                      <button
-                        key={sort}
-                        onClick={() => { setSortByLib(sort); setShowSortDropdown(false) }}
-                        className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                          sortByLib === sort ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                        }`}
-                      >
-                        {sortLabels[sort]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Menu ⋮ */}
-              <div className="relative" ref={menuRef}>
-                <button
-                  onClick={() => setShowMenu(!showMenu)}
-                  className="p-1.5 text-zinc-500 hover:text-white transition-colors rounded-lg hover:bg-zinc-800/50"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-                {showMenu && (
-                  <div className="absolute top-full mt-1 right-0 w-44 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 py-1">
-                    <button
-                      onClick={() => { setShowQuotesLibrary(true); setShowMenu(false) }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      Citations
-                    </button>
-                    <button
-                      onClick={() => { setShowGoalModal(true); setShowMenu(false) }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-                    >
-                      <Target className="w-3.5 h-3.5" />
-                      Objectif ({stats.completedThisYear}/{readingGoal?.targetBooks || 12})
-                    </button>
-                    <div className="border-t border-zinc-800 my-1" />
-                    <button
-                      onClick={handleExport}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Export JSON
-                    </button>
-                    <button
-                      onClick={handleExportQuotes}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      Export Citations
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      Import
-                    </button>
-                    <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
-                  </div>
-                )}
-              </div>
-
-              {/* Add Button */}
-              <button
-                onClick={() => setShowAddBookModal(true)}
-                className="p-1.5 text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* Session de lecture active */}
-      {isReadingSession && currentReadingBook && (
-        <ReadingSessionBar
-          bookTitle={currentReadingBook.title}
-          sessionTime={sessionTime}
-          onCancel={cancelReadingSession}
-          onEnd={endReadingSession}
-        />
+        </header>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* COURSES TAB */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* Contenu selon l'onglet */}
       {activeTab === 'courses' && (
         <CoursesTab
           filteredCourses={filteredCourses}
           activeCourse={activeCourse}
-          activeCourseId={uiState.activeCourseId}
+          activeCourseId={activeCourse?.id || null}
           searchQuery={uiState.searchQuery}
           filterStatus={uiState.filterStatus}
           sortBy={uiState.sortBy}
-          sidebarCollapsed={uiState.sidebarCollapsed}
+          sidebarCollapsed={false}
           sidebarHidden={sidebarHidden}
           isTyping={uiState.isTyping}
           setActiveCourse={setActiveCourse}
           setSearchQuery={setSearchQuery}
-          setFilterStatus={setFilterStatus as (status: import('../../types/learning').CourseStatus | 'all') => void}
-          setSortBy={setSortBy as (sort: 'recent' | 'name' | 'progress' | 'streak') => void}
+          setFilterStatus={setFilterStatus}
+          setSortBy={setSortBy}
           setSidebarHidden={setSidebarHidden}
           onCreateCourse={() => setShowCourseModal(true)}
-          onEditCourse={handleEditCourse}
-          onDeleteCourse={handleDeleteCourse}
+          onEditCourse={(course) => {
+            setEditingCourse(course)
+            setShowCourseModal(true)
+          }}
+          onDeleteCourse={(courseId) => setConfirmDelete({ type: 'course', id: courseId })}
           onPinCourse={togglePinCourse}
           onArchiveCourse={archiveCourse}
           onSendMessage={handleSendMessage}
@@ -706,27 +508,28 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
         />
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* LIBRARY TAB */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
       {activeTab === 'library' && (
         <LibraryTab
           filteredAndSortedBooks={filteredAndSortedBooks}
           readingBooks={readingBooks}
+          allBooks={books}
+          readingGoal={readingGoal}
           filterStatusLib={filterStatusLib}
+          filterGenre={filterGenre}
           isReadingSession={isReadingSession}
           currentReadingBookId={currentReadingBookId}
+          searchQuery={librarySearch}
           onSelectBook={handleSelectBook}
           onStartReading={startReadingSession}
           onAddBook={() => setShowAddBookModal(true)}
+          onFilterStatusChange={setFilterStatusLib}
+          onFilterGenreChange={setFilterGenre}
+          onSearchChange={setLibrarySearch}
+          onBack={() => useStore.getState().setView('hub')}
         />
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* MODALS */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-
-      {/* Course Modal */}
+      {/* Modals */}
       <CourseModal
         isOpen={showCourseModal}
         course={editingCourse}
@@ -737,7 +540,6 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
         onSubmit={handleCreateCourse}
       />
 
-      {/* Confirm Delete Dialog */}
       <ConfirmDialog
         isOpen={!!confirmDelete}
         title={confirmDelete?.type === 'course' ? 'Supprimer le cours ?' : 'Supprimer le message ?'}
@@ -752,8 +554,21 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
         onClose={() => setConfirmDelete(null)}
       />
 
-      {/* Book Detail Modal */}
-      {selectedBook && (
+      {/* Modals bibliothèque */}
+      {currentView === 'library' && (
+        <>
+          {/* Session de lecture active */}
+          {isReadingSession && currentReadingBook && (
+            <ReadingSessionBar
+              bookTitle={currentReadingBook.title}
+              sessionTime={sessionTime}
+              onCancel={cancelReadingSession}
+              onEnd={endReadingSession}
+            />
+          )}
+
+          {/* Book Detail Modal */}
+          {selectedBook && (
         <BookDetailModal 
           book={selectedBook} 
           onClose={handleCloseBook}
@@ -784,36 +599,38 @@ Réponds à ma question. Ne répète pas le code dans ta réponse sauf si néces
             const updated = books.find(b => b.id === selectedBook.id)
             if (updated) setSelectedBook(updated)
           }}
-          onStartReading={() => startReadingSession(selectedBook.id)}
-          isReadingSession={isReadingSession}
-        />
-      )}
+            onStartReading={() => startReadingSession(selectedBook.id)}
+            isReadingSession={isReadingSession}
+          />
+          )}
 
-      {/* Add Book Modal */}
-      {showAddBookModal && (
-        <AddBookModal 
-          onClose={() => setShowAddBookModal(false)}
-          onAdd={handleAddBook}
-        />
-      )}
+          {/* Add Book Modal */}
+          {showAddBookModal && (
+            <AddBookModal 
+              onClose={() => setShowAddBookModal(false)}
+              onAdd={handleAddBook}
+            />
+          )}
 
-      {/* Goal Modal */}
-      {showGoalModal && (
-        <GoalModal 
-          currentGoal={readingGoal}
-          completedThisYear={stats.completedThisYear}
-          onClose={() => setShowGoalModal(false)}
-          onSave={handleSaveGoal}
-        />
-      )}
+          {/* Goal Modal */}
+          {showGoalModal && (
+            <GoalModal 
+              currentGoal={readingGoal}
+              completedThisYear={stats.completedThisYear}
+              onClose={() => setShowGoalModal(false)}
+              onSave={handleSaveGoal}
+            />
+          )}
 
-      {/* Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={hideToast}
-        />
+          {/* Toast */}
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={hideToast}
+            />
+          )}
+        </>
       )}
     </div>
   )

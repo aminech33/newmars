@@ -1,18 +1,19 @@
 import { useState, useMemo } from 'react'
-import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, TrendingUp, Link, ListPlus } from 'lucide-react'
+import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, TrendingUp, Link, ListPlus, Search, ArrowUpDown, X } from 'lucide-react'
 import { useStore, Project, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
 import { AddProjectModal } from './AddProjectModal'
 import { CreateProjectWithTasksPage } from './CreateProjectWithTasksPage'
 import { AssignTasksToProjectModal } from './AssignTasksToProjectModal'
 import { ProjectDetailsPage } from './ProjectDetailsPage'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { UndoToast } from '../ui/UndoToast'
 
 interface ProjectsManagementPageProps {
   onBack: () => void
 }
 
 export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) {
-  const { projects, tasks, addProject, updateProject, deleteProject, addTask } = useStore()
+  const { projects, tasks, addProject, updateProject, deleteProject, addTask, addToast } = useStore()
   
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCreateWithTasks, setShowCreateWithTasks] = useState(false)
@@ -25,10 +26,18 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
   const [projectName, setProjectName] = useState('')
   const [projectColor, setProjectColor] = useState(PROJECT_COLORS[0])
   const [projectIcon, setProjectIcon] = useState(PROJECT_ICONS[0])
+  
+  // Search & Sort
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'name' | 'progress' | 'date'>('date')
+  
+  // Undo system
+  const [deletedProject, setDeletedProject] = useState<{ project: Project; tasks: typeof tasks } | null>(null)
+  const [showUndo, setShowUndo] = useState(false)
 
   // Calculate stats for all projects (memoized for performance)
   const projectsWithStats = useMemo(() => {
-    return projects.map(project => {
+    let filtered = projects.map(project => {
       const projectTasks = tasks.filter(t => t.projectId === project.id)
       const completed = projectTasks.filter(t => t.completed).length
       const total = projectTasks.length
@@ -39,7 +48,27 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         stats: { completed, total, progress }
       }
     })
-  }, [projects, tasks])
+    
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(query))
+    }
+    
+    // Sort
+    filtered.sort((a, b) => {
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name)
+      } else if (sortBy === 'progress') {
+        return b.stats.progress - a.stats.progress
+      } else {
+        // date (most recent first)
+        return b.createdAt - a.createdAt
+      }
+    })
+    
+    return filtered
+  }, [projects, tasks, searchQuery, sortBy])
 
   const handleOpenAddModal = () => {
     setEditingProject(null)
@@ -84,8 +113,32 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
 
   const handleDelete = () => {
     if (confirmDelete) {
-      deleteProject(confirmDelete)
+      const project = projects.find(p => p.id === confirmDelete)
+      const projectTasks = tasks.filter(t => t.projectId === confirmDelete)
+      
+      if (project) {
+        setDeletedProject({ project, tasks: projectTasks })
+        deleteProject(confirmDelete)
+        setShowUndo(true)
+        setTimeout(() => {
+          setShowUndo(false)
+          setDeletedProject(null)
+        }, 5000)
+      }
+      
       setConfirmDelete(null)
+    }
+  }
+  
+  const handleUndoDelete = () => {
+    if (deletedProject) {
+      addProject(deletedProject.project)
+      deletedProject.tasks.forEach(task => {
+        addTask(task)
+      })
+      setShowUndo(false)
+      setDeletedProject(null)
+      addToast('Projet restauré', 'success')
     }
   }
 
@@ -101,9 +154,8 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
       category: any
     }>
   }) => {
-    // Create project first
-    const projectId = Math.random().toString(36).substring(2, 9)
-    addProject({
+    // Create project first and get the generated ID
+    const newProject = addProject({
       name: projectData.name,
       color: projectData.color,
       icon: projectData.icon
@@ -119,7 +171,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         dueDate: task.dueDate,
         completed: false,
         status: 'todo',
-        projectId: projectId
+        projectId: newProject.id
       })
     })
     
@@ -134,49 +186,91 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
           onBack={() => setViewingProject(null)}
         />
       ) : (
-        <div className="min-h-screen w-full bg-mars-bg overflow-y-auto">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="h-screen w-full flex flex-col overflow-hidden bg-zinc-950">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className="p-2 hover:bg-zinc-900/50 rounded-xl transition-colors"
-              aria-label="Retour aux tâches"
-            >
-              <ArrowLeft className="w-5 h-5 text-zinc-400" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-3">
-                <FolderKanban className="w-7 h-7 text-indigo-400" />
-                Gestion des Projets
-              </h1>
-              <p className="text-sm text-zinc-600 mt-1">
-                {projects.length} projet{projects.length > 1 ? 's' : ''} · {tasks.length} tâche{tasks.length > 1 ? 's' : ''} au total
-              </p>
+        <div className="space-y-4 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-zinc-900/50 rounded-xl transition-colors"
+                aria-label="Retour aux tâches"
+              >
+                <ArrowLeft className="w-5 h-5 text-zinc-400" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-3">
+                  <FolderKanban className="w-7 h-7 text-indigo-400" />
+                  Gestion des Projets
+                </h1>
+                <p className="text-sm text-zinc-600 mt-1">
+                  {projects.length} projet{projects.length > 1 ? 's' : ''} · {tasks.length} tâche{tasks.length > 1 ? 's' : ''} au total
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleOpenAddModal}
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors"
+                aria-label="Créer un projet simple"
+              >
+                <Plus className="w-5 h-5" aria-hidden="true" />
+                <span className="hidden sm:inline">Projet simple</span>
+                <span className="sm:hidden">Simple</span>
+              </button>
+              <button
+                onClick={() => setShowCreateWithTasks(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
+                aria-label="Créer un projet avec des tâches"
+              >
+                <ListPlus className="w-5 h-5" aria-hidden="true" />
+                <span className="hidden sm:inline">Projet + Tâches</span>
+                <span className="sm:hidden">+ Tâches</span>
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors"
-              aria-label="Créer un projet simple"
-            >
-              <Plus className="w-5 h-5" aria-hidden="true" />
-              <span className="hidden sm:inline">Projet simple</span>
-              <span className="sm:hidden">Simple</span>
-            </button>
-            <button
-              onClick={() => setShowCreateWithTasks(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
-              aria-label="Créer un projet avec des tâches"
-            >
-              <ListPlus className="w-5 h-5" aria-hidden="true" />
-              <span className="hidden sm:inline">Projet + Tâches</span>
-              <span className="sm:hidden">+ Tâches</span>
-            </button>
-          </div>
+          {/* Search & Sort */}
+          {projects.length > 0 && (
+            <div className="flex items-center gap-3">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher un projet..."
+                  className="w-full pl-10 pr-10 py-2 bg-zinc-900/50 border border-zinc-800 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Sort */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+                <ArrowUpDown className="w-4 h-4 text-zinc-500" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'date')}
+                  className="bg-transparent text-sm text-zinc-300 focus:outline-none cursor-pointer"
+                >
+                  <option value="date">Plus récents</option>
+                  <option value="name">Nom A-Z</option>
+                  <option value="progress">Progression</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Projects Grid */}
@@ -311,19 +405,6 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
                       </span>
                     </div>
                   </div>
-
-                  {/* Assign Tasks Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setAssigningProject(project)
-                    }}
-                    className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors text-sm font-medium"
-                    aria-label={`Assigner des tâches au projet ${project.name}`}
-                  >
-                    <Link className="w-4 h-4" aria-hidden="true" />
-                    Assigner des tâches
-                  </button>
                 </article>
               )
             })}
@@ -339,6 +420,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
             </p>
           </div>
         )}
+        </div>
       </div>
 
       {/* Add/Edit Project Modal */}
@@ -384,6 +466,15 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         cancelText="Annuler"
         variant="warning"
       />
+
+      {/* Undo Toast */}
+      {showUndo && deletedProject && (
+        <UndoToast
+          message={`Projet "${deletedProject.project.name}" supprimé`}
+          onUndo={handleUndoDelete}
+          onClose={() => setShowUndo(false)}
+        />
+      )}
         </div>
       )}
     </>

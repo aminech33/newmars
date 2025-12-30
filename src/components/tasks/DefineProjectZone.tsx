@@ -51,6 +51,7 @@ export function DefineProjectZone({
     setIsAnalyzing(true)
     setError(null)
     
+    // Appel GPT-4 pour générer la cartographie
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 45000)
     
@@ -354,5 +355,6 @@ export function DefineProjectZone({
     </div>
   )
 }
+
 
 

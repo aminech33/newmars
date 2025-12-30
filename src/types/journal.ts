@@ -2,7 +2,7 @@
 
 export type MoodLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 
-export type MoodEmoji = '😢' | '😐' | '🙂' | '😊' | '🤩'
+export type MoodEmoji = '😢' | '🙃' | '🙂' | '😊' | '😍'
 
 export interface JournalEntry {
   id: string

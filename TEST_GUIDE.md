@@ -234,3 +234,4 @@ Maintenant tu peux utiliser l'app normalement, et le Brain va apprendre de ton c
 
 
 
+

@@ -67,6 +67,26 @@ export interface Task {
   isValidation?: boolean
 }
 
+export interface AIGeneratedPlan {
+  projectName: string
+  phases?: Array<{
+    name: string
+    objective: string
+    tasks: Array<{
+      title: string
+      effort: string
+      covers?: string[]
+      isValidation?: boolean
+    }>
+  }>
+  tasks: Array<{
+    title: string
+    effort: string
+    covers?: string[]
+    isValidation?: boolean
+  }>
+}
+
 export interface Project {
   id: string
   name: string
@@ -77,6 +97,13 @@ export interface Project {
   hasPhases?: boolean
   phaseCount?: number
   archived?: boolean
+  aiGeneratedPlan?: {
+    rawPlan: AIGeneratedPlan
+    generatedAt: number
+    model: string
+    mode: 'free' | 'targeted'
+    selectedSkills?: string[]
+  }
 }
 
 export interface Note {
@@ -150,5 +177,6 @@ export const generateId = () => Math.random().toString(36).substring(2, 9)
 
 // Type du store complet (sera défini plus tard, ici on utilise any pour éviter les dépendances circulaires)
 export type StoreState = any
+
 
 

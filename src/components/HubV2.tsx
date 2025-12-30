@@ -23,6 +23,8 @@ export function HubV2() {
   const tasks = useStore((state) => state.tasks)
   const projects = useStore((state) => state.projects)
   const journalEntries = useStore((state) => state.journalEntries)
+  const books = useStore((state) => state.books)
+  const learningCourses = useStore((state) => state.learningCourses)
   
   // Utiliser le vrai nom de l'utilisateur ou un nom par défaut
   const displayName = userName || 'Amine'
@@ -65,14 +67,16 @@ export function HubV2() {
     { 
       id: 'library', 
       label: 'Bibliothèque', 
-      shortcut: '4'
+      shortcut: '4',
+      getCount: () => books.filter(b => b.status === 'reading').length
     },
     { 
       id: 'learning', 
       label: 'Apprentissage', 
-      shortcut: '5'
+      shortcut: '5',
+      getCount: () => learningCourses?.filter(c => c.status === 'active').length || 0
     },
-  ], [tasks, projects, journalEntries])
+  ], [tasks, projects, journalEntries, books, learningCourses])
 
   // Raccourcis clavier
   useEffect(() => {
@@ -104,39 +108,62 @@ export function HubV2() {
         className="text-center mb-16 md:mb-20"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.3 }}
       >
-        <p className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-3">
+        <p className="text-sm uppercase tracking-[0.25em] text-zinc-400 mb-4 font-['-apple-system,BlinkMacSystemFont,SF_Pro_Display,Segoe_UI,sans-serif']">
           {formattedDate}
         </p>
-        <h1 className="text-4xl md:text-5xl lg:text-6xl text-zinc-100 font-['Allura'] tracking-wide">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-['Allura'] tracking-wide" style={{ textShadow: '0 0 40px rgba(255, 255, 255, 0.08)' }}>
           {greeting}, {displayName}
         </h1>
       </motion.div>
       
       {/* Menu — Liste de titres */}
       <motion.nav 
-        className="flex flex-col items-center gap-4 md:gap-5"
+        className="flex flex-col items-center gap-5 md:gap-6 font-['-apple-system,BlinkMacSystemFont,SF_Pro_Display,Segoe_UI,sans-serif']"
         role="navigation"
         aria-label="Navigation principale"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
+        transition={{ duration: 0.3, delay: 0.05 }}
       >
         {MODULES.map((module, index) => {
           const count = module.getCount ? module.getCount() : undefined
           const hasIndicator = count !== undefined && count > 0
           
+          // Texte contextuel pour l'indicateur
+          const getIndicatorText = () => {
+            if (!hasIndicator) return null
+            
+            switch (module.id) {
+              case 'tasks':
+                return count === 1 ? '1 en attente' : `${count} en attente`
+              case 'projects':
+                return count === 1 ? '1 actif' : `${count} actifs`
+              case 'myday':
+                return 'À remplir'
+              default:
+                return null
+            }
+          }
+          
+          // Couleur contextuelle pour indicateur "Ma Journée"
+          const indicatorColor = module.id === 'myday' && count > 0
+            ? 'text-amber-400 group-hover:text-amber-300'
+            : 'text-zinc-400 group-hover:text-zinc-300'
+          
+          const indicatorText = getIndicatorText()
+          
           return (
             <motion.button
               key={module.id}
               onClick={() => setView(module.id)}
-              className="group text-xl md:text-2xl text-zinc-400 hover:text-zinc-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-500 rounded-lg px-4 py-2"
-              aria-label={`Accéder à ${module.label}${hasIndicator ? `, ${count} éléments` : ''} (touche ${module.shortcut})`}
+              className="group text-xl md:text-2xl text-zinc-400 hover:text-white hover:translate-x-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-500 rounded-lg px-4 py-2"
+              aria-label={`Accéder à ${module.label}${indicatorText ? ` · ${indicatorText}` : ''} (touche ${module.shortcut})`}
               tabIndex={0}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.15 + index * 0.05 }}
+              transition={{ duration: 0.2, delay: 0.1 + index * 0.03 }}
               whileHover={{ scale: 1.02 }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -145,13 +172,10 @@ export function HubV2() {
                 }
               }}
             >
-              <span className="text-zinc-700 group-hover:text-zinc-600 text-sm mr-3 transition-colors" aria-hidden="true">
-                {module.shortcut}.
-              </span>
               {module.label}
-              {hasIndicator && (
-                <span className="text-zinc-500 group-hover:text-zinc-400 text-lg ml-3 transition-colors" aria-hidden="true">
-                  ({count})
+              {indicatorText && (
+                <span className={`text-sm ml-3 transition-colors ${indicatorColor}`} aria-hidden="true">
+                  · {indicatorText}
                 </span>
               )}
             </motion.button>
@@ -162,12 +186,12 @@ export function HubV2() {
       {/* Settings en bas */}
       <motion.button
         onClick={() => setView('settings')}
-        className="group mt-16 md:mt-20 text-sm text-zinc-600 hover:text-zinc-400 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-500 rounded-lg px-4 py-2"
+        className="group mt-16 md:mt-20 text-base text-zinc-500 hover:text-zinc-300 hover:translate-x-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-500 rounded-lg px-4 py-2 font-['-apple-system,BlinkMacSystemFont,SF_Pro_Display,Segoe_UI,sans-serif']"
         aria-label="Accéder aux paramètres (touche S)"
         tabIndex={0}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
+        transition={{ duration: 0.2, delay: 0.25 }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
@@ -175,7 +199,6 @@ export function HubV2() {
           }
         }}
       >
-        <span className="text-zinc-700 group-hover:text-zinc-600 mr-2 transition-colors" aria-hidden="true">S.</span>
         Paramètres
       </motion.button>
       

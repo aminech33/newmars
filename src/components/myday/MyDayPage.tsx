@@ -40,6 +40,7 @@ export function MyDayPage() {
     addJournalEntry, 
     updateJournalEntry,
     toggleJournalFavorite,
+    deleteJournalEntry,
     addToast,
     tasks,
     getPriorityTask
@@ -93,29 +94,23 @@ export function MyDayPage() {
 
   // Journal states
   const [intention, setIntention] = useState('')
-  const [action, setAction] = useState('')
   const [mood, setMood] = useState<MoodEmoji>('🙂')
-  const [freeNotes, setFreeNotes] = useState('')
 
   useEffect(() => {
     if (todayEntry) {
       setIntention(todayEntry.intention || todayEntry.mainGoal || '')
-      setAction(todayEntry.action || '')
       setMood(todayEntry.moodEmoji || '🙂')
-      setFreeNotes(todayEntry.freeNotes || todayEntry.reflection || '')
     }
   }, [todayEntry?.id])
 
-  const canSave = intention.trim().length > 0
+  const canSave = intention.trim().length >= 10 // Minimum 10 caractères
   const hasChanges = useMemo(() => {
     if (!todayEntry) return intention.trim().length > 0
     return (
       intention !== (todayEntry.intention || todayEntry.mainGoal || '') ||
-      action !== (todayEntry.action || '') ||
-      mood !== (todayEntry.moodEmoji || '🙂') ||
-      freeNotes !== (todayEntry.freeNotes || todayEntry.reflection || '')
+      mood !== (todayEntry.moodEmoji || '🙂')
     )
-  }, [intention, action, mood, freeNotes, todayEntry])
+  }, [intention, mood, todayEntry])
 
   const handleSave = useCallback(() => {
     if (!canSave) return
@@ -124,12 +119,10 @@ export function MyDayPage() {
     const entryData = {
       date: today,
       intention: intention.trim(),
-      action: action.trim() || undefined,
       mood: moodEmojiToLevel(mood),
       moodEmoji: mood,
-      freeNotes: freeNotes.trim() || undefined,
       mainGoal: intention.trim(),
-      reflection: freeNotes.trim() || intention.trim(),
+      reflection: intention.trim(),
     }
 
     if (todayEntry) {
@@ -140,7 +133,7 @@ export function MyDayPage() {
       addToast('Entrée sauvegardée', 'success')
     }
     setIsSaving(false)
-  }, [intention, action, mood, freeNotes, today, todayEntry, canSave, addJournalEntry, updateJournalEntry, addToast])
+  }, [intention, mood, today, todayEntry, canSave, addJournalEntry, updateJournalEntry, addToast])
 
   // Auto-save
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>()
@@ -149,7 +142,7 @@ export function MyDayPage() {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
     autoSaveTimerRef.current = setTimeout(() => handleSave(), 3000)
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
-  }, [intention, action, mood, freeNotes, hasChanges, canSave, handleSave])
+  }, [intention, mood, hasChanges, canSave, handleSave])
 
   const handleToggleHabit = (habitId: string) => {
     toggleHabitToday(habitId)
@@ -176,10 +169,34 @@ export function MyDayPage() {
 
   const handleSelectHistoryEntry = (entry: typeof journalEntries[0]) => {
     setIntention(entry.intention || entry.mainGoal || '')
-    setAction(entry.action || '')
     setMood(entry.moodEmoji || '🙂')
-    setFreeNotes(entry.freeNotes || entry.reflection || '')
     addToast('Entrée chargée', 'info')
+  }
+
+  // Undo pour suppression d'entrée de journal
+  const [deletedJournalEntry, setDeletedJournalEntry] = useState<typeof journalEntries[0] | null>(null)
+  const [showJournalUndo, setShowJournalUndo] = useState(false)
+
+  const handleDeleteJournalEntry = (id: string) => {
+    const entry = journalEntries.find(e => e.id === id)
+    if (entry) {
+      setDeletedJournalEntry(entry)
+      deleteJournalEntry(id)
+      setShowJournalUndo(true)
+      setTimeout(() => {
+        setShowJournalUndo(false)
+        setDeletedJournalEntry(null)
+      }, 5000)
+    }
+  }
+
+  const handleUndoJournalDelete = () => {
+    if (deletedJournalEntry) {
+      addJournalEntry(deletedJournalEntry)
+      setShowJournalUndo(false)
+      setDeletedJournalEntry(null)
+      addToast('Entrée restaurée', 'success')
+    }
   }
 
   // Health handlers
@@ -257,6 +274,12 @@ export function MyDayPage() {
     )
   }, [tasks])
 
+  // Compter les repas d'aujourd'hui
+  const todayMealsCount = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return mealEntries.filter(m => m.date === today).length
+  }, [mealEntries])
+
   const TABS: { id: PageTab; label: string; icon: typeof Feather }[] = [
     { id: 'journal', label: 'Journal', icon: Feather },
     { id: 'sante', label: 'Santé', icon: Heart }
@@ -294,7 +317,7 @@ export function MyDayPage() {
           <div className="flex items-center gap-1 bg-zinc-800/40 rounded-lg p-0.5">
             {TABS.map((tab) => {
               const Icon = tab.icon
-              const badgeCount = tab.id === 'journal' ? tasksCompletedToday.length : 0
+              const badgeCount = tab.id === 'journal' ? tasksCompletedToday.length : todayMealsCount
               return (
                 <button
                   key={tab.id}
@@ -420,7 +443,17 @@ export function MyDayPage() {
         entries={journalEntries}
         onSelectEntry={handleSelectHistoryEntry}
         toggleFavorite={toggleJournalFavorite}
+        onDeleteEntry={handleDeleteJournalEntry}
       />
+
+      {/* Toast Undo pour suppression de journal */}
+      {showJournalUndo && deletedJournalEntry && (
+        <UndoToast
+          message={`Entrée du ${new Date(deletedJournalEntry.date).toLocaleDateString('fr-FR')} supprimée`}
+          onUndo={handleUndoJournalDelete}
+          onClose={() => setShowJournalUndo(false)}
+        />
+      )}
     </div>
   )
 }

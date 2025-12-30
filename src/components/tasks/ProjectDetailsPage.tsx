@@ -37,6 +37,7 @@ export function ProjectDetailsPage({ project, onBack }: ProjectDetailsPageProps)
     const phaseGroups: Array<{
       index: number
       name: string
+      objective?: string
       tasks: Task[]
       completed: number
       total: number
@@ -53,9 +54,15 @@ export function ProjectDetailsPage({ project, onBack }: ProjectDetailsPageProps)
       const progress = total > 0 ? Math.round((completed / total) * 100) : 0
       const hasValidation = phaseTasks.some(t => t.isValidation)
 
+      // Récupérer le nom et objectif depuis le plan IA si disponible
+      const aiPhase = project.aiGeneratedPlan?.rawPlan.phases?.[i]
+      const phaseName = aiPhase?.name || `Phase ${i + 1}`
+      const phaseObjective = aiPhase?.objective
+
       phaseGroups.push({
         index: i,
-        name: `Phase ${i + 1}`,
+        name: phaseName,
+        objective: phaseObjective,
         tasks: phaseTasks,
         completed,
         total,
@@ -65,7 +72,7 @@ export function ProjectDetailsPage({ project, onBack }: ProjectDetailsPageProps)
     }
 
     return phaseGroups
-  }, [projectTasks, project.hasPhases])
+  }, [projectTasks, project.hasPhases, project.aiGeneratedPlan])
 
   return (
     <div className="min-h-screen w-full bg-zinc-950 overflow-y-auto">
@@ -169,7 +176,12 @@ export function ProjectDetailsPage({ project, onBack }: ProjectDetailsPageProps)
                       <h3 className={`text-lg font-medium text-zinc-100 ${fontStack}`}>
                         {phase.name}
                       </h3>
-                      <p className={`text-sm text-zinc-500 ${fontStack}`}>
+                      {phase.objective ? (
+                        <p className={`text-sm text-zinc-500 ${fontStack} mb-1`}>
+                          {phase.objective}
+                        </p>
+                      ) : null}
+                      <p className={`text-xs text-zinc-600 ${fontStack}`}>
                         {phase.completed}/{phase.total} tâches complétées
                       </p>
                     </div>
@@ -271,6 +283,7 @@ export function ProjectDetailsPage({ project, onBack }: ProjectDetailsPageProps)
     </div>
   )
 }
+
 
 
 

@@ -20,27 +20,56 @@ export function PomodoroMetricsCard({ pomodoroSessions, tasks }: PomodoroMetrics
         <Timer className="w-4 h-4 text-orange-500" />
         <h3 className="text-sm font-medium text-zinc-400">Pomodoro</h3>
       </div>
-      <div className="space-y-2.5">
-        {/* 1️⃣ Volume */}
-        <p className="text-sm text-zinc-300">
-          Volume : <span className="text-zinc-100 font-medium">{pomodoroMetrics.todayVolume} tâche{pomodoroMetrics.todayVolume > 1 ? 's' : ''} terminée{pomodoroMetrics.todayVolume > 1 ? 's' : ''}</span>
-        </p>
+      <div className="space-y-3">
+        {/* 1. Volume avec contexte */}
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm text-zinc-400">Sessions :</span>
+            <span className="text-lg font-semibold text-zinc-100">
+              {pomodoroMetrics.todayVolume}
+            </span>
+            <span className="text-xs text-zinc-600">
+              tâche{pomodoroMetrics.todayVolume > 1 ? 's' : ''}
+            </span>
+          </div>
+        </div>
         
-        {/* 2️⃣ Qualité du focus */}
-        <p className="text-sm text-zinc-300">
-          Focus : <span className={`font-medium ${pomodoroMetrics.hasQualityFocus ? 'text-emerald-400' : 'text-amber-400'}`}>
-            {pomodoroMetrics.hasQualityFocus ? 'Focus de qualité' : 'Focus fragmenté'}
-          </span>
-        </p>
+        {/* 2. Qualité du focus avec explication */}
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-400">Focus :</span>
+            <span className={`text-sm font-medium ${
+              pomodoroMetrics.hasQualityFocus ? 'text-emerald-400' : 'text-amber-400'
+            }`}>
+              {pomodoroMetrics.hasQualityFocus ? 'De qualité' : 'Fragmenté'}
+            </span>
+          </div>
+          <p className="text-xs text-zinc-600 mt-0.5">
+            {pomodoroMetrics.hasQualityFocus 
+              ? 'Sessions longues et concentrées' 
+              : 'Plusieurs courtes sessions'}
+          </p>
+        </div>
         
-        {/* 3️⃣ Tendance 14 jours */}
-        <p className="text-sm text-zinc-300">
-          Tendance : <span className={`font-medium ${pomodoroMetrics.trend14d === 'stable' ? 'text-zinc-100' : 'text-amber-400'}`}>
-            {pomodoroMetrics.trend14d}
-          </span>
-        </p>
+        {/* 3. Tendance avec indicateur visuel */}
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-400">Tendance :</span>
+            <span className={`text-sm font-medium ${
+              pomodoroMetrics.trend14d === 'en hausse' ? 'text-emerald-400' :
+              pomodoroMetrics.trend14d === 'en baisse' ? 'text-rose-400' :
+              'text-zinc-300'
+            }`}>
+              {pomodoroMetrics.trend14d}
+            </span>
+          </div>
+          <p className="text-xs text-zinc-600 mt-0.5">
+            Rythme sur les 14 derniers jours
+          </p>
+        </div>
       </div>
     </div>
   )
 }
+
 

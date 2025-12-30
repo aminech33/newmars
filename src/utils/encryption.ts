@@ -143,3 +143,4 @@ export function resetEncryptionKey(): void {
   console.warn('⚠️ Clé de chiffrement réinitialisée. Les données chiffrées existantes ne peuvent plus être déchiffrées.')
 }
 
+

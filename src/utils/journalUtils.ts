@@ -5,20 +5,20 @@ import { JournalEntry, MoodEmoji, MoodLevel, JournalStats } from '../types/journ
 // Convertir mood level en emoji
 export const moodLevelToEmoji = (level: number): MoodEmoji => {
   if (level <= 2) return '😢'
-  if (level <= 4) return '😐'
+  if (level <= 4) return '🙃'
   if (level <= 6) return '🙂'
   if (level <= 8) return '😊'
-  return '🤩'
+  return '😍'
 }
 
 // Convertir emoji en mood level
 export const moodEmojiToLevel = (emoji: MoodEmoji): MoodLevel => {
   const map: Record<MoodEmoji, MoodLevel> = {
     '😢': 2,
-    '😐': 4,
+    '🙃': 4,
     '🙂': 6,
     '😊': 8,
-    '🤩': 10
+    '😍': 10
   }
   return map[emoji] || 6
 }

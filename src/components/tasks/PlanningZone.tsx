@@ -12,6 +12,7 @@ import {
   EFFORT_COLORS, 
   getLevelLabel 
 } from './taskUtils'
+import { PlanFeedbackModal } from './PlanFeedbackModal'
 
 interface PlanningZoneProps {
   onProjectCreated: () => void
@@ -26,13 +27,15 @@ export function PlanningZone({
   preselectedSkills,
   preselectedDomain
 }: PlanningZoneProps) {
-  const { addProject, addTask } = useStore()
+  const { addProject, addTask, addToast } = useStore()
   const [idea, setIdea] = useState(preselectedDomain || '')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPlan, setGeneratedPlan] = useState<ProjectPlan | null>(null)
   const [editableTasks, setEditableTasks] = useState<EditableTask[]>([])
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
   
   const hasPreselection = preselectedSkills && preselectedSkills.length > 0
   
@@ -40,35 +43,82 @@ export function PlanningZone({
     setIsGenerating(true)
     setError(null)
     
+    // Fonction helper pour retry avec backoff exponentiel
+    const fetchWithRetry = async (url: string, options: RequestInit, maxRetries = 3): Promise<Response> => {
+      let lastError: Error | null = null
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const response = await fetch(url, options)
+          
+          // Si succès, retourner immédiatement
+          if (response.ok) return response
+          
+          // Si erreur client (4xx), ne pas retry
+          if (response.status >= 400 && response.status < 500) {
+            const errorData = await response.json().catch(() => ({}))
+            throw new Error(errorData.detail || `Erreur ${response.status}`)
+          }
+          
+          // Si erreur serveur (5xx) et pas dernier essai, retry
+          if (response.status >= 500 && attempt < maxRetries - 1) {
+            const delay = 1000 * Math.pow(2, attempt) // 1s, 2s, 4s
+            await new Promise(resolve => setTimeout(resolve, delay))
+            continue
+          }
+          
+          // Dernier essai échoué
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.detail || `Erreur ${response.status}`)
+          
+        } catch (err) {
+          lastError = err as Error
+          
+          // Si erreur réseau et pas dernier essai, retry
+          if (attempt < maxRetries - 1 && (err as Error).message.includes('fetch')) {
+            const delay = 1000 * Math.pow(2, attempt)
+            await new Promise(resolve => setTimeout(resolve, delay))
+            continue
+          }
+          
+          throw err
+        }
+      }
+      
+      throw lastError || new Error('Échec après plusieurs tentatives')
+    }
+    
     try {
+      if (!hasPreselection && (!idea.trim() || idea.trim().length < 5)) {
+        setError('Décris ton idée en au moins 5 caractères')
+        setIsGenerating(false)
+        return
+      }
+      
       let response: Response
       
       if (hasPreselection) {
-        response = await fetch('http://localhost:8000/api/tasks/generate-skill-based-plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectTitle: `Maîtriser ${preselectedDomain}`,
-            domain: preselectedDomain,
-            selectedSkills: preselectedSkills
-          })
-        })
+        response = await fetchWithRetry(
+          'http://localhost:8000/api/tasks/generate-skill-based-plan',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              projectTitle: `Maîtriser ${preselectedDomain}`,
+              domain: preselectedDomain,
+              selectedSkills: preselectedSkills
+            })
+          }
+        )
       } else {
-        if (!idea.trim() || idea.trim().length < 5) {
-          setError('Décris ton idée en au moins 5 caractères')
-          setIsGenerating(false)
-          return
-        }
-        response = await fetch('http://localhost:8000/api/tasks/generate-project-plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idea: idea.trim() })
-        })
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || `Erreur ${response.status}`)
+        response = await fetchWithRetry(
+          'http://localhost:8000/api/tasks/generate-project-plan',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idea: idea.trim() })
+          }
+        )
       }
       
       const plan: ProjectPlan = await response.json()
@@ -129,7 +179,14 @@ export function PlanningZone({
       color: '#6366f1',
       icon: '✨',
       hasPhases: (generatedPlan.phases?.length || 0) > 0,
-      phaseCount: generatedPlan.phases?.length || 0
+      phaseCount: generatedPlan.phases?.length || 0,
+      aiGeneratedPlan: {
+        rawPlan: generatedPlan,
+        generatedAt: Date.now(),
+        model: 'gpt-4',
+        mode: hasPreselection ? 'targeted' : 'free',
+        selectedSkills: hasPreselection ? preselectedSkills : undefined
+      }
     })
     
     const MAX_TODAY = 5
@@ -175,9 +232,35 @@ export function PlanningZone({
       }
     })
     
+    setCreatedProjectId(projectId)
+    setShowFeedbackModal(true)
+    
+    // Nettoyer après feedback
     setIdea('')
     setGeneratedPlan(null)
     setEditableTasks([])
+  }
+  
+  const handleFeedbackSubmit = (feedback: {
+    rating: number
+    helpful: boolean | null
+    comment: string
+  }) => {
+    // Sauvegarder le feedback (peut être envoyé à un backend analytics)
+    console.log('Plan feedback:', {
+      projectId: createdProjectId,
+      projectName: generatedPlan?.projectName,
+      mode: hasPreselection ? 'targeted' : 'free',
+      ...feedback,
+      timestamp: Date.now()
+    })
+    
+    addToast('Merci pour ton retour !', 'success')
+    onProjectCreated()
+  }
+  
+  const handleFeedbackClose = () => {
+    setShowFeedbackModal(false)
     onProjectCreated()
   }
   
@@ -545,8 +628,17 @@ export function PlanningZone({
           </div>
         )}
       </div>
+      
+      {/* Feedback Modal */}
+      <PlanFeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={handleFeedbackClose}
+        onSubmit={handleFeedbackSubmit}
+        projectName={generatedPlan?.projectName || ''}
+      />
     </div>
   )
 }
+
 
 
