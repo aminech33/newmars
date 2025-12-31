@@ -280,6 +280,27 @@ export function MyDayPage() {
     return mealEntries.filter(m => m.date === today).length
   }, [mealEntries])
 
+  // Poids le plus récent pour MealModal
+  const latestWeightEntry = useMemo(() => {
+    if (weightEntries.length === 0) return undefined
+    return {
+      weight: weightEntries[weightEntries.length - 1].weight,
+      date: weightEntries[weightEntries.length - 1].date
+    }
+  }, [weightEntries])
+
+  // Objectif calorique pour MealModal
+  const caloriesGoal = useMemo(() => {
+    const { healthGoals } = useStore.getState()
+    return healthGoals.find(g => g.type === 'calories' && g.active)
+  }, [])
+
+  // Objectif utilisateur pour MealModal
+  const userGoal = useMemo(() => {
+    const { userProfile } = useStore.getState()
+    return userProfile.goal || 'maintain'
+  }, [])
+
   const TABS: { id: PageTab; label: string; icon: typeof Feather }[] = [
     { id: 'journal', label: 'Journal', icon: Feather },
     { id: 'sante', label: 'Santé', icon: Heart }
@@ -413,6 +434,9 @@ export function MyDayPage() {
         isOpen={showMealModal}
         onClose={() => setShowMealModal(false)}
         onSubmit={handleMealSubmit}
+        latestWeight={latestWeightEntry}
+        targetCalories={caloriesGoal?.target}
+        userGoal={userGoal as 'lose' | 'maintain' | 'gain'}
       />
 
       <ProfileSetupModal

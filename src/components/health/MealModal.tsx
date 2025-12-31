@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Apple } from 'lucide-react'
+import { Apple, Sparkles } from 'lucide-react'
 import { detectMealType } from '../../utils/healthIntelligence'
 import { calculateNutrition, getFoodById } from '../../utils/foodDatabase'
 import { FoodPortion } from '../../types/health'
@@ -7,6 +7,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { FoodSelector } from './FoodSelector'
+import { generateSmartMealSuggestion, UserGoal, MealType } from '../../utils/mealTemplates'
 
 interface MealModalProps {
   isOpen: boolean
@@ -23,6 +24,9 @@ interface MealModalProps {
     time: string
     type: 'breakfast' | 'lunch' | 'dinner' | 'snack' 
   }) => { success: boolean; error?: string }
+  latestWeight?: { weight: number; date: string }
+  targetCalories?: number
+  userGoal?: UserGoal
 }
 
 const MEAL_TYPES = [
@@ -32,7 +36,14 @@ const MEAL_TYPES = [
   { value: 'snack', label: 'Collation', emoji: '🍎' }
 ] as const
 
-export function MealModal({ isOpen, onClose, onSubmit }: MealModalProps) {
+export function MealModal({ 
+  isOpen, 
+  onClose, 
+  onSubmit,
+  latestWeight,
+  targetCalories,
+  userGoal = 'maintain'
+}: MealModalProps) {
   const [name, setName] = useState('')
   const [selectedFoods, setSelectedFoods] = useState<FoodPortion[]>([])
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -41,6 +52,30 @@ export function MealModal({ isOpen, onClose, onSubmit }: MealModalProps) {
   const [error, setError] = useState('')
   
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Fonction pour suggérer un repas intelligent
+  const handleSmartSuggestion = () => {
+    if (!targetCalories) {
+      setError('Configurez votre profil d\'abord (⚙️ Profil)')
+      return
+    }
+
+    try {
+      const suggestion = generateSmartMealSuggestion(
+        targetCalories,
+        userGoal,
+        type as MealType,
+        latestWeight?.weight
+      )
+
+      setName(suggestion.name)
+      setSelectedFoods(suggestion.foods)
+      setError('')
+    } catch (err) {
+      setError('Erreur lors de la génération de la suggestion')
+      console.error(err)
+    }
+  }
 
   // Auto-focus
   useEffect(() => {
@@ -149,6 +184,34 @@ export function MealModal({ isOpen, onClose, onSubmit }: MealModalProps) {
           Ajouter un repas
         </h2>
       </div>
+
+      {/* Bandeau poids récent + suggestion intelligente */}
+      {latestWeight && targetCalories && (
+        <div className="mb-4 p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-indigo-400 mb-1">
+                📊 Poids récent : {latestWeight.weight.toFixed(1)} kg
+              </p>
+              <p className="text-xs text-zinc-500">
+                {new Date(latestWeight.date).toLocaleDateString('fr-FR', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short'
+                })} · Objectif : {Math.round(targetCalories)} kcal/jour
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSmartSuggestion}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded-lg transition-all text-xs font-medium whitespace-nowrap"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Suggérer
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
