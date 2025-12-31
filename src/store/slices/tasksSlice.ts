@@ -276,7 +276,9 @@ export const createTasksSlice: StateCreator<
 
   updateProject: (id, updates) => {
     set((s) => ({
-      projects: s.projects.map((p) => p.id === id ? { ...p, ...updates } : p)
+      projects: s.projects.map((p) => 
+        p.id === id ? { ...p, ...updates, updatedAt: Date.now() } : p
+      )
     }))
   },
 

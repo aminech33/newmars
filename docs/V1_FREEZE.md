@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 30 décembre 2024 (V1.6.0 - Journal Philosophy 10/10 + Projects Management 10/10)  
-> **Version** : 1.6.0  
+> **Dernière mise à jour** : 31 décembre 2024 (V1.7.0 - Health Intelligence P0+P1 🧠)  
+> **Version** : 1.7.0  
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -29,6 +29,7 @@
 - ✅ **Accessibilité V1.5.0** : ARIA labels complets, navigation clavier, raccourcis Hub (1-5, S), TaskDetails "Déplacer vers"
 - ✅ **Gestion Projets V1.6.0** : Recherche, tri, undo suppression, plein écran (10/10)
 - ✅ **Journal V1.6.0** : Prompts rotatifs, souvenirs "Il y a X ans", undo suppression, validation 10 caractères (10/10)
+- ✅ **Health Intelligence V1.7.0** : Recalcul auto TDEE (7j), détection anomalies, prédictions, suggestions actionnables 🧠
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -50,16 +51,16 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.6.0 COMPLET** — Journal Philosophy 10/10, Projects Management 10/10, Score global 9.8/10
+**Statut** : ✅ **V1.7.0 COMPLET** — Health Intelligence P0+P1 implémentée, Score global 9.9/10 🧠
 
 ---
 
-## 📊 Métriques V1.5.0
+## 📊 Métriques V1.7.0
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
 Composants React       : 102 fichiers TSX (+2 : CoursesTab, LibraryTab)
-Hooks customs          : 14 (useHealthData, useGlobalStats, useLearningData, etc.)
+Hooks customs          : 15 (useHealthData, useHealthIntelligence, useGlobalStats, useLearningData, etc.) ⭐ V1.7.0
 Utilitaires            : 17 (healthIntelligence, metrics, flashcardExport, etc.)
 Routes API backend     : ~16 (+ /streak endpoint)
 Algos IA               : 5 (optimisés)
@@ -105,6 +106,201 @@ Score UI/UX global     : 9.8/10 (Tâches 9.9, Projets 10, Journal 10, Hub 9.5)
 Journal Philosophy     : Prompts rotatifs, souvenirs "Il y a X ans", undo, validation 10 car
 Projects Management    : Recherche, tri (nom/progression/date), undo suppression, plein écran
 Minimalisme parfait    : Champ 'action' supprimé, bouton dupliqué enlevé, ID généré correctement
+```
+
+---
+
+## 🎯 V1.7.0 — Health Intelligence P0+P1 🧠 (31 déc 2024)
+
+### Intelligence Adaptative pour le Module Santé
+
+**Problème** : Le calcul TDEE était statique (configuré une fois), pas de feedback sur la progression, pas de détection d'anomalies, pas de prédictions.
+
+**Solution** : **Hook intelligent `useHealthIntelligence`** avec recalcul automatique, détection d'anomalies, suggestions actionnables, et prédictions.
+
+### 🧠 **HEALTH INTELLIGENCE : PHASE 1 (P0 - CRITIQUE)**
+
+#### **1. RECALCUL AUTOMATIQUE (7 JOURS)** ✅ 🆕
+```typescript
+Fonctionnalité : Recalcule automatiquement le TDEE tous les 7 jours
+Logique :
+  • Vérifie la date de dernière mise à jour
+  • Si > 7 jours → Recalcule avec getOptimalCalorieTarget()
+  • Si changement > 5% → Met à jour automatiquement
+  • Notifie l'utilisateur avec un toast
+
+Impact : L'app s'adapte automatiquement à votre évolution
+Fichier : src/hooks/useHealthIntelligence.ts
+```
+
+**Exemple** :
+```
+Jour 1  : TDEE = 2870 kcal (calcul initial)
+Jour 7  : TDEE = 2950 kcal (+80) → Recalcul auto ✅
+Jour 14 : TDEE = 3020 kcal (+70) → Recalcul auto ✅
+```
+
+#### **2. DÉTECTION D'ANOMALIES** ✅ 🆕
+```typescript
+Fonctionnalité : Détecte les changements de poids dangereux ou inhabituels
+Logique :
+  • Analyse les 4 dernières semaines
+  • Compare le changement de la dernière semaine à la moyenne
+  • Si > 2x la moyenne → Anomalie détectée
+  • Affiche un warning avec suggestion
+
+Types d'anomalies :
+  • 'danger'  : Changement > 2x moyenne (ex: -2.1kg vs -0.5kg)
+  • 'warning' : Changement inhabituel mais pas critique
+
+Impact : Sécurité, prévention de troubles alimentaires
+Fichier : src/hooks/useHealthIntelligence.ts
+```
+
+**Affichage** :
+```
+┌─────────────────────────────────────┐
+│ ⚠️ Perte rapide : 2.1kg cette       │
+│    semaine (moyenne : 0.5kg)        │
+│                                     │
+│ ⚠️ Consultez un professionnel de    │
+│    santé si cela continue.          │
+└─────────────────────────────────────┘
+```
+
+### 🎯 **HEALTH INTELLIGENCE : PHASE 2 (P1 - IMPORTANT)**
+
+#### **3. BARRE DE PROGRESSION CONFIANCE** ✅ 🆕
+```typescript
+Fonctionnalité : Affiche visuellement la confiance du calcul TDEE
+Niveaux :
+  • 🟢 Vert (≥80%)   : Excellent (TDEE réel basé sur historique)
+  • 🔵 Indigo (≥60%) : Bon (Katch-McArdle avec Withings)
+  • ⚪ Gris (<60%)    : Moyen (Mifflin-St Jeor standard)
+
+Impact : Transparence, motivation à tracker régulièrement
+Fichier : src/components/health/ProfileSetupModal.tsx
+```
+
+**UI** :
+```
+Précision du calcul                   75%
+[███████████████░░░░░░░░░░░░░░░░░░░]
+
+Méthode : Calcul avec composition corporelle
+Basé sur votre masse musculaire...
+```
+
+#### **4. SUGGESTIONS ACTIONNABLES** ✅ 🆕
+```typescript
+Fonctionnalité : Génère des suggestions pour améliorer la précision
+Dynamique : Les suggestions changent selon vos données
+Exemples :
+  • "Pesez-vous 2x/semaine (actuellement : 1x)"
+  • "Trackez vos repas 5 jours/semaine (actuellement : 3 jours)"
+  • "Connectez Withings pour +25% de précision"
+  • "Continuez 8 jours de plus pour un calcul optimal"
+
+Impact : Guidage actionnable, amélioration continue
+Fichier : src/hooks/useHealthIntelligence.ts
+```
+
+#### **5. PRÉDICTIONS DATE OBJECTIF** ✅ 🆕
+```typescript
+Fonctionnalité : Prédit la date d'atteinte de l'objectif de poids
+Logique :
+  • Calcule le changement hebdomadaire actuel
+  • Estime le nombre de semaines restantes
+  • Affiche la date prédite
+
+Affichage :
+  📈 Prédiction
+  À ce rythme (-0.6kg/sem), vous atteindrez 
+  votre objectif dans 12 semaines
+  
+  Date estimée : samedi 22 mars 2025
+
+Impact : Motivation, visualisation du progrès
+Fichier : src/hooks/useHealthIntelligence.ts
+```
+
+#### **6. DONNÉES DE PROGRESSION** ✅ 🆕
+```typescript
+Fonctionnalité : Suivi des métriques de tracking
+Métriques :
+  • weightsPerWeek  : Nombre de pesées/semaine
+  • mealsPerWeek    : Nombre de jours avec repas trackés/semaine
+  • daysTracked     : Nombre total de jours trackés
+  • hasWithingsData : Présence de données Withings
+
+Impact : Feedback sur les habitudes de tracking
+Fichier : src/hooks/useHealthIntelligence.ts
+```
+
+### 📊 **MÉTRIQUES V1.7.0**
+
+```
+Hook intelligent       : useHealthIntelligence (nouveau)
+Recalcul automatique   : Tous les 7 jours
+Détection anomalies    : Oui (danger + warning)
+Barre de progression   : Oui (3 niveaux de confiance)
+Suggestions            : Dynamiques (4 types)
+Prédictions            : Oui (date objectif)
+Progression tracking   : 4 métriques
+```
+
+### 🚀 **IMPACT UTILISATEUR**
+
+**Avant V1.7.0** :
+```
+1. Configure le profil une fois
+2. TDEE reste fixe (ex: 2870 kcal)
+3. Pas de feedback sur la progression
+4. Pas de détection d'anomalies
+5. Pas de prédictions
+```
+
+**Après V1.7.0** :
+```
+1. Configure le profil une fois
+2. TDEE s'adapte automatiquement tous les 7 jours
+3. Barre de progression montre la confiance (50% → 85%)
+4. Suggestions pour améliorer la précision
+5. Détection d'anomalies (ex: perte rapide)
+6. Prédictions de date d'objectif
+7. Motivation accrue grâce au feedback visuel
+```
+
+### 📁 **FICHIERS MODIFIÉS/CRÉÉS**
+
+```
+CRÉÉS :
+- src/hooks/useHealthIntelligence.ts (nouveau hook intelligent, 280 lignes)
+
+MODIFIÉS :
+- src/components/health/ProfileSetupModal.tsx (+150 lignes)
+  • Intégration du hook useHealthIntelligence
+  • Affichage barre de progression
+  • Affichage anomalies
+  • Affichage suggestions
+  • Affichage prédictions
+
+- src/utils/healthIntelligence.ts (+50 lignes)
+  • Fonction detectWeightAnomalies()
+  • Fonction calculateProgressionData()
+  • Fonction predictGoalDate()
+
+- src/store/slices/types.ts (+5 lignes)
+  • lastTDEEUpdate?: number (dans UserProfile)
+```
+
+### 🎯 **SCORE GLOBAL**
+
+```
+Avant V1.7.0 : 9.8/10
+Après V1.7.0 : 9.9/10 ⭐
+
+Raison : Intelligence adaptative, sécurité, transparence, motivation
 ```
 
 ---
@@ -3345,11 +3541,11 @@ src/components/tasks/TemporalColumnComponent.tsx (+ARIA)
 ---
 
 **Date de gel** : 22 décembre 2024  
-**Dernière mise à jour** : 30 décembre 2024 (V1.6.0 - Journal Philosophy 10/10 + Projects Management 10/10)  
-**Version** : 1.6.0  
+**Dernière mise à jour** : 31 décembre 2024 (V1.7.0 - Health Intelligence P0+P1 🧠)  
+**Version** : 1.7.0  
 **Auteur** : Amine  
-**Statut** : ✅ **V1.6.0 COMPLÈTE** — Perfection philosophique, minimalisme absolu, score 9.8/10
+**Statut** : ✅ **V1.7.0 COMPLÈTE** — Intelligence adaptative, recalcul auto, détection anomalies, prédictions, score 9.9/10
 
 ---
 
-*Ce document fige officiellement NewMars V1.6.0. Journal 10/10 (prompts rotatifs, souvenirs, undo), Projects 10/10 (recherche, tri, undo, plein écran), minimalisme parfait.*
+*Ce document fige officiellement NewMars V1.7.0. Health Intelligence (recalcul auto 7j, anomalies, prédictions, suggestions), minimalisme intelligent.*

@@ -87,12 +87,16 @@ export interface AIGeneratedPlan {
   }>
 }
 
+export type ProjectStatus = 'todo' | 'inProgress' | 'completed' | 'archived'
+
 export interface Project {
   id: string
   name: string
   color: string
   icon: string
   createdAt: number
+  updatedAt?: number // Date de dernière modification
+  status?: ProjectStatus // Nouveau: statut du projet pour les colonnes
   linkedCourseId?: string
   hasPhases?: boolean
   phaseCount?: number

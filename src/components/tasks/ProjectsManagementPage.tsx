@@ -1,12 +1,20 @@
-import { useState, useMemo } from 'react'
-import { ArrowLeft, Plus, FolderKanban, Trash2, Edit2, TrendingUp, Link, ListPlus, Search, ArrowUpDown, X } from 'lucide-react'
-import { useStore, Project, PROJECT_COLORS, PROJECT_ICONS } from '../../store/useStore'
+/**
+ * 📁 ProjectsManagementPage - Gestion des projets en colonnes (comme Tâches)
+ */
+
+import { useState, useMemo, useEffect } from 'react'
+import { DragDropContext, DropResult } from '@hello-pangea/dnd'
+import { useStore, Project, PROJECT_COLORS, PROJECT_ICONS, ProjectStatus } from '../../store/useStore'
 import { AddProjectModal } from './AddProjectModal'
 import { CreateProjectWithTasksPage } from './CreateProjectWithTasksPage'
 import { AssignTasksToProjectModal } from './AssignTasksToProjectModal'
 import { ProjectDetailsPage } from './ProjectDetailsPage'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { UndoToast } from '../ui/UndoToast'
+import { ProjectsHeader } from './ProjectsHeader'
+import { ProjectColumn } from './ProjectColumn'
+import { PROJECT_COLUMNS, ARCHIVED_COLUMN, categorizeProject, sortProjectsInColumn } from './projectUtils'
+import { Loader2 } from 'lucide-react'
 
 interface ProjectsManagementPageProps {
   onBack: () => void
@@ -27,49 +35,109 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
   const [projectColor, setProjectColor] = useState(PROJECT_COLORS[0])
   const [projectIcon, setProjectIcon] = useState(PROJECT_ICONS[0])
   
-  // Search & Sort
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<'name' | 'progress' | 'date'>('date')
-  
   // Undo system
   const [deletedProject, setDeletedProject] = useState<{ project: Project; tasks: typeof tasks } | null>(null)
   const [showUndo, setShowUndo] = useState(false)
+  
+  // Search & Filters - avec persistance
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('projects-search-query') || ''
+    }
+    return ''
+  })
+  const [showFilters, setShowFilters] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('projects-show-filters') === 'true'
+    }
+    return false
+  })
+  
+  // Loading states
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  
+  // Toggle pour afficher les archivés
+  const [showArchived, setShowArchived] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('projects-show-archived') === 'true'
+    }
+    return false
+  })
+  
+  // Persist archived toggle
+  useEffect(() => {
+    localStorage.setItem('projects-show-archived', showArchived.toString())
+  }, [showArchived])
+  
+  // Persist search query
+  useEffect(() => {
+    localStorage.setItem('projects-search-query', searchQuery)
+  }, [searchQuery])
+  
+  // Persist filters state
+  useEffect(() => {
+    localStorage.setItem('projects-show-filters', showFilters.toString())
+  }, [showFilters])
 
-  // Calculate stats for all projects (memoized for performance)
-  const projectsWithStats = useMemo(() => {
-    let filtered = projects.map(project => {
-      const projectTasks = tasks.filter(t => t.projectId === project.id)
-      const completed = projectTasks.filter(t => t.completed).length
-      const total = projectTasks.length
-      const progress = total > 0 ? Math.round((completed / total) * 100) : 0
-      
-      return {
-        ...project,
-        stats: { completed, total, progress }
-      }
-    })
-    
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(p => p.name.toLowerCase().includes(query))
+  // ═══════════════════════════════════════════════════════════════
+  // ORGANISATION DES PROJETS PAR COLONNE (3 colonnes + archivés optionnel)
+  // ═══════════════════════════════════════════════════════════════
+  const projectsByColumn = useMemo(() => {
+    const result: Record<ProjectStatus, Project[]> = {
+      todo: [],
+      inProgress: [],
+      completed: [],
+      archived: []
     }
     
-    // Sort
-    filtered.sort((a, b) => {
-      if (sortBy === 'name') {
-        return a.name.localeCompare(b.name)
-      } else if (sortBy === 'progress') {
-        return b.stats.progress - a.stats.progress
-      } else {
-        // date (most recent first)
-        return b.createdAt - a.createdAt
-      }
+    // Filtrer par recherche
+    let filteredProjects = projects
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filteredProjects = projects.filter(p => 
+        p.name.toLowerCase().includes(query)
+      )
+    }
+    
+    filteredProjects.forEach(project => {
+      const status = categorizeProject(project, tasks)
+      result[status].push(project)
     })
     
-    return filtered
-  }, [projects, tasks, searchQuery, sortBy])
+    // Trier les projets dans chaque colonne
+    Object.keys(result).forEach(key => {
+      result[key as ProjectStatus] = sortProjectsInColumn(result[key as ProjectStatus], tasks)
+    })
+    
+    return result
+  }, [projects, tasks, searchQuery])
 
+  // ═══════════════════════════════════════════════════════════════
+  // DRAG & DROP HANDLER
+  // ═══════════════════════════════════════════════════════════════
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result
+    
+    if (!destination) return
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return
+    }
+    
+    const newStatus = destination.droppableId as ProjectStatus
+    
+    // Mettre à jour le statut du projet
+    updateProject(draggableId, { 
+      status: newStatus,
+      archived: newStatus === 'archived'
+    })
+    
+    addToast(`Projet déplacé vers ${PROJECT_COLUMNS.find(c => c.id === newStatus)?.label}`, 'success')
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // HANDLERS
+  // ═══════════════════════════════════════════════════════════════
   const handleOpenAddModal = () => {
     setEditingProject(null)
     setProjectName('')
@@ -89,44 +157,63 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
   const handleCreateOrUpdate = () => {
     if (!projectName.trim()) return
 
-    if (editingProject) {
-      // Update
-      updateProject(editingProject.id, {
-        name: projectName,
-        color: projectColor,
-        icon: projectIcon
-      })
-    } else {
-      // Create
-      addProject({
-        name: projectName,
-        color: projectColor,
-        icon: projectIcon
-      })
-    }
+    setIsCreating(true)
+    
+    try {
+      if (editingProject) {
+        // Update
+        updateProject(editingProject.id, {
+          name: projectName,
+          color: projectColor,
+          icon: projectIcon
+        })
+        addToast('Projet modifié', 'success')
+      } else {
+        // Create
+        addProject({
+          name: projectName,
+          color: projectColor,
+          icon: projectIcon,
+          status: 'todo' // Nouveau projet = à faire
+        })
+        addToast('Projet créé', 'success')
+      }
 
-    setShowAddModal(false)
-    setProjectName('')
-    setProjectColor(PROJECT_COLORS[0])
-    setProjectIcon(PROJECT_ICONS[0])
+      setShowAddModal(false)
+      setProjectName('')
+      setProjectColor(PROJECT_COLORS[0])
+      setProjectIcon(PROJECT_ICONS[0])
+    } catch (error) {
+      addToast('Erreur lors de la sauvegarde', 'error')
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   const handleDelete = () => {
     if (confirmDelete) {
-      const project = projects.find(p => p.id === confirmDelete)
-      const projectTasks = tasks.filter(t => t.projectId === confirmDelete)
+      setIsDeleting(true)
       
-      if (project) {
-        setDeletedProject({ project, tasks: projectTasks })
-        deleteProject(confirmDelete)
-        setShowUndo(true)
-        setTimeout(() => {
-          setShowUndo(false)
-          setDeletedProject(null)
-        }, 5000)
+      try {
+        const project = projects.find(p => p.id === confirmDelete)
+        const projectTasks = tasks.filter(t => t.projectId === confirmDelete)
+        
+        if (project) {
+          setDeletedProject({ project, tasks: projectTasks })
+          deleteProject(confirmDelete)
+          setShowUndo(true)
+          setTimeout(() => {
+            setShowUndo(false)
+            setDeletedProject(null)
+          }, 5000)
+        }
+        
+        setConfirmDelete(null)
+      } catch (error) {
+        addToast('Erreur lors de la suppression', 'error')
+      } finally {
+        setIsDeleting(false)
       }
-      
-      setConfirmDelete(null)
     }
   }
   
@@ -155,10 +242,11 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
     }>
   }) => {
     // Create project first and get the generated ID
-    const newProject = addProject({
+    const newProjectId = addProject({
       name: projectData.name,
       color: projectData.color,
-      icon: projectData.icon
+      icon: projectData.icon,
+      status: 'todo'
     })
     
     // Then create all tasks with the project ID
@@ -171,7 +259,7 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         dueDate: task.dueDate,
         completed: false,
         status: 'todo',
-        projectId: newProject.id
+        projectId: newProjectId
       })
     })
     
@@ -187,241 +275,65 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         />
       ) : (
         <div className="h-screen w-full flex flex-col overflow-hidden bg-zinc-950">
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="space-y-4 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onBack}
-                className="p-2 hover:bg-zinc-900/50 rounded-xl transition-colors"
-                aria-label="Retour aux tâches"
-              >
-                <ArrowLeft className="w-5 h-5 text-zinc-400" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-3">
-                  <FolderKanban className="w-7 h-7 text-indigo-400" />
-                  Gestion des Projets
-                </h1>
-                <p className="text-sm text-zinc-600 mt-1">
-                  {projects.length} projet{projects.length > 1 ? 's' : ''} · {tasks.length} tâche{tasks.length > 1 ? 's' : ''} au total
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleOpenAddModal}
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors"
-                aria-label="Créer un projet simple"
-              >
-                <Plus className="w-5 h-5" aria-hidden="true" />
-                <span className="hidden sm:inline">Projet simple</span>
-                <span className="sm:hidden">Simple</span>
-              </button>
-              <button
-                onClick={() => setShowCreateWithTasks(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
-                aria-label="Créer un projet avec des tâches"
-              >
-                <ListPlus className="w-5 h-5" aria-hidden="true" />
-                <span className="hidden sm:inline">Projet + Tâches</span>
-                <span className="sm:hidden">+ Tâches</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Search & Sort */}
-          {projects.length > 0 && (
-            <div className="flex items-center gap-3">
-              {/* Search */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher un projet..."
-                  className="w-full pl-10 pr-10 py-2 bg-zinc-900/50 border border-zinc-800 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+          {/* Header */}
+          <ProjectsHeader
+            totalProjects={projects.length}
+            totalTasks={tasks.length}
+            onAddSimple={handleOpenAddModal}
+            onAddWithTasks={() => setShowCreateWithTasks(true)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            showArchived={showArchived}
+            onToggleArchived={() => setShowArchived(!showArchived)}
+            archivedCount={projectsByColumn.archived.length}
+          />
+          
+          {/* Columns */}
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="flex-1 flex overflow-hidden relative">
+              {/* 3 colonnes principales */}
+              {PROJECT_COLUMNS.map((config) => (
+                <ProjectColumn
+                  key={config.id}
+                  config={config}
+                  projects={projectsByColumn[config.id]}
+                  tasks={tasks}
+                  onProjectClick={setViewingProject}
+                  onProjectEdit={handleOpenEditModal}
+                  onProjectDelete={setConfirmDelete}
+                  onAssignTasks={setAssigningProject}
                 />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Sort */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-xl">
-                <ArrowUpDown className="w-4 h-4 text-zinc-500" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'date')}
-                  className="bg-transparent text-sm text-zinc-300 focus:outline-none cursor-pointer"
-                >
-                  <option value="date">Plus récents</option>
-                  <option value="name">Nom A-Z</option>
-                  <option value="progress">Progression</option>
-                </select>
-              </div>
+              ))}
+              
+              {/* Colonne archivés (conditionnelle) */}
+              {showArchived && (
+                <ProjectColumn
+                  key={ARCHIVED_COLUMN.id}
+                  config={ARCHIVED_COLUMN}
+                  projects={projectsByColumn.archived}
+                  tasks={tasks}
+                  onProjectClick={setViewingProject}
+                  onProjectEdit={handleOpenEditModal}
+                  onProjectDelete={setConfirmDelete}
+                  onAssignTasks={setAssigningProject}
+                />
+              )}
+              
+              {/* Loading overlay */}
+              {(isDeleting || isCreating) && (
+                <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm flex items-center justify-center z-50">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm text-zinc-400">
+                      {isDeleting ? 'Suppression...' : 'Création...'}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Projects Grid */}
-        {projects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <FolderKanban className="w-16 h-16 text-zinc-700 mb-4" />
-            <h3 className="text-xl font-semibold text-zinc-400 mb-2">Aucun projet</h3>
-            <p className="text-zinc-600 mb-6">Créez votre premier projet pour organiser vos tâches</p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleOpenAddModal}
-                className="flex items-center gap-2 px-6 py-3 bg-zinc-800/50 text-zinc-400 rounded-xl hover:bg-zinc-700/50 border border-white/10 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Projet simple
-              </button>
-              <button
-                onClick={() => setShowCreateWithTasks(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-colors"
-              >
-                <ListPlus className="w-5 h-5" />
-                Projet + Tâches
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            role="list"
-            aria-label="Liste des projets"
-          >
-            {projectsWithStats.map((project) => {
-              const { stats } = project
-              return (
-                <article
-                  key={project.id}
-                  className="group relative p-6 bg-zinc-900/30 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 transition-colors cursor-pointer"
-                  onClick={() => setViewingProject(project)}
-                  role="listitem"
-                  aria-label={`Projet ${project.name}, ${stats.total} tâches, ${stats.progress}% complété`}
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      setViewingProject(project)
-                    }
-                  }}
-                >
-                  {/* Project Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                        style={{ backgroundColor: `${project.color}20`, border: `2px solid ${project.color}40` }}
-                        aria-hidden="true"
-                      >
-                        {project.icon}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{project.name}</h3>
-                        <p className="text-xs text-zinc-600">
-                          {stats.total} tâche{stats.total > 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Actions - Always visible on mobile, hover on desktop */}
-                    <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setAssigningProject(project)
-                        }}
-                        className="p-2 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                        aria-label={`Assigner des tâches au projet ${project.name}`}
-                      >
-                        <Link className="w-4 h-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleOpenEditModal(project)
-                        }}
-                        className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
-                        aria-label={`Modifier le projet ${project.name}`}
-                      >
-                        <Edit2 className="w-4 h-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setConfirmDelete(project.id)
-                        }}
-                        className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        aria-label={`Supprimer le projet ${project.name}`}
-                      >
-                        <Trash2 className="w-4 h-4" aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Progress */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-zinc-500">Progression</span>
-                      <span className="font-bold text-white" aria-label={`${stats.progress} pourcent`}>{stats.progress}%</span>
-                    </div>
-                    <div 
-                      className="h-2 bg-zinc-800 rounded-full overflow-hidden"
-                      role="progressbar"
-                      aria-valuenow={stats.progress}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`Progression du projet: ${stats.progress}%`}
-                    >
-                      <div
-                        className="h-full transition-colors duration-500"
-                        style={{
-                          width: `${stats.progress}%`,
-                          backgroundColor: project.color
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="w-4 h-4" style={{ color: project.color }} aria-hidden="true" />
-                      <span className="text-zinc-400">
-                        {stats.completed}/{stats.total} complétées
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Info card */}
-        {projects.length > 0 && (
-          <div className="mt-8 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl">
-            <p className="text-sm text-indigo-300">
-              💡 <strong>Astuce :</strong> Organisez vos tâches par projets pour mieux suivre votre progression. 
-              Les projets apparaissent dans la barre de filtres de la page Tâches.
-            </p>
-          </div>
-        )}
-        </div>
-      </div>
+          </DragDropContext>
 
       {/* Add/Edit Project Modal */}
       <AddProjectModal
@@ -467,17 +379,16 @@ export function ProjectsManagementPage({ onBack }: ProjectsManagementPageProps) 
         variant="warning"
       />
 
-      {/* Undo Toast */}
-      {showUndo && deletedProject && (
-        <UndoToast
-          message={`Projet "${deletedProject.project.name}" supprimé`}
-          onUndo={handleUndoDelete}
-          onClose={() => setShowUndo(false)}
-        />
-      )}
+          {/* Undo Toast */}
+          {deletedProject && (
+            <UndoToast
+              message={`Projet "${deletedProject.project.name}" supprimé`}
+              onUndo={handleUndoDelete}
+              isVisible={showUndo}
+            />
+          )}
         </div>
       )}
     </>
   )
 }
-
