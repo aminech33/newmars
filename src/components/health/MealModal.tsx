@@ -7,7 +7,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { FoodSelector } from './FoodSelector'
-import { generateSmartMealSuggestion, UserGoal, MealType } from '../../utils/mealTemplates'
+import { generateOptimalMeals, UserGoal, MealCount } from '../../utils/simpleMealGenerator'
 
 interface MealModalProps {
   isOpen: boolean
@@ -50,29 +50,34 @@ export function MealModal({
   const [time, setTime] = useState(new Date().toTimeString().slice(0, 5))
   const [type, setType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch')
   const [error, setError] = useState('')
+  const [mealCount, setMealCount] = useState<MealCount>(2)
   
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Fonction pour suggérer un repas intelligent
-  const handleSmartSuggestion = () => {
+  // Fonction pour générer les repas automatiquement (1 ou 2)
+  const handleGenerateMeals = () => {
     if (!targetCalories) {
       setError('Configurez votre profil d\'abord (⚙️ Profil)')
       return
     }
 
     try {
-      const suggestion = generateSmartMealSuggestion(
+      const meals = generateOptimalMeals(
         targetCalories,
         userGoal,
-        type as MealType,
+        mealCount,
         latestWeight?.weight
       )
 
-      setName(suggestion.name)
-      setSelectedFoods(suggestion.foods)
-      setError('')
+      if (meals.length > 0) {
+        // Utiliser le premier repas généré
+        const meal = meals[0]
+        setName(meal.name)
+        setSelectedFoods(meal.foods)
+        setError('')
+      }
     } catch (err) {
-      setError('Erreur lors de la génération de la suggestion')
+      setError('Erreur lors de la génération')
       console.error(err)
     }
   }
@@ -187,7 +192,7 @@ export function MealModal({
 
       {/* Bandeau poids récent + suggestion intelligente */}
       {latestWeight && targetCalories && (
-        <div className="mb-4 p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
+        <div className="mb-4 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <p className="text-sm font-medium text-indigo-400 mb-1">
@@ -201,15 +206,46 @@ export function MealModal({
                 })} · Objectif : {Math.round(targetCalories)} kcal/jour
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleSmartSuggestion}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded-lg transition-all text-xs font-medium whitespace-nowrap"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Suggérer
-            </button>
           </div>
+
+          {/* Choix 1 ou 2 repas */}
+          <div className="space-y-2">
+            <p className="text-xs text-zinc-500">Répartition :</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setMealCount(1)}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  mealCount === 1
+                    ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
+                    : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
+                }`}
+              >
+                1 repas (OMAD)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMealCount(2)}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  mealCount === 2
+                    ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
+                    : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
+                }`}
+              >
+                2 repas ({userGoal === 'lose' ? '40/60' : '50/50'})
+              </button>
+            </div>
+          </div>
+
+          {/* Bouton générer */}
+          <button
+            type="button"
+            onClick={handleGenerateMeals}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg transition-all text-sm font-medium"
+          >
+            <Sparkles className="w-4 h-4" />
+            Générer {mealCount === 1 ? 'mon repas' : 'mes repas'} optimal{mealCount === 2 ? 's' : ''}
+          </button>
         </div>
       )}
 
