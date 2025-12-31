@@ -4,7 +4,7 @@
  */
 
 import * as Sentry from '@sentry/react'
-import { onCLS, onFID, onFCP, onLCP, onTTFB, Metric } from 'web-vitals'
+import { onCLS, onINP, onFCP, onLCP, onTTFB, Metric } from 'web-vitals'
 
 // ═══════════════════════════════════════════════════════════════
 // SENTRY CONFIGURATION
@@ -160,7 +160,7 @@ export function initWebVitals() {
 
   // Core Web Vitals
   onCLS(sendToSentry)  // Cumulative Layout Shift
-  onFID(sendToSentry)  // First Input Delay
+  onINP(sendToSentry)  // Interaction to Next Paint
   onLCP(sendToSentry)  // Largest Contentful Paint
   
   // Autres métriques
