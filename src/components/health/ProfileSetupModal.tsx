@@ -3,6 +3,8 @@ import { User, Target, Activity, Check, X, Zap, Settings, TrendingUp, AlertTrian
 import { useStore } from '../../store/useStore'
 import { calculateBMR, calculateTDEE, calculateMacros, getOptimalCalorieTarget } from '../../utils/healthIntelligence'
 import { useHealthIntelligence } from '../../hooks/useHealthIntelligence'
+import { useLatestWeight } from '../../hooks/useLatestWeight'
+import { PremiumCard } from './shared/PremiumCard'
 
 interface ProfileSetupModalProps {
   isOpen: boolean
@@ -40,7 +42,7 @@ const calculateAge = (birthDate: string): number => {
 }
 
 export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
-  const { userProfile, setUserProfile, healthGoals, addHealthGoal, updateHealthGoal, weightEntries, mealEntries } = useStore()
+  const { userProfile, setUserProfile, healthGoals, addHealthGoal, updateHealthGoal, mealEntries } = useStore()
   
   // Hook intelligent
   const intelligence = useHealthIntelligence()
@@ -48,22 +50,15 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
   // Calculer l'âge automatiquement
   const age = calculateAge(BIRTH_DATE)
   
+  // Hook personnalisé pour récupérer le dernier poids
+  const currentWeight = useLatestWeight(isOpen)
+  
   // État du formulaire (ultra-simplifié : juste activité + objectif)
   const [activityLevel, setActivityLevel] = useState(userProfile.activityLevel || 'moderate')
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>('maintain')
   const [weightChangeRate, setWeightChangeRate] = useState<'moderate' | 'normal' | 'fast'>('moderate') // Simplifié : 3 options
-  const [currentWeight, setCurrentWeight] = useState(0)
   const [useIntelligentMode, setUseIntelligentMode] = useState(true) // Mode intelligent par défaut
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false) // Masquer détails par défaut
-  
-  // Récupérer le poids actuel
-  useEffect(() => {
-    if (isOpen && weightEntries.length > 0) {
-      const latest = [...weightEntries]
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
-      setCurrentWeight(latest.weight)
-    }
-  }, [isOpen, weightEntries])
   
   // Charger l'objectif actuel
   useEffect(() => {

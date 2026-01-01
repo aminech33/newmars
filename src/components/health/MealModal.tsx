@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Apple, Sparkles } from 'lucide-react'
 import { detectMealType } from '../../utils/healthIntelligence'
 import { calculateNutrition, getFoodById } from '../../utils/foodDatabase'
@@ -8,6 +8,11 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { FoodSelector } from './FoodSelector'
 import { generateOptimalMeals, UserGoal, MealCount } from '../../utils/simpleMealGenerator'
+import { useHealthModal } from '../../hooks/useHealthModal'
+import { useDateTimeState } from '../../hooks/useDateTimeState'
+import { PremiumModalHeader } from './shared/PremiumModalHeader'
+import { ErrorBanner } from './shared/ErrorBanner'
+import { PremiumCard } from './shared/PremiumCard'
 
 interface MealModalProps {
   isOpen: boolean
@@ -46,14 +51,23 @@ export function MealModal({
 }: MealModalProps) {
   const [name, setName] = useState('')
   const [selectedFoods, setSelectedFoods] = useState<FoodPortion[]>([])
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [time, setTime] = useState(new Date().toTimeString().slice(0, 5))
   const [type, setType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch')
-  const [error, setError] = useState('')
   const [mealCount, setMealCount] = useState<MealCount>(2)
   const [showManualMode, setShowManualMode] = useState(false)
-  
-  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Hooks personnalisés
+  const { date, setDate, time, setTime } = useDateTimeState(isOpen)
+  const { error, setError, inputRef, handleSubmit: handleModalSubmit } = useHealthModal(
+    isOpen,
+    onSubmit,
+    onClose,
+    useCallback(() => {
+      setName('')
+      setSelectedFoods([])
+      setType(detectMealType(new Date().toTimeString().slice(0, 5)))
+      setShowManualMode(false)
+    }, [])
+  )
 
   // Fonction pour générer les repas automatiquement (1 ou 2)
   const handleGenerateMeals = () => {
@@ -84,26 +98,6 @@ export function MealModal({
     }
   }
 
-  // Auto-focus
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100)
-    }
-  }, [isOpen])
-
-  // Reset form when opening
-  useEffect(() => {
-    if (isOpen) {
-      const now = new Date()
-      setName('')
-      setSelectedFoods([])
-      setDate(now.toISOString().split('T')[0])
-      setTime(now.toTimeString().slice(0, 5))
-      setType(detectMealType(now.toTimeString().slice(0, 5)))
-      setError('')
-      setShowManualMode(false) // Reset au mode générateur
-    }
-  }, [isOpen])
 
   // Auto-detect meal type when time changes
   const handleTimeChange = (newTime: string) => {
@@ -143,7 +137,7 @@ export function MealModal({
       return
     }
     
-    const result = onSubmit({ 
+    handleModalSubmit({ 
       name: name.trim(), 
       calories: totalNutrition.calories,
       protein: totalNutrition.protein,
@@ -155,12 +149,6 @@ export function MealModal({
       time, 
       type 
     })
-    
-    if (result.success) {
-      onClose()
-    } else {
-      setError(result.error || 'Une erreur est survenue')
-    }
   }
 
   return (
@@ -185,21 +173,9 @@ export function MealModal({
         ) : null
       }
     >
-      {/* Header with icon */}
-      <div className="flex items-center gap-3 mb-6 -mt-2">
-        <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl border border-emerald-500/20">
-          <Apple className="w-5 h-5 text-emerald-400" />
-        </div>
-        <h2 className="text-lg font-semibold text-zinc-100">
-          Ajouter un repas
-        </h2>
-      </div>
+      <PremiumModalHeader icon={Apple} title="Ajouter un repas" colorFrom="emerald" colorTo="teal" />
 
-      {error && (
-        <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-sm text-rose-400" role="alert">
-          {error}
-        </div>
-      )}
+      <ErrorBanner error={error} />
 
       {/* MODE GÉNÉRATEUR (par défaut) */}
       {!showManualMode && latestWeight && targetCalories && (
@@ -222,14 +198,10 @@ export function MealModal({
           <div className="space-y-3">
             <p className="text-sm font-medium text-zinc-300">Répartition quotidienne</p>
             <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
+              <PremiumCard
+                isSelected={mealCount === 1}
                 onClick={() => setMealCount(1)}
-                className={`group relative p-4 rounded-xl text-left transition-all border-2 ${
-                  mealCount === 1
-                    ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-500/50'
-                    : 'bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700'
-                }`}
+                className="text-left"
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-2xl">🍽️</span>
@@ -243,16 +215,12 @@ export function MealModal({
                 <p className={`text-[10px] mt-1 ${mealCount === 1 ? 'text-indigo-400/70' : 'text-zinc-700'}`}>
                   {Math.round(targetCalories)} kcal
                 </p>
-              </button>
+              </PremiumCard>
 
-              <button
-                type="button"
+              <PremiumCard
+                isSelected={mealCount === 2}
                 onClick={() => setMealCount(2)}
-                className={`group relative p-4 rounded-xl text-left transition-all border-2 ${
-                  mealCount === 2
-                    ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-500/50'
-                    : 'bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700'
-                }`}
+                className="text-left"
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-2xl">🍽️🍽️</span>
@@ -266,7 +234,7 @@ export function MealModal({
                 <p className={`text-[10px] mt-1 ${mealCount === 2 ? 'text-indigo-400/70' : 'text-zinc-700'}`}>
                   {Math.round(targetCalories * (userGoal === 'lose' ? 0.4 : 0.5))} + {Math.round(targetCalories * (userGoal === 'lose' ? 0.6 : 0.5))} kcal
                 </p>
-              </button>
+              </PremiumCard>
             </div>
           </div>
 

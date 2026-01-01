@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import { Scale } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { useHealthModal } from '../../hooks/useHealthModal'
+import { PremiumModalHeader } from './shared/PremiumModalHeader'
+import { ErrorBanner } from './shared/ErrorBanner'
 
 interface WeightModalProps {
   isOpen: boolean
@@ -14,26 +17,18 @@ export function WeightModal({ isOpen, onClose, onSubmit }: WeightModalProps) {
   const [weight, setWeight] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [note, setNote] = useState('')
-  const [error, setError] = useState('')
-  
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Auto-focus on open
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100)
-    }
-  }, [isOpen])
-
-  // Reset form when opening
-  useEffect(() => {
-    if (isOpen) {
+  // Hook personnalisé pour gérer le cycle de vie du modal
+  const { error, setError, inputRef, handleSubmit: handleModalSubmit } = useHealthModal(
+    isOpen,
+    onSubmit,
+    onClose,
+    useCallback(() => {
       setWeight('')
       setDate(new Date().toISOString().split('T')[0])
       setNote('')
-      setError('')
-    }
-  }, [isOpen])
+    }, [])
+  )
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -45,13 +40,7 @@ export function WeightModal({ isOpen, onClose, onSubmit }: WeightModalProps) {
       return
     }
     
-    const result = onSubmit({ weight: weightNum, date, note: note || undefined })
-    
-    if (result.success) {
-      onClose()
-    } else {
-      setError(result.error || 'Une erreur est survenue')
-    }
+    handleModalSubmit({ weight: weightNum, date, note: note || undefined })
   }
 
   return (
@@ -74,23 +63,11 @@ export function WeightModal({ isOpen, onClose, onSubmit }: WeightModalProps) {
         </>
       }
     >
-      {/* Header with icon - Premium */}
-      <div className="flex items-center gap-3 mb-6 -mt-2">
-        <div className="p-2.5 bg-gradient-to-br from-rose-500/20 to-pink-500/20 rounded-xl border border-rose-500/20">
-          <Scale className="w-5 h-5 text-rose-400" />
-        </div>
-        <h2 className="text-lg font-semibold text-zinc-100">
-          Ajouter un poids
-        </h2>
-      </div>
+      <PremiumModalHeader icon={Scale} title="Ajouter un poids" colorFrom="rose" colorTo="pink" />
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-sm text-rose-400" role="alert">
-            {error}
-          </div>
-        )}
+        <ErrorBanner error={error} />
 
         <div>
           <Input
