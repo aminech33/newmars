@@ -213,38 +213,43 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-zinc-900 border-b border-zinc-800 px-5 py-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-zinc-200">⚙️ Configuration</h2>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/40 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        {/* Header - Premium */}
+        <div className="sticky top-0 bg-gradient-to-b from-zinc-900 to-zinc-900/95 backdrop-blur-xl border-b border-zinc-700/50 px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-xl border border-indigo-500/20">
+              <Settings className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-zinc-100">Configuration</h2>
+          </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 rounded-lg transition-all"
+            className="p-2 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 rounded-xl transition-all"
             aria-label="Fermer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-5 space-y-4">
-          {/* Profil (simplifié : juste poids actuel) */}
+        {/* Content - Premium spacing */}
+        <div className="p-6 space-y-6">
+          {/* Profil (simplifié : juste poids actuel) - Premium card */}
           <div>
-            <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
-              <User className="w-4 h-4" />
+            <h3 className="text-sm font-semibold text-zinc-200 mb-3 flex items-center gap-2">
+              <User className="w-4 h-4 text-indigo-400" />
               Profil
             </h3>
-            <div className="px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg">
-              <div className="flex items-center justify-between">
+            <div className="px-4 py-4 bg-gradient-to-br from-zinc-800/40 to-zinc-900/40 border border-zinc-700/50 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
                 <div>
-                  <div className="text-xs text-zinc-500 mb-0.5">Poids actuel</div>
-                  <div className="text-lg font-semibold text-zinc-200">
+                  <div className="text-xs text-zinc-500 mb-1">Poids actuel</div>
+                  <div className="text-2xl font-bold text-zinc-100">
                     {currentWeight > 0 ? `${currentWeight.toFixed(1)} kg` : '—'}
                   </div>
                 </div>
                 {currentWeight > 0 && weightEntries.length > 0 && (
-                  <div className="text-[10px] text-zinc-600">
+                  <div className="text-xs text-zinc-500 bg-zinc-800/50 px-2 py-1 rounded-lg">
                     {new Date(weightEntries[weightEntries.length - 1].date).toLocaleDateString('fr-FR', { 
                       day: 'numeric', 
                       month: 'short' 
@@ -252,43 +257,50 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
                   </div>
                 )}
               </div>
-              <div className="text-[10px] text-zinc-600 mt-2 flex items-center gap-3">
-                <span>Taille : {HEIGHT} cm</span>
-                <span>·</span>
-                <span>Âge : {age} ans</span>
-                <span>·</span>
-                <span>Genre : {GENDER === 'male' ? 'Homme' : 'Femme'}</span>
+              <div className="text-xs text-zinc-500 pt-3 border-t border-zinc-700/30 flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <span className="text-zinc-600">📏</span> {HEIGHT} cm
+                </span>
+                <span className="text-zinc-700">·</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-zinc-600">🎂</span> {age} ans
+                </span>
+                <span className="text-zinc-700">·</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-zinc-600">👤</span> {GENDER === 'male' ? 'Homme' : 'Femme'}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Objectif */}
+          {/* Objectif - Premium cards */}
           <div>
-            <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
-              <Target className="w-4 h-4" />
+            <h3 className="text-sm font-semibold text-zinc-200 mb-3 flex items-center gap-2">
+              <Target className="w-4 h-4 text-purple-400" />
               Objectif
             </h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-3">
               {GOALS.map(({ value, icon, label }) => (
                 <button
                   key={value}
                   onClick={() => setGoal(value)}
-                  className={`px-3 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                  className={`group px-4 py-4 rounded-xl border-2 transition-all text-sm font-semibold ${
                     goal === value
-                      ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300'
-                      : 'bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                      ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-500/60 text-indigo-200 shadow-lg shadow-indigo-500/10'
+                      : 'bg-zinc-800/30 border-zinc-700/50 text-zinc-400 hover:border-zinc-600 hover:bg-zinc-800/50'
                   }`}
                 >
-                  <div className="text-xl mb-1">{icon}</div>
+                  <div className="text-2xl mb-2">{icon}</div>
                   {label}
                 </button>
               ))}
             </div>
             
-            {/* Rythme simplifié (3 options) */}
+            {/* Rythme simplifié (3 options) - Premium */}
             {goal !== 'maintain' && (
-              <div className="mt-3 p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg">
-                <span className="text-xs text-zinc-500 block mb-2">
+              <div className="mt-4 p-4 bg-gradient-to-br from-zinc-800/30 to-zinc-900/30 border border-zinc-700/40 rounded-xl">
+                <span className="text-xs font-medium text-zinc-400 block mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-3.5 h-3.5" />
                   Rythme de {goal === 'lose' ? 'perte' : 'gain'}
                 </span>
                 
@@ -296,85 +308,85 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
                   <button
                     type="button"
                     onClick={() => setWeightChangeRate('moderate')}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`px-3 py-3 rounded-xl text-xs font-medium transition-all border ${
                       weightChangeRate === 'moderate'
-                        ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
-                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
+                        ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-200 border-emerald-500/50 shadow-lg shadow-emerald-500/10'
+                        : 'bg-zinc-800/40 text-zinc-500 border-zinc-700/50 hover:bg-zinc-800/60'
                     }`}
                   >
-                    <div className="font-semibold">Modéré</div>
-                    <div className="text-[10px] opacity-70">0.5 kg/sem</div>
+                    <div className="font-bold text-sm">Modéré</div>
+                    <div className="text-[10px] opacity-70 mt-1">0.5 kg/sem</div>
                   </button>
                   <button
                     type="button"
                     onClick={() => setWeightChangeRate('normal')}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`px-3 py-3 rounded-xl text-xs font-medium transition-all border ${
                       weightChangeRate === 'normal'
-                        ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
-                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
+                        ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-indigo-200 border-indigo-500/50 shadow-lg shadow-indigo-500/10'
+                        : 'bg-zinc-800/40 text-zinc-500 border-zinc-700/50 hover:bg-zinc-800/60'
                     }`}
                   >
-                    <div className="font-semibold">Normal</div>
-                    <div className="text-[10px] opacity-70">0.7 kg/sem</div>
+                    <div className="font-bold text-sm">Normal</div>
+                    <div className="text-[10px] opacity-70 mt-1">0.7 kg/sem</div>
                   </button>
                   <button
                     type="button"
                     onClick={() => setWeightChangeRate('fast')}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`px-3 py-3 rounded-xl text-xs font-medium transition-all border ${
                       weightChangeRate === 'fast'
-                        ? 'bg-amber-500/30 text-amber-200 border border-amber-500/50'
-                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
+                        ? 'bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/10'
+                        : 'bg-zinc-800/40 text-zinc-500 border-zinc-700/50 hover:bg-zinc-800/60'
                     }`}
                   >
-                    <div className="font-semibold">Rapide</div>
-                    <div className="text-[10px] opacity-70">1.0 kg/sem</div>
+                    <div className="font-bold text-sm">Rapide</div>
+                    <div className="text-[10px] opacity-70 mt-1">1.0 kg/sem</div>
                   </button>
                 </div>
                 
                 {/* Info déficit/surplus */}
                 {recommendations && (
-                  <p className="text-[10px] text-zinc-500 mt-2">
-                    {goal === 'lose' ? 'Déficit' : 'Surplus'} : {recommendations.dailyCalorieAdjustment} kcal/jour
+                  <p className="text-xs text-zinc-500 mt-3 text-center">
+                    {goal === 'lose' ? '📉 Déficit' : '📈 Surplus'} : <span className="text-zinc-400 font-medium">{recommendations.dailyCalorieAdjustment} kcal/jour</span>
                   </p>
                 )}
               </div>
             )}
           </div>
 
-          {/* Activité physique (inline) */}
+          {/* Activité physique (inline) - Premium */}
           <div>
-            <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
-              <Activity className="w-4 h-4" />
+            <h3 className="text-sm font-semibold text-zinc-200 mb-4 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400" />
               Activité physique
             </h3>
             
-            {/* Icônes + Radio dots */}
-            <div className="flex items-center justify-center gap-8 mb-3">
+            {/* Icônes + Radio dots - Plus grand et spacieux */}
+            <div className="flex items-center justify-center gap-12 mb-4 p-4 bg-gradient-to-br from-zinc-800/20 to-zinc-900/20 rounded-xl border border-zinc-700/30">
               {ACTIVITY_LEVELS.map(({ value, icon }) => (
                 <button
                   key={value}
                   onClick={() => setActivityLevel(value)}
-                  className="flex flex-col items-center gap-2 transition-transform hover:scale-110"
+                  className="flex flex-col items-center gap-3 transition-all hover:scale-110"
                 >
-                  <span className={`text-3xl transition-opacity ${
-                    activityLevel === value ? 'opacity-100' : 'opacity-40 hover:opacity-70'
+                  <span className={`text-4xl transition-all ${
+                    activityLevel === value ? 'opacity-100 scale-110' : 'opacity-30 hover:opacity-60'
                   }`}>
                     {icon}
                   </span>
-                  <div className={`w-2 h-2 rounded-full transition-all ${
+                  <div className={`w-2.5 h-2.5 rounded-full transition-all ${
                     activityLevel === value 
-                      ? 'bg-indigo-500 scale-100' 
+                      ? 'bg-indigo-500 scale-100 shadow-lg shadow-indigo-500/50' 
                       : 'bg-zinc-700 scale-75'
                   }`} />
                 </button>
               ))}
             </div>
             
-            {/* Description dynamique */}
-            <p className="text-center text-sm text-zinc-400">
+            {/* Description dynamique - Plus visible */}
+            <p className="text-center text-sm font-medium text-zinc-300">
               {ACTIVITY_LEVELS.find(a => a.value === activityLevel)?.label}
-              {' · '}
-              {ACTIVITY_LEVELS.find(a => a.value === activityLevel)?.description}
+              <span className="text-zinc-600 mx-2">·</span>
+              <span className="text-zinc-500">{ACTIVITY_LEVELS.find(a => a.value === activityLevel)?.description}</span>
             </p>
           </div>
 
@@ -410,55 +422,32 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
                 </button>
               </div>
               
-              {/* Anomalies (si détectées) */}
-              {intelligence.anomaly && (
-                <div className={`mb-3 p-3 rounded-lg border ${
-                  intelligence.anomaly.type === 'danger'
-                    ? 'bg-rose-500/10 border-rose-500/30'
-                    : 'bg-amber-500/10 border-amber-500/30'
-                }`}>
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
-                      intelligence.anomaly.type === 'danger' ? 'text-rose-400' : 'text-amber-400'
-                    }`} />
-                    <div className="flex-1">
-                      <p className={`text-xs font-medium ${
-                        intelligence.anomaly.type === 'danger' ? 'text-rose-400' : 'text-amber-400'
-                      }`}>
-                        {intelligence.anomaly.message}
-                      </p>
-                      <p className="text-[10px] text-zinc-500 mt-1">
-                        {intelligence.anomaly.suggestion}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Anomalies détectées silencieusement (pas affichées - philosophie non-anxiogène) */}
               
-              {/* Méthode et confiance (label qualitatif) */}
-              <div className="mb-3 p-2.5 bg-zinc-900/50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">
+              {/* Méthode et confiance (label qualitatif) - Premium */}
+              <div className="mb-4 p-3 bg-gradient-to-br from-zinc-800/40 to-zinc-900/40 border border-zinc-700/40 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">
                     {useIntelligentMode && recommendations.confidence >= 75 ? '✅' :
                      useIntelligentMode && recommendations.confidence >= 50 ? '⚠️' :
                      useIntelligentMode && recommendations.method.includes('composition') ? '💪' : '🔄'}
                   </span>
                   <div className="flex-1">
-                    <div className="text-xs font-medium text-zinc-300">
+                    <div className="text-sm font-semibold text-zinc-200">
                       {useIntelligentMode && recommendations.confidence >= 75 ? 'Calcul fiable' :
                        useIntelligentMode && recommendations.confidence >= 50 ? 'Calcul estimé' :
                        useIntelligentMode && recommendations.method.includes('composition') ? 'Calcul avec composition corporelle' :
                        'Calcul standard'}
                     </div>
-                    <div className="text-[10px] text-zinc-600 mt-0.5">
+                    <div className="text-xs text-zinc-500 mt-0.5">
                       {recommendations.method}
                     </div>
                   </div>
                   {useIntelligentMode && (
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                      recommendations.confidence >= 80 ? 'bg-emerald-500/20 text-emerald-400' :
-                      recommendations.confidence >= 60 ? 'bg-indigo-500/20 text-indigo-400' :
-                      'bg-zinc-700/50 text-zinc-500'
+                    <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+                      recommendations.confidence >= 80 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                      recommendations.confidence >= 60 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
+                      'bg-zinc-700/50 text-zinc-400 border border-zinc-700/50'
                     }`}>
                       {recommendations.confidence}%
                     </span>
@@ -489,35 +478,40 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
                 </div>
               )}
               
-              {/* Calories (gros chiffre centré) */}
-              <div className="text-center mb-4">
-                <p className="text-3xl font-bold text-indigo-400">
-                  {recommendations.targetCalories} <span className="text-lg text-zinc-500">kcal/jour</span>
+              {/* Calories (ÉNORME chiffre centré) - Premium */}
+              <div className="text-center mb-6 p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl">
+                <p className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                  {recommendations.targetCalories}
                 </p>
-                <p className="text-xs text-zinc-600 mt-1">
-                  TDEE: {recommendations.tdee} kcal · BMR: {recommendations.bmr} kcal
+                <p className="text-sm text-zinc-400 mt-2 font-medium">
+                  kcal/jour
+                </p>
+                <p className="text-xs text-zinc-600 mt-3 flex items-center justify-center gap-3">
+                  <span>TDEE: <span className="text-zinc-500 font-medium">{recommendations.tdee}</span></span>
+                  <span className="text-zinc-700">·</span>
+                  <span>BMR: <span className="text-zinc-500 font-medium">{recommendations.bmr}</span></span>
                 </p>
               </div>
               
-              {/* Macros (3 colonnes) */}
-              <div className="grid grid-cols-3 gap-4 text-center mb-4">
-                <div>
-                  <p className="text-xl font-semibold text-rose-400">
+              {/* Macros (3 colonnes) - Premium cards */}
+              <div className="grid grid-cols-3 gap-3 text-center mb-5">
+                <div className="p-4 bg-gradient-to-br from-rose-500/10 to-pink-500/10 border border-rose-500/20 rounded-xl">
+                  <p className="text-2xl font-bold text-rose-400">
                     {recommendations.macros.protein}g
                   </p>
-                  <p className="text-xs text-zinc-500 mt-1">Protéines</p>
+                  <p className="text-xs text-zinc-500 mt-2 font-medium">Protéines</p>
                 </div>
-                <div>
-                  <p className="text-xl font-semibold text-amber-400">
+                <div className="p-4 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl">
+                  <p className="text-2xl font-bold text-amber-400">
                     {recommendations.macros.carbs}g
                   </p>
-                  <p className="text-xs text-zinc-500 mt-1">Glucides</p>
+                  <p className="text-xs text-zinc-500 mt-2 font-medium">Glucides</p>
                 </div>
-                <div>
-                  <p className="text-xl font-semibold text-yellow-400">
+                <div className="p-4 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 rounded-xl">
+                  <p className="text-2xl font-bold text-yellow-400">
                     {recommendations.macros.fat}g
                   </p>
-                  <p className="text-xs text-zinc-500 mt-1">Lipides</p>
+                  <p className="text-xs text-zinc-500 mt-2 font-medium">Lipides</p>
                 </div>
               </div>
               
@@ -554,18 +548,18 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-zinc-900 border-t border-zinc-800 px-5 py-4 flex gap-3">
+        {/* Footer - Premium */}
+        <div className="sticky bottom-0 bg-gradient-to-t from-zinc-900 to-zinc-900/95 backdrop-blur-xl border-t border-zinc-700/50 px-6 py-5 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 rounded-lg transition-all text-sm font-medium"
+            className="flex-1 px-5 py-3 bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 rounded-xl transition-all text-sm font-semibold border border-zinc-700/50"
           >
             Annuler
           </button>
           <button
             onClick={handleSubmit}
             disabled={currentWeight === 0}
-            className="flex-1 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl transition-all text-sm font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
             Sauvegarder
           </button>

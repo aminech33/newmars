@@ -51,6 +51,7 @@ export function MealModal({
   const [type, setType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch')
   const [error, setError] = useState('')
   const [mealCount, setMealCount] = useState<MealCount>(2)
+  const [showManualMode, setShowManualMode] = useState(false)
   
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -66,7 +67,7 @@ export function MealModal({
         targetCalories,
         userGoal,
         mealCount,
-        latestWeight?.weight
+        latestWeight?.weight || 75
       )
 
       if (meals.length > 0) {
@@ -74,6 +75,7 @@ export function MealModal({
         const meal = meals[0]
         setName(meal.name)
         setSelectedFoods(meal.foods)
+        setShowManualMode(true) // Afficher le mode manuel après génération
         setError('')
       }
     } catch (err) {
@@ -99,6 +101,7 @@ export function MealModal({
       setTime(now.toTimeString().slice(0, 5))
       setType(detectMealType(now.toTimeString().slice(0, 5)))
       setError('')
+      setShowManualMode(false) // Reset au mode générateur
     }
   }, [isOpen])
 
@@ -166,155 +169,193 @@ export function MealModal({
       onClose={onClose}
       size="md"
       footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Annuler
-          </Button>
-          <Button 
-            variant="success"
-            onClick={() => handleSubmit()}
-            disabled={!name.trim() || selectedFoods.length === 0}
-          >
-            Ajouter le repas
-          </Button>
-        </>
+        showManualMode ? (
+          <>
+            <Button variant="secondary" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button 
+              variant="success"
+              onClick={() => handleSubmit()}
+              disabled={!name.trim() || selectedFoods.length === 0}
+            >
+              Ajouter le repas
+            </Button>
+          </>
+        ) : null
       }
     >
       {/* Header with icon */}
       <div className="flex items-center gap-3 mb-6 -mt-2">
-        <div className="p-2 bg-emerald-500/20 rounded-xl">
+        <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl border border-emerald-500/20">
           <Apple className="w-5 h-5 text-emerald-400" />
         </div>
-        <h2 className="text-lg font-medium text-zinc-200">
+        <h2 className="text-lg font-semibold text-zinc-100">
           Ajouter un repas
         </h2>
       </div>
 
-      {/* Bandeau poids récent + suggestion intelligente */}
-      {latestWeight && targetCalories && (
-        <div className="mb-4 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-indigo-400 mb-1">
-                📊 Poids récent : {latestWeight.weight.toFixed(1)} kg
-              </p>
-              <p className="text-xs text-zinc-500">
-                {new Date(latestWeight.date).toLocaleDateString('fr-FR', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short'
-                })} · Objectif : {Math.round(targetCalories)} kcal/jour
-              </p>
-            </div>
-          </div>
-
-          {/* Choix 1 ou 2 repas */}
-          <div className="space-y-2">
-            <p className="text-xs text-zinc-500">Répartition :</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setMealCount(1)}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  mealCount === 1
-                    ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
-                    : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
-                }`}
-              >
-                1 repas (OMAD)
-              </button>
-              <button
-                type="button"
-                onClick={() => setMealCount(2)}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  mealCount === 2
-                    ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
-                    : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
-                }`}
-              >
-                2 repas ({userGoal === 'lose' ? '40/60' : '50/50'})
-              </button>
-            </div>
-          </div>
-
-          {/* Bouton générer */}
-          <button
-            type="button"
-            onClick={handleGenerateMeals}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg transition-all text-sm font-medium"
-          >
-            <Sparkles className="w-4 h-4" />
-            Générer {mealCount === 1 ? 'mon repas' : 'mes repas'} optimal{mealCount === 2 ? 's' : ''}
-          </button>
+      {error && (
+        <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-sm text-rose-400" role="alert">
+          {error}
         </div>
       )}
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-sm text-rose-400" role="alert">
-            {error}
+      {/* MODE GÉNÉRATEUR (par défaut) */}
+      {!showManualMode && latestWeight && targetCalories && (
+        <div className="space-y-5">
+          {/* Banner premium */}
+          <div className="p-4 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex-1">
+                <p className="text-base font-semibold text-indigo-300 mb-1">
+                  📊 {latestWeight.weight.toFixed(1)} kg
+                </p>
+                <p className="text-xs text-zinc-400">
+                  Objectif : <span className="text-indigo-400 font-medium">{Math.round(targetCalories)} kcal/jour</span>
+                </p>
+              </div>
+            </div>
           </div>
-        )}
 
-        <Input
-          ref={inputRef}
-          label="Nom du repas"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Mon petit-déjeuner protéiné"
-          required
-          maxLength={100}
-          hint="Ex: Petit-déj post-training, Déjeuner léger..."
-        />
-
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-          />
-          <Input
-            label="Heure"
-            type="time"
-            value={time}
-            onChange={(e) => handleTimeChange(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-2">
-            Type de repas
-          </label>
-          <div className="grid grid-cols-4 gap-2">
-            {MEAL_TYPES.map((mealType) => (
+          {/* Choix 1 ou 2 repas - Design premium */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-zinc-300">Répartition quotidienne</p>
+            <div className="grid grid-cols-2 gap-3">
               <button
-                key={mealType.value}
                 type="button"
-                onClick={() => setType(mealType.value)}
-                className={`p-3 rounded-xl text-center transition-[background-color] duration-200 border ${
-                  type === mealType.value
-                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
-                    : 'bg-zinc-800/50 border-zinc-800/50 text-zinc-400 hover:bg-zinc-800'
+                onClick={() => setMealCount(1)}
+                className={`group relative p-4 rounded-xl text-left transition-all border-2 ${
+                  mealCount === 1
+                    ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-500/50'
+                    : 'bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700'
                 }`}
               >
-                <span className="text-lg block mb-1">{mealType.emoji}</span>
-                <span className="text-xs">{mealType.label.split('-')[0]}</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">🍽️</span>
+                  <span className={`text-sm font-semibold ${mealCount === 1 ? 'text-indigo-300' : 'text-zinc-400'}`}>
+                    1 repas
+                  </span>
+                </div>
+                <p className={`text-xs ${mealCount === 1 ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                  OMAD
+                </p>
+                <p className={`text-[10px] mt-1 ${mealCount === 1 ? 'text-indigo-400/70' : 'text-zinc-700'}`}>
+                  {Math.round(targetCalories)} kcal
+                </p>
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() => setMealCount(2)}
+                className={`group relative p-4 rounded-xl text-left transition-all border-2 ${
+                  mealCount === 2
+                    ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border-indigo-500/50'
+                    : 'bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">🍽️🍽️</span>
+                  <span className={`text-sm font-semibold ${mealCount === 2 ? 'text-indigo-300' : 'text-zinc-400'}`}>
+                    2 repas
+                  </span>
+                </div>
+                <p className={`text-xs ${mealCount === 2 ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                  {userGoal === 'lose' ? '40/60' : '50/50'}
+                </p>
+                <p className={`text-[10px] mt-1 ${mealCount === 2 ? 'text-indigo-400/70' : 'text-zinc-700'}`}>
+                  {Math.round(targetCalories * (userGoal === 'lose' ? 0.4 : 0.5))} + {Math.round(targetCalories * (userGoal === 'lose' ? 0.6 : 0.5))} kcal
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Bouton générer - ÉNORME et premium */}
+          <button
+            type="button"
+            onClick={handleGenerateMeals}
+            className="w-full group relative overflow-hidden p-5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 rounded-xl transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40"
+          >
+            <div className="relative flex items-center justify-center gap-3">
+              <Sparkles className="w-5 h-5 text-white animate-pulse" />
+              <span className="text-base font-semibold text-white">
+                Générer {mealCount === 1 ? 'mon repas' : 'mes repas'} optimal{mealCount === 2 ? 's' : ''}
+              </span>
+              <Sparkles className="w-5 h-5 text-white animate-pulse" />
+            </div>
+          </button>
+
+          {/* Lien mode manuel - Discret */}
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              onClick={() => setShowManualMode(true)}
+              className="text-xs text-zinc-500 hover:text-zinc-400 transition-colors underline decoration-dotted"
+            >
+              ou ajouter manuellement
+            </button>
           </div>
         </div>
+      )}
 
-        {/* FoodSelector - Nouveau composant */}
-        <div className="border-t border-zinc-800/50 pt-4">
-          <FoodSelector
-            selectedFoods={selectedFoods}
-            onChange={setSelectedFoods}
+      {/* MODE MANUEL */}
+      {showManualMode && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Bouton retour au générateur */}
+          {latestWeight && targetCalories && (
+            <button
+              type="button"
+              onClick={() => setShowManualMode(false)}
+              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" />
+              Retour au générateur
+            </button>
+          )}
+
+          <Input
+            ref={inputRef}
+            label="Nom du repas"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Mon petit-déjeuner protéiné"
+            required
+            maxLength={100}
+            hint="Ex: Petit-déj post-training, Déjeuner léger..."
           />
-        </div>
-      </form>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+            />
+            <Input
+              label="Heure"
+              type="time"
+              value={time}
+              onChange={(e) => handleTimeChange(e.target.value)}
+            />
+          </div>
+
+          {/* Type de repas - Auto-détecté, affiché simplement */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
+              Type détecté : {MEAL_TYPES.find(t => t.value === type)?.emoji} {MEAL_TYPES.find(t => t.value === type)?.label}
+            </label>
+          </div>
+
+          {/* FoodSelector - Nouveau composant */}
+          <div className="border-t border-zinc-800/50 pt-4">
+            <FoodSelector
+              selectedFoods={selectedFoods}
+              onChange={setSelectedFoods}
+            />
+          </div>
+        </form>
+      )}
     </Modal>
   )
 }

@@ -74,12 +74,12 @@ export function WeightModal({ isOpen, onClose, onSubmit }: WeightModalProps) {
         </>
       }
     >
-      {/* Header with icon */}
+      {/* Header with icon - Premium */}
       <div className="flex items-center gap-3 mb-6 -mt-2">
-        <div className="p-2 bg-rose-500/20 rounded-xl">
+        <div className="p-2.5 bg-gradient-to-br from-rose-500/20 to-pink-500/20 rounded-xl border border-rose-500/20">
           <Scale className="w-5 h-5 text-rose-400" />
         </div>
-        <h2 className="text-lg font-medium text-zinc-200">
+        <h2 className="text-lg font-semibold text-zinc-100">
           Ajouter un poids
         </h2>
       </div>
@@ -92,19 +92,27 @@ export function WeightModal({ isOpen, onClose, onSubmit }: WeightModalProps) {
           </div>
         )}
 
-        <Input
-          ref={inputRef}
-          label="Poids (kg)"
-          type="number"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          placeholder="75.5"
-          step="0.1"
-          min="0"
-          max="500"
-          required
-          hint="Entre 0 et 500 kg"
-        />
+        <div>
+          <Input
+            ref={inputRef}
+            label="Poids (kg)"
+            type="number"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="75.5"
+            step="0.1"
+            min="0"
+            max="500"
+            required
+            hint="Entre 0 et 500 kg"
+          />
+          {weight && parseFloat(weight) > 0 && (
+            <p className="mt-2 text-xs text-zinc-500 flex items-center gap-2">
+              <span className="text-rose-400">⚖️</span>
+              {parseFloat(weight).toFixed(1)} kg
+            </p>
+          )}
+        </div>
 
         <Input
           label="Date"
