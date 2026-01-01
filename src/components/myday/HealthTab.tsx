@@ -32,6 +32,8 @@ interface HealthTabProps {
     avgChange: number
     weeklyChange: number
   }
+  targetWeight?: number
+  predictedWeeks?: number
   
   // Handlers
   handleDeleteMeal: (id: string) => void
@@ -51,6 +53,8 @@ export function HealthTab({
   targetCalories,
   todayMacros,
   trend,
+  targetWeight,
+  predictedWeeks,
   handleDeleteMeal,
   handleDeleteWeight,
   handleDuplicateMeal
@@ -353,7 +357,13 @@ export function HealthTab({
                 {/* Graphique agrandi */}
                 <p className="text-xs text-zinc-500 mb-2.5">Évolution ({periodFilter === 'all' ? 'Tout' : periodFilter})</p>
                 <div className="h-[280px] lg:h-[320px]">
-                  <WeightChart entries={filteredWeightByPeriod} trend={trend} compact={true} />
+                  <WeightChart 
+                    entries={filteredWeightByPeriod} 
+                    trend={trend} 
+                    compact={true}
+                    targetWeight={targetWeight}
+                    predictedWeeks={predictedWeeks}
+                  />
                 </div>
               </div>
 

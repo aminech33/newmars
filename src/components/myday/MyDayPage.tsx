@@ -301,6 +301,26 @@ export function MyDayPage() {
     return userProfile.goal || 'maintain'
   }, [])
 
+  // Poids cible et prédiction pour WeightChart
+  const targetWeight = useMemo(() => {
+    const { userProfile } = useStore.getState()
+    return userProfile.targetWeight
+  }, [])
+
+  const predictedWeeks = useMemo(() => {
+    if (!targetWeight || weightEntries.length < 2) return undefined
+    
+    const latestWeight = weightEntries[weightEntries.length - 1]?.weight || 0
+    const remainingKg = Math.abs(targetWeight - latestWeight)
+    
+    // Utiliser la tendance hebdomadaire
+    const weeklyChange = Math.abs(trend.weeklyChange)
+    
+    if (weeklyChange === 0) return Infinity
+    
+    return Math.ceil(remainingKg / weeklyChange)
+  }, [targetWeight, weightEntries, trend.weeklyChange])
+
   const TABS: { id: PageTab; label: string; icon: typeof Feather }[] = [
     { id: 'journal', label: 'Journal', icon: Feather },
     { id: 'sante', label: 'Santé', icon: Heart }
@@ -399,6 +419,8 @@ export function MyDayPage() {
             targetCalories={targetCalories}
             todayMacros={todayMacros}
             trend={trend}
+            targetWeight={targetWeight}
+            predictedWeeks={predictedWeeks}
             handleDeleteMeal={handleDeleteMeal}
             handleDeleteWeight={handleDeleteWeight}
             handleDuplicateMeal={handleDuplicateMeal}
