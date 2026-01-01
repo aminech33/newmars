@@ -52,9 +52,10 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
   const [height, setHeight] = useState(userProfile.height || 175)
   const [activityLevel, setActivityLevel] = useState(userProfile.activityLevel || 'moderate')
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>('maintain')
-  const [weightChangeRate, setWeightChangeRate] = useState(0.5) // kg/semaine (0-2)
+  const [weightChangeRate, setWeightChangeRate] = useState<'moderate' | 'normal' | 'fast'>('moderate') // Simplifié : 3 options
   const [currentWeight, setCurrentWeight] = useState(0)
   const [useIntelligentMode, setUseIntelligentMode] = useState(true) // Mode intelligent par défaut
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false) // Masquer détails par défaut
   
   // Récupérer le poids actuel
   useEffect(() => {
@@ -129,7 +130,8 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
     // Calculer le déficit/surplus basé sur le rythme souhaité
     // 1 kg de graisse = 7700 kcal
     // Déficit quotidien = (kg/semaine × 7700) / 7
-    const dailyCalorieAdjustment = Math.round((weightChangeRate * 7700) / 7)
+    const weightChangeRateKg = weightChangeRate === 'moderate' ? 0.5 : weightChangeRate === 'normal' ? 0.7 : 1.0
+    const dailyCalorieAdjustment = Math.round((weightChangeRateKg * 7700) / 7)
     
     let targetCalories = tdee
     if (goal === 'lose') targetCalories = tdee - dailyCalorieAdjustment
@@ -293,43 +295,51 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
               ))}
             </div>
             
-            {/* Curseur de rythme (si perte ou gain) */}
+            {/* Rythme simplifié (3 options) */}
             {goal !== 'maintain' && (
               <div className="mt-3 p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-zinc-500">
-                    Rythme de {goal === 'lose' ? 'perte' : 'gain'}
-                  </span>
-                  <span className="text-sm font-semibold text-indigo-400">
-                    {weightChangeRate} kg/sem
-                  </span>
+                <span className="text-xs text-zinc-500 block mb-2">
+                  Rythme de {goal === 'lose' ? 'perte' : 'gain'}
+                </span>
+                
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setWeightChangeRate('moderate')}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      weightChangeRate === 'moderate'
+                        ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
+                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <div className="font-semibold">Modéré</div>
+                    <div className="text-[10px] opacity-70">0.5 kg/sem</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWeightChangeRate('normal')}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      weightChangeRate === 'normal'
+                        ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
+                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <div className="font-semibold">Normal</div>
+                    <div className="text-[10px] opacity-70">0.7 kg/sem</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWeightChangeRate('fast')}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      weightChangeRate === 'fast'
+                        ? 'bg-amber-500/30 text-amber-200 border border-amber-500/50'
+                        : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <div className="font-semibold">Rapide</div>
+                    <div className="text-[10px] opacity-70">1.0 kg/sem</div>
+                  </button>
                 </div>
-                
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.25"
-                  value={weightChangeRate}
-                  onChange={(e) => setWeightChangeRate(Number(e.target.value))}
-                  className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-500 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
-                />
-                
-                <div className="flex justify-between mt-2 text-[10px] text-zinc-600">
-                  <span>0</span>
-                  <span>0.5</span>
-                  <span>1.0</span>
-                  <span>1.5</span>
-                  <span>2.0</span>
-                </div>
-                
-                {/* Avertissement si > 1kg/sem */}
-                {weightChangeRate > 1 && (
-                  <p className="text-[10px] text-amber-400 mt-2 flex items-center gap-1">
-                    <span>⚠️</span>
-                    <span>Rythme rapide - Consultez un professionnel de santé</span>
-                  </p>
-                )}
                 
                 {/* Info déficit/surplus */}
                 {recommendations && (
