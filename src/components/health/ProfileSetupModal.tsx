@@ -70,7 +70,7 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
     if (isOpen) {
       const caloriesGoal = healthGoals.find(g => g.type === 'calories' && g.active)
       if (caloriesGoal) {
-        const bmr = calculateBMR(currentWeight, height, age, GENDER)
+        const bmr = calculateBMR(currentWeight, HEIGHT, age, GENDER)
         const tdee = calculateTDEE(bmr, activityLevel)
         
         // Déterminer l'objectif selon la différence
@@ -79,7 +79,7 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
         else setGoal('maintain')
       }
     }
-  }, [isOpen, healthGoals, currentWeight, height, activityLevel, age])
+  }, [isOpen, healthGoals, currentWeight, activityLevel, age])
   
   // Calculer les recommandations en temps réel
   const recommendations = (() => {
