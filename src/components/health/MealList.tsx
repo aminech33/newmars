@@ -25,6 +25,15 @@ const MEAL_LABELS = {
   snack: 'Collation'
 }
 
+// Détection automatique du type de repas selon l'heure
+const detectMealType = (time: string): keyof typeof MEAL_EMOJIS => {
+  const hour = parseInt(time.split(':')[0])
+  if (hour >= 6 && hour < 11) return 'breakfast'
+  if (hour >= 11 && hour < 15) return 'lunch'
+  if (hour >= 15 && hour < 18) return 'snack'
+  return 'dinner'
+}
+
 export const MealList = memo(function MealList({ entries, onDelete, onDuplicate, targetCalories = 2000 }: MealListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   
@@ -87,9 +96,11 @@ export const MealList = memo(function MealList({ entries, onDelete, onDuplicate,
                   className="group flex items-center gap-3 h-11 px-3 rounded-lg cursor-pointer bg-zinc-800/30 hover:bg-zinc-800/50 transition-all duration-150"
                   role="listitem"
                 >
-                  {/* Emoji + Time */}
-                  <span className="text-base flex-shrink-0">{MEAL_EMOJIS[meal.type]}</span>
-                  <span className="text-xs text-zinc-600 w-12 flex-shrink-0 tabular-nums">{meal.time}</span>
+                  {/* Emoji + Time + Type auto-détecté */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-base">{MEAL_EMOJIS[detectMealType(meal.time)]}</span>
+                    <span className="text-xs text-zinc-600 w-12 tabular-nums">{meal.time}</span>
+                  </div>
                   
                   {/* Nom du repas */}
                   <span className="flex-1 min-w-0 text-sm font-medium text-zinc-200 truncate">

@@ -10,6 +10,8 @@ interface WeightChartProps {
     weeklyChange: number
   }
   compact?: boolean
+  targetWeight?: number // Poids objectif pour afficher la prédiction
+  predictedWeeks?: number // Nombre de semaines estimées pour atteindre l'objectif
 }
 
 // Custom Tooltip Component
@@ -29,7 +31,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps<number, string> & { pay
   return null
 }
 
-export const WeightChart = memo(function WeightChart({ entries, trend, compact = false }: WeightChartProps) {
+export const WeightChart = memo(function WeightChart({ entries, trend, compact = false, targetWeight, predictedWeeks }: WeightChartProps) {
   const chartData = useMemo(() => {
     if (entries.length === 0) return []
     
@@ -37,7 +39,7 @@ export const WeightChart = memo(function WeightChart({ entries, trend, compact =
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(compact ? -7 : -14)
     
-    return sorted.map((entry) => ({
+    const data = sorted.map((entry) => ({
       ...entry,
       weight: entry.weight,
       formattedDate: new Date(entry.date).toLocaleDateString('fr-FR', { 
@@ -48,7 +50,48 @@ export const WeightChart = memo(function WeightChart({ entries, trend, compact =
         day: 'numeric'
       })
     }))
-  }, [entries, compact])
+    
+    // Ajouter la prédiction si disponible
+    if (targetWeight && predictedWeeks && predictedWeeks !== Infinity && predictedWeeks > 0) {
+      const lastEntry = sorted[sorted.length - 1]
+      const lastDate = new Date(lastEntry.date)
+      const predictedDate = new Date(lastDate)
+      predictedDate.setDate(predictedDate.getDate() + predictedWeeks * 7)
+      
+      data.push({
+        date: predictedDate.toISOString().split('T')[0],
+        weight: lastEntry.weight, // Point de départ de la prédiction
+        formattedDate: new Date(lastDate).toLocaleDateString('fr-FR', { 
+          day: 'numeric', 
+          month: 'short' 
+        }),
+        dateShort: new Date(lastDate).toLocaleDateString('fr-FR', { 
+          day: 'numeric'
+        }),
+        id: 'current',
+        time: '',
+        source: 'manual' as const
+      })
+      
+      data.push({
+        date: predictedDate.toISOString().split('T')[0],
+        weight: targetWeight,
+        formattedDate: predictedDate.toLocaleDateString('fr-FR', { 
+          day: 'numeric', 
+          month: 'short' 
+        }),
+        dateShort: predictedDate.toLocaleDateString('fr-FR', { 
+          day: 'numeric'
+        }),
+        id: 'prediction',
+        time: '',
+        source: 'manual' as const,
+        isPrediction: true
+      })
+    }
+    
+    return data
+  }, [entries, compact, targetWeight, predictedWeeks])
 
   if (entries.length === 0) {
     return (
@@ -158,11 +201,31 @@ export const WeightChart = memo(function WeightChart({ entries, trend, compact =
               strokeLinecap="round"
               strokeLinejoin="round"
               isAnimationActive={false}
-              dot={{ 
-                fill: '#18181b',
-                strokeWidth: 3,
-                stroke: '#f43f5e',
-                r: 5
+              dot={(props: any) => {
+                const { cx, cy, payload } = props
+                if (payload.isPrediction) {
+                  return (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={6}
+                      fill="#18181b"
+                      stroke="#10b981"
+                      strokeWidth={3}
+                      strokeDasharray="4 2"
+                    />
+                  )
+                }
+                return (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={5}
+                    fill="#18181b"
+                    stroke="#f43f5e"
+                    strokeWidth={3}
+                  />
+                )
               }}
               activeDot={{ 
                 r: 8,
@@ -171,6 +234,15 @@ export const WeightChart = memo(function WeightChart({ entries, trend, compact =
                 strokeWidth: 3
               }}
               fill="url(#colorWeight)"
+              strokeDasharray={(props: any) => {
+                // Ligne pointillée pour la prédiction
+                const dataLength = chartData.length
+                if (targetWeight && predictedWeeks && dataLength > 2) {
+                  // Les 2 derniers points sont la prédiction
+                  return props.index >= dataLength - 2 ? '5 5' : '0'
+                }
+                return '0'
+              }}
             />
           </LineChart>
         </ResponsiveContainer>

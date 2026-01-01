@@ -9,16 +9,16 @@ interface ProfileSetupModalProps {
   onClose: () => void
 }
 
-// Données personnelles fixes
+// Données personnelles fixes (hardcodées pour usage personnel)
 const BIRTH_DATE = '1997-01-23'
 const GENDER = 'male'
+const HEIGHT = 175 // cm (hardcodé, ne change pas)
 
+// Niveaux d'activité simplifiés : 5 → 3 (Cognitive Load Reduction)
 const ACTIVITY_LEVELS = [
-  { value: 'sedentary', icon: '🛋️', label: 'Sédentaire', description: 'Peu ou pas d\'exercice' },
-  { value: 'light', icon: '🚶', label: 'Léger', description: '1-3x/semaine' },
-  { value: 'moderate', icon: '🏃', label: 'Modéré', description: '3-5x/semaine' },
-  { value: 'active', icon: '🏋️', label: 'Actif', description: '6-7x/semaine' },
-  { value: 'very_active', icon: '⚡', label: 'Très actif', description: '2x/jour' }
+  { value: 'light', icon: '🚶', label: 'Léger', description: '1-2 séances/semaine', multiplier: 1.375 },
+  { value: 'moderate', icon: '🏃', label: 'Modéré', description: '3-4 séances/semaine', multiplier: 1.55 },
+  { value: 'active', icon: '🏋️', label: 'Actif', description: '5+ séances/semaine', multiplier: 1.725 }
 ] as const
 
 const GOALS = [
@@ -48,8 +48,7 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
   // Calculer l'âge automatiquement
   const age = calculateAge(BIRTH_DATE)
   
-  // État du formulaire (simplifié)
-  const [height, setHeight] = useState(userProfile.height || 175)
+  // État du formulaire (ultra-simplifié : juste activité + objectif)
   const [activityLevel, setActivityLevel] = useState(userProfile.activityLevel || 'moderate')
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>('maintain')
   const [weightChangeRate, setWeightChangeRate] = useState<'moderate' | 'normal' | 'fast'>('moderate') // Simplifié : 3 options
@@ -100,7 +99,7 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
     if (useIntelligentMode) {
       // MODE INTELLIGENT : Utiliser l'algorithme avancé
       const optimal = getOptimalCalorieTarget(
-        { height, age, gender: GENDER, activityLevel },
+        { height: HEIGHT, age, gender: GENDER, activityLevel },
         currentWeight,
         goal,
         latestWeightEntry ? {
@@ -113,14 +112,16 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
         }
       )
       
-      bmr = optimal.tdee / (activityLevel === 'sedentary' ? 1.2 : activityLevel === 'light' ? 1.375 : activityLevel === 'moderate' ? 1.55 : activityLevel === 'active' ? 1.725 : 1.9)
+      // Récupérer le multiplier depuis ACTIVITY_LEVELS
+      const activityMultiplier = ACTIVITY_LEVELS.find(a => a.value === activityLevel)?.multiplier || 1.55
+      bmr = optimal.tdee / activityMultiplier
       tdee = optimal.tdee
       method = optimal.methodLabel
       confidence = optimal.confidence
       explanation = optimal.explanation
     } else {
       // MODE MANUEL : Calcul simple
-      bmr = calculateBMR(currentWeight, height, age, GENDER)
+      bmr = calculateBMR(currentWeight, HEIGHT, age, GENDER)
       tdee = calculateTDEE(bmr, activityLevel)
       method = 'Calcul manuel (Mifflin-St Jeor)'
       confidence = 50
@@ -153,18 +154,14 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
   
   const handleSubmit = () => {
     // Validation simple
-    if (height < 100 || height > 250) {
-      useStore.getState().addToast('Taille invalide (100-250 cm)', 'error')
-      return
-    }
     if (currentWeight === 0) {
       useStore.getState().addToast('Veuillez enregistrer votre poids d\'abord', 'error')
       return
     }
     
-    // Sauvegarder le profil avec les données fixes
+    // Sauvegarder le profil avec les données fixes (hardcodées)
     setUserProfile({
-      height,
+      height: HEIGHT,
       age,
       gender: GENDER,
       activityLevel
@@ -232,42 +229,35 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
 
         {/* Content */}
         <div className="p-5 space-y-4">
-          {/* Profil */}
+          {/* Profil (simplifié : juste poids actuel) */}
           <div>
             <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
               <User className="w-4 h-4" />
               Profil
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-zinc-500 mb-1.5 block">Taille</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={height}
-                    onChange={(e) => setHeight(Number(e.target.value))}
-                    min={100}
-                    max={250}
-                    className="w-full px-3 py-2 bg-zinc-800/60 border border-zinc-700/50 rounded-lg text-zinc-200 text-sm focus:outline-none focus:border-zinc-600 focus:ring-2 focus:ring-zinc-600/20"
-                  />
-                  <span className="text-xs text-zinc-500">cm</span>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-zinc-500 mb-1.5 block">Poids actuel</label>
-                <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg">
-                  <div className="text-sm font-semibold text-zinc-200">
+            <div className="px-3 py-2.5 bg-zinc-900/50 border border-zinc-800 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-zinc-500 mb-0.5">Poids actuel</div>
+                  <div className="text-lg font-semibold text-zinc-200">
                     {currentWeight > 0 ? `${currentWeight.toFixed(1)} kg` : '—'}
                   </div>
-                  {currentWeight > 0 && weightEntries.length > 0 && (
-                    <div className="text-[10px] text-zinc-600 mt-0.5">
-                      {new Date(weightEntries[weightEntries.length - 1].date).toLocaleDateString('fr-FR', { 
-                        day: 'numeric', 
-                        month: 'short' 
-                      })}
-                    </div>
-                  )}
                 </div>
+                {currentWeight > 0 && weightEntries.length > 0 && (
+                  <div className="text-[10px] text-zinc-600">
+                    {new Date(weightEntries[weightEntries.length - 1].date).toLocaleDateString('fr-FR', { 
+                      day: 'numeric', 
+                      month: 'short' 
+                    })}
+                  </div>
+                )}
+              </div>
+              <div className="text-[10px] text-zinc-600 mt-2 flex items-center gap-3">
+                <span>Taille : {HEIGHT} cm</span>
+                <span>·</span>
+                <span>Âge : {age} ans</span>
+                <span>·</span>
+                <span>Genre : {GENDER === 'male' ? 'Homme' : 'Femme'}</span>
               </div>
             </div>
           </div>
@@ -445,35 +435,35 @@ export function ProfileSetupModal({ isOpen, onClose }: ProfileSetupModalProps) {
                 </div>
               )}
               
-              {/* Méthode et confiance avec barre de progression */}
+              {/* Méthode et confiance (label qualitatif) */}
               <div className="mb-3 p-2.5 bg-zinc-900/50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-zinc-500">Précision du calcul</span>
-                  <span className={`text-xs font-medium ${
-                    recommendations.confidence >= 80 ? 'text-emerald-400' :
-                    recommendations.confidence >= 60 ? 'text-indigo-400' :
-                    'text-zinc-400'
-                  }`}>
-                    {recommendations.confidence}%
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">
+                    {useIntelligentMode && recommendations.confidence >= 75 ? '✅' :
+                     useIntelligentMode && recommendations.confidence >= 50 ? '⚠️' :
+                     useIntelligentMode && recommendations.method.includes('composition') ? '💪' : '🔄'}
                   </span>
+                  <div className="flex-1">
+                    <div className="text-xs font-medium text-zinc-300">
+                      {useIntelligentMode && recommendations.confidence >= 75 ? 'Calcul fiable' :
+                       useIntelligentMode && recommendations.confidence >= 50 ? 'Calcul estimé' :
+                       useIntelligentMode && recommendations.method.includes('composition') ? 'Calcul avec composition corporelle' :
+                       'Calcul standard'}
+                    </div>
+                    <div className="text-[10px] text-zinc-600 mt-0.5">
+                      {recommendations.method}
+                    </div>
+                  </div>
+                  {useIntelligentMode && (
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                      recommendations.confidence >= 80 ? 'bg-emerald-500/20 text-emerald-400' :
+                      recommendations.confidence >= 60 ? 'bg-indigo-500/20 text-indigo-400' :
+                      'bg-zinc-700/50 text-zinc-500'
+                    }`}>
+                      {recommendations.confidence}%
+                    </span>
+                  )}
                 </div>
-                
-                {/* Barre de progression */}
-                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-2">
-                  <div 
-                    className={`h-full transition-all duration-500 ${
-                      recommendations.confidence >= 80 ? 'bg-emerald-500' :
-                      recommendations.confidence >= 60 ? 'bg-indigo-500' :
-                      'bg-zinc-600'
-                    }`}
-                    style={{ width: `${recommendations.confidence}%` }}
-                  />
-                </div>
-                
-                <p className="text-xs text-zinc-400">{recommendations.method}</p>
-                {recommendations.explanation && (
-                  <p className="text-[10px] text-zinc-600 mt-1">{recommendations.explanation}</p>
-                )}
               </div>
               
               {/* Suggestions actionnables */}
