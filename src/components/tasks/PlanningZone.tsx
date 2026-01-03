@@ -189,31 +189,35 @@ export function PlanningZone({
       }
     })
     
-    const MAX_TODAY = 5
-    const MAX_UPCOMING = 25
+    // Distribution optimale pour anti-procrastination
+    // Today = 10 (Phases 0-1, fondamentaux critiques)
+    // Upcoming = 15 (Phases 2-4, pratique guidée)
+    // Distant = reste (Phases 5-6, avancé + validation)
+    const MAX_TODAY = 10
+    const MAX_UPCOMING = 15
     
     let todayCount = 0
     let upcomingCount = 0
-    const totalPhases = generatedPlan.phases?.length || 1
-    const lastPhaseIndex = totalPhases - 1
     
     editableTasks.forEach((task) => {
       if (task.title.trim()) {
-        let temporalColumn: 'today' | 'upcoming' | 'distant' = 'upcoming'
+        let temporalColumn: 'today' | 'upcoming' | 'distant' = 'distant'
         let priority: 'high' | 'medium' | 'low' = 'medium'
         
-        if (task.phaseIndex === 0 && todayCount < MAX_TODAY) {
+        // Phases 0-1 → Today (fondamentaux critiques)
+        if (task.phaseIndex !== undefined && task.phaseIndex <= 1 && todayCount < MAX_TODAY) {
           temporalColumn = 'today'
           priority = 'high'
           todayCount++
-        } else if (task.phaseIndex === lastPhaseIndex) {
-          temporalColumn = 'distant'
-          priority = 'low'
-        } else if (upcomingCount < MAX_UPCOMING) {
+        }
+        // Phases 2-4 → Upcoming (pratique guidée, travail principal)
+        else if (task.phaseIndex !== undefined && task.phaseIndex >= 2 && task.phaseIndex <= 4 && upcomingCount < MAX_UPCOMING) {
           temporalColumn = 'upcoming'
-          priority = task.phaseIndex <= 1 ? 'high' : 'medium'
+          priority = task.phaseIndex === 2 ? 'high' : 'medium'
           upcomingCount++
-        } else {
+        }
+        // Phases 5-6+ → Distant (avancé + validation finale)
+        else {
           temporalColumn = 'distant'
           priority = 'low'
         }

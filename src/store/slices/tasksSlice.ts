@@ -82,7 +82,11 @@ export const createTasksSlice: StateCreator<
     const state = get()
     const visibleCount = state.getVisibleTasks().length
     const quota = state.taskQuota
-    const isVisible = visibleCount < quota
+    
+    // Bypass du quota pour projets IA avec phases
+    // Les tâches avec phaseIndex sont gérées par le système de colonnes temporelles
+    const isAIProject = task.phaseIndex !== undefined
+    const isVisible = isAIProject || visibleCount < quota
 
     const newTask = { ...task, id: generateId(), createdAt: Date.now(), isVisible }
     set((s) => ({ tasks: [...s.tasks, newTask] }))
@@ -309,26 +313,39 @@ export const createTasksSlice: StateCreator<
     if (hiddenTasks.length === 0) return
 
     const sortedHidden = [...hiddenTasks].sort((a, b) => {
+      // 1. Urgence absolue (priorité sur tout)
       if (a.priority === 'urgent' && b.priority !== 'urgent') return -1
       if (a.priority !== 'urgent' && b.priority === 'urgent') return 1
 
+      // 2. Deadlines dépassées
       const aOverdue = a.dueDate && new Date(a.dueDate) < new Date() ? 1 : 0
       const bOverdue = b.dueDate && new Date(b.dueDate) < new Date() ? 1 : 0
       if (aOverdue !== bOverdue) return bOverdue - aOverdue
 
+      // 3. Phases séquentielles (pour projets IA avec phases)
+      if (a.phaseIndex !== undefined && b.phaseIndex !== undefined) {
+        if (a.phaseIndex !== b.phaseIndex) {
+          return a.phaseIndex - b.phaseIndex // Phase 0 avant Phase 1
+        }
+      }
+
+      // 4. Deadlines proches (<3 jours)
       const now = Date.now()
       const threeDays = 3 * 24 * 60 * 60 * 1000
       const aClose = a.dueDate && (new Date(a.dueDate).getTime() - now) < threeDays ? 1 : 0
       const bClose = b.dueDate && (new Date(b.dueDate).getTime() - now) < threeDays ? 1 : 0
       if (aClose !== bClose) return bClose - aClose
 
+      // 5. Présence de deadline
       if (a.dueDate && !b.dueDate) return -1
       if (!a.dueDate && b.dueDate) return 1
 
+      // 6. Tri par deadline
       if (a.dueDate && b.dueDate) {
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
       }
 
+      // 7. Priorité générale
       const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 }
       return priorityOrder[b.priority] - priorityOrder[a.priority]
     })

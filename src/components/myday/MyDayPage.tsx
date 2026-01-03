@@ -8,10 +8,9 @@
  * - PomodoroMetricsCard : Card métriques pomodoro
  */
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { ArrowLeft, Feather, Heart, Sparkles } from 'lucide-react'
 import { useStore } from '../../store/useStore'
-import { MoodEmoji } from '../../types/journal'
 import { moodEmojiToLevel, getTodayEntry } from '../../utils/journalUtils'
 import { AddHabitModal } from '../habits/AddHabitModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
@@ -22,6 +21,8 @@ import { WeightModal } from '../health/WeightModal'
 import { MealModal } from '../health/MealModal'
 import { ProfileSetupModal } from '../health/ProfileSetupModal'
 import { UndoToast } from '../ui/UndoToast'
+import { useJournalEntry } from '../../hooks/useJournalEntry'
+import { useAutoSave } from '../../hooks/useAutoSave'
 
 // Composants extraits
 import { JournalTab } from './JournalTab'
@@ -92,25 +93,8 @@ export function MyDayPage() {
 
   const habitsStats = useHabitsStats()
 
-  // Journal states
-  const [intention, setIntention] = useState('')
-  const [mood, setMood] = useState<MoodEmoji>('🙂')
-
-  useEffect(() => {
-    if (todayEntry) {
-      setIntention(todayEntry.intention || todayEntry.mainGoal || '')
-      setMood(todayEntry.moodEmoji || '🙂')
-    }
-  }, [todayEntry?.id])
-
-  const canSave = intention.trim().length >= 10 // Minimum 10 caractères
-  const hasChanges = useMemo(() => {
-    if (!todayEntry) return intention.trim().length > 0
-    return (
-      intention !== (todayEntry.intention || todayEntry.mainGoal || '') ||
-      mood !== (todayEntry.moodEmoji || '🙂')
-    )
-  }, [intention, mood, todayEntry])
+  // Hook personnalisé pour gérer l'entrée de journal
+  const { intention, setIntention, mood, setMood, canSave, hasChanges } = useJournalEntry(todayEntry)
 
   const handleSave = useCallback(() => {
     if (!canSave) return
@@ -135,14 +119,8 @@ export function MyDayPage() {
     setIsSaving(false)
   }, [intention, mood, today, todayEntry, canSave, addJournalEntry, updateJournalEntry, addToast])
 
-  // Auto-save
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>()
-  useEffect(() => {
-    if (!hasChanges || !canSave) return
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
-    autoSaveTimerRef.current = setTimeout(() => handleSave(), 3000)
-    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current) }
-  }, [intention, mood, hasChanges, canSave, handleSave])
+  // Auto-save avec hook personnalisé
+  useAutoSave(handleSave, [intention, mood], hasChanges && canSave, 3000)
 
   const handleToggleHabit = (habitId: string) => {
     toggleHabitToday(habitId)
@@ -261,7 +239,6 @@ export function MyDayPage() {
   }, [undoData, handleAddWeight, handleAddMeal])
 
   const priorityTask = getPriorityTask()
-  const firstTask = priorityTask || tasks.filter(t => !t.completed)[0]
   const { todayCompleted } = habitsStats
 
   // Tâches accomplies aujourd'hui
@@ -498,6 +475,7 @@ export function MyDayPage() {
           message={`Entrée du ${new Date(deletedJournalEntry.date).toLocaleDateString('fr-FR')} supprimée`}
           onUndo={handleUndoJournalDelete}
           onClose={() => setShowJournalUndo(false)}
+          isVisible={showJournalUndo}
         />
       )}
     </div>

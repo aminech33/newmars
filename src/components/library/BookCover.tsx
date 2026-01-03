@@ -15,9 +15,9 @@ export const BookCover = memo(function BookCover({ book, onClick }: BookCoverPro
   const rating = book.rating || 0
 
   return (
-    <div
+    <button
       onClick={onClick}
-      className="group cursor-pointer animate-fade-in"
+      className="group cursor-pointer animate-fade-in w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 rounded-lg"
     >
       {/* Couverture */}
       <div 
@@ -25,10 +25,11 @@ export const BookCover = memo(function BookCover({ book, onClick }: BookCoverPro
           relative w-full aspect-[2/3] rounded-lg overflow-hidden
           bg-gradient-to-br ${book.coverColor}
           shadow-lg shadow-black/20
-          transition-colors duration-300
-          group-hover:shadow-2xl group-hover:shadow-black/40
-          group-hover:scale-105 group-hover:-translate-y-2
-          border border-white/10
+          transition-all duration-300
+          group-hover:shadow-2xl group-hover:shadow-amber-500/20
+          group-hover:scale-[1.03] group-hover:-translate-y-1
+          group-focus-visible:scale-[1.03] group-focus-visible:-translate-y-1
+          border border-white/10 group-hover:border-amber-500/30
         `}
       >
         {/* Image de couverture si disponible */}
@@ -134,7 +135,7 @@ export const BookCover = memo(function BookCover({ book, onClick }: BookCoverPro
         )}
 
         {/* Titre (au cas où tronqué sur couverture) */}
-        <p className="text-xs text-zinc-400 line-clamp-1 group-hover:text-zinc-300 transition-colors">
+        <p className="text-xs text-zinc-400 line-clamp-1 group-hover:text-amber-400 group-focus-visible:text-amber-400 transition-colors">
           {book.title}
         </p>
         
@@ -145,7 +146,7 @@ export const BookCover = memo(function BookCover({ book, onClick }: BookCoverPro
           </p>
         )}
       </div>
-    </div>
+    </button>
   )
 })
 

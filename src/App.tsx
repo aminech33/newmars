@@ -6,9 +6,9 @@ import { useStore } from './store/useStore'
 // Lazy load des composants lourds pour éviter les erreurs au chargement initial
 const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.HubV2 })))
 const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
-const ProjectsManagementPage = lazy(() => import('./components/tasks/ProjectsManagementPage').then(m => ({ default: m.ProjectsManagementPage })))
 const MyDayPage = lazy(() => import('./components/myday/MyDayPage').then(m => ({ default: m.MyDayPage })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
+const LibraryPage = lazy(() => import('./components/LibraryPage').then(m => ({ default: m.LibraryPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
 
 // Composants légers chargés directement
@@ -70,11 +70,10 @@ function AppContent() {
         <>
           {currentView === 'hub' && <HubV2 />}
           {currentView === 'tasks' && <TasksPage />}
-          {currentView === 'projects' && <ProjectsManagementPage onBack={() => useStore.getState().setView('hub')} />}
           {currentView === 'myday' && <MyDayPage />}
           {currentView === 'health' && <MyDayPage />}
           {currentView === 'learning' && <LearningPage />}
-          {currentView === 'library' && <LearningPage />}
+          {currentView === 'library' && <LibraryPage />}
           {currentView === 'settings' && <SettingsPage />}
         </>
       </Suspense>

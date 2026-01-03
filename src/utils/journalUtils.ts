@@ -173,3 +173,31 @@ export const formatRelativeDate = (dateStr: string): string => {
   return `Il y a ${Math.floor(diffDays / 365)} ans`
 }
 
+// Valider une entrée de journal (minimum 10 caractères)
+export const validateJournalEntry = (intention: string): boolean => {
+  return intention.trim().length >= 10
+}
+
+// Formater un mois et année en français (ex: "Janvier 2026")
+export const formatMonthYear = (date: Date): string => {
+  const monthName = date.toLocaleDateString('fr-FR', { 
+    month: 'long', 
+    year: 'numeric' 
+  })
+  return monthName.charAt(0).toUpperCase() + monthName.slice(1)
+}
+
+// Vérifier si une entrée est éditable (aujourd'hui ou hier seulement)
+export const isEntryEditable = (entryDate: string): boolean => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const entry = new Date(entryDate)
+  entry.setHours(0, 0, 0, 0)
+  
+  const diffTime = today.getTime() - entry.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  
+  // Éditable si aujourd'hui (0) ou hier (1)
+  return diffDays <= 1
+}

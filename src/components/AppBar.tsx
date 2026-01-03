@@ -16,7 +16,6 @@ import {
 
 const apps = [
   { icon: CheckSquare, label: 'Tâches', view: 'tasks', color: 'emerald', shortcut: '⌘T' },
-  { icon: FolderKanban, label: 'Projets', view: 'projects', color: 'blue', shortcut: '⌘P' },
   { icon: CalendarDays, label: 'Ma Journée', view: 'myday', color: 'violet', shortcut: '⌘J' },
   { icon: Library, label: 'Bibliothèque', view: 'library', color: 'indigo', shortcut: '⌘L' },
   { icon: Heart, label: 'Santé', view: 'health', color: 'pink', shortcut: '' },
@@ -28,7 +27,6 @@ const apps = [
 const mobileApps = [
   { icon: Home, label: 'Hub', view: 'hub', color: 'indigo' },
   { icon: CheckSquare, label: 'Tâches', view: 'tasks', color: 'emerald' },
-  { icon: FolderKanban, label: 'Projets', view: 'projects', color: 'blue' },
   { icon: CalendarDays, label: 'Journée', view: 'myday', color: 'violet' },
   { icon: Library, label: 'Livres', view: 'library', color: 'indigo' },
 ]

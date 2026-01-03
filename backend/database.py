@@ -71,6 +71,8 @@ class LearningDatabase:
                 last_practiced TEXT,
                 next_review TEXT,
                 concepts TEXT DEFAULT '{}',
+                success_by_difficulty TEXT DEFAULT '{"easy": 0.0, "medium": 0.0, "hard": 0.0}',
+                attempts_by_difficulty TEXT DEFAULT '{"easy": 0, "medium": 0, "hard": 0}',
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, topic_id)
@@ -98,6 +100,28 @@ class LearningDatabase:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mastery_user ON topic_mastery(user_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mastery_user_topic ON topic_mastery(user_id, topic_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_streaks_user ON review_streaks(user_id)")
+        
+        # Table des questions (pour question rating et auto-calibration)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS questions (
+                id TEXT PRIMARY KEY,
+                topic_id TEXT NOT NULL,
+                question_text TEXT NOT NULL,
+                target_difficulty TEXT NOT NULL,
+                actual_difficulty TEXT,
+                total_attempts INTEGER DEFAULT 0,
+                correct_attempts INTEGER DEFAULT 0,
+                avg_response_time REAL DEFAULT 0.0,
+                perceived_too_easy INTEGER DEFAULT 0,
+                perceived_just_right INTEGER DEFAULT 0,
+                perceived_too_hard INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_questions_topic ON questions(topic_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_questions_difficulty ON questions(target_difficulty, actual_difficulty)")
         
         conn.commit()
         conn.close()
@@ -237,8 +261,9 @@ class LearningDatabase:
                 INSERT OR REPLACE INTO topic_mastery (
                     user_id, topic_id, mastery_level, ease_factor, interval,
                     repetitions, success_rate, consecutive_skips, total_attempts,
-                    correct_attempts, last_practiced, next_review, concepts, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    correct_attempts, last_practiced, next_review, concepts,
+                    success_by_difficulty, attempts_by_difficulty, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 user_id,
                 topic_id,
@@ -253,6 +278,8 @@ class LearningDatabase:
                 mastery_data.get('last_practiced'),
                 mastery_data.get('next_review'),
                 json.dumps(mastery_data.get('concepts', {})),
+                json.dumps(mastery_data.get('success_by_difficulty', {"easy": 0.0, "medium": 0.0, "hard": 0.0})),
+                json.dumps(mastery_data.get('attempts_by_difficulty', {"easy": 0, "medium": 0, "hard": 0})),
                 datetime.now().isoformat()
             ))
             
@@ -290,7 +317,9 @@ class LearningDatabase:
                 'correct_attempts': row['correct_attempts'],
                 'last_practiced': row['last_practiced'],
                 'next_review': row['next_review'],
-                'concepts': json.loads(row['concepts'])
+                'concepts': json.loads(row['concepts']),
+                'success_by_difficulty': json.loads(row.get('success_by_difficulty', '{"easy": 0.0, "medium": 0.0, "hard": 0.0}')),
+                'attempts_by_difficulty': json.loads(row.get('attempts_by_difficulty', '{"easy": 0, "medium": 0, "hard": 0}'))
             }
         except Exception as e:
             logger.error(f"❌ Error getting mastery: {e}")
@@ -319,7 +348,9 @@ class LearningDatabase:
                     'correct_attempts': row['correct_attempts'],
                     'last_practiced': row['last_practiced'],
                     'next_review': row['next_review'],
-                    'concepts': json.loads(row['concepts'])
+                    'concepts': json.loads(row['concepts']),
+                    'success_by_difficulty': json.loads(row.get('success_by_difficulty', '{"easy": 0.0, "medium": 0.0, "hard": 0.0}')),
+                    'attempts_by_difficulty': json.loads(row.get('attempts_by_difficulty', '{"easy": 0, "medium": 0, "hard": 0}'))
                 }
             
             return mastery_dict
@@ -433,6 +464,216 @@ class LearningDatabase:
         except Exception as e:
             logger.error(f"❌ Error getting streak: {e}")
             return {'current_streak': 0, 'longest_streak': 0, 'total_reviews': 0}
+
+
+    # ═══════════════════════════════════════════════════════════════
+    # QUESTION RATING & AUTO-CALIBRATION
+    # ═══════════════════════════════════════════════════════════════
+    
+    def save_question_stats(self, question_id: str, topic_id: str, question_text: str, 
+                           target_difficulty: str) -> bool:
+        """Crée ou initialise une question pour le tracking"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT OR IGNORE INTO questions (
+                    id, topic_id, question_text, target_difficulty
+                ) VALUES (?, ?, ?, ?)
+            """, (question_id, topic_id, question_text, target_difficulty))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error saving question stats: {e}")
+            return False
+    
+    def update_question_stats(self, question_id: str, is_correct: bool, 
+                             response_time: int, perceived_difficulty: Optional[str] = None) -> bool:
+        """Met à jour les stats d'une question après une réponse"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            # Récupérer les stats actuelles
+            cursor.execute("SELECT * FROM questions WHERE id = ?", (question_id,))
+            row = cursor.fetchone()
+            
+            if not row:
+                conn.close()
+                return False
+            
+            total_attempts = row['total_attempts'] + 1
+            correct_attempts = row['correct_attempts'] + (1 if is_correct else 0)
+            
+            # Moyenne mobile du temps de réponse
+            current_avg = row['avg_response_time']
+            new_avg = ((current_avg * row['total_attempts']) + response_time) / total_attempts
+            
+            # Feedback de difficulté perçue
+            perceived_too_easy = row['perceived_too_easy']
+            perceived_just_right = row['perceived_just_right']
+            perceived_too_hard = row['perceived_too_hard']
+            
+            if perceived_difficulty == "too_easy":
+                perceived_too_easy += 1
+            elif perceived_difficulty == "just_right":
+                perceived_just_right += 1
+            elif perceived_difficulty == "too_hard":
+                perceived_too_hard += 1
+            
+            # Auto-calibration de la difficulté réelle
+            success_rate = correct_attempts / total_attempts
+            actual_difficulty = self._calculate_actual_difficulty(
+                success_rate, 
+                new_avg, 
+                perceived_too_easy, 
+                perceived_just_right, 
+                perceived_too_hard,
+                total_attempts
+            )
+            
+            # Mettre à jour
+            cursor.execute("""
+                UPDATE questions
+                SET total_attempts = ?, correct_attempts = ?, avg_response_time = ?,
+                    perceived_too_easy = ?, perceived_just_right = ?, perceived_too_hard = ?,
+                    actual_difficulty = ?, updated_at = ?
+                WHERE id = ?
+            """, (
+                total_attempts, correct_attempts, new_avg,
+                perceived_too_easy, perceived_just_right, perceived_too_hard,
+                actual_difficulty, datetime.now().isoformat(), question_id
+            ))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error updating question stats: {e}")
+            return False
+    
+    def _calculate_actual_difficulty(self, success_rate: float, avg_time: float,
+                                     too_easy: int, just_right: int, too_hard: int,
+                                     total_attempts: int) -> Optional[str]:
+        """Calcule la difficulté réelle basée sur les stats empiriques"""
+        
+        # Besoin d'au moins 5 tentatives pour calibrer
+        if total_attempts < 5:
+            return None
+        
+        # Score basé sur plusieurs facteurs
+        score = 0.0
+        
+        # 1. Success rate (poids: 50%)
+        if success_rate > 0.85:
+            score += 0  # Facile
+        elif success_rate > 0.65:
+            score += 0.5  # Moyen
+        else:
+            score += 1.0  # Difficile
+        
+        # 2. Temps de réponse (poids: 20%)
+        if avg_time < 30:
+            score += 0 * 0.4
+        elif avg_time < 90:
+            score += 0.5 * 0.4
+        else:
+            score += 1.0 * 0.4
+        
+        # 3. Feedback utilisateur (poids: 30%)
+        total_feedback = too_easy + just_right + too_hard
+        if total_feedback >= 3:  # Au moins 3 feedbacks
+            if too_easy > just_right and too_easy > too_hard:
+                score += 0 * 0.6
+            elif too_hard > just_right and too_hard > too_easy:
+                score += 1.0 * 0.6
+            else:
+                score += 0.5 * 0.6
+        
+        # Mapping du score à la difficulté
+        if score < 0.35:
+            return "easy"
+        elif score < 0.7:
+            return "medium"
+        else:
+            return "hard"
+    
+    def get_question_stats(self, question_id: str) -> Optional[Dict[str, Any]]:
+        """Récupère les stats d'une question"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT * FROM questions WHERE id = ?", (question_id,))
+            row = cursor.fetchone()
+            conn.close()
+            
+            if not row:
+                return None
+            
+            success_rate = row['correct_attempts'] / row['total_attempts'] if row['total_attempts'] > 0 else 0
+            
+            return {
+                'question_id': row['id'],
+                'topic_id': row['topic_id'],
+                'target_difficulty': row['target_difficulty'],
+                'actual_difficulty': row['actual_difficulty'],
+                'total_attempts': row['total_attempts'],
+                'success_rate': round(success_rate * 100, 1),
+                'avg_response_time': round(row['avg_response_time'], 1),
+                'perceived_feedback': {
+                    'too_easy': row['perceived_too_easy'],
+                    'just_right': row['perceived_just_right'],
+                    'too_hard': row['perceived_too_hard']
+                },
+                'is_miscalibrated': row['actual_difficulty'] != row['target_difficulty'] if row['actual_difficulty'] else False
+            }
+        except Exception as e:
+            logger.error(f"❌ Error getting question stats: {e}")
+            return None
+    
+    def get_miscalibrated_questions(self, topic_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Récupère les questions mal calibrées (actual != target)"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            query = """
+                SELECT * FROM questions 
+                WHERE actual_difficulty IS NOT NULL 
+                AND actual_difficulty != target_difficulty
+                AND total_attempts >= 5
+            """
+            
+            if topic_id:
+                query += " AND topic_id = ?"
+                cursor.execute(query, (topic_id,))
+            else:
+                cursor.execute(query)
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            results = []
+            for row in rows:
+                success_rate = row['correct_attempts'] / row['total_attempts'] if row['total_attempts'] > 0 else 0
+                results.append({
+                    'question_id': row['id'],
+                    'question_text': row['question_text'][:100] + '...' if len(row['question_text']) > 100 else row['question_text'],
+                    'topic_id': row['topic_id'],
+                    'target_difficulty': row['target_difficulty'],
+                    'actual_difficulty': row['actual_difficulty'],
+                    'success_rate': round(success_rate * 100, 1),
+                    'total_attempts': row['total_attempts']
+                })
+            
+            return results
+        except Exception as e:
+            logger.error(f"❌ Error getting miscalibrated questions: {e}")
+            return []
 
 
 # Import pour timedelta

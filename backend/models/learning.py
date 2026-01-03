@@ -29,6 +29,11 @@ class Question(BaseModel):
     generated_at: datetime = datetime.now()
     estimated_time: int = 60  # secondes
     tags: List[str] = []
+    
+    # Question rating (pour auto-calibration)
+    target_difficulty: Optional[str] = None  # La difficulté demandée à l'origine
+    actual_difficulty: Optional[str] = None  # La difficulté réelle basée sur les stats
+    stats: Optional[Dict[str, Any]] = None  # Stats agrégées multi-utilisateurs
 
 
 class SessionStartRequest(BaseModel):
@@ -46,6 +51,7 @@ class AnswerSubmission(BaseModel):
     user_answer: str
     time_taken: int  # secondes
     confidence: Optional[float] = None  # 0-1
+    perceived_difficulty: Optional[str] = None  # "too_easy" | "just_right" | "too_hard"
 
 
 class AdaptiveFeedback(BaseModel):
@@ -82,6 +88,18 @@ class TopicMastery(BaseModel):
     correct_attempts: int = 0
     last_practiced: Optional[datetime] = None
     next_review: Optional[datetime] = None
+    
+    # Success rate par difficulté (pour meilleure adaptation)
+    success_by_difficulty: Dict[str, float] = {
+        "easy": 0.0,
+        "medium": 0.0,
+        "hard": 0.0
+    }
+    attempts_by_difficulty: Dict[str, int] = {
+        "easy": 0,
+        "medium": 0,
+        "hard": 0
+    }
     
     # Sub-concepts tracking (granularité fine)
     concepts: Dict[str, Dict[str, Any]] = {}

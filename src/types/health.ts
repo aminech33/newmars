@@ -108,5 +108,7 @@ export interface UserProfile {
   age: number
   gender: 'male' | 'female' | 'other'
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+  goal?: 'lose' | 'maintain' | 'gain'
+  targetWeight?: number // kg
 }
 

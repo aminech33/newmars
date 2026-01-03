@@ -1,9 +1,9 @@
 /**
- * 🎓 Learning Slice - Cours et flashcards
+ * 🎓 Learning Slice - Cours et apprentissage
  */
 
 import { StateCreator } from 'zustand'
-import { Course, Message, Flashcard, Note as LearningNote } from '../../types/learning'
+import { Course, Message, Note as LearningNote } from '../../types/learning'
 
 export interface LearningSlice {
   learningCourses: Course[]
@@ -12,8 +12,6 @@ export interface LearningSlice {
   deleteLearningCourse: (id: string) => void
   addLearningMessage: (courseId: string, message: Message) => void
   deleteLearningMessage: (courseId: string, messageId: string) => void
-  addLearningFlashcard: (courseId: string, flashcard: Flashcard) => void
-  deleteLearningFlashcard: (courseId: string, flashcardId: string) => void
   addLearningNote: (courseId: string, note: LearningNote) => void
   deleteLearningNote: (courseId: string, noteId: string) => void
 }
@@ -23,7 +21,7 @@ export const createLearningSlice: StateCreator<
   [['zustand/persist', unknown]],
   [],
   LearningSlice
-> = (set, get) => ({
+> = (set) => ({
   learningCourses: [],
 
   addLearningCourse: (course) => {
@@ -55,24 +53,6 @@ export const createLearningSlice: StateCreator<
       learningCourses: s.learningCourses.map((c) =>
         c.id === courseId
           ? { ...c, messages: c.messages.filter((m) => m.id !== messageId) }
-          : c
-      )
-    }))
-  },
-
-  addLearningFlashcard: (courseId, flashcard) => {
-    set((s) => ({
-      learningCourses: s.learningCourses.map((c) =>
-        c.id === courseId ? { ...c, flashcards: [...c.flashcards, flashcard] } : c
-      )
-    }))
-  },
-
-  deleteLearningFlashcard: (courseId, flashcardId) => {
-    set((s) => ({
-      learningCourses: s.learningCourses.map((c) =>
-        c.id === courseId
-          ? { ...c, flashcards: c.flashcards.filter((f) => f.id !== flashcardId) }
           : c
       )
     }))

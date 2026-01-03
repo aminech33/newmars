@@ -28,13 +28,13 @@ interface DomainMap {
 }
 
 interface DefineProjectZoneProps {
-  onCancel: () => void
-  onPlanify: (domain: string, selectedSkills: string[]) => void
+  onClose: () => void
+  onNext: (context: { domain: string; selectedSkills: string[] }) => void
 }
 
 export function DefineProjectZone({
-  onCancel,
-  onPlanify
+  onClose,
+  onNext
 }: DefineProjectZoneProps) {
   const [domain, setDomain] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -160,7 +160,7 @@ export function DefineProjectZone({
     const selectedSkills = domainMap.levels
       .flatMap(level => level.skills.filter(s => s.selected).map(s => s.name))
     if (selectedSkills.length === 0) return
-    onPlanify(domainMap.domain, selectedSkills)
+    onNext({ domain: domainMap.domain, selectedSkills })
   }
 
   const handleReset = () => {
@@ -206,7 +206,7 @@ export function DefineProjectZone({
             )}
           </button>
           <button
-            onClick={onCancel}
+            onClick={onClose}
             className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />

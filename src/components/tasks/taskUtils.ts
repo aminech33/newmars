@@ -50,10 +50,9 @@ export interface ColumnConfig {
 }
 
 export const COLUMNS: ColumnConfig[] = [
-  { id: 'today', title: "Aujourd'hui" },
-  { id: 'inProgress', title: 'En cours' },
+  { id: 'today', title: "En cours" },
   { id: 'upcoming', title: 'À venir' },
-  { id: 'distant', title: 'Lointain' }
+  { id: 'distant', title: 'Plus tard' }
 ]
 
 // ═══════════════════════════════════════════════════════════════
@@ -77,9 +76,12 @@ export function getCurrentPhase(tasks: Task[]): number {
 
 export function categorizeTask(task: Task, allTasks: Task[]): TemporalColumn {
   if (task.completed) return 'today'
-  if (task.status === 'in-progress') return 'inProgress'
   if (task.temporalColumn) return task.temporalColumn
   
+  // Tâches en cours → today
+  if (task.status === 'in-progress') return 'today'
+  
+  // Phases bloquées → distant
   if (task.phaseIndex !== undefined) {
     const currentPhase = getCurrentPhase(allTasks)
     if (task.phaseIndex > currentPhase) {
@@ -87,8 +89,10 @@ export function categorizeTask(task: Task, allTasks: Task[]): TemporalColumn {
     }
   }
   
+  // Priorité haute/urgente → today
   if (task.isPriority || task.priority === 'urgent' || task.priority === 'high') return 'today'
   
+  // Tri par deadline
   if (task.dueDate) {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())

@@ -135,19 +135,22 @@ def calculate_mastery_change(
 def determine_difficulty(
     mastery_level: int,
     success_rate: float,
-    skip_days: int = 0
+    skip_days: int = 0,
+    success_by_difficulty: dict = None
 ) -> str:
     """
-    Détermine la difficulté adaptée
+    Détermine la difficulté adaptée (VERSION AMÉLIORÉE)
     
     Zone de Développement Proximal dynamique:
     - Toujours "juste assez difficile"
     - Baisse auto si skips (difficulty decay)
+    - Utilise success_rate par difficulté si disponible
     
     Args:
         mastery_level: Niveau de maîtrise (0-100)
-        success_rate: Taux de réussite récent (0-1)
+        success_rate: Taux de réussite récent global (0-1)
         skip_days: Jours de skip (pour decay)
+        success_by_difficulty: Dict avec success rates par difficulté {"easy": 0.9, "medium": 0.5, "hard": 0.2}
         
     Returns:
         "easy" | "medium" | "hard"
@@ -158,11 +161,34 @@ def determine_difficulty(
         decay = skip_days * settings.DIFFICULTY_DECAY_RATE
         mastery_level = max(0, mastery_level - (decay * 100))
     
-    # Détermination de la difficulté
+    # ✨ NOUVEAU: Si on a des success rates par difficulté, les utiliser
+    if success_by_difficulty and any(v > 0 for v in success_by_difficulty.values()):
+        # Stratégie: Choisir la difficulté où le success rate est entre 60-80% (ZDP optimale)
+        easy_sr = success_by_difficulty.get("easy", 0)
+        medium_sr = success_by_difficulty.get("medium", 0)
+        hard_sr = success_by_difficulty.get("hard", 0)
+        
+        # Si on réussit trop facilement à medium (>85%), passer à hard
+        if medium_sr > 0.85 and mastery_level >= 40:
+            return "hard"
+        
+        # Si on galère sur medium (<50%), rester sur easy
+        if medium_sr > 0 and medium_sr < 0.5 and easy_sr >= 0.65:
+            return "easy"
+        
+        # Si on réussit bien easy (>80%) et que mastery >= 30, essayer medium
+        if easy_sr > 0.8 and mastery_level >= 30:
+            return "medium"
+        
+        # Si on galère sur hard (<40%) mais ok sur medium (>60%), rester medium
+        if hard_sr > 0 and hard_sr < 0.4 and medium_sr > 0.6:
+            return "medium"
+    
+    # Logique classique (fallback si pas assez de données)
     if mastery_level < 30:
         return "easy"
     elif mastery_level < 60:
-        # Entre 30-60, basé sur le success rate
+        # Entre 30-60, basé sur le success rate global
         if success_rate < 0.5:
             return "easy"
         elif success_rate > 0.8:

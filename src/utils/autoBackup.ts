@@ -55,11 +55,11 @@ export function createBackup(): Backup {
       taskQuota: state.taskQuota,
       
       // Health
-      profile: state.profile,
-      weightHistory: state.weightHistory,
-      meals: state.meals,
-      exercises: state.exercises,
-      hydration: state.hydration,
+      userProfile: state.userProfile,
+      weightEntries: state.weightEntries,
+      mealEntries: state.mealEntries,
+      exerciseEntries: state.exerciseEntries,
+      hydrationEntries: state.hydrationEntries,
       healthGoals: state.healthGoals,
       
       // Journal
@@ -67,14 +67,15 @@ export function createBackup(): Backup {
       habits: state.habits,
       
       // Learning
-      courses: state.courses,
-      flashcards: state.flashcards,
-      notes: state.notes,
+      learningCourses: state.learningCourses,
+      
+      // Languages
+      languageCourses: state.languageCourses,
       
       // Library
       books: state.books,
       readingSessions: state.readingSessions,
-      readingGoals: state.readingGoals,
+      readingGoal: state.readingGoal,
       
       // UI State (optionnel)
       currentView: state.currentView,

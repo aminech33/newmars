@@ -2,7 +2,7 @@
  * 📋 TasksHeader - Header de la page Tasks avec navigation et actions
  */
 
-import { ArrowLeft, Plus, Sparkles, Timer, ListTodo, FolderKanban } from 'lucide-react'
+import { ArrowLeft, Plus, Sparkles, Timer, ListTodo } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { fontStack } from './taskUtils'
 
@@ -72,16 +72,6 @@ export function TasksHeader({
       
       <div className="flex-1" />
       
-      {/* Bouton Gestion des projets */}
-      <button
-        onClick={() => setView('projects')}
-        className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-lg text-blue-400 hover:text-blue-300 text-sm font-medium transition-all duration-150"
-        title="Gérer mes projets"
-      >
-        <FolderKanban className="w-4 h-4" />
-        <span className="hidden md:inline">Projets</span>
-      </button>
-      
       {/* Timeline de progression (si projet avec phases) */}
       {activeTab === 'tasks' && progressionStats && (
         <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 bg-zinc-800/40 rounded-lg border border-zinc-700/50">
@@ -111,10 +101,10 @@ export function TasksHeader({
             onClick={() => setPlanningStep('define')}
             disabled={planningStep !== 'none'}
             className={`h-10 px-4 ${planningStep !== 'none' ? 'text-indigo-400 bg-indigo-500/20 border-indigo-500/50' : 'text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border-indigo-500/30'} border rounded-xl transition-all duration-150 text-[15px] font-medium flex items-center gap-2 active:scale-[0.98] ${fontStack}`}
-            aria-label="Créer un projet d'apprentissage"
+            aria-label="Planifier un projet avec IA"
           >
             <Sparkles className="w-[16px] h-[16px]" />
-            <span className="hidden sm:inline">Nouveau projet</span>
+            <span className="hidden sm:inline">Planifier</span>
           </button>
           
           <button

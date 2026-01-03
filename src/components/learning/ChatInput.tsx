@@ -1,17 +1,18 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Loader2 } from 'lucide-react'
+import { Send } from 'lucide-react'
 
 interface ChatInputProps {
   onSend: (message: string) => void
-  isTyping: boolean
   disabled: boolean
   placeholder?: string
-  hasMessages?: boolean
+  includeCode?: boolean
+  showSuggestions?: boolean
+  onIncludeCodeChange?: (value: boolean) => void
+  onShowSuggestionsChange?: (value: boolean) => void
 }
 
 export const ChatInput = memo(function ChatInput({
   onSend,
-  isTyping,
   disabled,
   placeholder = 'Pose ta question...'
 }: ChatInputProps) {
@@ -36,7 +37,7 @@ export const ChatInput = memo(function ChatInput({
 
   const handleSend = useCallback(() => {
     const trimmed = message.trim()
-    if (!trimmed || isTyping || disabled) return
+    if (!trimmed || disabled) return
     
     onSend(trimmed)
     setMessage('')
@@ -45,7 +46,7 @@ export const ChatInput = memo(function ChatInput({
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
-  }, [message, isTyping, disabled, onSend])
+  }, [message, disabled, onSend])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Enter to send (without Shift)
@@ -78,18 +79,14 @@ export const ChatInput = memo(function ChatInput({
         
         <button
           onClick={handleSend}
-          disabled={!message.trim() || isTyping || disabled}
+          disabled={!message.trim() || disabled}
           className={`flex-shrink-0 h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-            message.trim() && !isTyping && !disabled
+            message.trim() && !disabled
               ? 'bg-white text-zinc-900 hover:scale-105 shadow-lg shadow-white/10'
               : 'bg-zinc-700/50 text-zinc-500'
           }`}
         >
-          {isTyping ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Send className="w-5 h-5" />
-          )}
+          <Send className="w-5 h-5" />
         </button>
       </div>
     </div>

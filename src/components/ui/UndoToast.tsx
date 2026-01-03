@@ -4,9 +4,10 @@ interface UndoToastProps {
   message: string
   onUndo: () => void
   isVisible: boolean
+  onClose?: () => void
 }
 
-export function UndoToast({ message, onUndo, isVisible }: UndoToastProps) {
+export function UndoToast({ message, onUndo, isVisible, onClose }: UndoToastProps) {
   if (!isVisible) return null
 
   return (

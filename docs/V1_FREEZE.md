@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 1er janvier 2026 (V1.7.6 - Premium Design + Prédictions 📈)  
-> **Version** : 1.7.6  
+> **Dernière mise à jour** : 3 janvier 2026 (V1.8.0 - Système de Langues 🗣️)  
+> **Version** : 1.8.0  
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -18,7 +18,7 @@
 - ✅ **Hub Revolution V1.2.4** : Smart Widgets intelligents, Insights actionnables, ProjectsMiniView
 - ✅ **4 Smart Widgets** (Wellbeing, Productivity, Streak, NextTask) - remplacent 7 anciens widgets
 - ✅ **Tests Automatisés V1.2.5** : 130 tests unitaires (106 frontend Vitest + 24 backend Pytest)
-- ✅ **Store Modulaire V1.2.5** : 6 slices indépendants (Tasks, Health, Journal, Learning, Library, UI)
+- ✅ **Store Modulaire V1.2.5** : 7 slices indépendants (Tasks, Health, Journal, Learning, Languages, Library, UI)
 - ✅ **TasksPage Refactorisée V1.2.6** : 1902→280 lignes (-85%), 6 composants extraits
 - ✅ **MyDayPage Refactorisée V1.2.7** : 864→380 lignes (-56%), 4 composants extraits
 - ✅ **LearningPage Refactorisée V1.2.8** : 934→821 lignes (-12%), 2 onglets séparés (CoursesTab, LibraryTab)
@@ -36,12 +36,13 @@
 - ✅ **Height Hardcodé V1.7.4** : 175cm constant, calculs simplifiés, moins de champs à remplir
 - ✅ **Prédictions Poids V1.7.5** : Ligne pointillée vers objectif, calcul semaines restantes, point vert cible
 - ✅ **Premium Design V1.7.6** : 3 modals redesignés (MealModal, ProfileSetupModal, WeightModal), gradients, shadows, spacing premium
+- ✅ **Système de Langues V1.8.0** : 8 langues (🇪🇸🇸🇦🇨🇳🇯🇵🇬🇧🇩🇪🇮🇹🇵🇹), IA conversationnelle adaptative, niveaux CECR A1-C2, support RTL/Pinyin/Romaji 🗣️
+- ✅ **Library Reconnectée V1.8.0** : Page dédiée, grille de livres, filtres, recherche, Google Books API
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
 - ✅ **Learning V1.2.1** : Persistence SQLite, Sparkline Stats, Streak Badges, Export Flashcards
 - ✅ **Health V1.2.2+** : Page dédiée 5 onglets, Hydratation, Profil Complet, Calculs Avancés BMR/TDEE
-- ✅ **Library Intégrée** : Google Books API, 100+ genres, Citations, Sessions lecture
 
 **Ce qui est DEHORS (et n'en a PAS BESOIN)** :
 - ❌ Dashboard dédié (remplacé par Hub Revolution V1.2.4)
@@ -57,27 +58,29 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.7.0 COMPLET** — Health Intelligence P0+P1 implémentée, Score global 9.9/10 🧠
+**Statut** : ✅ **V1.8.0 COMPLET** — Système de langues intégré, Library reconnectée, Score global 9.9/10 🗣️
 
 ---
 
-## 📊 Métriques V1.7.0
+## 📊 Métriques V1.8.0
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
-Composants React       : 102 fichiers TSX (+2 : CoursesTab, LibraryTab)
-Hooks customs          : 15 (useHealthData, useHealthIntelligence, useGlobalStats, useLearningData, etc.) ⭐ V1.7.0
-Utilitaires            : 17 (healthIntelligence, metrics, flashcardExport, etc.)
-Routes API backend     : ~16 (+ /streak endpoint)
-Algos IA               : 5 (optimisés)
+Composants React       : 110 fichiers TSX (+8 : LanguageCourseForm, LibraryPage, StorageMonitor, etc.)
+Hooks customs          : 16 (useHealthData, useHealthIntelligence, useCodeExecution, etc.) ⭐ V1.8.0
+Utilitaires            : 19 (healthIntelligence, languageLearningAI, autoBackup, etc.)
+Routes API backend     : ~18 (+ code execution, terminal WebSocket)
+Algos IA               : 6 (+ IA conversationnelle pour langues) ⭐ V1.8.0
 Smart Widgets Hub      : 4 (Wellbeing, Productivity, Streak, NextTask)
 Learning Stats Cards   : 4 (Maîtrise, Streak, Révisions, Temps)
 Health Tabs            : 5 (Overview, Nutrition, Poids, Hydratation, Profil)
+Languages supportées   : 8 (Espagnol, Arabe, Mandarin, Japonais, Anglais, Allemand, Italien, Portugais) ⭐ V1.8.0
+Niveaux CECR           : 6 (A1, A2, B1, B2, C1, C2) ⭐ V1.8.0
 Interconnexions        : 8 actives (3 originales + 5 V1.1+)
 Événements Brain       : 13 types observés (+ water:added)
 Fichiers Brain         : 7 (Observer, Analyzer, Wellbeing, Memory, types, integration, index)
 Raccourcis clavier     : 20+ (+ Ctrl+P/M/U pour Health)
-Persistence            : SQLite (3 tables) + localStorage
+Persistence            : localStorage (Zustand Persist) + Backup quotidien (7 jours) ⭐ V1.8.0
 Export formats         : 4 (Markdown, JSON, CSV, Anki)
 Aliments base données  : 168 (courants)
 Genres bibliothèque    : 100+ (Fiction, Tech, Art, etc.)
@@ -85,12 +88,14 @@ Lignes HubV2           : 83 (refactorisé V1.2.4)
 Lignes TasksPage       : 280 (refactorisé V1.2.6)
 Lignes MyDayPage       : 380 (refactorisé V1.2.7)
 Lignes LearningPage    : 821 (refactorisé V1.2.8)
+Lignes LibraryPage     : 260 (reconnectée V1.8.0) ⭐
 Lignes HealthPage      : 725 (complet)
-Lignes code frontend   : ~15,000 (TypeScript/React)
-Lignes code backend    : ~2,200 (Python + SQLite)
+Lignes code frontend   : ~16,500 (TypeScript/React)
+Lignes code backend    : ~2,400 (Python + SQLite)
 Dead code              : 0 ✅
 Dossier docs/ vide     : ✅ (nettoyé V1.2.3)
-Fichiers TS/TSX total  : 169 (+2 tabs)
+Fichiers TS/TSX total  : 177 (+8 nouveaux)
+localStorage limite    : 10 MB (usage actuel: ~1-2%) ⭐ V1.8.0
 
 NOUVEAU V1.2.5 ⭐ :
 Tests automatisés      : 130 tests (106 frontend + 24 backend)

@@ -20,13 +20,14 @@ import { createJournalSlice, JournalSlice } from './slices/journalSlice'
 import { createLearningSlice, LearningSlice } from './slices/learningSlice'
 import { createLibrarySlice, LibrarySlice } from './slices/librarySlice'
 import { createUISlice, UISlice } from './slices/uiSlice'
+import { createLanguagesSlice, LanguagesSlice } from './slices/languagesSlice'
 
 // Import types pour re-export
 import { DEMO_BOOKS } from '../types/library'
 import { Task, TaskStatus, TaskPriority } from './slices/types'
 
 // Type du store complet
-export type AppState = TasksSlice & HealthSlice & JournalSlice & LearningSlice & LibrarySlice & UISlice
+export type AppState = TasksSlice & HealthSlice & JournalSlice & LearningSlice & LibrarySlice & UISlice & LanguagesSlice
 
 // Version du store
 const STORE_VERSION = 2
@@ -44,6 +45,7 @@ export const useStore = create<AppState>()(
       ...createLearningSlice(...args),
       ...createLibrarySlice(...args),
       ...createUISlice(...args),
+      ...createLanguagesSlice(...args),
     }),
     {
       name: 'newmars-storage',
@@ -96,6 +98,9 @@ export const useStore = create<AppState>()(
         
         // Learning
         learningCourses: state.learningCourses,
+        
+        // Languages
+        languageCourses: state.languageCourses,
         
         // Library
         books: state.books,
@@ -252,7 +257,7 @@ export const selectIsQuotaFull = (state: AppState) => {
 
 // Types
 export type { TaskCategory, TaskStatus, TaskPriority, TemporalColumn, View, AccentTheme } from './slices/types'
-export type { Task, Project, SubTask, CustomCategory, Note, Toast, HistoryAction, PomodoroSession, DailyStats, ProjectStatus } from './slices/types'
+export type { Task, Project, SubTask, CustomCategory, Note, Toast, HistoryAction, PomodoroSession, DailyStats, ProjectStatus, Habit } from './slices/types'
 
 // Constants
 export { DEFAULT_CATEGORIES, PROJECT_COLORS, PROJECT_ICONS } from './slices/tasksSlice'

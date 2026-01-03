@@ -9,6 +9,7 @@ from routes.tasks import router as tasks_router
 from routes.terminal import router as terminal_router
 from routes.skills import router as skills_router
 from routes.withings import router as withings_router
+from routes.code_execution import router as code_execution_router
 
 app = FastAPI(
     title="Adaptive Learning API",
@@ -31,6 +32,7 @@ app.include_router(tasks_router, prefix="/api/tasks", tags=["Tasks"])
 app.include_router(terminal_router, prefix="/api/terminal", tags=["Terminal"])
 app.include_router(skills_router, prefix="/api/skills", tags=["Skills"])
 app.include_router(withings_router, prefix="/api/withings", tags=["Withings Integration"])
+app.include_router(code_execution_router)  # Déjà inclut son prefix
 
 
 @app.get("/")

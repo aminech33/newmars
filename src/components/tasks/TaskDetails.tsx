@@ -218,18 +218,6 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
                     ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
                 }`}
-                aria-label="Déplacer vers Aujourd'hui"
-              >
-                Aujourd'hui
-              </button>
-              <button
-                onClick={() => handleUpdate({ temporalColumn: 'inProgress' })}
-                disabled={task.temporalColumn === 'inProgress'}
-                className={`px-3 py-2 rounded-xl text-sm text-left transition-colors ${
-                  task.temporalColumn === 'inProgress'
-                    ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-                }`}
                 aria-label="Déplacer vers En cours"
               >
                 En cours
@@ -254,9 +242,9 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
                     ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
                 }`}
-                aria-label="Déplacer vers Lointain"
+                aria-label="Déplacer vers Plus tard"
               >
-                Lointain
+                Plus tard
               </button>
             </div>
           </Collapsible>

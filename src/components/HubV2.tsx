@@ -8,7 +8,7 @@ import { useStore } from '../store/useStore'
 import { motion } from 'framer-motion'
 import { useMemo, useEffect } from 'react'
 
-type View = 'tasks' | 'projects' | 'myday' | 'library' | 'learning' | 'settings'
+type View = 'tasks' | 'myday' | 'library' | 'learning' | 'settings'
 
 interface Module {
   id: View
@@ -21,10 +21,10 @@ export function HubV2() {
   const setView = useStore((state) => state.setView)
   const userName = useStore((state) => state.userName)
   const tasks = useStore((state) => state.tasks)
-  const projects = useStore((state) => state.projects)
   const journalEntries = useStore((state) => state.journalEntries)
   const books = useStore((state) => state.books)
   const learningCourses = useStore((state) => state.learningCourses)
+  const languageCourses = useStore((state) => state.languageCourses)
   
   // Utiliser le vrai nom de l'utilisateur ou un nom par défaut
   const displayName = userName || 'Amine'
@@ -50,15 +50,9 @@ export function HubV2() {
       getCount: () => tasks.filter(t => !t.completed).length
     },
     { 
-      id: 'projects', 
-      label: 'Projets', 
-      shortcut: '2',
-      getCount: () => projects.length
-    },
-    { 
       id: 'myday', 
       label: 'Ma Journée', 
-      shortcut: '3',
+      shortcut: '2',
       getCount: () => {
         const today = new Date().toISOString().split('T')[0]
         return journalEntries.some(e => e.date === today) ? 0 : 1 // 1 si non rempli
@@ -67,16 +61,16 @@ export function HubV2() {
     { 
       id: 'library', 
       label: 'Bibliothèque', 
-      shortcut: '4',
+      shortcut: '3',
       getCount: () => books.filter(b => b.status === 'reading').length
     },
     { 
       id: 'learning', 
       label: 'Apprentissage', 
-      shortcut: '5',
-      getCount: () => learningCourses?.filter(c => c.status === 'active').length || 0
+      shortcut: '4',
+      getCount: () => (learningCourses?.filter(c => c.status === 'active').length || 0) + (languageCourses?.length || 0)
     },
-  ], [tasks, projects, journalEntries, books, learningCourses])
+  ], [tasks, journalEntries, books, learningCourses, languageCourses])
 
   // Raccourcis clavier
   useEffect(() => {
@@ -86,7 +80,7 @@ export function HubV2() {
         return
       }
 
-      if (e.key >= '1' && e.key <= '5') {
+      if (e.key >= '1' && e.key <= '4') {
         e.preventDefault()
         const index = parseInt(e.key) - 1
         setView(MODULES[index].id)

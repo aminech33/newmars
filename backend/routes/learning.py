@@ -205,18 +205,21 @@ async def get_next_question(session_id: str):
             "correct_attempts": 0,
             "last_practiced": None,
             "next_review": datetime.now(),
-            "concepts": {}  # Sub-concepts tracking
+            "concepts": {},  # Sub-concepts tracking
+            "success_by_difficulty": {"easy": 0.0, "medium": 0.0, "hard": 0.0},
+            "attempts_by_difficulty": {"easy": 0, "medium": 0, "hard": 0}
         }
         # Sauvegarder en DB
         db.save_mastery(user_id, topic_id, mastery_cache[user_id][topic_id])
     
     mastery_data = mastery_cache[user_id][topic_id]
     
-    # Déterminer la difficulté avec l'algo
+    # ✨ Déterminer la difficulté avec l'algo AMÉLIORÉ (utilise success_by_difficulty)
     difficulty = determine_difficulty(
         mastery_data["mastery_level"],
         mastery_data["success_rate"],
-        skip_days=0  # Pas de skip pour demo
+        skip_days=0,  # Pas de skip pour demo
+        success_by_difficulty=mastery_data.get("success_by_difficulty")
     )
     
     # Générer la question avec ChatGPT
@@ -237,6 +240,14 @@ async def get_next_question(session_id: str):
             "difficulty": difficulty,
             "started_at": datetime.now().isoformat()
         }
+        
+        # ✨ Sauvegarder la question pour le rating system
+        db.save_question_stats(
+            question_id=question.id,
+            topic_id=topic_id,
+            question_text=question.question_text,
+            target_difficulty=difficulty
+        )
         
         # Ajouter à l'historique pour interleaving
         session["question_history"].append(topic_id)
@@ -321,6 +332,14 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
     # Pour demo, on dit que c'est correct si l'user_answer contient "correct"
     is_correct = "correct" in submission.user_answer.lower() or "oui" in submission.user_answer.lower()
     
+    # ✨ Mettre à jour les stats de la question pour auto-calibration
+    db.update_question_stats(
+        question_id=current_q.get("id", submission.question_id),
+        is_correct=is_correct,
+        response_time=submission.time_taken,
+        perceived_difficulty=submission.perceived_difficulty
+    )
+    
     # Calculer le changement de maîtrise
     mastery_change = calculate_mastery_change(
         is_correct=is_correct,
@@ -343,6 +362,33 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
     mastery_data["success_rate"] = (
         mastery_data["correct_attempts"] / mastery_data["total_attempts"]
     )
+    
+    # ✨ NOUVEAU: Mettre à jour success_rate par difficulté
+    current_difficulty = current_q["difficulty"]
+    if "success_by_difficulty" not in mastery_data:
+        mastery_data["success_by_difficulty"] = {"easy": 0.0, "medium": 0.0, "hard": 0.0}
+    if "attempts_by_difficulty" not in mastery_data:
+        mastery_data["attempts_by_difficulty"] = {"easy": 0, "medium": 0, "hard": 0}
+    
+    attempts_diff = mastery_data["attempts_by_difficulty"]
+    success_diff = mastery_data["success_by_difficulty"]
+    
+    # Incrémenter les tentatives pour cette difficulté
+    attempts_diff[current_difficulty] = attempts_diff.get(current_difficulty, 0) + 1
+    
+    # Recalculer le success_rate pour cette difficulté
+    if is_correct:
+        # Ajouter un succès
+        old_correct = success_diff[current_difficulty] * (attempts_diff[current_difficulty] - 1)
+        new_correct = old_correct + 1
+        success_diff[current_difficulty] = new_correct / attempts_diff[current_difficulty]
+    else:
+        # Pas de succès, recalculer
+        if attempts_diff[current_difficulty] > 1:
+            old_correct = success_diff[current_difficulty] * (attempts_diff[current_difficulty] - 1)
+            success_diff[current_difficulty] = old_correct / attempts_diff[current_difficulty]
+        else:
+            success_diff[current_difficulty] = 0.0
     
     # Calculer XP
     streak = session.get("streak", 0) + (1 if is_correct else 0)
@@ -541,3 +587,93 @@ async def get_user_streak(user_id: str, course_id: Optional[str] = None):
         "longest_streak": streak_info["longest_streak"],
         "total_reviews": streak_info["total_reviews"]
     }
+
+
+@router.get("/question-stats/{question_id}")
+async def get_question_statistics(question_id: str):
+    """
+    ✨ NOUVEAU: Récupère les statistiques d'une question pour voir si elle est bien calibrée
+    """
+    stats = db.get_question_stats(question_id)
+    if not stats:
+        raise HTTPException(status_code=404, detail="Question non trouvée")
+    
+    return stats
+
+
+@router.get("/miscalibrated-questions")
+async def get_miscalibrated_questions(topic_id: Optional[str] = None):
+    """
+    ✨ NOUVEAU: Liste les questions mal calibrées (actual_difficulty != target_difficulty)
+    Utile pour améliorer le prompt GPT ou régénérer ces questions
+    """
+    questions = db.get_miscalibrated_questions(topic_id)
+    
+    return {
+        "total_miscalibrated": len(questions),
+        "questions": questions,
+        "message": f"Trouvé {len(questions)} question(s) mal calibrée(s). Considérez les régénérer ou ajuster le prompt GPT."
+    }
+
+
+@router.get("/difficulty-stats/{user_id}/{topic_id}")
+async def get_difficulty_stats(user_id: str, topic_id: str):
+    """
+    ✨ NOUVEAU: Affiche les statistiques de réussite par difficulté pour un topic
+    """
+    # Charger mastery depuis cache ou DB
+    if user_id not in mastery_cache:
+        mastery_cache[user_id] = db.get_all_mastery(user_id)
+    
+    if topic_id not in mastery_cache[user_id]:
+        raise HTTPException(status_code=404, detail="Topic non trouvé pour cet utilisateur")
+    
+    mastery_data = mastery_cache[user_id][topic_id]
+    
+    return {
+        "user_id": user_id,
+        "topic_id": topic_id,
+        "mastery_level": mastery_data["mastery_level"],
+        "overall_success_rate": round(mastery_data["success_rate"] * 100, 1),
+        "success_by_difficulty": {
+            "easy": {
+                "success_rate": round(mastery_data.get("success_by_difficulty", {}).get("easy", 0) * 100, 1),
+                "attempts": mastery_data.get("attempts_by_difficulty", {}).get("easy", 0)
+            },
+            "medium": {
+                "success_rate": round(mastery_data.get("success_by_difficulty", {}).get("medium", 0) * 100, 1),
+                "attempts": mastery_data.get("attempts_by_difficulty", {}).get("medium", 0)
+            },
+            "hard": {
+                "success_rate": round(mastery_data.get("success_by_difficulty", {}).get("hard", 0) * 100, 1),
+                "attempts": mastery_data.get("attempts_by_difficulty", {}).get("hard", 0)
+            }
+        },
+        "recommendation": _get_difficulty_recommendation(mastery_data)
+    }
+
+
+def _get_difficulty_recommendation(mastery_data: Dict[str, Any]) -> str:
+    """Génère une recommandation basée sur les success rates par difficulté"""
+    success_diff = mastery_data.get("success_by_difficulty", {})
+    attempts_diff = mastery_data.get("attempts_by_difficulty", {})
+    
+    easy_sr = success_diff.get("easy", 0)
+    medium_sr = success_diff.get("medium", 0)
+    hard_sr = success_diff.get("hard", 0)
+    
+    # Au moins 3 tentatives pour recommander
+    if attempts_diff.get("easy", 0) >= 3 and easy_sr > 0.85:
+        return "✅ Prêt pour passer à MEDIUM (maîtrise easy > 85%)"
+    
+    if attempts_diff.get("medium", 0) >= 3 and medium_sr < 0.5:
+        return "⚠️ Retour à EASY recommandé (difficulté medium < 50%)"
+    
+    if attempts_diff.get("medium", 0) >= 3 and medium_sr > 0.85:
+        return "✅ Prêt pour passer à HARD (maîtrise medium > 85%)"
+    
+    if attempts_diff.get("hard", 0) >= 3 and hard_sr < 0.4:
+        return "⚠️ Retour à MEDIUM recommandé (difficulté hard < 40%)"
+    
+    return "ℹ️ Continue à pratiquer pour collecter plus de données"
+

@@ -1,11 +1,17 @@
 """
 Routes API pour la génération de plans de projet pédagogiques depuis une idée
+Avec retry automatique et gestion d'erreurs robuste
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Literal
 from services.openai_service import openai_service
 from datetime import datetime, timedelta
+import logging
+import openai
+
+# Configuration du logger
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -258,10 +264,12 @@ CHECKLIST FINALE (tout doit être vrai) :
 Génère UNIQUEMENT le JSON."""
 
     try:
-        # Appel à OpenAI GPT
+        logger.info(f"🚀 Génération plan pour: '{input_data.idea[:50]}...'")
+        
+        # Appel à OpenAI GPT avec retry automatique
         response_text = openai_service.generate_content(prompt)
         
-        print(f"🤖 Réponse GPT : {response_text[:800]}...")
+        logger.info(f"✅ Réponse GPT reçue ({len(response_text)} caractères)")
         
         # Parser la réponse
         plan_data = openai_service._parse_response(response_text)
@@ -393,23 +401,41 @@ Génère UNIQUEMENT le JSON."""
         print(f"✅ Plan validé : {len(phases)} phases, {len(all_tasks)} tâches, {validation_count} validations")
         return project_plan
         
+    except openai.RateLimitError as e:
+        logger.error(f"⚠️ Rate limit OpenAI: {e}")
+        raise HTTPException(
+            status_code=429,
+            detail="Trop de requêtes à l'API OpenAI. Réessayez dans 1 minute."
+        )
+        
+    except openai.APITimeoutError as e:
+        logger.error(f"⏱️ Timeout OpenAI: {e}")
+        raise HTTPException(
+            status_code=504,
+            detail="La génération a pris trop de temps. Simplifiez votre description et réessayez."
+        )
+        
+    except openai.APIConnectionError as e:
+        logger.error(f"🔌 Erreur connexion OpenAI: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de contacter l'API OpenAI. Vérifiez votre connexion et réessayez."
+        )
+        
     except ValueError as e:
         # Erreur de validation (plan insuffisant)
-        print(f"❌ VALIDATION ÉCHOUÉE : {str(e)}")
+        logger.warning(f"⚠️ Validation plan échouée: {e}")
         raise HTTPException(
             status_code=422,
-            detail=f"Plan de qualité insuffisante: {str(e)}. Essayez avec une description plus détaillée."
+            detail=f"Le plan généré est insuffisant : {str(e)}. Reformulez votre idée avec plus de détails et réessayez."
         )
         
     except Exception as e:
-        # Erreur technique
-        print(f"❌ ERREUR TECHNIQUE : {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        
+        # Erreur technique inattendue
+        logger.critical(f"❌ Erreur critique inattendue: {type(e).__name__}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail="Impossible de générer un plan valide. Veuillez réessayer."
+            detail="Une erreur inattendue s'est produite lors de la génération. Réessayez dans quelques instants."
         )
 
 
@@ -526,8 +552,11 @@ FORMAT JSON ATTENDU
 Génère UNIQUEMENT le JSON, sans explication."""
 
     try:
+        logger.info(f"🚀 Génération skill-based pour: '{input_data.projectTitle}'")
+        logger.info(f"   Domain: {input_data.domain}, Skills: {len(input_data.selectedSkills)}")
+        
         response_text = openai_service.generate_content(prompt)
-        print(f"🤖 Réponse GPT (skill-based) : {response_text[:500]}...")
+        logger.info(f"✅ Réponse GPT reçue (skill-based, {len(response_text)} caractères)")
         
         # Parser le JSON
         import json
@@ -584,7 +613,7 @@ Génère UNIQUEMENT le JSON, sans explication."""
         
         # Compter validations
         validation_count = sum(1 for t in all_tasks if t.isValidation)
-        print(f"✅ Plan skill-based validé : {len(phases)} phases, {len(all_tasks)} tâches, {validation_count} validations")
+        logger.info(f"✅ Plan skill-based validé: {len(phases)} phases, {len(all_tasks)} tâches, {validation_count} validations")
         
         return ProjectPlan(
             projectName=input_data.projectTitle,
@@ -594,12 +623,22 @@ Génère UNIQUEMENT le JSON, sans explication."""
             tasks=all_tasks
         )
         
+    except openai.RateLimitError:
+        logger.error("⚠️ Rate limit skill-based")
+        raise HTTPException(429, "Trop de requêtes. Réessayez dans 1 minute.")
+        
+    except openai.APITimeoutError:
+        logger.error("⏱️ Timeout skill-based")
+        raise HTTPException(504, "Génération trop longue. Simplifiez les compétences sélectionnées.")
+        
+    except openai.APIConnectionError:
+        logger.error("🔌 Erreur connexion skill-based")
+        raise HTTPException(503, "Service temporairement indisponible.")
+        
     except ValueError as e:
-        print(f"❌ VALIDATION ÉCHOUÉE : {str(e)}")
-        raise HTTPException(status_code=422, detail=str(e))
+        logger.warning(f"⚠️ Validation skill-based échouée: {e}")
+        raise HTTPException(422, str(e))
         
     except Exception as e:
-        print(f"❌ ERREUR : {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Erreur de génération")
+        logger.error(f"❌ Erreur skill-based: {type(e).__name__}: {e}", exc_info=True)
+        raise HTTPException(500, "Erreur de génération. Réessayez.")

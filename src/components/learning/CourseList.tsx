@@ -1,19 +1,14 @@
 import { memo, useState, useEffect, useRef } from 'react'
-import { Plus, Pin, Archive, MoreVertical, Trash2, Edit2, PanelLeftClose } from 'lucide-react'
-import { Course, CourseStatus } from '../../types/learning'
+import { Plus, Pin, MoreVertical, PanelLeftClose } from 'lucide-react'
+import { Course } from '../../types/learning'
 import { Tooltip } from '../ui/Tooltip'
+import { CourseMenu } from './CourseMenu'
 
 interface CourseListProps {
   courses: Course[]
   activeCourseId: string | null
-  searchQuery: string
-  filterStatus: CourseStatus | 'all'
-  sortBy: 'recent' | 'name' | 'progress' | 'streak'
   collapsed: boolean
   onSelectCourse: (courseId: string) => void
-  onSearchChange: (query: string) => void
-  onFilterChange: (status: CourseStatus | 'all') => void
-  onSortChange: (sort: 'recent' | 'name' | 'progress' | 'streak') => void
   onCreateCourse: () => void
   onEditCourse: (course: Course) => void
   onDeleteCourse: (courseId: string) => void
@@ -21,8 +16,6 @@ interface CourseListProps {
   onArchiveCourse: (courseId: string) => void
   onHideSidebar?: () => void
 }
-
-// Interface simplifiée - filtres et tri supprimés
 
 export const CourseList = memo(function CourseList({
   courses,
@@ -166,56 +159,14 @@ export const CourseList = memo(function CourseList({
                   </button>
 
                   {menuOpenId === course.id && (
-                    <div 
-                      ref={menuRef}
-                      className="absolute right-0 top-8 w-40 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-1 z-50"
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEditCourse(course)
-                          setMenuOpenId(null)
-                        }}
-                        className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                        Modifier
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onPinCourse(course.id)
-                          setMenuOpenId(null)
-                        }}
-                        className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2"
-                      >
-                        <Pin className="w-4 h-4" />
-                        {course.pinnedAt ? 'Désépingler' : 'Épingler'}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onArchiveCourse(course.id)
-                          setMenuOpenId(null)
-                        }}
-                        className="w-full px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2"
-                      >
-                        <Archive className="w-4 h-4" />
-                        Archiver
-                      </button>
-                      <div className="h-px bg-zinc-800 my-1" />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onDeleteCourse(course.id)
-                          setMenuOpenId(null)
-                        }}
-                        className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Supprimer
-                      </button>
-                    </div>
+                    <CourseMenu
+                      course={course}
+                      onEdit={onEditCourse}
+                      onPin={onPinCourse}
+                      onArchive={onArchiveCourse}
+                      onDelete={onDeleteCourse}
+                      onClose={() => setMenuOpenId(null)}
+                    />
                   )}
                 </div>
               </div>

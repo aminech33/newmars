@@ -4,7 +4,7 @@ import { Task } from '../store/useStore'
 export interface PomodoroMetrics {
   todayVolume: number // Nombre de tâches terminées aujourd'hui
   hasQualityFocus: boolean // Au moins une tâche avec ≥30min de focus continu ET clôturée
-  trend14d: 'stable' | 'en baisse' // Tendance sur 14 jours
+  trend14d: 'stable' | 'en baisse' | 'en hausse' // Tendance sur 14 jours
 }
 
 /**
@@ -84,9 +84,15 @@ export function calculatePomodoroMetrics(
     return completedDate >= sevenDaysAgoStr && completedDate <= todayStr
   }).length
   
-  // Si cette semaine a moins de tâches que la semaine dernière, tendance en baisse
-  // Tolérance de 10% pour considérer comme stable
-  const trend14d = tasksThisWeek < tasksLastWeek * 0.9 ? 'en baisse' : 'stable'
+  // Calculer la tendance avec tolérance de 10%
+  let trend14d: 'stable' | 'en baisse' | 'en hausse'
+  if (tasksThisWeek > tasksLastWeek * 1.1) {
+    trend14d = 'en hausse'
+  } else if (tasksThisWeek < tasksLastWeek * 0.9) {
+    trend14d = 'en baisse'
+  } else {
+    trend14d = 'stable'
+  }
 
   return {
     todayVolume,

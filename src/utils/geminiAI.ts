@@ -299,3 +299,175 @@ export async function generateGeminiStreamingResponse(
   })
 }
 
+/**
+ * Rich learning context for AI tutor
+ */
+export interface LearningContext {
+  // Course basics
+  courseName: string
+  courseDescription?: string
+  level: 'débutant' | 'intermédiaire' | 'avancé' | 'expert'
+  systemPrompt?: string
+  
+  // Learning progress
+  currentMastery: number // 0-100
+  totalTimeSpent: number // minutes
+  sessionsCount: number
+  
+  // Topics & goals
+  topics?: Array<{ name: string; status: 'pending' | 'in-progress' | 'completed' }>
+  progress: number // 0-100
+  
+  // Recent notes (for context)
+  recentNotes?: Array<{ title: string; content: string }>
+  
+  // Code context (if applicable)
+  codeContext?: {
+    code: string
+    language: string
+    hasErrors?: boolean
+  }
+  
+  // Terminal context (if applicable)
+  terminalContext?: {
+    recentCommands: string[]  // Last commands executed
+    recentOutput: string      // Last terminal output (max 500 chars)
+  }
+}
+
+/**
+ * Build enriched pedagogical prompt for AI tutor
+ */
+export function buildPedagogicalContext(
+  learningContext: LearningContext,
+  userMessage: string
+): string {
+  const {
+    courseName,
+    courseDescription,
+    level,
+    systemPrompt,
+    currentMastery,
+    totalTimeSpent,
+    topics,
+    progress,
+    recentNotes,
+    codeContext,
+    terminalContext
+  } = learningContext
+
+  // Base system prompt
+  let prompt = systemPrompt || `Tu es un tuteur expert en ${courseName}.`
+  
+  // Add pedagogical instructions
+  prompt += `\n\n## CONTEXTE PÉDAGOGIQUE`
+  prompt += `\n- Cours: ${courseName}`
+  if (courseDescription) prompt += `\n- Description: ${courseDescription}`
+  prompt += `\n- Niveau: ${level}`
+  prompt += `\n- Maîtrise actuelle: ${currentMastery}%`
+  prompt += `\n- Progression: ${progress}%`
+  prompt += `\n- Temps d'étude: ${Math.round(totalTimeSpent / 60)}h`
+  
+  // Add topics status
+  if (topics && topics.length > 0) {
+    prompt += `\n\n## SUJETS À COUVRIR`
+    topics.forEach(topic => {
+      const status = topic.status === 'completed' ? '✅' : topic.status === 'in-progress' ? '🔄' : '⏳'
+      prompt += `\n${status} ${topic.name}`
+    })
+  }
+  
+  // Add recent notes for context
+  if (recentNotes && recentNotes.length > 0) {
+    prompt += `\n\n## NOTES RÉCENTES (contexte)`
+    recentNotes.forEach(note => {
+      prompt += `\n- ${note.title}: ${note.content.slice(0, 100)}${note.content.length > 100 ? '...' : ''}`
+    })
+  }
+  
+  // Add code context if provided
+  if (codeContext) {
+    prompt += `\n\n## CODE DE L'ÉTUDIANT (${codeContext.language})`
+    prompt += `\n\`\`\`${codeContext.language}\n${codeContext.code}\n\`\`\``
+    if (codeContext.hasErrors) {
+      prompt += `\n⚠️ Le code contient des erreurs.`
+    }
+  }
+  
+  // Add terminal context if provided
+  if (terminalContext) {
+    prompt += `\n\n## TERMINAL (contexte)`
+    
+    if (terminalContext.recentCommands.length > 0) {
+      prompt += `\n### Commandes récentes:`
+      terminalContext.recentCommands.slice(-5).forEach(cmd => {
+        prompt += `\n$ ${cmd}`
+      })
+    }
+    
+    if (terminalContext.recentOutput) {
+      // Nettoyer les codes ANSI pour l'IA
+      const cleanOutput = terminalContext.recentOutput
+        .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI codes
+        .slice(-500) // Max 500 chars
+      
+      if (cleanOutput.trim()) {
+        prompt += `\n### Output récent:`
+        prompt += `\n\`\`\`\n${cleanOutput}\n\`\`\``
+      }
+    }
+  }
+  
+  // Pedagogical guidelines based on level and mastery
+  prompt += `\n\n## DIRECTIVES PÉDAGOGIQUES`
+  
+  if (level === 'débutant' || currentMastery < 30) {
+    prompt += `\n- Utilise un langage simple et accessible`
+    prompt += `\n- Donne des exemples concrets et visuels`
+    prompt += `\n- Décompose les concepts en petites étapes`
+    prompt += `\n- Encourage et rassure l'étudiant`
+  } else if (level === 'intermédiaire' || currentMastery < 70) {
+    prompt += `\n- Équilibre entre théorie et pratique`
+    prompt += `\n- Pose des questions pour stimuler la réflexion`
+    prompt += `\n- Introduis des challenges adaptés`
+    prompt += `\n- Fais des liens avec des concepts avancés`
+  } else {
+    prompt += `\n- Aborde des aspects avancés et des edge cases`
+    prompt += `\n- Stimule la pensée critique`
+    prompt += `\n- Propose des optimisations et best practices`
+    prompt += `\n- Encourage l'exploration autonome`
+  }
+  
+  prompt += `\n\n## APPROCHE SOCRATIQUE`
+  prompt += `\n- Quand l'étudiant pose une question, essaie de le guider avec des questions plutôt que de donner la réponse directement`
+  prompt += `\n- Vérifie sa compréhension avant de passer à un nouveau concept`
+  prompt += `\n- Si tu détectes une incompréhension, reviens aux bases`
+  prompt += `\n- Adapte ton niveau de détail selon ses réponses`
+  
+  return prompt
+}
+
+/**
+ * Enhanced streaming response with rich learning context
+ */
+export async function generateEnrichedLearningResponse(
+  learningContext: LearningContext,
+  userMessage: string,
+  conversationHistory: ConversationMessage[] = [],
+  onChunk: (chunk: string) => void
+): Promise<string> {
+  // Build pedagogical system prompt
+  const enrichedContext = buildPedagogicalContext(learningContext, userMessage)
+  
+  // Use last 10 messages for context (to avoid token limit)
+  const recentHistory = conversationHistory.slice(-10)
+  
+  // Call streaming API with enriched context
+  return generateGeminiStreamingResponse(
+    enrichedContext,
+    userMessage,
+    recentHistory,
+    onChunk
+  )
+}
+

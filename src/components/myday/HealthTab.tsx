@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react'
-import { Plus, Apple, Scale, Utensils, Activity, Settings } from 'lucide-react'
+import { Plus, Apple, Scale, Activity, Settings } from 'lucide-react'
 import { WeightChart } from '../health/WeightChart'
 import { WeightList } from '../health/WeightList'
 import { MealList } from '../health/MealList'
@@ -59,7 +59,6 @@ export function HealthTab({
   handleDeleteWeight,
   handleDuplicateMeal
 }: HealthTabProps) {
-  const [showAddMenu, setShowAddMenu] = useState(false)
   const [activeSection, setActiveSection] = useState<HealthSection>('nutrition')
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('30d')
   

@@ -30,6 +30,7 @@ export interface Message {
 
 export type CourseLevel = 'beginner' | 'intermediate' | 'advanced'
 export type CourseStatus = 'active' | 'paused' | 'completed' | 'archived'
+export type CodeEnvironment = 'none' | 'editor' | 'terminal' | 'both'
 
 export interface Course {
   id: string
@@ -39,23 +40,20 @@ export interface Course {
   color: string                // Couleur d'accent (indigo, emerald, etc.)
   level: CourseLevel
   status: CourseStatus
+  isPinned?: boolean
   
   // Lien projet (obligatoire)
   linkedProjectId: string      // ID du projet lié
   
-  // Programmation
-  isProgramming?: boolean      // Active le split view avec éditeur
-  programmingLanguage?: string // python, javascript, typescript, etc.
-  
-  // Terminal
-  isTerminal?: boolean         // Active le split view avec terminal
+  // Environnement de code
+  codeEnvironment: CodeEnvironment  // 'none' | 'editor' | 'terminal' | 'both'
+  programmingLanguage?: string      // Requis si 'editor' ou 'both'
   
   // Chat
   messages: Message[]
   systemPrompt?: string        // Contexte personnalisé pour l'IA
   
   // Contenu généré
-  flashcards: Flashcard[]
   notes: Note[]
   
   // Stats
@@ -89,34 +87,6 @@ export interface CourseTopic {
   name: string
   status: 'pending' | 'in_progress' | 'completed'
   completedAt?: number
-}
-
-// ============================================
-// FLASHCARDS
-// ============================================
-
-export interface Flashcard {
-  id: string
-  courseId: string
-  front: string                // Question
-  back: string                 // Réponse
-  hint?: string                // Indice optionnel
-  
-  // Spaced repetition (SM-2)
-  difficulty: 1 | 2 | 3 | 4 | 5
-  easeFactor: number           // 2.5 par défaut
-  interval: number             // Jours avant prochaine révision
-  repetitions: number          // Bonnes réponses consécutives
-  nextReview: string           // Date ISO YYYY-MM-DD
-  lastReview?: string
-  
-  // Stats
-  reviewCount: number
-  correctCount: number
-  
-  // Méta
-  createdAt: number
-  createdFromMessageId?: string
 }
 
 // ============================================
@@ -178,7 +148,6 @@ export interface LearningStats {
   activeCourses: number
   totalTimeSpent: number       // Minutes
   totalMessages: number
-  totalFlashcards: number
   currentStreak: number
   longestStreak: number
   weeklyActivity: number[]     // 7 derniers jours (minutes)
@@ -217,12 +186,16 @@ export interface CreateCourseData {
   icon: string
   color: string
   level: CourseLevel
-  linkedProjectId: string      // Obligatoire
+  linkedProjectId?: string      // Optionnel pour les langues
   systemPrompt?: string
   topics?: string[]
-  isProgramming?: boolean
+  codeEnvironment: CodeEnvironment
   programmingLanguage?: string
-  isTerminal?: boolean
+  metadata?: {
+    isLanguageCourse?: boolean
+    targetLanguage?: string
+    languageLevel?: string
+  }
 }
 
 export interface UpdateCourseData {

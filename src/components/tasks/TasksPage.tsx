@@ -1,19 +1,16 @@
 /**
  * 📋 TasksPage - Page principale des tâches (refactorisée)
  * 
- * Composants extraits :
- * - TaskRow : Ligne de tâche draggable
- * - TemporalColumnComponent : Colonne temporelle avec drag & drop
- * - DefineProjectZone : Zone de définition du projet
- * - PlanningZone : Zone de planification intégrée
- * - TasksHeader : Header avec navigation et actions
- * - taskUtils : Utilitaires et types partagés
+ * Architecture :
+ * - 3 colonnes temporelles (today, upcoming, distant)
+ * - Distribution optimale (10-15-24)
+ * - Drag & drop entre colonnes
  */
 
 import { useState, useEffect, useMemo } from 'react'
 import { DragDropContext, DropResult } from '@hello-pangea/dnd'
 
-import { useStore, Task, TaskCategory, type TemporalColumn } from '../../store/useStore'
+import { useStore, Task, TaskCategory, type TemporalColumn, Project } from '../../store/useStore'
 import { TaskDetails } from './TaskDetails'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { PomodoroPage } from '../pomodoro/PomodoroPage'
@@ -21,7 +18,7 @@ import { PomodoroOverlay } from '../pomodoro/PomodoroOverlay'
 
 // Composants extraits
 import { TasksHeader } from './TasksHeader'
-import { TemporalColumnComponent } from './TemporalColumnComponent'
+import { TemporalColumnWithProjects } from './TemporalColumnWithProjects'
 import { DefineProjectZone } from './DefineProjectZone'
 import { PlanningZone } from './PlanningZone'
 
@@ -40,17 +37,25 @@ import {
 } from '../../utils/taskIntelligence'
 
 // Types
-type PlanningStep = 'none' | 'define' | 'plan'
+type PlanningStep = 'none' | 'define' | 'analyzing' | 'skills' | 'plan'
 type TasksTab = 'tasks' | 'focus'
+
+interface DomainMap {
+  domain: string
+  title: string
+  levels: any[] // From DefineProjectZone
+}
 
 interface PlanningContext {
   domain: string
   selectedSkills: string[]
+  domainMap?: DomainMap
 }
 
 export function TasksPage() {
   const { 
     tasks, 
+    projects,
     addTask, 
     toggleTask, 
     deleteTask, 
@@ -72,6 +77,65 @@ export function TasksPage() {
   const [lastCurrentPhase, setLastCurrentPhase] = useState(0)
   
   // ═══════════════════════════════════════════════════════════════
+  // GESTION DE LA PLANIFICATION IA
+  // ═══════════════════════════════════════════════════════════════
+  const handleStartAnalysis = async (domain: string) => {
+    setPlanningStep('analyzing')
+    
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 45000)
+    
+    try {
+      const response = await fetch('http://localhost:8000/api/skills/generate-domain-map', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: domain.trim() }),
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.detail || `Erreur serveur (${response.status})`)
+      }
+      
+      const data = await response.json()
+      
+      if (!data || !data.levels || !Array.isArray(data.levels)) {
+        throw new Error('Réponse invalide du serveur')
+      }
+      
+      if (data.levels.length === 0) {
+        throw new Error('Aucune compétence trouvée pour ce domaine')
+      }
+      
+      // Passer à l'étape de sélection des compétences
+      setPlanningContext({
+        domain: domain.trim(),
+        selectedSkills: [],
+        domainMap: data
+      })
+      setPlanningStep('skills')
+      
+    } catch (err) {
+      clearTimeout(timeoutId)
+      
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          addToast('Timeout : l\'analyse prend trop de temps', 'error')
+        } else if (err.message.includes('Failed to fetch')) {
+          addToast('Impossible de contacter le serveur', 'error')
+        } else {
+          addToast(err.message, 'error')
+        }
+      }
+      
+      setPlanningStep('define')
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════
   // DÉTECTION DE DÉBLOCAGE - Toast quand une phase se débloque
   // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
@@ -90,6 +154,15 @@ export function TasksPage() {
     setLastCurrentPhase(currentPhase)
   }, [tasks, lastCurrentPhase, addToast])
   
+  // Sélection de tâche depuis l'extérieur
+  useEffect(() => {
+    if (selectedTaskId) {
+      const task = tasks.find(t => t.id === selectedTaskId)
+      if (task) setSelectedTask(task)
+      setSelectedTaskId(null)
+    }
+  }, [selectedTaskId, tasks, setSelectedTaskId])
+  
   // ═══════════════════════════════════════════════════════════════
   // DRAG & DROP HANDLER
   // ═══════════════════════════════════════════════════════════════
@@ -105,37 +178,78 @@ export function TasksPage() {
     updateTask(draggableId, { temporalColumn: newColumn })
   }
   
-  // Sélection de tâche depuis l'extérieur
-  useEffect(() => {
-    if (selectedTaskId) {
-      const task = tasks.find(t => t.id === selectedTaskId)
-      if (task) setSelectedTask(task)
-      setSelectedTaskId(null)
-    }
-  }, [selectedTaskId, tasks, setSelectedTaskId])
-  
   // ═══════════════════════════════════════════════════════════════
-  // ORGANISATION DES TÂCHES PAR COLONNE
+  // ORGANISATION DES TÂCHES PAR COLONNE ET PAR PROJET
   // ═══════════════════════════════════════════════════════════════
-  const tasksByColumn = useMemo(() => {
-    const result: Record<TemporalColumn, Task[]> = {
+  const tasksByColumnAndProject = useMemo(() => {
+    const result: Record<TemporalColumn, Array<{ project: Project | null, tasks: Task[] }>> = {
       today: [],
-      inProgress: [],
+      upcoming: [],
+      distant: []
+    }
+    
+    // Grouper les tâches par colonne d'abord
+    const tasksByColumn: Record<TemporalColumn, Task[]> = {
+      today: [],
       upcoming: [],
       distant: []
     }
     
     tasks.forEach(task => {
-      result[categorizeTask(task, tasks)].push(task)
+      tasksByColumn[categorizeTask(task, tasks)].push(task)
     })
     
-    // Tri intelligent basé sur Smart Score
-    Object.keys(result).forEach(key => {
-      result[key as TemporalColumn] = sortTasksForColumn(result[key as TemporalColumn])
+    // Tri intelligent basé sur Smart Score pour chaque colonne
+    Object.keys(tasksByColumn).forEach(key => {
+      tasksByColumn[key as TemporalColumn] = sortTasksForColumn(tasksByColumn[key as TemporalColumn])
+    })
+    
+    // Grouper par projet dans chaque colonne
+    Object.keys(tasksByColumn).forEach(columnKey => {
+      const column = columnKey as TemporalColumn
+      const columnTasks = tasksByColumn[column]
+      
+      // Map pour grouper les tâches par projectId
+      const tasksByProject = new Map<string | null, Task[]>()
+      
+      columnTasks.forEach(task => {
+        const projectId = task.projectId || null
+        if (!tasksByProject.has(projectId)) {
+          tasksByProject.set(projectId, [])
+        }
+        tasksByProject.get(projectId)!.push(task)
+      })
+      
+      // Trier les projets : avec projet d'abord, puis sans projet
+      const sortedProjects: Array<{ project: Project | null, tasks: Task[] }> = []
+      
+      // D'abord les projets (triés par ordre alphabétique)
+      const projectEntries = Array.from(tasksByProject.entries())
+        .filter(([projectId]) => projectId !== null)
+        .map(([projectId, tasks]) => ({
+          project: projects.find(p => p.id === projectId) || null,
+          tasks
+        }))
+        .sort((a, b) => {
+          if (!a.project || !b.project) return 0
+          return a.project.name.localeCompare(b.project.name)
+        })
+      
+      sortedProjects.push(...projectEntries)
+      
+      // Ensuite les tâches sans projet
+      if (tasksByProject.has(null)) {
+        sortedProjects.push({
+          project: null,
+          tasks: tasksByProject.get(null)!
+        })
+      }
+      
+      result[column] = sortedProjects
     })
     
     return result
-  }, [tasks])
+  }, [tasks, projects])
   
   // ═══════════════════════════════════════════════════════════════
   // RACCOURCIS CLAVIER
@@ -247,56 +361,36 @@ export function TasksPage() {
             </div>
           </div>
           
-          {/* Columns */}
+          {/* Columns avec sections par projet */}
           <DragDropContext onDragEnd={handleDragEnd}>
-            <div className="flex-1 flex overflow-hidden">
-              {COLUMNS.map((config) => {
-                // Remplacer Lointain par la zone de définition/planification si active
-                if (config.id === 'distant' && planningStep !== 'none') {
-                  return (
-                    <div key="planning" className="flex-1 min-w-0 relative">
-                      <div className="absolute left-0 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-zinc-800/50 to-transparent" />
-                      
-                      {planningStep === 'define' && (
-                        <DefineProjectZone
-                          onCancel={() => setPlanningStep('none')}
-                          onPlanify={(domain, selectedSkills) => {
-                            setPlanningContext({ domain, selectedSkills })
-                            setPlanningStep('plan')
-                          }}
-                        />
-                      )}
-                      
-                      {planningStep === 'plan' && (
-                        <PlanningZone 
-                          onProjectCreated={() => {
-                            setPlanningStep('none')
-                            setPlanningContext(null)
-                          }}
-                          onCancel={() => {
-                            setPlanningStep('none')
-                            setPlanningContext(null)
-                          }}
-                          preselectedSkills={planningContext?.selectedSkills}
-                          preselectedDomain={planningContext?.domain}
-                        />
-                      )}
-                    </div>
-                  )
-                }
-                
-                return (
-                  <TemporalColumnComponent
-                    key={config.id}
-                    config={config}
-                    tasks={tasksByColumn[config.id]}
-                    onTaskClick={setSelectedTask}
-                    onTaskToggle={toggleTask}
-                    allTasks={tasks}
-                    onFocus={setFocusTask}
-                  />
-                )
-              })}
+            <div className="flex-1 flex overflow-hidden gap-3 px-3">
+              {COLUMNS.map((config) => (
+                <TemporalColumnWithProjects
+                  key={config.id}
+                  config={config}
+                  tasksByProject={tasksByColumnAndProject[config.id]}
+                  allTasks={tasks}
+                  onTaskClick={setSelectedTask}
+                  onTaskToggle={toggleTask}
+                  onFocus={setFocusTask}
+                  planningStep={config.id === 'distant' ? planningStep : 'none'}
+                  planningContext={config.id === 'distant' ? planningContext : null}
+                  onClosePlanning={config.id === 'distant' ? () => {
+                    setPlanningStep('none')
+                    setPlanningContext(null)
+                  } : undefined}
+                  onBackPlanning={config.id === 'distant' ? () => setPlanningStep('skills') : undefined}
+                  onStartAnalysis={config.id === 'distant' ? handleStartAnalysis : undefined}
+                  onSelectSkills={config.id === 'distant' ? (skills: string[]) => {
+                    setPlanningContext({ 
+                      domain: planningContext?.domain || '', 
+                      selectedSkills: skills,
+                      domainMap: planningContext?.domainMap
+                    })
+                    setPlanningStep('plan')
+                  } : undefined}
+                />
+              ))}
             </div>
           </DragDropContext>
           

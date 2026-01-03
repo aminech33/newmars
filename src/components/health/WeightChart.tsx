@@ -69,7 +69,7 @@ export const WeightChart = memo(function WeightChart({ entries, trend, compact =
           day: 'numeric'
         }),
         id: 'current',
-        time: '',
+        createdAt: Date.now(),
         source: 'manual' as const
       })
       
@@ -84,7 +84,7 @@ export const WeightChart = memo(function WeightChart({ entries, trend, compact =
           day: 'numeric'
         }),
         id: 'prediction',
-        time: '',
+        createdAt: Date.now(),
         source: 'manual' as const,
         isPrediction: true
       })
@@ -234,15 +234,6 @@ export const WeightChart = memo(function WeightChart({ entries, trend, compact =
                 strokeWidth: 3
               }}
               fill="url(#colorWeight)"
-              strokeDasharray={(props: any) => {
-                // Ligne pointillée pour la prédiction
-                const dataLength = chartData.length
-                if (targetWeight && predictedWeeks && dataLength > 2) {
-                  // Les 2 derniers points sont la prédiction
-                  return props.index >= dataLength - 2 ? '5 5' : '0'
-                }
-                return '0'
-              }}
             />
           </LineChart>
         </ResponsiveContainer>

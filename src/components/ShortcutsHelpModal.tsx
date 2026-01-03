@@ -13,7 +13,6 @@ const shortcutGroups = [
       { keys: ['⌘', 'K'], description: 'Recherche globale' },
       { keys: ['⌘', 'H'], description: 'Retour au Hub' },
       { keys: ['⌘', 'T'], description: 'Aller aux Tâches' },
-      { keys: ['⌘', 'P'], description: 'Aller aux Projets' },
       { keys: ['⌘', 'D'], description: 'Aller au Dashboard' },
       { keys: ['⌘', 'J'], description: 'Aller au Journal' },
       { keys: ['⌘', 'L'], description: 'Aller à la Bibliothèque' },

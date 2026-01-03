@@ -1,9 +1,7 @@
-import { Course, CourseStatus } from '../../types/learning'
+import { Course } from '../../types/learning'
 import { CourseList } from './CourseList'
 import { CourseChat } from './CourseChat'
 import { EmptyState } from './EmptyState'
-
-type CourseSortBy = 'recent' | 'name' | 'progress' | 'streak'
 
 interface CoursesTabProps {
   // Courses data
@@ -12,18 +10,11 @@ interface CoursesTabProps {
   
   // UI state
   activeCourseId: string | null
-  searchQuery: string
-  filterStatus: CourseStatus | 'all'
-  sortBy: CourseSortBy
   sidebarCollapsed: boolean
   sidebarHidden: boolean
-  isTyping: boolean
   
   // Actions
   setActiveCourse: (courseId: string | null) => void
-  setSearchQuery: (query: string) => void
-  setFilterStatus: (status: CourseStatus | 'all') => void
-  setSortBy: (sort: CourseSortBy) => void
   setSidebarHidden: (hidden: boolean) => void
   onCreateCourse: () => void
   onEditCourse: (course: Course) => void
@@ -38,16 +29,9 @@ export function CoursesTab({
   filteredCourses,
   activeCourse,
   activeCourseId,
-  searchQuery,
-  filterStatus,
-  sortBy,
   sidebarCollapsed,
   sidebarHidden,
-  isTyping,
   setActiveCourse,
-  setSearchQuery,
-  setFilterStatus,
-  setSortBy,
   setSidebarHidden,
   onCreateCourse,
   onEditCourse,
@@ -64,14 +48,8 @@ export function CoursesTab({
         <CourseList
           courses={filteredCourses}
           activeCourseId={activeCourseId}
-          searchQuery={searchQuery}
-          filterStatus={filterStatus}
-          sortBy={sortBy}
           collapsed={sidebarCollapsed}
           onSelectCourse={setActiveCourse}
-          onSearchChange={setSearchQuery}
-          onFilterChange={setFilterStatus}
-          onSortChange={setSortBy}
           onCreateCourse={onCreateCourse}
           onEditCourse={onEditCourse}
           onDeleteCourse={onDeleteCourse}
@@ -86,7 +64,6 @@ export function CoursesTab({
         {activeCourse ? (
           <CourseChat
             course={activeCourse}
-            isTyping={isTyping}
             onSendMessage={onSendMessage}
             onCopyMessage={onCopyMessage}
           />

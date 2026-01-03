@@ -113,7 +113,6 @@ export interface LearningStats {
   totalCourses: number
   activeCourses: number
   completedCourses: number
-  totalFlashcards: number
   totalNotes: number
   averageProgress: number
   totalStudyTime: number
@@ -784,7 +783,6 @@ function calculateLearningStats(courses: Course[]): LearningStats {
   const activeCourses = courses.filter(c => c.status === 'active').length
   const completedCourses = courses.filter(c => c.status === 'completed').length
   
-  const totalFlashcards = courses.reduce((sum, c) => sum + (c.flashcards?.length || 0), 0)
   const totalNotes = courses.reduce((sum, c) => sum + (c.notes?.length || 0), 0)
   
   const coursesWithProgress = courses.filter(c => c.progress !== undefined)
@@ -799,7 +797,6 @@ function calculateLearningStats(courses: Course[]): LearningStats {
     totalCourses: courses.length,
     activeCourses,
     completedCourses,
-    totalFlashcards,
     totalNotes,
     averageProgress,
     totalStudyTime

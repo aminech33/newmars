@@ -17,14 +17,14 @@ export type { Widget, WidgetLayout, Habit, QuickNote, QuickLink } from '../../ty
 export type { WeightEntry, MealEntry, HealthGoal, UserProfile, ExerciseEntry, HydrationEntry } from '../../types/health'
 export type { JournalEntry } from '../../types/journal'
 export type { TaskRelation } from '../../types/taskRelation'
-export type { Course, Message, Flashcard, Note as LearningNote } from '../../types/learning'
+export type { Course, Message, Note as LearningNote } from '../../types/learning'
 export type { Book, Quote, ReadingNote, ReadingSession, ReadingGoal } from '../../types/library'
 
 // Types de base
 export type TaskCategory = string
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
-export type TemporalColumn = 'today' | 'inProgress' | 'upcoming' | 'distant'
+export type TemporalColumn = 'today' | 'upcoming' | 'distant'
 export type View = 'hub' | 'tasks' | 'projects' | 'health' | 'myday' | 'learning' | 'library' | 'settings' | 'docs' | 'documentation' | 'architecture'
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 

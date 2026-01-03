@@ -1,5 +1,7 @@
 import { memo } from 'react'
 import { Book } from '../../types/library'
+import { Star } from 'lucide-react'
+import { GenreBadge } from './components/GenreBadge'
 
 interface ListViewProps {
   books: Book[]
@@ -37,38 +39,66 @@ function BookListItem({ book, onClick }: BookListItemProps) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-4 md:px-8 py-4 md:py-5 hover:bg-zinc-950/50 transition-colors group flex items-center gap-4 md:gap-8"
+      className="w-full text-left px-4 md:px-8 py-4 md:py-5 hover:bg-zinc-950/50 transition-colors group flex items-center gap-4 md:gap-8 border-b border-zinc-900/50"
     >
       {/* Titre et auteur */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm md:text-base text-white group-hover:text-zinc-300 transition-colors line-clamp-1">
+        <div className="text-sm md:text-base text-white group-hover:text-amber-400 transition-colors line-clamp-1 font-medium">
           {book.title}
         </div>
-        <div className="text-xs md:text-sm text-zinc-600 line-clamp-1 mt-0.5 md:mt-1">
-          {book.author}
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs md:text-sm text-zinc-600 line-clamp-1">
+            {book.author}
+          </span>
+          {book.genre && (
+            <>
+              <span className="text-zinc-800 hidden sm:inline">•</span>
+              <div className="hidden sm:block">
+                <GenreBadge genreId={book.genre} size="sm" />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Métadonnées compactes */}
-      <div className="flex items-center gap-4 md:gap-8 text-xs md:text-sm text-zinc-700">
-        {/* Genre */}
-        {book.genre && (
-          <span className="hidden md:block">{book.genre}</span>
+      {/* Métadonnées */}
+      <div className="flex items-center gap-4 md:gap-6">
+        {/* Rating */}
+        {book.rating && book.rating > 0 && (
+          <div className="hidden md:flex items-center gap-0.5">
+            {Array.from({ length: book.rating }).map((_, i) => (
+              <Star key={i} className="w-3 h-3 text-amber-400 fill-amber-400" />
+            ))}
+          </div>
         )}
         
         {/* Pages */}
         {book.pages && (
-          <span>{book.pages}p</span>
+          <span className="text-xs text-zinc-600 min-w-[3rem] text-right">{book.pages}p</span>
         )}
         
         {/* Progress si en cours */}
         {book.status === 'reading' && progress > 0 && (
-          <span className="text-zinc-600">{progress}%</span>
+          <div className="flex items-center gap-2 min-w-[4rem]">
+            <div className="hidden md:block flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden w-16">
+              <div 
+                className="h-full bg-amber-500 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-xs text-amber-400 font-medium">{progress}%</span>
+          </div>
         )}
         
-        {/* Indicateur discret statut */}
-        {book.status === 'reading' && (
-          <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+        {/* Badge statut */}
+        {book.status === 'completed' && (
+          <div className="flex items-center justify-center w-6 h-6 bg-emerald-500/20 rounded-full">
+            <span className="text-emerald-400 text-xs font-bold">✓</span>
+          </div>
+        )}
+        
+        {book.status === 'reading' && !progress && (
+          <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
         )}
       </div>
     </button>
