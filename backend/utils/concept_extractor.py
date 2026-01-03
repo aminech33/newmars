@@ -202,3 +202,4 @@ def extract_language_concepts(
     logger.info(f"✅ Extracted {len(concepts)} language concepts")
     return concepts
 
+

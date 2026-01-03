@@ -33,3 +33,4 @@ export function TimeCard({ totalTimeSpent, sessionsCount }: TimeCardProps) {
   )
 }
 
+

@@ -112,6 +112,24 @@ export function LearningPage() {
       }
       
       learningData.courses.find(c => c.id === activeCourse.id)?.messages.push(aiMessage)
+      
+      // 🧠 V1.9.0: Tracking automatique de l'usage des concepts
+      // Détecte l'utilisation active de concepts pour mettre à jour leur mastery
+      try {
+        await fetch('http://localhost:8000/api/knowledge/track-usage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            course_id: activeCourse.id,
+            user_message: content,
+            code_context: codeContext?.code || null
+          })
+        })
+        console.log('✅ Concept usage tracked')
+      } catch (trackError) {
+        // Non-bloquant si erreur
+        console.warn('⚠️ Could not track concept usage:', trackError)
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
       showToast(errorMessage, 'error')

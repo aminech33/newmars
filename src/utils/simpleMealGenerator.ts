@@ -265,3 +265,4 @@ export function getMealSummary(meal: GeneratedMeal): string {
   return `${Math.round(meal.calories)} kcal · ${Math.round(meal.protein)}g P · ${Math.round(meal.carbs)}g G · ${Math.round(meal.fat)}g L`
 }
 
+

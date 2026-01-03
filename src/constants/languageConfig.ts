@@ -123,3 +123,4 @@ export function getAllLanguages(): LanguageInfo[] {
   return Object.values(LANGUAGE_CONFIG)
 }
 
+

@@ -270,3 +270,4 @@ src/components/health/MealModal.tsx (modifié)
 **Version** : V1.7.2  
 **Statut** : ✅ Implémenté (prêt à tester)
 
+

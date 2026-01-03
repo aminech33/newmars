@@ -79,3 +79,4 @@ export function NotesSection({ notes = [], onAddNote, onDeleteNote }: NotesSecti
   )
 }
 
+

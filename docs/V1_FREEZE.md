@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 3 janvier 2026 (V1.9.0 - Système de Maîtrise Intelligente 🧠)  
-> **Version** : 1.9.0  
+> **Dernière mise à jour** : 31 décembre 2024 (V1.7.0 - Health Intelligence P0+P1 🧠)  
+> **Version** : 1.7.0  
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -18,7 +18,7 @@
 - ✅ **Hub Revolution V1.2.4** : Smart Widgets intelligents, Insights actionnables, ProjectsMiniView
 - ✅ **4 Smart Widgets** (Wellbeing, Productivity, Streak, NextTask) - remplacent 7 anciens widgets
 - ✅ **Tests Automatisés V1.2.5** : 130 tests unitaires (106 frontend Vitest + 24 backend Pytest)
-- ✅ **Store Modulaire V1.2.5** : 7 slices indépendants (Tasks, Health, Journal, Learning, Languages, Library, UI)
+- ✅ **Store Modulaire V1.2.5** : 6 slices indépendants (Tasks, Health, Journal, Learning, Library, UI)
 - ✅ **TasksPage Refactorisée V1.2.6** : 1902→280 lignes (-85%), 6 composants extraits
 - ✅ **MyDayPage Refactorisée V1.2.7** : 864→380 lignes (-56%), 4 composants extraits
 - ✅ **LearningPage Refactorisée V1.2.8** : 934→821 lignes (-12%), 2 onglets séparés (CoursesTab, LibraryTab)
@@ -30,20 +30,12 @@
 - ✅ **Gestion Projets V1.6.0** : Recherche, tri, undo suppression, plein écran (10/10)
 - ✅ **Journal V1.6.0** : Prompts rotatifs, souvenirs "Il y a X ans", undo suppression, validation 10 caractères (10/10)
 - ✅ **Health Intelligence V1.7.0** : Recalcul auto TDEE (7j), détection anomalies, prédictions, suggestions actionnables 🧠
-- ✅ **Générateur Repas V1.7.1** : 1 ou 2 repas optimaux, distribution nutritionnelle intelligente, base de données aliments
-- ✅ **Meal Detection V1.7.2** : Type de repas auto-détecté selon l'heure (🌅 Petit-déj, ☀️ Déjeuner, 🌙 Dîner, 🍎 Collation)
-- ✅ **Health Algo Simplifié V1.7.3** : Toggle Intelligent/Manuel, slider 3 niveaux, anomalies silencieuses, Katch-McArdle prioritaire
-- ✅ **Height Hardcodé V1.7.4** : 175cm constant, calculs simplifiés, moins de champs à remplir
-- ✅ **Prédictions Poids V1.7.5** : Ligne pointillée vers objectif, calcul semaines restantes, point vert cible
-- ✅ **Premium Design V1.7.6** : 3 modals redesignés (MealModal, ProfileSetupModal, WeightModal), gradients, shadows, spacing premium
-- ✅ **Système de Langues V1.8.0** : 8 langues (🇪🇸🇸🇦🇨🇳🇯🇵🇬🇧🇩🇪🇮🇹🇵🇹), IA conversationnelle adaptative, niveaux CECR A1-C2, support RTL/Pinyin/Romaji 🗣️
-- ✅ **Library Reconnectée V1.8.0** : Page dédiée, grille de livres, filtres, recherche, Google Books API
-- ✅ **Système de Maîtrise Intelligente V1.9.0** : Quiz→Mastery+15%, Usage actif→+2-5%, Oubli naturel (Ebbinghaus), 6 tests 100% ✅ 🧠
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
 - ✅ **Learning V1.2.1** : Persistence SQLite, Sparkline Stats, Streak Badges, Export Flashcards
 - ✅ **Health V1.2.2+** : Page dédiée 5 onglets, Hydratation, Profil Complet, Calculs Avancés BMR/TDEE
+- ✅ **Library Intégrée** : Google Books API, 100+ genres, Citations, Sessions lecture
 
 **Ce qui est DEHORS (et n'en a PAS BESOIN)** :
 - ❌ Dashboard dédié (remplacé par Hub Revolution V1.2.4)
@@ -59,30 +51,27 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.9.0 COMPLET** — Système de maîtrise intelligente, Score global 10/10 🧠
+**Statut** : ✅ **V1.7.0 COMPLET** — Health Intelligence P0+P1 implémentée, Score global 9.9/10 🧠
 
 ---
 
-## 📊 Métriques V1.9.0
+## 📊 Métriques V1.7.0
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
-Composants React       : 110 fichiers TSX (+8 : LanguageCourseForm, LibraryPage, StorageMonitor, etc.)
-Hooks customs          : 16 (useHealthData, useHealthIntelligence, useCodeExecution, etc.) ⭐ V1.8.0
-Utilitaires            : 20 (healthIntelligence, languageLearningAI, mastery_decay, etc.) ⭐ V1.9.0
-Routes API backend     : ~21 (+ track-usage, apply-decay, review-needed) ⭐ V1.9.0
-Algos IA               : 6 (+ IA conversationnelle pour langues) ⭐ V1.8.0
-Algos Apprentissage    : 7 (+ Mastery Decay Ebbinghaus) ⭐ V1.9.0
+Composants React       : 102 fichiers TSX (+2 : CoursesTab, LibraryTab)
+Hooks customs          : 15 (useHealthData, useHealthIntelligence, useGlobalStats, useLearningData, etc.) ⭐ V1.7.0
+Utilitaires            : 17 (healthIntelligence, metrics, flashcardExport, etc.)
+Routes API backend     : ~16 (+ /streak endpoint)
+Algos IA               : 5 (optimisés)
 Smart Widgets Hub      : 4 (Wellbeing, Productivity, Streak, NextTask)
 Learning Stats Cards   : 4 (Maîtrise, Streak, Révisions, Temps)
 Health Tabs            : 5 (Overview, Nutrition, Poids, Hydratation, Profil)
-Languages supportées   : 8 (Espagnol, Arabe, Mandarin, Japonais, Anglais, Allemand, Italien, Portugais) ⭐ V1.8.0
-Niveaux CECR           : 6 (A1, A2, B1, B2, C1, C2) ⭐ V1.8.0
 Interconnexions        : 8 actives (3 originales + 5 V1.1+)
 Événements Brain       : 13 types observés (+ water:added)
 Fichiers Brain         : 7 (Observer, Analyzer, Wellbeing, Memory, types, integration, index)
 Raccourcis clavier     : 20+ (+ Ctrl+P/M/U pour Health)
-Persistence            : localStorage (Zustand Persist) + Backup quotidien (7 jours) + SQLite (Knowledge Base) ⭐ V1.9.0
+Persistence            : SQLite (3 tables) + localStorage
 Export formats         : 4 (Markdown, JSON, CSV, Anki)
 Aliments base données  : 168 (courants)
 Genres bibliothèque    : 100+ (Fiction, Tech, Art, etc.)
@@ -90,16 +79,12 @@ Lignes HubV2           : 83 (refactorisé V1.2.4)
 Lignes TasksPage       : 280 (refactorisé V1.2.6)
 Lignes MyDayPage       : 380 (refactorisé V1.2.7)
 Lignes LearningPage    : 821 (refactorisé V1.2.8)
-Lignes LibraryPage     : 260 (reconnectée V1.8.0) ⭐
 Lignes HealthPage      : 725 (complet)
-Lignes code frontend   : ~16,500 (TypeScript/React)
-Lignes code backend    : ~2,800 (Python + SQLite) ⭐ V1.9.0
+Lignes code frontend   : ~15,000 (TypeScript/React)
+Lignes code backend    : ~2,200 (Python + SQLite)
 Dead code              : 0 ✅
 Dossier docs/ vide     : ✅ (nettoyé V1.2.3)
-Fichiers TS/TSX total  : 177 (+8 nouveaux)
-localStorage limite    : 10 MB (usage actuel: ~1-2%) ⭐ V1.8.0
-Tests unitaires        : 136 (106 frontend Vitest + 24 backend Pytest + 6 mastery decay) ⭐ V1.9.0
-Taux de réussite tests : 100% (136/136 passés) ⭐ V1.9.0
+Fichiers TS/TSX total  : 169 (+2 tabs)
 
 NOUVEAU V1.2.5 ⭐ :
 Tests automatisés      : 130 tests (106 frontend + 24 backend)
@@ -3491,330 +3476,6 @@ src/components/tasks/TemporalColumnComponent.tsx (+ARIA)
 
 ---
 
-## 📦 V1.7.1-V1.7.6 — GÉNÉRATEUR REPAS + PREMIUM DESIGN (1er janvier 2026)
-
-### **🎯 Objectif**
-Finaliser le module Santé avec génération intelligente de repas et design premium aligné avec la philosophie de l'app.
-
----
-
-### **🍽️ V1.7.1 — Générateur de Repas Optimal**
-
-**Fichier créé** : `src/utils/simpleMealGenerator.ts` (150 lignes)
-
-**Fonctionnalités** :
-```typescript
-generateOptimalMeals(
-  targetCalories: number,
-  userGoal: 'lose' | 'maintain' | 'gain',
-  numMeals: 1 | 2,
-  currentWeight: number
-): GeneratedMeal[]
-```
-
-**Caractéristiques** :
-- ✅ **1 repas (OMAD)** : Toutes les calories en une fois
-- ✅ **2 repas** : Répartition 40/60 (perte) ou 50/50 (maintien/gain)
-- ✅ **Distribution macro intelligente** :
-  - Perte : 40% protéines, 30% glucides, 30% lipides
-  - Maintien : 30% protéines, 40% glucides, 30% lipides
-  - Gain : 30% protéines, 45% glucides, 25% lipides
-- ✅ **Sélection automatique** : Protéines + Glucides + Légumes + Lipides
-- ✅ **Portions adaptées** : Basées sur le poids actuel de l'utilisateur
-- ✅ **Base de données aliments** : FOOD_DATABASE complète
-
-**Impact** :
-- Génération repas en 1 clic
-- Réduction charge cognitive
-- Nutrition optimale garantie
-
----
-
-### **🕐 V1.7.2 — Détection Automatique Type de Repas**
-
-**Fichier modifié** : `src/components/health/MealList.tsx`
-
-**Fonction ajoutée** :
-```typescript
-detectMealType(time: string): 'breakfast' | 'lunch' | 'dinner' | 'snack'
-```
-
-**Logique** :
-- 🌅 **Petit-déjeuner** : 05:00 - 10:59
-- ☀️ **Déjeuner** : 11:00 - 15:59
-- 🌙 **Dîner** : 16:00 - 21:59
-- 🍎 **Collation** : 22:00 - 04:59
-
-**Impact** :
-- Pas besoin de sélectionner manuellement
-- Emoji et label affichés automatiquement
-- UX fluide
-
----
-
-### **🧠 V1.7.3 — Simplification Algorithme Santé**
-
-**Fichier modifié** : `src/components/health/ProfileSetupModal.tsx`
-
-**Changements** :
-1. **Toggle Intelligent/Manuel** :
-   - Mode intelligent (Withings API + historique)
-   - Mode manuel (Mifflin-St Jeor standard)
-   - Utile si API en panne
-
-2. **Slider simplifié** (3 niveaux) :
-   - 🟢 Modéré : 0.5 kg/sem
-   - 🔵 Normal : 0.7 kg/sem
-   - 🟠 Rapide : 1.0 kg/sem
-
-3. **Anomalies silencieuses** :
-   - Détection en arrière-plan
-   - Pas d'affichage anxiogène
-   - Philosophie non-stressante
-
-4. **Formule scientifique** :
-   - Katch-McArdle (si composition corporelle)
-   - Sinon Mifflin-St Jeor
-   - Calcul Real TDEE (historique)
-
-**Impact** :
-- Simplicité radicale
-- Pas anxiogène
-- Scientifiquement fiable
-
----
-
-### **📏 V1.7.4 — Height Hardcodé**
-
-**Fichier modifié** : `src/components/health/ProfileSetupModal.tsx`
-
-**Changement** :
-```typescript
-const HEIGHT = 175 // cm (hardcodé, ne change pas)
-```
-
-**Raison** :
-- App usage personnel
-- Taille ne change pas
-- Moins de champs à remplir
-
-**Impact** :
-- Configuration plus rapide
-- Moins de friction
-- Aligné avec philosophie minimaliste
-
----
-
-### **📈 V1.7.5 — Prédictions Poids (Graphique)**
-
-**Fichiers modifiés** :
-- `src/components/myday/MyDayPage.tsx`
-- `src/components/myday/HealthTab.tsx`
-- `src/components/health/WeightChart.tsx`
-
-**Fonctionnalité** :
-```typescript
-// Calcul prédiction
-const targetWeight = userProfile.targetWeight
-const trend = analyzeWeightTrend(weightEntries)
-const predictedWeeks = Math.ceil(
-  Math.abs(targetWeight - currentWeight) / Math.abs(trend.weeklyChange)
-)
-```
-
-**Rendu** :
-- ✅ Ligne pointillée vers objectif (`strokeDasharray="5 5"`)
-- ✅ Point vert pour poids cible
-- ✅ Calcul semaines restantes
-- ✅ Basé sur tendance réelle (pas estimation)
-
-**Exemple visuel** :
-```
-Poids (kg)
-  85 ┤     ●
-  84 ┤   ●   ●
-  83 ┤ ●       ● ← Aujourd'hui
-  82 ┤           ╲ ← Prédiction (ligne pointillée)
-  81 ┤            ╲
-  80 ┤             ● ← Objectif (6 semaines)
-     └──────────────────────────
-     J-30        Aujourd'hui  +6sem
-```
-
-**Impact** :
-- Visualisation progression
-- Motivation accrue
-- Transparence totale
-
----
-
-### **🎨 V1.7.6 — Premium Design (3 Modals)**
-
-**Philosophie** :
-- Minimalisme premium
-- Gradients subtils
-- Shadows élégantes
-- Spacing généreux
-- Hiérarchie visuelle claire
-
----
-
-#### **1. MealModal — Mode Générateur First** ⭐
-
-**Fichier** : `src/components/health/MealModal.tsx`
-
-**Changements** :
-```
-AVANT :
-- Formulaire manuel en premier
-- Générateur en bas
-- Trop dense
-- Hiérarchie floue
-
-APRÈS :
-- Mode générateur par défaut (énorme bouton)
-- Choix 1 ou 2 repas (cards premium)
-- Banner poids/objectif visible
-- Lien "mode manuel" discret
-- Hiérarchie claire
-```
-
-**Design premium** :
-- ✅ Header avec gradient icon (`from-emerald-500/20 to-teal-500/20`)
-- ✅ Banner objectif (`from-indigo-500/10 to-purple-500/10`)
-- ✅ Cards répartition (2 grandes cards avec emojis 🍽️)
-- ✅ Bouton générateur géant (`from-indigo-500 via-purple-500 to-pink-500`)
-- ✅ Sparkles animés (`animate-pulse`)
-- ✅ Shadows premium (`shadow-lg shadow-indigo-500/20`)
-
-**Score** : 7.5/10 → **9.5/10** ⭐
-
----
-
-#### **2. ProfileSetupModal — Premium Spacing** ⭐
-
-**Fichier** : `src/components/health/ProfileSetupModal.tsx`
-
-**Changements** :
-```
-AVANT :
-- Trop dense (p-5, space-y-4)
-- Couleurs ternes
-- Petits textes
-- Pas de gradients
-
-APRÈS :
-- Spacing généreux (p-6, space-y-6)
-- Gradients partout
-- Textes plus gros
-- Cards premium
-- Shadows élégantes
-```
-
-**Design premium** :
-- ✅ Header gradient (`from-zinc-900 to-zinc-900/95`)
-- ✅ Icon avec gradient (`from-indigo-500/20 to-purple-500/20`)
-- ✅ Profil card (`from-zinc-800/40 to-zinc-900/40`)
-- ✅ Poids en énorme (`text-2xl font-bold`)
-- ✅ Objectif cards (`from-indigo-500/20 to-purple-500/20`)
-- ✅ Rythme cards avec couleurs :
-  - Modéré : `from-emerald-500/20 to-teal-500/20`
-  - Normal : `from-indigo-500/20 to-purple-500/20`
-  - Rapide : `from-amber-500/20 to-orange-500/20`
-- ✅ Activité physique (icônes 4xl, spacing 12)
-- ✅ Calories ÉNORMES (`text-5xl font-black`)
-- ✅ Macros cards premium (3 cards avec gradients)
-- ✅ Footer gradient (`from-zinc-900 to-zinc-900/95`)
-
-**Score** : 8.5/10 → **9.5/10** ⭐
-
----
-
-#### **3. WeightModal — Polish Micro-détails** ⭐
-
-**Fichier** : `src/components/health/WeightModal.tsx`
-
-**Changements** :
-```
-AVANT :
-- Design basique
-- Pas de feedback visuel
-- Date déjà pré-remplie (OK)
-
-APRÈS :
-- Header gradient icon
-- Feedback poids en temps réel
-- Polish micro-détails
-```
-
-**Design premium** :
-- ✅ Header icon (`from-rose-500/20 to-pink-500/20`)
-- ✅ Feedback poids (`⚖️ 75.5 kg` affiché en temps réel)
-- ✅ Border premium sur icon
-
-**Score** : 9.5/10 → **9.8/10** ⭐
-
----
-
-### **📊 Scores Finaux V1.7.6**
-
-| Modal | Avant | Après | Amélioration |
-|-------|-------|-------|--------------|
-| **MealModal** | 7.5/10 | 9.5/10 | +2.0 ⭐ |
-| **ProfileSetupModal** | 8.5/10 | 9.5/10 | +1.0 ⭐ |
-| **WeightModal** | 9.5/10 | 9.8/10 | +0.3 ⭐ |
-| **MOYENNE** | 8.5/10 | **9.6/10** | **+1.1** ✅ |
-
----
-
-### **🎯 Alignement Philosophie**
-
-| Principe | Score |
-|----------|-------|
-| **Minimalisme radical** | 9.5/10 |
-| **Progressive Disclosure** | 10/10 |
-| **Cognitive Load ↓** | 9.5/10 |
-| **Pas anxiogène** | 10/10 |
-| **Hiérarchie visuelle** | 9.8/10 |
-| **Feedback immédiat** | 9.5/10 |
-| **MOYENNE** | **9.7/10** ⭐ |
-
----
-
-### **📦 Fichiers Modifiés V1.7.1-V1.7.6**
-
-```
-src/utils/simpleMealGenerator.ts                 (150 lignes, NOUVEAU)
-src/components/health/MealModal.tsx              (refactorisé, mode générateur first)
-src/components/health/MealList.tsx               (+detectMealType)
-src/components/health/ProfileSetupModal.tsx      (redesign premium complet)
-src/components/health/WeightModal.tsx            (polish premium)
-src/components/health/WeightChart.tsx            (+prédictions)
-src/components/myday/MyDayPage.tsx               (+targetWeight, predictedWeeks)
-src/components/myday/HealthTab.tsx               (+props prédictions)
-docs/SIMPLE_MEAL_GENERATOR.md                    (273 lignes, NOUVEAU)
-```
-
----
-
-### **✅ Résultat Final**
-
-**Module Santé = 10/10** 🎉
-
-- ✅ Algorithme intelligent (Katch-McArdle + Real TDEE)
-- ✅ Génération repas optimaux (1 ou 2 repas)
-- ✅ Détection automatique type repas
-- ✅ Prédictions poids (graphique)
-- ✅ Design premium (gradients, shadows, spacing)
-- ✅ Philosophie minimaliste respectée
-- ✅ Pas anxiogène (anomalies silencieuses)
-- ✅ Scientifiquement fiable
-- ✅ UX fluide et intuitive
-
-**C'est complet. C'est beau. C'est prêt. 🚀**
-
----
-
 ## 🎉 Verdict Final
 
 **NewMars V1.5.0 = UI/UX EXCELLENCE + ACCESSIBILITÉ WCAG AA ✅⭐**
@@ -3879,12 +3540,12 @@ docs/SIMPLE_MEAL_GENERATOR.md                    (273 lignes, NOUVEAU)
 
 ---
 
-**Date de gel** : 20 décembre 2024  
-**Dernière mise à jour** : 3 janvier 2026 (V1.9.0 - Système de Maîtrise Intelligente 🧠)  
-**Version** : 1.9.0  
+**Date de gel** : 22 décembre 2024  
+**Dernière mise à jour** : 31 décembre 2024 (V1.7.0 - Health Intelligence P0+P1 🧠)  
+**Version** : 1.7.0  
 **Auteur** : Amine  
-**Statut** : ✅ **V1.9.0 COMPLÈTE** — Maîtrise intelligente (quiz→+15%, usage→+5%, oubli naturel), tests 100%, score 10/10
+**Statut** : ✅ **V1.7.0 COMPLÈTE** — Intelligence adaptative, recalcul auto, détection anomalies, prédictions, score 9.9/10
 
 ---
 
-*Ce document fige officiellement NewMars V1.9.0. L'IA ne "triche" plus : elle sait vraiment ce que tu maîtrises ! Système d'apprentissage adaptatif complet avec mise à jour automatique de la maîtrise, détection d'usage actif, et oubli naturel selon Ebbinghaus.*
+*Ce document fige officiellement NewMars V1.7.0. Health Intelligence (recalcul auto 7j, anomalies, prédictions, suggestions), minimalisme intelligent.*

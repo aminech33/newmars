@@ -56,3 +56,4 @@ export function StreakCard({ streak, longestStreak }: StreakCardProps) {
   )
 }
 
+

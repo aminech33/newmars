@@ -1,88 +1,96 @@
-import { memo, useState, useCallback, useEffect } from 'react'
+import { memo, useRef, useEffect, useState, useCallback } from 'react'
 import { Course } from '../../types/learning'
-import { SplitViewContainer } from './SplitViewContainer'
-import { EditorPanel } from './EditorPanel'
-import { ChatPanel } from './ChatPanel'
-import { CourseActions } from './CourseActions'
-import { LinkedTasks } from './LinkedTasks'
-import { CourseStatsCard } from './CourseStatsCard'
-import { ArchiveManager } from './ArchiveManager'
-import { QuizPanel } from './QuizPanel'
-import { TopicsSelector } from './TopicsSelector'
-import { useStore } from '../../store/useStore'
-import { useTopicSwitch } from '../../hooks/useTopicSwitch'
-import { useCodeExecution } from '../../hooks/useCodeExecution'
-import { useKnowledgeBase } from '../../hooks/useKnowledgeBase'
-import { useMessageArchiving } from '../../hooks/useMessageArchiving'
-import { getStarterCode } from '../../utils/codeTemplates'
+import { MessageBubble } from './MessageBubble'
+import { ChatInput } from './ChatInput'
+import { CodeEditor } from './CodeEditor'
+import { TerminalEmulator } from './TerminalEmulator'
+import { Sparkles } from 'lucide-react'
 
 interface CourseChatProps {
   course: Course
-  onSendMessage: (content: string, codeContext?: { code: string; language: string }, terminalContext?: { recentCommands: string[]; recentOutput: string }) => void
+  isTyping: boolean
+  onSendMessage: (content: string, codeContext?: { code: string; language: string }) => void
   onCopyMessage: (messageId: string) => void
+}
+
+// Code de démarrage selon le langage
+const getStarterCode = (language: string, courseName: string): string => {
+  const starters: Record<string, string> = {
+    python: `# ${courseName}\n\n# Écris ton code Python ici\nprint("Hello, World!")\n`,
+    javascript: `// ${courseName}\n\n// Écris ton code JavaScript ici\nconsole.log("Hello, World!");\n`,
+    typescript: `// ${courseName}\n\n// Écris ton code TypeScript ici\nconst message: string = "Hello, World!";\nconsole.log(message);\n`,
+    java: `// ${courseName}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n`,
+    cpp: `// ${courseName}\n\n#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}\n`,
+    csharp: `// ${courseName}\n\nusing System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello, World!");\n    }\n}\n`,
+    rust: `// ${courseName}\n\nfn main() {\n    println!("Hello, World!");\n}\n`,
+    go: `// ${courseName}\n\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}\n`,
+    php: `<?php\n// ${courseName}\n\n// Écris ton code PHP ici\necho "Hello, World!";\n`,
+    ruby: `# ${courseName}\n\n# Écris ton code Ruby ici\nputs "Hello, World!"\n`
+  }
+  return starters[language] || `// ${courseName}\n\n// Écris ton code ici\n`
 }
 
 export const CourseChat = memo(function CourseChat({
   course,
+  isTyping,
   onSendMessage,
   onCopyMessage
 }: CourseChatProps) {
-  const { addToast, tasks } = useStore()
-  
-  // 🧠 Knowledge Base - Charge les concepts au début
-  const { concepts, loadConcepts, stats } = useKnowledgeBase()
-  
-  // 📦 Archivage automatique des messages
-  const { needsArchiving, stats: archiveStats } = useMessageArchiving(course.id)
-  
-  const [isTyping] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const language = course.programmingLanguage || 'python'
   const [editorCode, setEditorCode] = useState(() => getStarterCode(language, course.name))
   const [includeCode, setIncludeCode] = useState(true)
   const [showSuggestions, setShowSuggestions] = useState(true)
-  const [showTasks, setShowTasks] = useState(false)
-  const [showStats, setShowStats] = useState(false)
-  
-  // 🎯 États pour Quiz/Topics
-  const [showTopicsSelector, setShowTopicsSelector] = useState(false)
-  const [showQuizPanel, setShowQuizPanel] = useState(false)
-  const [quizSessionId, setQuizSessionId] = useState<string | null>(null)
-  
-  // Terminal context capture
-  const [terminalCommands, setTerminalCommands] = useState<string[]>([])
-  const [terminalOutput, setTerminalOutput] = useState<string>('')
-  
-  // Session ID stable pour le terminal (basé sur le courseId)
-  const terminalSessionId = `course-${course.id}`
-  
-  // 🧠 Charger la base de connaissances au montage
-  useEffect(() => {
-    loadConcepts(course.id)
-    console.log(`🧠 Knowledge Base: Chargement des concepts pour ${course.name}`)
-  }, [course.id, loadConcepts, course.name])
-  
-  // Log quand les concepts sont chargés
-  useEffect(() => {
-    if (concepts.length > 0) {
-      console.log(`✅ Knowledge Base: ${concepts.length} concepts chargés`)
-      console.log(`📊 Stats: Maîtrise moyenne ${stats?.avgMastery}/5, ${stats?.mastered} maîtrisés`)
-    }
-  }, [concepts.length, stats])
-  
-  // 📦 Notification si archivage nécessaire
-  useEffect(() => {
-    if (needsArchiving && archiveStats) {
-      console.log(`⚠️ ${archiveStats.active} messages actifs - Archivage recommandé`)
-    }
-  }, [needsArchiving, archiveStats])
-  
-  // Topic switch detection (pour interleaving feedback)
-  useTopicSwitch(course.messages, (from, to) => {
-    addToast(`🔄 Switch: ${from} → ${to}`, 'info')
-  })
+  const [editorWidth, setEditorWidth] = useState(60) // pourcentage
+  const [isResizing, setIsResizing] = useState(false)
+  const splitContainerRef = useRef<HTMLDivElement>(null)
 
-  // Exécution de code
-  const { executeCode, isExecuting, result: execResult, statusMessage } = useCodeExecution()
+  // Gestion du redimensionnement style VSCode
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }, [])
+
+  useEffect(() => {
+    if (!isResizing) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!splitContainerRef.current) return
+      // Utiliser requestAnimationFrame pour un rendu smooth
+      requestAnimationFrame(() => {
+        const container = splitContainerRef.current
+        if (!container) return
+        const rect = container.getBoundingClientRect()
+        const newWidth = ((e.clientX - rect.left) / rect.width) * 100
+        // Limiter : éditeur entre 30% et 70%, chat entre 30% et 70%
+        setEditorWidth(Math.min(70, Math.max(30, newWidth)))
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizing])
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [course.messages.length, isTyping])
 
   // Masquer les suggestions après la première interaction
   useEffect(() => {
@@ -91,256 +99,264 @@ export const CourseChat = memo(function CourseChat({
     }
   }, [course.messages.length])
 
-  const codeEnv = course.codeEnvironment || 'none'
-  const showSplitView = codeEnv !== 'none'
-  const hasEditor = codeEnv === 'editor' || codeEnv === 'both'
-  const hasTerminal = codeEnv === 'terminal' || codeEnv === 'both'
-  
-  // Callbacks pour capturer l'activité du terminal
-  const handleTerminalCommand = useCallback((command: string) => {
-    setTerminalCommands(prev => [...prev, command].slice(-10)) // Garder les 10 dernières
-  }, [])
-  
-  const handleTerminalOutput = useCallback((output: string) => {
-    setTerminalOutput(output)
-  }, [])
+  const hasMessages = course.messages.length > 0
+  const showCodeEditor = course.isProgramming === true
+  const showTerminal = course.isTerminal === true
+  const showSplitView = showCodeEditor || showTerminal
 
-  // Gestion de l'envoi avec contexte code + terminal + knowledge base
-  const handleSendMessage = useCallback((content: string, codeContext?: { code: string; language: string }) => {
-    // 🧠 Rechercher concepts pertinents (recherche locale, pas d'API call)
-    const query = content.toLowerCase()
-    const relevantConcepts = concepts
-      .filter(c => 
-        query.includes(c.concept.toLowerCase()) ||
-        c.keywords.some(k => query.includes(k.toLowerCase()))
-      )
-      .sort((a, b) => a.masteryLevel - b.masteryLevel) // Prioriser concepts moins maîtrisés
-      .slice(0, 5) // Top 5 concepts pertinents
-    
-    // Enrichir le message avec le contexte de connaissances
-    let enrichedContent = content
-    if (relevantConcepts.length > 0) {
-      const knowledgeContext = `\n\n[CONTEXTE - L'étudiant connaît: ${relevantConcepts.map(c => 
-        `${c.concept} (maîtrise ${c.masteryLevel}/5, vu ${c.timesReferenced}x)`
-      ).join(', ')}. Ne ré-explique pas ce qu'il maîtrise bien (≥3). Construis sur ses connaissances.]`
-      
-      enrichedContent = content + knowledgeContext
-      
-      console.log(`🧠 Contexte enrichi avec ${relevantConcepts.length} concepts pertinents`)
-    }
-    
-    // Préparer le contexte terminal si disponible
-    const terminalCtx = hasTerminal && (terminalCommands.length > 0 || terminalOutput.trim())
-      ? { recentCommands: terminalCommands, recentOutput: terminalOutput }
-      : undefined
-    
-    // Inclure le code uniquement si on a un éditeur ET que l'option est activée
-    if (hasEditor && includeCode && editorCode.trim() && !codeContext) {
-      onSendMessage(enrichedContent, { code: editorCode, language }, terminalCtx)
+  // Gestion de l'envoi - le code est passé en contexte, jamais affiché dans le chat
+  const handleSendWithCode = (message: string) => {
+    if (showSplitView && includeCode && editorCode.trim()) {
+      // Le message visible reste simple, le code est passé en contexte
+      onSendMessage(message, { code: editorCode, language })
     } else {
-      onSendMessage(content, codeContext, terminalCtx)
+      onSendMessage(message)
     }
-  }, [hasEditor, hasTerminal, includeCode, editorCode, language, terminalCommands, terminalOutput, onSendMessage])
+  }
 
-  // Handler pour exécuter le code
-  const handleRunCode = useCallback(async () => {
-    await executeCode(editorCode, language)
-  }, [executeCode, editorCode, language])
+  // Exécuter : message court visible, code en contexte
+  const handleRunCode = () => {
+    onSendMessage('▶ Exécuter', { code: editorCode, language })
+  }
 
-  // 🎯 Handler pour démarrer une session de quiz
-  const handleStartQuizSession = useCallback(async (selectedTopics: string[], useInterleaving: boolean) => {
-    try {
-      const response = await fetch('http://localhost:8000/api/learning/start-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          course_id: course.id,
-          user_id: 'current-user',
-          topic_ids: selectedTopics,
-          use_interleaving: useInterleaving
-        })
-      })
-      
-      if (!response.ok) throw new Error('Failed to start session')
-      
-      const data = await response.json()
-      setQuizSessionId(data.session_id)
-      setShowTopicsSelector(false)
-      setShowQuizPanel(true)
-      
-      addToast(`✅ Session démarrée${useInterleaving ? ' avec interleaving' : ''}`, 'success')
-    } catch (error) {
-      console.error('Error starting quiz session:', error)
-      addToast('❌ Erreur lors du démarrage de la session', 'error')
-    }
-  }, [course.id, addToast])
 
-  // 🎯 Handler pour terminer le quiz
-  const handleQuizComplete = useCallback(() => {
-    setShowQuizPanel(false)
-    setQuizSessionId(null)
-    addToast('🎉 Session terminée !', 'success')
-  }, [addToast])
-
-  // Tâches liées
-  const linkedTasks = course.linkedProjectId 
-    ? tasks.filter(t => t.projectId === course.linkedProjectId)
-    : []
-
-  // Actions communes
-  const actions = (
-    <CourseActions
-      showTasks={showTasks}
-      showStats={showStats}
-      onToggleTasks={() => setShowTasks(!showTasks)}
-      onToggleStats={() => setShowStats(!showStats)}
-      tasksCount={linkedTasks.length}
-      onStartQuiz={() => setShowTopicsSelector(true)}
-    />
-  )
-
-  // Modal tâches (commun aux deux modes)
-  const tasksModal = showTasks && course.linkedProjectId && (
-    <div className="absolute inset-y-0 right-0 w-80 bg-zinc-900 border-l border-zinc-800 shadow-2xl z-10">
-      <LinkedTasks
-        projectId={course.linkedProjectId}
-        onClose={() => setShowTasks(false)}
-      />
-    </div>
-  )
-
-  // En mode split view (code ou terminal)
+  // En mode split view (code ou terminal) : panneau gauche + chat redimensionnables
   if (showSplitView) {
     return (
-      <div className="h-full flex flex-col bg-black">
-        {showStats && (
-          <div className="border-b border-zinc-800/50 p-4 bg-zinc-950/50">
-            <CourseStatsCard course={course} />
-          </div>
-        )}
-        
-        <SplitViewContainer
-          leftPanel={
-            <EditorPanel
-              code={editorCode}
+      <div ref={splitContainerRef} className="h-full flex bg-black select-none">
+        {/* Left Panel: Code Editor OR Terminal */}
+        <div style={{ width: `${editorWidth}%` }} className="flex flex-col h-full overflow-hidden">
+          {showCodeEditor ? (
+            <CodeEditor
               language={language}
-              onCodeChange={setEditorCode}
-              mode={codeEnv}
-              terminalSessionId={terminalSessionId}
-              onTerminalCommand={handleTerminalCommand}
-              onTerminalOutput={handleTerminalOutput}
-              onRunCode={handleRunCode}
-              isExecuting={isExecuting}
-              execResult={execResult}
-              execStatus={statusMessage}
-            />
-          }
-          rightPanel={
-            <ChatPanel
-              course={course}
+              value={editorCode}
+              onChange={setEditorCode}
+              readOnly={false}
+              showHeader={true}
+              courseName={course.name}
+              onRun={handleRunCode}
               isTyping={isTyping}
-              includeCode={hasEditor ? includeCode : false}
-              showSuggestions={showSuggestions}
-              onSendMessage={handleSendMessage}
-              onCopyMessage={onCopyMessage}
-              onIncludeCodeChange={setIncludeCode}
-              onShowSuggestionsChange={setShowSuggestions}
-              codeContext={hasEditor ? { code: editorCode, language } : undefined}
-              headerActions={actions}
             />
-          }
+          ) : showTerminal ? (
+            <TerminalEmulator sessionId={course.id} />
+          ) : null}
+        </div>
+
+        {/* Resize Handle - invisible par défaut, visible au survol */}
+        <div
+          onMouseDown={handleMouseDown}
+          className="w-[4px] bg-transparent hover:bg-zinc-600 cursor-col-resize flex-shrink-0 transition-colors"
         />
-        {tasksModal}
-        
-        {/* 🎯 Modal TopicsSelector */}
-        {showTopicsSelector && course.topics && course.topics.length > 0 && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-20 flex items-center justify-center p-4">
-            <div className="bg-zinc-900 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-white">Démarrer une session de quiz</h2>
-                <button
-                  onClick={() => setShowTopicsSelector(false)}
-                  className="text-zinc-400 hover:text-white transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-              <TopicsSelector
-                courseId={course.id}
-                topics={course.topics}
-                onStartSession={handleStartQuizSession}
-              />
+
+        {/* Chat Area (right panel) */}
+        <div style={{ width: `${100 - editorWidth}%` }} className="flex flex-col h-full">
+          {/* Messages */}
+          <div 
+            ref={containerRef}
+            className="flex-1 overflow-y-auto min-h-0"
+            role="log"
+            aria-label="Conversation"
+            aria-live="polite"
+          >
+            <div className="px-4">
+              {!hasMessages ? (
+                // État vide discret
+                <div className="py-8">
+                  <p className="text-zinc-500 text-sm text-center mb-4">
+                    {showTerminal 
+                      ? "Utilise le terminal et pose des questions à l'IA."
+                      : <>Écris du code et clique sur <span className="text-green-400 font-medium">Analyser</span> pour commencer.</>
+                    }
+                  </p>
+                  
+                  {/* Suggestions discrètes */}
+                  {showSuggestions && (
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {showTerminal ? (
+                        <>
+                          <button 
+                            onClick={() => onSendMessage("Quelles sont les commandes shell essentielles ?")}
+                            className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                          >
+                            Commandes de base
+                          </button>
+                          <button 
+                            onClick={() => onSendMessage("Comment naviguer dans les dossiers ?")}
+                            className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                          >
+                            Navigation
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => onSendMessage(`Montre-moi un exemple simple en ${language}`)}
+                            className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                          >
+                            Exemple
+                          </button>
+                          <button 
+                            onClick={() => onSendMessage(`Explique la syntaxe de base de ${language}`)}
+                            className="px-3 py-1.5 text-xs bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                          >
+                            Syntaxe
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Messages
+                <div className="py-4 space-y-2">
+                  {course.messages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      onCopy={() => onCopyMessage(message.id)}
+                    />
+                  ))}
+                  
+                  {/* Typing indicator */}
+                  {isTyping && (
+                    <div className="flex gap-3 items-start py-2">
+                      <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
+                      </div>
+                      <div className="pt-2">
+                        <div className="flex gap-1">
+                          <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce [animation-delay:0ms]" />
+                          <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce [animation-delay:150ms]" />
+                          <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce [animation-delay:300ms]" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {/* 🎯 Panel Quiz */}
-        {showQuizPanel && quizSessionId && (
-          <div className="absolute inset-0 bg-zinc-900 z-20">
-            <QuizPanel sessionId={quizSessionId} onComplete={handleQuizComplete} />
+          {/* Input compact */}
+          <div className="border-t border-zinc-800/50 bg-zinc-900/30 p-3">
+            {showCodeEditor && (
+              <div className="flex items-center gap-2 mb-2">
+                <label className="flex items-center gap-1.5 text-[10px] text-zinc-500 cursor-pointer hover:text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={includeCode}
+                    onChange={(e) => setIncludeCode(e.target.checked)}
+                    className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-zinc-400 accent-zinc-500"
+                  />
+                  Inclure le code
+                </label>
+              </div>
+            )}
+            <ChatInput
+              onSend={handleSendWithCode}
+              isTyping={isTyping}
+              disabled={false}
+              placeholder={showTerminal ? "Pose une question sur le terminal..." : "Pose une question sur ton code..."}
+              hasMessages={hasMessages}
+            />
           </div>
-        )}
+        </div>
       </div>
     )
   }
 
-  // Mode chat simple (sans code/terminal)
+  // Mode normal (sans programmation) - chat classique
   return (
-    <div className="h-full flex flex-col bg-zinc-900">
-      {showStats && (
-        <div className="border-b border-zinc-800/50 p-4 bg-zinc-950/50">
-          <CourseStatsCard course={course} />
+    <div className="flex h-full overflow-hidden bg-black">
+      <div className="flex flex-col w-full h-full">
+        {/* Messages */}
+        <div 
+          ref={containerRef}
+          className="flex-1 overflow-y-auto min-h-0"
+          role="log"
+          aria-label="Conversation"
+          aria-live="polite"
+        >
+          <div className="max-w-3xl mx-auto px-6">
+            {!hasMessages ? (
+              <div className="h-[70vh] flex items-center justify-center">
+                <div className="text-center max-w-lg">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600/20 to-indigo-800/20 flex items-center justify-center mx-auto mb-6 ring-1 ring-indigo-500/20 shadow-2xl">
+                    <Sparkles className="w-7 h-7 text-indigo-400" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-white mb-2">
+                    {course.name}
+                  </h2>
+                  <p className="text-zinc-500 text-sm leading-relaxed mb-8">
+                    Posez une question pour commencer.
+                  </p>
+                  
+                  {showSuggestions && (
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button 
+                        onClick={() => onSendMessage(`Explique-moi les bases de ${course.name}`)}
+                        className="px-4 py-2 text-sm bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors ring-1 ring-zinc-800 hover:ring-zinc-700"
+                      >
+                        Les bases
+                      </button>
+                      <button 
+                        onClick={() => onSendMessage(`Donne-moi un exemple concret`)}
+                        className="px-4 py-2 text-sm bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors ring-1 ring-zinc-800 hover:ring-zinc-700"
+                      >
+                        Exemple
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 space-y-2">
+                {course.messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    onCopy={() => onCopyMessage(message.id)}
+                  />
+                ))}
+                
+                {isTyping && (
+                  <div className="flex gap-4 items-start -mx-4 px-4 py-4">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600/20 to-indigo-800/20 flex items-center justify-center flex-shrink-0 ring-1 ring-indigo-500/20">
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                    </div>
+                    <div className="pt-2">
+                      <p className="text-xs font-medium text-indigo-400/70 mb-2">Assistant</p>
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0ms]" />
+                        <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:150ms]" />
+                        <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:300ms]" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
         </div>
-      )}
-      
-      {/* Gestionnaire d'archivage */}
-      {course.messages.length > 30 && (
-        <div className="border-b border-zinc-800/50 p-3 bg-zinc-950/50">
-          <ArchiveManager courseId={course.id} />
-        </div>
-      )}
 
-      <ChatPanel
-        course={course}
-        isTyping={isTyping}
-        includeCode={false}
-        showSuggestions={showSuggestions}
-        onSendMessage={handleSendMessage}
-        onCopyMessage={onCopyMessage}
-        onIncludeCodeChange={() => {}}
-        onShowSuggestionsChange={setShowSuggestions}
-        headerActions={actions}
-      />
-      {tasksModal}
-      
-      {/* 🎯 Modal TopicsSelector */}
-      {showTopicsSelector && course.topics && course.topics.length > 0 && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-20 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">Démarrer une session de quiz</h2>
-              <button
-                onClick={() => setShowTopicsSelector(false)}
-                className="text-zinc-400 hover:text-white transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            <TopicsSelector
-              courseId={course.id}
-              topics={course.topics}
-              onStartSession={handleStartQuizSession}
+        {/* Input */}
+        <div className="bg-black/50 backdrop-blur-sm">
+          <div className="max-w-3xl mx-auto px-6 py-4">
+            <ChatInput
+              onSend={handleSendWithCode}
+              isTyping={isTyping}
+              disabled={false}
+              placeholder={hasMessages ? "Continuez la conversation..." : `Posez une question sur ${course.name}...`}
+              hasMessages={hasMessages}
             />
           </div>
         </div>
-      )}
-
-      {/* 🎯 Panel Quiz */}
-      {showQuizPanel && quizSessionId && (
-        <div className="absolute inset-0 bg-zinc-900 z-20">
-          <QuizPanel sessionId={quizSessionId} onComplete={handleQuizComplete} />
-        </div>
-      )}
+      </div>
     </div>
   )
 })
+

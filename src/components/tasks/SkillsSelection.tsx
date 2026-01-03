@@ -192,3 +192,4 @@ export function SkillsSelection({ domainMap, onPlanify }: SkillsSelectionProps) 
   )
 }
 
+

@@ -49,3 +49,4 @@ export function useKeyboardShortcuts({
   }, [onToggleSidebar, onNewCourse, onEscape, isModalOpen, isConfirmOpen, activeCourse])
 }
 
+

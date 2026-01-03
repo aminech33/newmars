@@ -19,3 +19,4 @@ export function getStarterCode(language: string, courseName: string): string {
   return starters[language] || `// ${courseName}\n\n// Écris ton code ici\n`
 }
 
+

@@ -52,3 +52,4 @@ export function useSplitView(initialWidth: number = 60) {
   }
 }
 
+

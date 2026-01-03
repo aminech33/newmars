@@ -258,3 +258,4 @@ La suppression des templates est une **simplification majeure** qui :
 **Aucune régression fonctionnelle** : Le système fonctionne exactement pareil, juste sans les templates hardcodés.
 
 
+

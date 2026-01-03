@@ -62,3 +62,4 @@ export function useSessionTracking(activeCourseId: string | null) {
   }, [activeCourseId, habits, addHabit, toggleHabitToday, addToast])
 }
 
+

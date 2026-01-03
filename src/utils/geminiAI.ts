@@ -1,26 +1,11 @@
 /**
  * Gemini AI Integration
  * Handles communication with Google's Gemini API
- * Includes rate limiting for quota protection
  */
 
-import { geminiRateLimiter, withRateLimit } from './rateLimiter'
-
 // Gemini 2.0 Flash - Latest official model (December 2024)
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBFlZdThjH9z3ciJVSIJwfPDfmTpZeN85w'
 const MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash-exp'
-
-// 🔥 Fallback OpenAI
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || ''
-const OPENAI_MODEL = 'gpt-4o-mini'
-
-// Vérification de sécurité
-if (!API_KEY && typeof window !== 'undefined') {
-  console.warn('⚠️ VITE_GEMINI_API_KEY manquante. Ajoutez-la dans votre fichier .env')
-  if (OPENAI_API_KEY) {
-    console.info('✅ Fallback OpenAI activé')
-  }
-}
 
 interface ConversationMessage {
   role: 'user' | 'assistant'
@@ -54,9 +39,7 @@ export async function generateGeminiResponse(
     throw new Error('❌ Clé API Gemini manquante. Vérifiez votre fichier .env')
   }
 
-  // Apply rate limiting
-  return withRateLimit(geminiRateLimiter, 'gemini_api', async () => {
-    try {
+  try {
     // Build conversation history for Gemini format
     const contents = [
       // Add conversation history
@@ -150,8 +133,7 @@ export async function generateGeminiResponse(
 
     // Unknown error
     throw new Error('❌ Erreur inattendue lors de la communication avec Gemini.')
-    }
-  })
+  }
 }
 
 /**
@@ -192,37 +174,12 @@ export async function generateGeminiStreamingResponse(
   history: ConversationMessage[] = [],
   onChunk: (chunk: string) => void
 ): Promise<string> {
-  // 🔥 FALLBACK: Si Gemini échoue, essayer OpenAI
-  try {
-    return await tryGeminiStreaming(context, userMessage, history, onChunk)
-  } catch (error) {
-    console.warn('⚠️ Gemini failed, trying OpenAI fallback...', error)
-    
-    if (!OPENAI_API_KEY) {
-      throw error // Re-throw original error if no fallback
-    }
-    
-    return await tryOpenAIStreaming(context, userMessage, history, onChunk)
-  }
-}
-
-/**
- * 🔵 Tentative avec Gemini
- */
-async function tryGeminiStreaming(
-  context: string,
-  userMessage: string,
-  history: ConversationMessage[] = [],
-  onChunk: (chunk: string) => void
-): Promise<string> {
   // Validate API key
   if (!API_KEY) {
     throw new Error('❌ Clé API Gemini manquante. Vérifiez votre fichier .env')
   }
 
-  // Apply rate limiting
-  return withRateLimit(geminiRateLimiter, 'gemini_api', async () => {
-    try {
+  try {
     // Build conversation history for Gemini format
     const contents = [
       ...history.map((msg) => ({
@@ -325,262 +282,6 @@ async function tryGeminiStreaming(
     }
 
     throw new Error('❌ Erreur inattendue lors de la communication avec Gemini.')
-    }
-  })
-}
-
-/**
- * 🟢 Fallback OpenAI (streaming)
- */
-async function tryOpenAIStreaming(
-  context: string,
-  userMessage: string,
-  history: ConversationMessage[] = [],
-  onChunk: (chunk: string) => void
-): Promise<string> {
-  const messages = [
-    { role: 'system', content: context },
-    ...history.map(m => ({ role: m.role, content: m.content })),
-    { role: 'user', content: userMessage }
-  ]
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      messages,
-      temperature: 0.7,
-      max_tokens: 2048,
-      stream: true
-    })
-  })
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API Error: ${response.status}`)
   }
-
-  const reader = response.body?.getReader()
-  if (!reader) throw new Error('No response stream')
-
-  const decoder = new TextDecoder()
-  let fullText = ''
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    const chunk = decoder.decode(value)
-    const lines = chunk.split('\n').filter(l => l.trim().startsWith('data:'))
-
-    for (const line of lines) {
-      const data = line.replace('data: ', '').trim()
-      if (data === '[DONE]') continue
-      
-      try {
-        const json = JSON.parse(data)
-        const content = json.choices?.[0]?.delta?.content
-        if (content) {
-          fullText += content
-          onChunk(content)
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-  }
-
-  return fullText
-}
-
-/**
- * Rich learning context for AI tutor
- */
-export interface LearningContext {
-  // Course basics
-  courseName: string
-  courseDescription?: string
-  level: 'débutant' | 'intermédiaire' | 'avancé' | 'expert'
-  systemPrompt?: string
-  
-  // Learning progress
-  currentMastery: number // 0-100
-  totalTimeSpent: number // minutes
-  sessionsCount: number
-  
-  // Topics & goals
-  topics?: Array<{ name: string; status: 'pending' | 'in-progress' | 'completed' }>
-  progress: number // 0-100
-  
-  // Recent notes (for context)
-  recentNotes?: Array<{ title: string; content: string }>
-  
-  // 🔥 Concepts SQLite (base de connaissances)
-  relevantConcepts?: Array<{ concept: string; definition: string | null; masteryLevel: number }>
-  
-  // Code context (if applicable)
-  codeContext?: {
-    code: string
-    language: string
-    hasErrors?: boolean
-  }
-  
-  // Terminal context (if applicable)
-  terminalContext?: {
-    recentCommands: string[]  // Last commands executed
-    recentOutput: string      // Last terminal output (max 500 chars)
-  }
-}
-
-/**
- * Build enriched pedagogical prompt for AI tutor
- */
-export function buildPedagogicalContext(
-  learningContext: LearningContext,
-  userMessage: string
-): string {
-  const {
-    courseName,
-    courseDescription,
-    level,
-    systemPrompt,
-    currentMastery,
-    totalTimeSpent,
-    topics,
-    progress,
-    recentNotes,
-    relevantConcepts,
-    codeContext,
-    terminalContext
-  } = learningContext
-
-  // Base system prompt
-  let prompt = systemPrompt || `Tu es un tuteur expert en ${courseName}.`
-  
-  // Add pedagogical instructions
-  prompt += `\n\n## CONTEXTE PÉDAGOGIQUE`
-  prompt += `\n- Cours: ${courseName}`
-  if (courseDescription) prompt += `\n- Description: ${courseDescription}`
-  prompt += `\n- Niveau: ${level}`
-  prompt += `\n- Maîtrise actuelle: ${currentMastery}%`
-  prompt += `\n- Progression: ${progress}%`
-  prompt += `\n- Temps d'étude: ${Math.round(totalTimeSpent / 60)}h`
-  
-  // Add topics status
-  if (topics && topics.length > 0) {
-    prompt += `\n\n## SUJETS À COUVRIR`
-    topics.forEach(topic => {
-      const status = topic.status === 'completed' ? '✅' : topic.status === 'in-progress' ? '🔄' : '⏳'
-      prompt += `\n${status} ${topic.name}`
-    })
-  }
-  
-  // 🔥 Add SQLite concepts (knowledge base)
-  if (relevantConcepts && relevantConcepts.length > 0) {
-    prompt += `\n\n## 🧠 CONCEPTS DÉJÀ APPRIS (Base de connaissances SQLite)`
-    prompt += `\nL'étudiant a déjà vu ces concepts, tu peux t'appuyer dessus :`
-    relevantConcepts.forEach(c => {
-      const masteryIcon = c.masteryLevel >= 80 ? '✅' : c.masteryLevel >= 50 ? '🔄' : '⚠️'
-      prompt += `\n${masteryIcon} ${c.concept}`
-      if (c.definition) prompt += ` : ${c.definition}`
-      prompt += ` (maîtrise: ${c.masteryLevel}%)`
-    })
-  }
-  
-  // Add recent notes for context
-  if (recentNotes && recentNotes.length > 0) {
-    prompt += `\n\n## NOTES RÉCENTES (contexte)`
-    recentNotes.forEach(note => {
-      prompt += `\n- ${note.title}: ${note.content.slice(0, 100)}${note.content.length > 100 ? '...' : ''}`
-    })
-  }
-  
-  // Add code context if provided
-  if (codeContext) {
-    prompt += `\n\n## CODE DE L'ÉTUDIANT (${codeContext.language})`
-    prompt += `\n\`\`\`${codeContext.language}\n${codeContext.code}\n\`\`\``
-    if (codeContext.hasErrors) {
-      prompt += `\n⚠️ Le code contient des erreurs.`
-    }
-  }
-  
-  // Add terminal context if provided
-  if (terminalContext) {
-    prompt += `\n\n## TERMINAL (contexte)`
-    
-    if (terminalContext.recentCommands.length > 0) {
-      prompt += `\n### Commandes récentes:`
-      terminalContext.recentCommands.slice(-5).forEach(cmd => {
-        prompt += `\n$ ${cmd}`
-      })
-    }
-    
-    if (terminalContext.recentOutput) {
-      // Nettoyer les codes ANSI pour l'IA
-      const cleanOutput = terminalContext.recentOutput
-        .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI codes
-        .slice(-500) // Max 500 chars
-      
-      if (cleanOutput.trim()) {
-        prompt += `\n### Output récent:`
-        prompt += `\n\`\`\`\n${cleanOutput}\n\`\`\``
-      }
-    }
-  }
-  
-  // Pedagogical guidelines based on level and mastery
-  prompt += `\n\n## DIRECTIVES PÉDAGOGIQUES`
-  
-  if (level === 'débutant' || currentMastery < 30) {
-    prompt += `\n- Utilise un langage simple et accessible`
-    prompt += `\n- Donne des exemples concrets et visuels`
-    prompt += `\n- Décompose les concepts en petites étapes`
-    prompt += `\n- Encourage et rassure l'étudiant`
-  } else if (level === 'intermédiaire' || currentMastery < 70) {
-    prompt += `\n- Équilibre entre théorie et pratique`
-    prompt += `\n- Pose des questions pour stimuler la réflexion`
-    prompt += `\n- Introduis des challenges adaptés`
-    prompt += `\n- Fais des liens avec des concepts avancés`
-  } else {
-    prompt += `\n- Aborde des aspects avancés et des edge cases`
-    prompt += `\n- Stimule la pensée critique`
-    prompt += `\n- Propose des optimisations et best practices`
-    prompt += `\n- Encourage l'exploration autonome`
-  }
-  
-  prompt += `\n\n## APPROCHE SOCRATIQUE`
-  prompt += `\n- Quand l'étudiant pose une question, essaie de le guider avec des questions plutôt que de donner la réponse directement`
-  prompt += `\n- Vérifie sa compréhension avant de passer à un nouveau concept`
-  prompt += `\n- Si tu détectes une incompréhension, reviens aux bases`
-  prompt += `\n- Adapte ton niveau de détail selon ses réponses`
-  
-  return prompt
-}
-
-/**
- * Enhanced streaming response with rich learning context
- */
-export async function generateEnrichedLearningResponse(
-  learningContext: LearningContext,
-  userMessage: string,
-  conversationHistory: ConversationMessage[] = [],
-  onChunk: (chunk: string) => void
-): Promise<string> {
-  // Build pedagogical system prompt
-  const enrichedContext = buildPedagogicalContext(learningContext, userMessage)
-  
-  // Use last 10 messages for context (to avoid token limit)
-  const recentHistory = conversationHistory.slice(-10)
-  
-  // Call streaming API with enriched context
-  return generateGeminiStreamingResponse(
-    enrichedContext,
-    userMessage,
-    recentHistory,
-    onChunk
-  )
 }
 

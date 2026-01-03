@@ -1,200 +1,81 @@
 """
-Routes API pour l'apprentissage adaptatif avec interleaving
+Routes API pour l'apprentissage adaptatif
 """
 from fastapi import APIRouter, HTTPException
-from typing import Dict, Any, List, Optional
-from services.openai_service import openai_service
+from typing import Dict, Any
+from services.gemini_service import gemini_service
 from utils.sm2_algorithm import (
     calculate_next_review,
     calculate_mastery_change,
     determine_difficulty,
     calculate_xp_reward
 )
-from utils.interleaving import (
-    select_interleaved_topics,
-    get_next_topic_in_sequence,
-    calculate_interleaving_benefit,
-    should_use_interleaving
-)
 from models.learning import (
     SessionStartRequest,
     AnswerSubmission,
-    AdaptiveFeedback,
-    TopicMastery,
-    InterleavingSession
+    AdaptiveFeedback
 )
-from database import db, concepts_manager
 import uuid
 from datetime import datetime
-import statistics
-import logging
-
-# Logger pour debug
-logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Cache en mémoire pour performance (synchronisé avec DB)
-sessions_cache: Dict[str, Any] = {}
-mastery_cache: Dict[str, Dict[str, Any]] = {}  # user_id -> topic_id -> mastery data
+# Stockage temporaire en mémoire (remplacer par database plus tard)
+sessions: Dict[str, Any] = {}
+user_mastery: Dict[str, Dict[str, Any]] = {}  # user_id -> topic_id -> mastery data
 
 
 @router.post("/start-session")
 async def start_session(request: SessionStartRequest):
     """
-    Démarre une session d'apprentissage avec interleaving optionnel
-    
-    Si use_interleaving=True et plusieurs topics disponibles:
-    - Sélectionne 2-3 topics avec un mix de niveaux
-    - Active l'alternance entre topics
+    Démarre une session d'apprentissage
     
     Returns:
-        Session ID et informations (y compris topics sélectionnés)
+        Session ID et informations
     """
     session_id = str(uuid.uuid4())
-    user_id = request.user_id or "demo-user"
     
-    # Charger la maîtrise depuis la DB
-    if user_id not in mastery_cache:
-        mastery_cache[user_id] = db.get_all_mastery(user_id)
-    
-    # Déterminer les topics à utiliser
-    topics_to_use = []
-    interleaving_enabled = False
-    estimated_benefit = 0.0
-    
-    if request.topic_ids and len(request.topic_ids) > 0:
-        # Topics spécifiés explicitement
-        topics_to_use = request.topic_ids
-    elif request.topic_id:
-        # Un seul topic spécifié
-        topics_to_use = [request.topic_id]
-    else:
-        # Aucun topic spécifié - utiliser un default
-        topics_to_use = ["default-topic"]
-    
-    # Vérifier si l'interleaving est approprié
-    if request.use_interleaving and len(topics_to_use) >= 2:
-        is_appropriate = should_use_interleaving(mastery_cache[user_id], topics_to_use)
-        
-        if is_appropriate:
-            logger.info(f"✅ Interleaving activé pour user {user_id} avec {len(topics_to_use)} topics")
-            
-            # Sélectionner les meilleurs topics pour interleaving
-            selected_topics = select_interleaved_topics(
-                mastery_cache[user_id],
-                topics_to_use,
-                num_topics=min(3, len(topics_to_use))
-            )
-            
-            topics_to_use = [t["topic_id"] for t in selected_topics]
-            interleaving_enabled = True
-            
-            # Calculer le bénéfice estimé
-            mastery_levels = [t["mastery_level"] for t in selected_topics]
-            mastery_variance = statistics.variance(mastery_levels) if len(mastery_levels) > 1 else 0
-            estimated_benefit = calculate_interleaving_benefit(
-                num_topics=len(topics_to_use),
-                session_length=10,  # Estimation
-                mastery_variance=mastery_variance
-            )
-            
-            logger.info(f"📊 Topics sélectionnés: {topics_to_use}, boost estimé: +{estimated_benefit}%")
-        else:
-            logger.info(f"⚠️ Interleaving désactivé automatiquement pour user {user_id}")
-            logger.info(f"   Raisons possibles: mastery < 20%, success_rate < 40%, ou < 5 tentatives")
-            
-            # Pas approprié - utiliser un seul topic
-            topics_to_use = [topics_to_use[0]]
-            interleaving_enabled = False
-    elif request.use_interleaving:
-        logger.info(f"ℹ️ Interleaving demandé mais seulement {len(topics_to_use)} topic(s) - désactivé")
-    
-    session_data = {
+    sessions[session_id] = {
         "id": session_id,
         "course_id": request.course_id,
-        "topic_ids": topics_to_use,
-        "current_topic_idx": 0,
+        "topic_id": request.topic_id or "default-topic",
+        "topic_name": request.topic_id or "default-topic",  # 🧠 V1.9.0: Pour lier aux concepts
         "started_at": datetime.now().isoformat(),
         "questions_answered": 0,
         "correct_answers": 0,
         "xp_earned": 0,
-        "user_id": user_id,
-        "question_history": [],  # Historique des topics des questions
-        "interleaving_enabled": interleaving_enabled,
-        "switch_frequency": 2,
-        "estimated_benefit": estimated_benefit
+        "user_id": "demo-user"  # Pour demo
     }
-    
-    # Sauvegarder en DB et cache
-    db.save_session(session_data)
-    sessions_cache[session_id] = session_data
-    
-    message = "Session d'apprentissage démarrée !"
-    if interleaving_enabled:
-        message += f" 🔀 Interleaving activé avec {len(topics_to_use)} topics (+{estimated_benefit}% rétention)"
     
     return {
         "session_id": session_id,
-        "message": message,
-        "ready_for_question": True,
-        "topics": topics_to_use,
-        "interleaving_enabled": interleaving_enabled,
-        "estimated_retention_boost": estimated_benefit
+        "message": "Session d'apprentissage démarrée !",
+        "ready_for_question": True
     }
 
 
 @router.get("/next-question/{session_id}")
 async def get_next_question(session_id: str):
     """
-    Génère la prochaine question adaptée avec interleaving
-    
-    Si interleaving activé:
-    - Alterne entre topics selon la stratégie définie
-    - Adapte la difficulté pour chaque topic individuellement
+    Génère la prochaine question adaptée
     
     Utilise:
     - L'algo SM-2++ pour déterminer la difficulté
-    - Interleaving pour sélectionner le topic
-    - ChatGPT pour générer la question
+    - Gemini pour générer la question
     """
-    # Charger depuis cache ou DB
-    if session_id not in sessions_cache:
-        session = db.get_session(session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session non trouvée")
-        sessions_cache[session_id] = session
-    else:
-        session = sessions_cache[session_id]
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
     
+    session = sessions[session_id]
+    topic_id = session["topic_id"]
     user_id = session["user_id"]
     
-    # Charger mastery depuis cache ou DB
-    if user_id not in mastery_cache:
-        mastery_cache[user_id] = db.get_all_mastery(user_id)
-    
-    # Déterminer quel topic pratiquer maintenant
-    if session["interleaving_enabled"] and len(session["topic_ids"]) > 1:
-        # Sélectionner avec interleaving
-        topic_id = get_next_topic_in_sequence(
-            session_history=session["question_history"],
-            available_topics=[
-                {"topic_id": tid, "mastery_level": mastery_cache[user_id].get(tid, {}).get("mastery_level", 0)}
-                for tid in session["topic_ids"]
-            ],
-            switch_frequency=session["switch_frequency"]
-        )
-        
-        # Log du switch si changement de topic
-        if session["question_history"] and session["question_history"][-1] != topic_id:
-            logger.info(f"🔄 Switch: {session['question_history'][-1]} → {topic_id}")
-    else:
-        # Un seul topic ou interleaving désactivé
-        topic_id = session["topic_ids"][0]
-    
     # Récupérer ou initialiser la maîtrise du topic
-    if topic_id not in mastery_cache[user_id]:
-        mastery_cache[user_id][topic_id] = {
+    if user_id not in user_mastery:
+        user_mastery[user_id] = {}
+    
+    if topic_id not in user_mastery[user_id]:
+        user_mastery[user_id][topic_id] = {
             "mastery_level": 0,
             "ease_factor": 2.5,
             "interval": 1,
@@ -202,29 +83,21 @@ async def get_next_question(session_id: str):
             "success_rate": 0.0,
             "consecutive_skips": 0,
             "total_attempts": 0,
-            "correct_attempts": 0,
-            "last_practiced": None,
-            "next_review": datetime.now(),
-            "concepts": {},  # Sub-concepts tracking
-            "success_by_difficulty": {"easy": 0.0, "medium": 0.0, "hard": 0.0},
-            "attempts_by_difficulty": {"easy": 0, "medium": 0, "hard": 0}
+            "correct_attempts": 0
         }
-        # Sauvegarder en DB
-        db.save_mastery(user_id, topic_id, mastery_cache[user_id][topic_id])
     
-    mastery_data = mastery_cache[user_id][topic_id]
+    mastery_data = user_mastery[user_id][topic_id]
     
-    # ✨ Déterminer la difficulté avec l'algo AMÉLIORÉ (utilise success_by_difficulty)
+    # Déterminer la difficulté avec l'algo
     difficulty = determine_difficulty(
         mastery_data["mastery_level"],
         mastery_data["success_rate"],
-        skip_days=0,  # Pas de skip pour demo
-        success_by_difficulty=mastery_data.get("success_by_difficulty")
+        skip_days=0  # Pas de skip pour demo
     )
     
-    # Générer la question avec ChatGPT
+    # Générer la question avec Gemini
     try:
-        question = await openai_service.generate_question(
+        question = await gemini_service.generate_question(
             topic_name=f"Topic {topic_id}",  # À remplacer par le vrai nom
             difficulty=difficulty,
             mastery_level=mastery_data["mastery_level"],
@@ -236,36 +109,9 @@ async def get_next_question(session_id: str):
         # Stocker la question dans la session
         session["current_question"] = {
             "id": question.id,
-            "topic_id": topic_id,
             "difficulty": difficulty,
             "started_at": datetime.now().isoformat()
         }
-        
-        # ✨ Sauvegarder la question pour le rating system
-        db.save_question_stats(
-            question_id=question.id,
-            topic_id=topic_id,
-            question_text=question.question_text,
-            target_difficulty=difficulty
-        )
-        
-        # Ajouter à l'historique pour interleaving
-        session["question_history"].append(topic_id)
-        
-        # Sauvegarder session mise à jour
-        db.save_session(session)
-        
-        # Calculer le prochain topic (pour affichage)
-        next_topic_id = None
-        if session["interleaving_enabled"] and len(session["topic_ids"]) > 1:
-            next_topic_id = get_next_topic_in_sequence(
-                session_history=session["question_history"],
-                available_topics=[
-                    {"topic_id": tid, "mastery_level": mastery_cache[user_id].get(tid, {}).get("mastery_level", 0)}
-                    for tid in session["topic_ids"]
-                ],
-                switch_frequency=session["switch_frequency"]
-            )
         
         return {
             "question_id": question.id,
@@ -278,9 +124,6 @@ async def get_next_question(session_id: str):
             "mastery_level": mastery_data["mastery_level"],
             "estimated_time": question.estimated_time,
             "hints": question.hints,
-            "current_topic_id": topic_id,
-            "next_topic_id": next_topic_id,
-            "interleaving_active": session["interleaving_enabled"],
             "correct_answer": question.correct_answer,  # À enlever en prod !
             "explanation": question.explanation  # À enlever en prod !
         }
@@ -297,48 +140,26 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
     """
     Soumet une réponse et reçoit un feedback adaptatif
     
-    Avec interleaving:
-    - Track la maîtrise par topic individuellement
-    - Calcule le bénéfice de l'interleaving
-    - Indique quel topic sera pratiqué ensuite
-    
     Utilise:
     - SM-2++ pour calculer la nouvelle maîtrise
-    - ChatGPT pour générer l'encouragement
+    - Gemini pour générer l'encouragement
     """
-    # Charger session depuis cache ou DB
-    if session_id not in sessions_cache:
-        session = db.get_session(session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session non trouvée")
-        sessions_cache[session_id] = session
-    else:
-        session = sessions_cache[session_id]
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    
+    session = sessions[session_id]
     
     if "current_question" not in session:
         raise HTTPException(status_code=400, detail="Pas de question active")
     
     current_q = session["current_question"]
-    topic_id = current_q["topic_id"]
+    topic_id = session["topic_id"]
     user_id = session["user_id"]
-    
-    # Charger mastery depuis cache ou DB
-    if user_id not in mastery_cache:
-        mastery_cache[user_id] = db.get_all_mastery(user_id)
-    
-    mastery_data = mastery_cache[user_id][topic_id]
+    mastery_data = user_mastery[user_id][topic_id]
     
     # Simuler la vérification (en vrai, comparer avec la bonne réponse)
     # Pour demo, on dit que c'est correct si l'user_answer contient "correct"
     is_correct = "correct" in submission.user_answer.lower() or "oui" in submission.user_answer.lower()
-    
-    # ✨ Mettre à jour les stats de la question pour auto-calibration
-    db.update_question_stats(
-        question_id=current_q.get("id", submission.question_id),
-        is_correct=is_correct,
-        response_time=submission.time_taken,
-        perceived_difficulty=submission.perceived_difficulty
-    )
     
     # Calculer le changement de maîtrise
     mastery_change = calculate_mastery_change(
@@ -353,42 +174,47 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
     new_mastery = max(0, min(100, mastery_data["mastery_level"] + mastery_change))
     mastery_data["mastery_level"] = new_mastery
     mastery_data["total_attempts"] += 1
-    mastery_data["last_practiced"] = datetime.now()
     
     if is_correct:
         mastery_data["correct_attempts"] += 1
         session["correct_answers"] += 1
+        
+        # 🧠 V1.9.0: Mise à jour mastery des concepts liés au topic
+        # Lien quiz réussi → +10-15% mastery pour concepts pertinents
+        try:
+            course_id = session.get("course_id")  # Si disponible dans la session
+            if course_id:
+                topic_name = session.get("topic_name", topic_id)
+                concepts = db.get_concepts(course_id)
+                
+                # Trouver les concepts liés à ce topic
+                matching_concepts = [
+                    c for c in concepts 
+                    if topic_name.lower() in c['concept'].lower()
+                    or any(keyword in topic_name.lower() for keyword in c.get('keywords', []))
+                ]
+                
+                for concept in matching_concepts:
+                    # Boost majeur pour quiz réussi (+10-15% selon difficulté)
+                    if current_q["difficulty"] == "expert":
+                        concept_mastery_boost = 15
+                    elif current_q["difficulty"] == "intermediate":
+                        concept_mastery_boost = 12
+                    else:
+                        concept_mastery_boost = 10
+                    
+                    new_concept_mastery = min(100, concept['mastery_level'] + concept_mastery_boost)
+                    db.update_mastery(concept['id'], new_concept_mastery)
+                    
+                    logger.info(f"✅ Quiz success → Concept '{concept['concept']}' "
+                              f"mastery updated: {concept['mastery_level']}% → {new_concept_mastery}%")
+        except Exception as e:
+            # Non-bloquant si erreur
+            logger.warning(f"⚠️ Could not update concept mastery: {e}")
     
     mastery_data["success_rate"] = (
         mastery_data["correct_attempts"] / mastery_data["total_attempts"]
     )
-    
-    # ✨ NOUVEAU: Mettre à jour success_rate par difficulté
-    current_difficulty = current_q["difficulty"]
-    if "success_by_difficulty" not in mastery_data:
-        mastery_data["success_by_difficulty"] = {"easy": 0.0, "medium": 0.0, "hard": 0.0}
-    if "attempts_by_difficulty" not in mastery_data:
-        mastery_data["attempts_by_difficulty"] = {"easy": 0, "medium": 0, "hard": 0}
-    
-    attempts_diff = mastery_data["attempts_by_difficulty"]
-    success_diff = mastery_data["success_by_difficulty"]
-    
-    # Incrémenter les tentatives pour cette difficulté
-    attempts_diff[current_difficulty] = attempts_diff.get(current_difficulty, 0) + 1
-    
-    # Recalculer le success_rate pour cette difficulté
-    if is_correct:
-        # Ajouter un succès
-        old_correct = success_diff[current_difficulty] * (attempts_diff[current_difficulty] - 1)
-        new_correct = old_correct + 1
-        success_diff[current_difficulty] = new_correct / attempts_diff[current_difficulty]
-    else:
-        # Pas de succès, recalculer
-        if attempts_diff[current_difficulty] > 1:
-            old_correct = success_diff[current_difficulty] * (attempts_diff[current_difficulty] - 1)
-            success_diff[current_difficulty] = old_correct / attempts_diff[current_difficulty]
-        else:
-            success_diff[current_difficulty] = 0.0
     
     # Calculer XP
     streak = session.get("streak", 0) + (1 if is_correct else 0)
@@ -418,47 +244,10 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
     mastery_data["ease_factor"] = new_ease
     mastery_data["interval"] = new_interval
     mastery_data["repetitions"] += 1 if is_correct else 0
-    mastery_data["next_review"] = next_review
     
-    # Sauvegarder mastery mise à jour en DB
-    db.save_mastery(user_id, topic_id, mastery_data)
-    
-    # 🧠 NOUVEAU: Mettre à jour la maîtrise des concepts liés dans la knowledge base
+    # Générer encouragement avec Gemini
     try:
-        course_id = session["course_id"]
-        # Récupérer tous les concepts du cours
-        concepts = concepts_manager.get_concepts(course_id, limit=None)
-        
-        # Trouver le concept qui correspond à ce topic_id (par nom similaire)
-        # Exemple: topic_id="python-variables" → chercher concept "variables"
-        topic_name_clean = topic_id.replace("-", " ").lower()
-        
-        matching_concepts = [
-            c for c in concepts 
-            if topic_name_clean in c['concept'].lower() or c['concept'].lower() in topic_name_clean
-        ]
-        
-        if matching_concepts:
-            for concept in matching_concepts[:1]:  # Prendre le premier match
-                # Calculer le nouveau niveau de maîtrise du concept (0-100 scale)
-                concept_mastery_boost = mastery_change if is_correct else max(-5, mastery_change)
-                new_concept_mastery = max(0, min(100, concept['mastery_level'] + concept_mastery_boost))
-                
-                concepts_manager.update_mastery(concept['id'], new_concept_mastery)
-                logger.info(f"🧠 Concept '{concept['concept']}' maîtrise: {concept['mastery_level']}% → {new_concept_mastery}%")
-        else:
-            logger.debug(f"ℹ️ No matching concept found for topic '{topic_id}'")
-            
-    except Exception as e:
-        logger.error(f"⚠️ Error updating concept mastery: {e}")
-        # Ne pas bloquer la réponse si l'update concept échoue
-    
-    # Mettre à jour le streak de révision
-    streak_info = db.update_streak(user_id, session["course_id"])
-    
-    # Générer encouragement avec ChatGPT
-    try:
-        encouragement = await openai_service.generate_encouragement(
+        encouragement = await gemini_service.generate_encouragement(
             is_correct=is_correct,
             streak=streak,
             mastery_change=mastery_change
@@ -475,92 +264,42 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
     elif mastery_data["success_rate"] < 0.4 and mastery_data["total_attempts"] >= 3:
         difficulty_adjustment = "easier"
     
-    # Prédire le prochain topic (pour interleaving)
-    next_topic_id = None
-    if session["interleaving_enabled"] and len(session["topic_ids"]) > 1:
-        next_topic_id = get_next_topic_in_sequence(
-            session_history=session["question_history"],
-            available_topics=[
-                {"topic_id": tid, "mastery_level": mastery_cache[user_id].get(tid, {}).get("mastery_level", 0)}
-                for tid in session["topic_ids"]
-            ],
-            switch_frequency=session["switch_frequency"]
-        )
-    
-    # Nettoyer la question actuelle et sauvegarder session
+    # Nettoyer la question actuelle
     del session["current_question"]
-    db.save_session(session)
     
     return AdaptiveFeedback(
         is_correct=is_correct,
-        explanation=f"Ta maîtrise du topic '{topic_id}' est maintenant à {new_mastery}%",
+        explanation=f"Ta maîtrise du topic est maintenant à {new_mastery}%",
         encouragement=encouragement,
         next_action=next_action,
         difficulty_adjustment=difficulty_adjustment,
         xp_earned=xp_earned,
         mastery_change=mastery_change,
         streak_info={
-            "current_streak": streak_info["current_streak"],
-            "longest_streak": streak_info["longest_streak"],
-            "total_reviews": streak_info["total_reviews"],
-            "message": f"🔥 {streak_info['current_streak']} jours de révision d'affilée !" if streak_info["current_streak"] > 0 else None
-        },
-        current_topic_id=topic_id,
-        next_topic_id=next_topic_id,
-        interleaving_benefit=session.get("estimated_benefit", 0.0)
+            "current_streak": streak,
+            "message": f"🔥 {streak} bonnes réponses d'affilée !" if streak > 0 else None
+        }
     )
 
 
 @router.get("/progress/{session_id}")
 async def get_progress(session_id: str):
     """
-    Récupère la progression de la session avec détails interleaving
+    Récupère la progression de la session
     """
-    # Charger session depuis cache ou DB
-    if session_id not in sessions_cache:
-        session = db.get_session(session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session non trouvée")
-        sessions_cache[session_id] = session
-    else:
-        session = sessions_cache[session_id]
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
     
+    session = sessions[session_id]
     user_id = session["user_id"]
+    topic_id = session["topic_id"]
     
-    # Charger mastery depuis cache ou DB
-    if user_id not in mastery_cache:
-        mastery_cache[user_id] = db.get_all_mastery(user_id)
+    mastery_data = user_mastery.get(user_id, {}).get(topic_id, {})
     
-    # Récupérer le streak
-    streak_info = db.get_streak(user_id, session["course_id"])
-    
-    # Calculer les stats globales de la session
     accuracy = (
         session["correct_answers"] / session["questions_answered"]
         if session["questions_answered"] > 0 else 0
     )
-    
-    # Stats par topic (pour interleaving)
-    topics_progress = []
-    total_mastery = 0
-    for topic_id in session["topic_ids"]:
-        mastery_data = mastery_cache.get(user_id, {}).get(topic_id, {})
-        mastery_level = mastery_data.get("mastery_level", 0)
-        total_mastery += mastery_level
-        
-        # Compter les questions de ce topic dans cette session
-        topic_questions = session["question_history"].count(topic_id)
-        
-        topics_progress.append({
-            "topic_id": topic_id,
-            "mastery_level": mastery_level,
-            "success_rate": round(mastery_data.get("success_rate", 0) * 100, 1),
-            "questions_in_session": topic_questions,
-            "next_review_in_days": mastery_data.get("interval", 1)
-        })
-    
-    # Calculer le mastery_level global (moyenne des topics)
-    avg_mastery = total_mastery / len(session["topic_ids"]) if session["topic_ids"] else 0
     
     return {
         "session_id": session_id,
@@ -568,14 +307,10 @@ async def get_progress(session_id: str):
         "correct_answers": session["correct_answers"],
         "accuracy": round(accuracy * 100, 1),
         "xp_earned": session["xp_earned"],
-        "mastery_level": round(avg_mastery),  # Ajout du champ mastery_level
-        "next_review_in_days": topics_progress[0]["next_review_in_days"] if topics_progress else 1,
-        "current_streak": streak_info["current_streak"],
-        "longest_streak": streak_info["longest_streak"],
-        "total_reviews": streak_info["total_reviews"],
-        "interleaving_enabled": session["interleaving_enabled"],
-        "estimated_retention_boost": session.get("estimated_benefit", 0.0),
-        "topics": topics_progress
+        "mastery_level": mastery_data.get("mastery_level", 0),
+        "success_rate": round(mastery_data.get("success_rate", 0) * 100, 1),
+        "current_streak": session.get("streak", 0),
+        "next_review_in_days": mastery_data.get("interval", 1)
     }
 
 
@@ -584,237 +319,24 @@ async def get_demo_stats():
     """
     Endpoint de démo pour voir toutes les sessions et mastery
     """
-    all_sessions = db.get_all_sessions()
-    
-    # Construire un dict user_id -> mastery pour affichage
-    user_mastery_display = {}
-    for user_id in mastery_cache.keys():
-        user_mastery_display[user_id] = {
-            topic_id: {
-                "mastery_level": data["mastery_level"],
-                "success_rate": round(data["success_rate"] * 100, 1)
+    return {
+        "total_sessions": len(sessions),
+        "sessions": [
+            {
+                "id": s_id,
+                "questions_answered": s["questions_answered"],
+                "xp_earned": s["xp_earned"]
             }
-            for topic_id, data in mastery_cache[user_id].items()
+            for s_id, s in sessions.items()
+        ],
+        "user_mastery": {
+            user_id: {
+                topic_id: {
+                    "mastery_level": data["mastery_level"],
+                    "success_rate": round(data["success_rate"] * 100, 1)
+                }
+                for topic_id, data in topics.items()
+            }
+            for user_id, topics in user_mastery.items()
         }
-    
-    return {
-        "total_sessions": len(all_sessions),
-        "sessions": all_sessions,
-        "user_mastery": user_mastery_display
     }
-
-
-@router.get("/streak/{user_id}")
-async def get_user_streak(user_id: str, course_id: Optional[str] = None):
-    """
-    Récupère le streak de révision d'un utilisateur
-    """
-    streak_info = db.get_streak(user_id, course_id)
-    return {
-        "user_id": user_id,
-        "course_id": course_id,
-        "current_streak": streak_info["current_streak"],
-        "longest_streak": streak_info["longest_streak"],
-        "total_reviews": streak_info["total_reviews"]
-    }
-
-
-@router.get("/question-stats/{question_id}")
-async def get_question_statistics(question_id: str):
-    """
-    ✨ NOUVEAU: Récupère les statistiques d'une question pour voir si elle est bien calibrée
-    """
-    stats = db.get_question_stats(question_id)
-    if not stats:
-        raise HTTPException(status_code=404, detail="Question non trouvée")
-    
-    return stats
-
-
-@router.get("/miscalibrated-questions")
-async def get_miscalibrated_questions(topic_id: Optional[str] = None):
-    """
-    ✨ NOUVEAU: Liste les questions mal calibrées (actual_difficulty != target_difficulty)
-    Utile pour améliorer le prompt GPT ou régénérer ces questions
-    """
-    questions = db.get_miscalibrated_questions(topic_id)
-    
-    return {
-        "total_miscalibrated": len(questions),
-        "questions": questions,
-        "message": f"Trouvé {len(questions)} question(s) mal calibrée(s). Considérez les régénérer ou ajuster le prompt GPT."
-    }
-
-
-@router.get("/difficulty-stats/{user_id}/{topic_id}")
-async def get_difficulty_stats(user_id: str, topic_id: str):
-    """
-    ✨ NOUVEAU: Affiche les statistiques de réussite par difficulté pour un topic
-    """
-    # Charger mastery depuis cache ou DB
-    if user_id not in mastery_cache:
-        mastery_cache[user_id] = db.get_all_mastery(user_id)
-    
-    if topic_id not in mastery_cache[user_id]:
-        raise HTTPException(status_code=404, detail="Topic non trouvé pour cet utilisateur")
-    
-    mastery_data = mastery_cache[user_id][topic_id]
-    
-    return {
-        "user_id": user_id,
-        "topic_id": topic_id,
-        "mastery_level": mastery_data["mastery_level"],
-        "overall_success_rate": round(mastery_data["success_rate"] * 100, 1),
-        "success_by_difficulty": {
-            "easy": {
-                "success_rate": round(mastery_data.get("success_by_difficulty", {}).get("easy", 0) * 100, 1),
-                "attempts": mastery_data.get("attempts_by_difficulty", {}).get("easy", 0)
-            },
-            "medium": {
-                "success_rate": round(mastery_data.get("success_by_difficulty", {}).get("medium", 0) * 100, 1),
-                "attempts": mastery_data.get("attempts_by_difficulty", {}).get("medium", 0)
-            },
-            "hard": {
-                "success_rate": round(mastery_data.get("success_by_difficulty", {}).get("hard", 0) * 100, 1),
-                "attempts": mastery_data.get("attempts_by_difficulty", {}).get("hard", 0)
-            }
-        },
-        "recommendation": _get_difficulty_recommendation(mastery_data)
-    }
-
-
-def _get_difficulty_recommendation(mastery_data: Dict[str, Any]) -> str:
-    """Génère une recommandation basée sur les success rates par difficulté"""
-    success_diff = mastery_data.get("success_by_difficulty", {})
-    attempts_diff = mastery_data.get("attempts_by_difficulty", {})
-    
-    easy_sr = success_diff.get("easy", 0)
-    medium_sr = success_diff.get("medium", 0)
-    hard_sr = success_diff.get("hard", 0)
-    
-    # Au moins 3 tentatives pour recommander
-    if attempts_diff.get("easy", 0) >= 3 and easy_sr > 0.85:
-        return "✅ Prêt pour passer à MEDIUM (maîtrise easy > 85%)"
-    
-    if attempts_diff.get("medium", 0) >= 3 and medium_sr < 0.5:
-        return "⚠️ Retour à EASY recommandé (difficulté medium < 50%)"
-    
-    if attempts_diff.get("medium", 0) >= 3 and medium_sr > 0.85:
-        return "✅ Prêt pour passer à HARD (maîtrise medium > 85%)"
-    
-    if attempts_diff.get("hard", 0) >= 3 and hard_sr < 0.4:
-        return "⚠️ Retour à MEDIUM recommandé (difficulté hard < 40%)"
-    
-    return "ℹ️ Continue à pratiquer pour collecter plus de données"
-
-
-# ═══════════════════════════════════════════════════════════════
-# MESSAGE ARCHIVING - Gestion des messages de cours
-# ═══════════════════════════════════════════════════════════════
-
-@router.post("/save-message/{course_id}")
-async def save_course_message(course_id: str, data: Dict[str, Any]):
-    """
-    Sauvegarde un message de cours dans la DB
-    """
-    user_id = data.get("user_id", "demo-user")
-    message = data.get("message")
-    
-    if not message:
-        raise HTTPException(status_code=400, detail="Message requis")
-    
-    success = db.save_message(course_id, user_id, message)
-    
-    if not success:
-        raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde")
-    
-    return {"success": True, "message_id": message["id"]}
-
-
-@router.post("/save-messages-bulk/{course_id}")
-async def save_messages_bulk(course_id: str, data: Dict[str, Any]):
-    """
-    Sauvegarde plusieurs messages en bulk (optimisé)
-    Utilisé pour synchronisation initiale
-    """
-    user_id = data.get("user_id", "demo-user")
-    messages = data.get("messages", [])
-    
-    if not messages:
-        raise HTTPException(status_code=400, detail="Messages requis")
-    
-    saved_count = db.save_messages_bulk(course_id, user_id, messages)
-    
-    return {
-        "success": True,
-        "saved_count": saved_count,
-        "total_messages": len(messages)
-    }
-
-
-@router.post("/archive-messages/{course_id}")
-async def archive_course_messages(course_id: str, keep_recent: int = 50):
-    """
-    Archive automatiquement les vieux messages d'un cours
-    Garde les N plus récents actifs, archive le reste
-    
-    Returns: nombre de messages archivés
-    """
-    archived_count = db.archive_old_messages(course_id, keep_recent)
-    
-    return {
-        "success": True,
-        "archived_count": archived_count,
-        "keep_recent": keep_recent
-    }
-
-
-@router.get("/recent-messages/{course_id}")
-async def get_recent_messages(course_id: str, limit: int = 50):
-    """
-    Récupère les messages récents (non-archivés) d'un cours
-    Utilisé pour charger les messages actifs dans localStorage
-    """
-    messages = db.get_recent_messages(course_id, limit)
-    
-    return {
-        "course_id": course_id,
-        "messages": messages,
-        "count": len(messages)
-    }
-
-
-@router.get("/archived-messages/{course_id}")
-async def get_archived_messages(
-    course_id: str, 
-    limit: int = 100, 
-    offset: int = 0
-):
-    """
-    Récupère l'historique archivé (pour consultation)
-    Avec pagination
-    """
-    messages = db.get_archived_messages(course_id, limit, offset)
-    
-    return {
-        "course_id": course_id,
-        "messages": messages,
-        "count": len(messages),
-        "limit": limit,
-        "offset": offset,
-        "has_more": len(messages) == limit
-    }
-
-
-@router.get("/message-stats/{course_id}")
-async def get_message_stats(course_id: str):
-    """
-    Récupère les statistiques de messages pour un cours
-    """
-    stats = db.get_message_stats(course_id)
-    
-    return {
-        "course_id": course_id,
-        **stats
-    }
-
