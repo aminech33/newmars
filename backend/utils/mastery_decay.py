@@ -116,17 +116,19 @@ def should_review_concept(
 
 def apply_decay_to_concepts(
     concepts: List[Dict[str, Any]],
+    db = None,
     current_date: datetime = None
-) -> List[Dict[str, Any]]:
+) -> int:
     """
-    Applique la dégradation à une liste de concepts
+    Applique la dégradation à une liste de concepts ET persiste dans la DB
     
     Args:
         concepts: Liste de concepts avec 'mastery_level', 'last_referenced', 'ease_factor'
+        db: Instance de Database pour persister les changements
         current_date: Date actuelle (par défaut: now)
     
     Returns:
-        Liste des concepts avec mastery_level mis à jour
+        Nombre de concepts dont la mastery a été mise à jour
     """
     if current_date is None:
         current_date = datetime.now()
@@ -181,11 +183,21 @@ def apply_decay_to_concepts(
                 total_decay += decay_amount
                 stats["max_decay"] = max(stats["max_decay"], decay_amount)
                 
-                logger.debug(
-                    f"📉 Concept '{concept.get('concept')}': "
-                    f"{old_mastery}% → {new_mastery}% "
-                    f"(après {days_since} jours)"
-                )
+                # 🔥 PERSISTENCE: Mettre à jour dans la DB si disponible
+                if db and new_mastery != old_mastery:
+                    try:
+                        db.update_mastery(concept['id'], new_mastery)
+                        logger.debug(
+                            f"📉 Concept '{concept.get('concept')}': "
+                            f"{old_mastery}% → {new_mastery}% (après {days_since} jours) - SAVED"
+                        )
+                    except Exception as db_error:
+                        logger.error(f"❌ Failed to persist decay for concept {concept['id']}: {db_error}")
+                else:
+                    logger.debug(
+                        f"📉 Concept '{concept.get('concept')}': "
+                        f"{old_mastery}% → {new_mastery}% (après {days_since} jours)"
+                    )
             
             # Créer un nouveau dict avec mastery mis à jour
             updated_concept = concept.copy()
@@ -204,7 +216,8 @@ def apply_decay_to_concepts(
             f"avg decay: {stats['avg_decay']:.1f}%, max: {stats['max_decay']}%"
         )
     
-    return updated_concepts
+    # Retourner le nombre de concepts mis à jour (pour la route API)
+    return stats["decayed"]
 
 
 def get_concepts_needing_review(

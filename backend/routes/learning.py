@@ -182,32 +182,40 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
         # 🧠 V1.9.0: Mise à jour mastery des concepts liés au topic
         # Lien quiz réussi → +10-15% mastery pour concepts pertinents
         try:
-            course_id = session.get("course_id")  # Si disponible dans la session
-            if course_id:
+            course_id = session.get("course_id")
+            if not course_id:
+                logger.warning("⚠️ Session missing course_id, skipping concept mastery update")
+            else:
                 topic_name = session.get("topic_name", topic_id)
                 concepts = db.get_concepts(course_id)
                 
-                # Trouver les concepts liés à ce topic
-                matching_concepts = [
-                    c for c in concepts 
-                    if topic_name.lower() in c['concept'].lower()
-                    or any(keyword in topic_name.lower() for keyword in c.get('keywords', []))
-                ]
-                
-                for concept in matching_concepts:
-                    # Boost majeur pour quiz réussi (+10-15% selon difficulté)
-                    if current_q["difficulty"] == "expert":
-                        concept_mastery_boost = 15
-                    elif current_q["difficulty"] == "intermediate":
-                        concept_mastery_boost = 12
-                    else:
-                        concept_mastery_boost = 10
+                if not concepts:
+                    logger.debug(f"No concepts found for course {course_id}")
+                else:
+                    # Trouver les concepts liés à ce topic
+                    matching_concepts = [
+                        c for c in concepts 
+                        if topic_name.lower() in c['concept'].lower()
+                        or any(keyword in topic_name.lower() for keyword in c.get('keywords', []))
+                    ]
                     
-                    new_concept_mastery = min(100, concept['mastery_level'] + concept_mastery_boost)
-                    db.update_mastery(concept['id'], new_concept_mastery)
+                    if not matching_concepts:
+                        logger.debug(f"No concepts matching topic '{topic_name}'")
                     
-                    logger.info(f"✅ Quiz success → Concept '{concept['concept']}' "
-                              f"mastery updated: {concept['mastery_level']}% → {new_concept_mastery}%")
+                    for concept in matching_concepts:
+                        # Boost majeur pour quiz réussi (+10-15% selon difficulté)
+                        if current_q["difficulty"] == "expert":
+                            concept_mastery_boost = 15
+                        elif current_q["difficulty"] == "intermediate":
+                            concept_mastery_boost = 12
+                        else:
+                            concept_mastery_boost = 10
+                        
+                        new_concept_mastery = min(100, concept['mastery_level'] + concept_mastery_boost)
+                        db.update_mastery(concept['id'], new_concept_mastery)
+                        
+                        logger.info(f"✅ Quiz success → Concept '{concept['concept']}' "
+                                  f"mastery updated: {concept['mastery_level']}% → {new_concept_mastery}%")
         except Exception as e:
             # Non-bloquant si erreur
             logger.warning(f"⚠️ Could not update concept mastery: {e}")
