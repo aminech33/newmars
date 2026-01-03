@@ -124,6 +124,26 @@ export function useCourseMessages() {
       content: m.content
     }))
 
+    // 🔥 CHARGER LES CONCEPTS PERTINENTS DEPUIS SQLITE
+    let relevantConcepts: any[] = []
+    try {
+      const response = await fetch(`http://localhost:8000/api/knowledge/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          courseId, 
+          query: content,
+          limit: 5 
+        })
+      })
+      if (response.ok) {
+        const data = await response.json()
+        relevantConcepts = data.concepts || []
+      }
+    } catch (err) {
+      console.warn('⚠️ Concepts search failed, continuing without them')
+    }
+
     // Construire le contexte d'apprentissage enrichi
     const learningContext: LearningContext = {
       courseName: course.name,
@@ -139,6 +159,12 @@ export function useCourseMessages() {
       recentNotes: course.notes.slice(-3).map(n => ({
         title: n.title,
         content: n.content
+      })),
+      // 🔥 CONCEPTS SQLITE
+      relevantConcepts: relevantConcepts.map(c => ({
+        concept: c.concept,
+        definition: c.definition,
+        masteryLevel: c.masteryLevel
       })),
       // Contexte code si fourni
       codeContext: codeContext ? {
@@ -183,6 +209,22 @@ Réponds à ma question en tenant compte de mon code actuel. Ne répète pas le 
         onChunk?.(chunk)
       }
     )
+
+    // 🧠 NOUVEAU: Tracker l'usage actif des concepts après l'envoi du message
+    try {
+      await fetch('http://localhost:8000/api/knowledge/track-usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId,
+          userMessage: content,
+          codeContext: codeContext?.code
+        })
+      })
+      // Pas besoin d'attendre la réponse, c'est juste pour tracking
+    } catch (error) {
+      console.debug('⚠️ Concept tracking failed (non-blocking):', error)
+    }
 
     return fullResponse
   }, [learningCourses])

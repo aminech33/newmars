@@ -23,7 +23,7 @@ from models.learning import (
     TopicMastery,
     InterleavingSession
 )
-from database import db
+from database import db, concepts_manager
 import uuid
 from datetime import datetime
 import statistics
@@ -423,6 +423,36 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
     # Sauvegarder mastery mise à jour en DB
     db.save_mastery(user_id, topic_id, mastery_data)
     
+    # 🧠 NOUVEAU: Mettre à jour la maîtrise des concepts liés dans la knowledge base
+    try:
+        course_id = session["course_id"]
+        # Récupérer tous les concepts du cours
+        concepts = concepts_manager.get_concepts(course_id, limit=None)
+        
+        # Trouver le concept qui correspond à ce topic_id (par nom similaire)
+        # Exemple: topic_id="python-variables" → chercher concept "variables"
+        topic_name_clean = topic_id.replace("-", " ").lower()
+        
+        matching_concepts = [
+            c for c in concepts 
+            if topic_name_clean in c['concept'].lower() or c['concept'].lower() in topic_name_clean
+        ]
+        
+        if matching_concepts:
+            for concept in matching_concepts[:1]:  # Prendre le premier match
+                # Calculer le nouveau niveau de maîtrise du concept (0-100 scale)
+                concept_mastery_boost = mastery_change if is_correct else max(-5, mastery_change)
+                new_concept_mastery = max(0, min(100, concept['mastery_level'] + concept_mastery_boost))
+                
+                concepts_manager.update_mastery(concept['id'], new_concept_mastery)
+                logger.info(f"🧠 Concept '{concept['concept']}' maîtrise: {concept['mastery_level']}% → {new_concept_mastery}%")
+        else:
+            logger.debug(f"ℹ️ No matching concept found for topic '{topic_id}'")
+            
+    except Exception as e:
+        logger.error(f"⚠️ Error updating concept mastery: {e}")
+        # Ne pas bloquer la réponse si l'update concept échoue
+    
     # Mettre à jour le streak de révision
     streak_info = db.update_streak(user_id, session["course_id"])
     
@@ -676,4 +706,115 @@ def _get_difficulty_recommendation(mastery_data: Dict[str, Any]) -> str:
         return "⚠️ Retour à MEDIUM recommandé (difficulté hard < 40%)"
     
     return "ℹ️ Continue à pratiquer pour collecter plus de données"
+
+
+# ═══════════════════════════════════════════════════════════════
+# MESSAGE ARCHIVING - Gestion des messages de cours
+# ═══════════════════════════════════════════════════════════════
+
+@router.post("/save-message/{course_id}")
+async def save_course_message(course_id: str, data: Dict[str, Any]):
+    """
+    Sauvegarde un message de cours dans la DB
+    """
+    user_id = data.get("user_id", "demo-user")
+    message = data.get("message")
+    
+    if not message:
+        raise HTTPException(status_code=400, detail="Message requis")
+    
+    success = db.save_message(course_id, user_id, message)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde")
+    
+    return {"success": True, "message_id": message["id"]}
+
+
+@router.post("/save-messages-bulk/{course_id}")
+async def save_messages_bulk(course_id: str, data: Dict[str, Any]):
+    """
+    Sauvegarde plusieurs messages en bulk (optimisé)
+    Utilisé pour synchronisation initiale
+    """
+    user_id = data.get("user_id", "demo-user")
+    messages = data.get("messages", [])
+    
+    if not messages:
+        raise HTTPException(status_code=400, detail="Messages requis")
+    
+    saved_count = db.save_messages_bulk(course_id, user_id, messages)
+    
+    return {
+        "success": True,
+        "saved_count": saved_count,
+        "total_messages": len(messages)
+    }
+
+
+@router.post("/archive-messages/{course_id}")
+async def archive_course_messages(course_id: str, keep_recent: int = 50):
+    """
+    Archive automatiquement les vieux messages d'un cours
+    Garde les N plus récents actifs, archive le reste
+    
+    Returns: nombre de messages archivés
+    """
+    archived_count = db.archive_old_messages(course_id, keep_recent)
+    
+    return {
+        "success": True,
+        "archived_count": archived_count,
+        "keep_recent": keep_recent
+    }
+
+
+@router.get("/recent-messages/{course_id}")
+async def get_recent_messages(course_id: str, limit: int = 50):
+    """
+    Récupère les messages récents (non-archivés) d'un cours
+    Utilisé pour charger les messages actifs dans localStorage
+    """
+    messages = db.get_recent_messages(course_id, limit)
+    
+    return {
+        "course_id": course_id,
+        "messages": messages,
+        "count": len(messages)
+    }
+
+
+@router.get("/archived-messages/{course_id}")
+async def get_archived_messages(
+    course_id: str, 
+    limit: int = 100, 
+    offset: int = 0
+):
+    """
+    Récupère l'historique archivé (pour consultation)
+    Avec pagination
+    """
+    messages = db.get_archived_messages(course_id, limit, offset)
+    
+    return {
+        "course_id": course_id,
+        "messages": messages,
+        "count": len(messages),
+        "limit": limit,
+        "offset": offset,
+        "has_more": len(messages) == limit
+    }
+
+
+@router.get("/message-stats/{course_id}")
+async def get_message_stats(course_id: str):
+    """
+    Récupère les statistiques de messages pour un cours
+    """
+    stats = db.get_message_stats(course_id)
+    
+    return {
+        "course_id": course_id,
+        **stats
+    }
 

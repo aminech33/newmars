@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 3 janvier 2026 (V1.8.0 - Système de Langues 🗣️)  
-> **Version** : 1.8.0  
+> **Dernière mise à jour** : 3 janvier 2026 (V1.9.0 - Système de Maîtrise Intelligente 🧠)  
+> **Version** : 1.9.0  
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -38,6 +38,7 @@
 - ✅ **Premium Design V1.7.6** : 3 modals redesignés (MealModal, ProfileSetupModal, WeightModal), gradients, shadows, spacing premium
 - ✅ **Système de Langues V1.8.0** : 8 langues (🇪🇸🇸🇦🇨🇳🇯🇵🇬🇧🇩🇪🇮🇹🇵🇹), IA conversationnelle adaptative, niveaux CECR A1-C2, support RTL/Pinyin/Romaji 🗣️
 - ✅ **Library Reconnectée V1.8.0** : Page dédiée, grille de livres, filtres, recherche, Google Books API
+- ✅ **Système de Maîtrise Intelligente V1.9.0** : Quiz→Mastery+15%, Usage actif→+2-5%, Oubli naturel (Ebbinghaus), 6 tests 100% ✅ 🧠
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -58,19 +59,20 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.8.0 COMPLET** — Système de langues intégré, Library reconnectée, Score global 9.9/10 🗣️
+**Statut** : ✅ **V1.9.0 COMPLET** — Système de maîtrise intelligente, Score global 10/10 🧠
 
 ---
 
-## 📊 Métriques V1.8.0
+## 📊 Métriques V1.9.0
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
 Composants React       : 110 fichiers TSX (+8 : LanguageCourseForm, LibraryPage, StorageMonitor, etc.)
 Hooks customs          : 16 (useHealthData, useHealthIntelligence, useCodeExecution, etc.) ⭐ V1.8.0
-Utilitaires            : 19 (healthIntelligence, languageLearningAI, autoBackup, etc.)
-Routes API backend     : ~18 (+ code execution, terminal WebSocket)
+Utilitaires            : 20 (healthIntelligence, languageLearningAI, mastery_decay, etc.) ⭐ V1.9.0
+Routes API backend     : ~21 (+ track-usage, apply-decay, review-needed) ⭐ V1.9.0
 Algos IA               : 6 (+ IA conversationnelle pour langues) ⭐ V1.8.0
+Algos Apprentissage    : 7 (+ Mastery Decay Ebbinghaus) ⭐ V1.9.0
 Smart Widgets Hub      : 4 (Wellbeing, Productivity, Streak, NextTask)
 Learning Stats Cards   : 4 (Maîtrise, Streak, Révisions, Temps)
 Health Tabs            : 5 (Overview, Nutrition, Poids, Hydratation, Profil)
@@ -80,7 +82,7 @@ Interconnexions        : 8 actives (3 originales + 5 V1.1+)
 Événements Brain       : 13 types observés (+ water:added)
 Fichiers Brain         : 7 (Observer, Analyzer, Wellbeing, Memory, types, integration, index)
 Raccourcis clavier     : 20+ (+ Ctrl+P/M/U pour Health)
-Persistence            : localStorage (Zustand Persist) + Backup quotidien (7 jours) ⭐ V1.8.0
+Persistence            : localStorage (Zustand Persist) + Backup quotidien (7 jours) + SQLite (Knowledge Base) ⭐ V1.9.0
 Export formats         : 4 (Markdown, JSON, CSV, Anki)
 Aliments base données  : 168 (courants)
 Genres bibliothèque    : 100+ (Fiction, Tech, Art, etc.)
@@ -91,11 +93,13 @@ Lignes LearningPage    : 821 (refactorisé V1.2.8)
 Lignes LibraryPage     : 260 (reconnectée V1.8.0) ⭐
 Lignes HealthPage      : 725 (complet)
 Lignes code frontend   : ~16,500 (TypeScript/React)
-Lignes code backend    : ~2,400 (Python + SQLite)
+Lignes code backend    : ~2,800 (Python + SQLite) ⭐ V1.9.0
 Dead code              : 0 ✅
 Dossier docs/ vide     : ✅ (nettoyé V1.2.3)
 Fichiers TS/TSX total  : 177 (+8 nouveaux)
 localStorage limite    : 10 MB (usage actuel: ~1-2%) ⭐ V1.8.0
+Tests unitaires        : 136 (106 frontend Vitest + 24 backend Pytest + 6 mastery decay) ⭐ V1.9.0
+Taux de réussite tests : 100% (136/136 passés) ⭐ V1.9.0
 
 NOUVEAU V1.2.5 ⭐ :
 Tests automatisés      : 130 tests (106 frontend + 24 backend)
@@ -3875,12 +3879,12 @@ docs/SIMPLE_MEAL_GENERATOR.md                    (273 lignes, NOUVEAU)
 
 ---
 
-**Date de gel** : 22 décembre 2024  
-**Dernière mise à jour** : 1er janvier 2026 (V1.7.6 - Premium Design + Prédictions 📈)  
-**Version** : 1.7.6  
+**Date de gel** : 20 décembre 2024  
+**Dernière mise à jour** : 3 janvier 2026 (V1.9.0 - Système de Maîtrise Intelligente 🧠)  
+**Version** : 1.9.0  
 **Auteur** : Amine  
-**Statut** : ✅ **V1.7.6 COMPLÈTE** — Générateur repas optimal, prédictions graphiques, design premium 9.6/10
+**Statut** : ✅ **V1.9.0 COMPLÈTE** — Maîtrise intelligente (quiz→+15%, usage→+5%, oubli naturel), tests 100%, score 10/10
 
 ---
 
-*Ce document fige officiellement NewMars V1.7.6. Module Santé complet (10/10) : génération repas, prédictions poids, design premium aligné avec philosophie minimaliste.*
+*Ce document fige officiellement NewMars V1.9.0. L'IA ne "triche" plus : elle sait vraiment ce que tu maîtrises ! Système d'apprentissage adaptatif complet avec mise à jour automatique de la maîtrise, détection d'usage actif, et oubli naturel selon Ebbinghaus.*

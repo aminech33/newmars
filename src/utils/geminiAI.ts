@@ -10,9 +10,16 @@ import { geminiRateLimiter, withRateLimit } from './rateLimiter'
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
 const MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash-exp'
 
+// 🔥 Fallback OpenAI
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || ''
+const OPENAI_MODEL = 'gpt-4o-mini'
+
 // Vérification de sécurité
 if (!API_KEY && typeof window !== 'undefined') {
   console.warn('⚠️ VITE_GEMINI_API_KEY manquante. Ajoutez-la dans votre fichier .env')
+  if (OPENAI_API_KEY) {
+    console.info('✅ Fallback OpenAI activé')
+  }
 }
 
 interface ConversationMessage {
@@ -185,6 +192,29 @@ export async function generateGeminiStreamingResponse(
   history: ConversationMessage[] = [],
   onChunk: (chunk: string) => void
 ): Promise<string> {
+  // 🔥 FALLBACK: Si Gemini échoue, essayer OpenAI
+  try {
+    return await tryGeminiStreaming(context, userMessage, history, onChunk)
+  } catch (error) {
+    console.warn('⚠️ Gemini failed, trying OpenAI fallback...', error)
+    
+    if (!OPENAI_API_KEY) {
+      throw error // Re-throw original error if no fallback
+    }
+    
+    return await tryOpenAIStreaming(context, userMessage, history, onChunk)
+  }
+}
+
+/**
+ * 🔵 Tentative avec Gemini
+ */
+async function tryGeminiStreaming(
+  context: string,
+  userMessage: string,
+  history: ConversationMessage[] = [],
+  onChunk: (chunk: string) => void
+): Promise<string> {
   // Validate API key
   if (!API_KEY) {
     throw new Error('❌ Clé API Gemini manquante. Vérifiez votre fichier .env')
@@ -300,6 +330,73 @@ export async function generateGeminiStreamingResponse(
 }
 
 /**
+ * 🟢 Fallback OpenAI (streaming)
+ */
+async function tryOpenAIStreaming(
+  context: string,
+  userMessage: string,
+  history: ConversationMessage[] = [],
+  onChunk: (chunk: string) => void
+): Promise<string> {
+  const messages = [
+    { role: 'system', content: context },
+    ...history.map(m => ({ role: m.role, content: m.content })),
+    { role: 'user', content: userMessage }
+  ]
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      messages,
+      temperature: 0.7,
+      max_tokens: 2048,
+      stream: true
+    })
+  })
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API Error: ${response.status}`)
+  }
+
+  const reader = response.body?.getReader()
+  if (!reader) throw new Error('No response stream')
+
+  const decoder = new TextDecoder()
+  let fullText = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    const chunk = decoder.decode(value)
+    const lines = chunk.split('\n').filter(l => l.trim().startsWith('data:'))
+
+    for (const line of lines) {
+      const data = line.replace('data: ', '').trim()
+      if (data === '[DONE]') continue
+      
+      try {
+        const json = JSON.parse(data)
+        const content = json.choices?.[0]?.delta?.content
+        if (content) {
+          fullText += content
+          onChunk(content)
+        }
+      } catch {
+        // Skip invalid JSON
+      }
+    }
+  }
+
+  return fullText
+}
+
+/**
  * Rich learning context for AI tutor
  */
 export interface LearningContext {
@@ -320,6 +417,9 @@ export interface LearningContext {
   
   // Recent notes (for context)
   recentNotes?: Array<{ title: string; content: string }>
+  
+  // 🔥 Concepts SQLite (base de connaissances)
+  relevantConcepts?: Array<{ concept: string; definition: string | null; masteryLevel: number }>
   
   // Code context (if applicable)
   codeContext?: {
@@ -352,6 +452,7 @@ export function buildPedagogicalContext(
     topics,
     progress,
     recentNotes,
+    relevantConcepts,
     codeContext,
     terminalContext
   } = learningContext
@@ -374,6 +475,18 @@ export function buildPedagogicalContext(
     topics.forEach(topic => {
       const status = topic.status === 'completed' ? '✅' : topic.status === 'in-progress' ? '🔄' : '⏳'
       prompt += `\n${status} ${topic.name}`
+    })
+  }
+  
+  // 🔥 Add SQLite concepts (knowledge base)
+  if (relevantConcepts && relevantConcepts.length > 0) {
+    prompt += `\n\n## 🧠 CONCEPTS DÉJÀ APPRIS (Base de connaissances SQLite)`
+    prompt += `\nL'étudiant a déjà vu ces concepts, tu peux t'appuyer dessus :`
+    relevantConcepts.forEach(c => {
+      const masteryIcon = c.masteryLevel >= 80 ? '✅' : c.masteryLevel >= 50 ? '🔄' : '⚠️'
+      prompt += `\n${masteryIcon} ${c.concept}`
+      if (c.definition) prompt += ` : ${c.definition}`
+      prompt += ` (maîtrise: ${c.masteryLevel}%)`
     })
   }
   
