@@ -10,6 +10,8 @@ from routes.terminal import router as terminal_router
 from routes.skills import router as skills_router
 from routes.knowledge import router as knowledge_router
 from routes.languages import router as languages_router
+from routes.code_execution import router as code_router
+from routes.withings import router as withings_router
 
 app = FastAPI(
     title="Adaptive Learning API",
@@ -33,6 +35,8 @@ app.include_router(terminal_router, prefix="/api/terminal", tags=["Terminal"])
 app.include_router(skills_router, prefix="/api/skills", tags=["Skills"])
 app.include_router(knowledge_router)  # Prefix déjà défini dans le router
 app.include_router(languages_router)  # Prefix déjà défini dans le router
+app.include_router(code_router)       # Prefix déjà défini (/api/code)
+app.include_router(withings_router, prefix="/api/withings", tags=["Withings"])
 
 
 @app.get("/")
