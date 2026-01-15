@@ -46,41 +46,52 @@ const LONG_KEYWORDS = ['refactor', 'refonte', 'complet', 'projet', 'développer'
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function calculateFocusScore(task: Task): number {
+  // Null safety
+  if (!task) return 0
+
   let score = 0
-  
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. Priorité explicite (40 points max)
   // L'utilisateur a choisi cette priorité, on la respecte.
   // ─────────────────────────────────────────────────────────────────────────────
-  const priorityScores: Record<TaskPriority, number> = { 
-    low: 10, 
-    medium: 20, 
-    high: 30, 
-    urgent: 40 
+  const priorityScores: Record<TaskPriority, number> = {
+    low: 10,
+    medium: 20,
+    high: 30,
+    urgent: 40
   }
-  score += priorityScores[task.priority]
-  
+  score += priorityScores[task.priority] ?? 20 // Default to medium si priorité invalide
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. Deadline proximity (40 points max)
   // Plus c'est proche/en retard, plus c'est urgent.
   // ─────────────────────────────────────────────────────────────────────────────
   if (task.dueDate) {
-    const daysUntilDue = Math.ceil(
-      (new Date(task.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    )
-    
-    if (daysUntilDue < 0) {
-      score += 40 // En retard = priorité maximale
-    } else if (daysUntilDue === 0) {
-      score += 35 // Aujourd'hui
-    } else if (daysUntilDue === 1) {
-      score += 25 // Demain
-    } else if (daysUntilDue <= 3) {
-      score += 15 // Cette semaine
-    } else if (daysUntilDue <= 7) {
-      score += 8  // Semaine prochaine
+    try {
+      const dueDate = new Date(task.dueDate)
+      // Vérifier que la date est valide
+      if (!isNaN(dueDate.getTime())) {
+        const daysUntilDue = Math.ceil(
+          (dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        )
+
+        if (daysUntilDue < 0) {
+          score += 40 // En retard = priorité maximale
+        } else if (daysUntilDue === 0) {
+          score += 35 // Aujourd'hui
+        } else if (daysUntilDue === 1) {
+          score += 25 // Demain
+        } else if (daysUntilDue <= 3) {
+          score += 15 // Cette semaine
+        } else if (daysUntilDue <= 7) {
+          score += 8  // Semaine prochaine
+        }
+        // > 7 jours = pas de bonus
+      }
+    } catch {
+      // Date invalide, on ignore le bonus deadline
     }
-    // > 7 jours = pas de bonus
   }
   
   // ─────────────────────────────────────────────────────────────────────────────

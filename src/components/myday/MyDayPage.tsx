@@ -1,56 +1,42 @@
 /**
- * 📅 MyDayPage - Page Ma Journée (refactorisée)
- * 
- * Composants extraits :
- * - JournalTab : Onglet journal complet
- * - HealthTab : Onglet santé complet
- * - TasksMetricsCard : Card métriques tâches
- * - PomodoroMetricsCard : Card métriques pomodoro
+ * 📅 MyDayPage - Page Ma Journée
+ *
+ * Journal quotidien + rituels/habitudes
+ * (Santé déplacée dans page indépendante HealthPage)
  */
 
 import { useState, useMemo, useCallback } from 'react'
-import { ArrowLeft, Feather, Heart, Sparkles } from 'lucide-react'
+import { ArrowLeft, Sparkles } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { moodEmojiToLevel, getTodayEntry } from '../../utils/journalUtils'
 import { AddHabitModal } from '../habits/AddHabitModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useHabitsStats } from '../../hooks/useGlobalStats'
-import { useHealthData } from '../../hooks/useHealthData'
 import { JournalHistoryModal } from './JournalHistoryModal'
-import { WeightModal } from '../health/WeightModal'
-import { MealModal } from '../health/MealModal'
-import { ProfileSetupModal } from '../health/ProfileSetupModal'
 import { UndoToast } from '../ui/UndoToast'
 import { useJournalEntry } from '../../hooks/useJournalEntry'
 import { useAutoSave } from '../../hooks/useAutoSave'
 
 // Composants extraits
 import { JournalTab } from './JournalTab'
-import { HealthTab } from './HealthTab'
-
-type PageTab = 'journal' | 'sante'
 
 export function MyDayPage() {
-  const { 
-    setView, 
-    habits, 
-    addHabit, 
-    toggleHabitToday, 
+  const {
+    setView,
+    habits,
+    addHabit,
+    toggleHabitToday,
     deleteHabit,
-    journalEntries, 
-    addJournalEntry, 
+    journalEntries,
+    addJournalEntry,
     updateJournalEntry,
     toggleJournalFavorite,
     deleteJournalEntry,
     addToast,
-    tasks,
-    getPriorityTask
+    tasks
   } = useStore()
-  
-  const pomodoroSessions = useStore(state => state.pomodoroSessions || [])
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<PageTab>('journal')
+  const pomodoroSessions = useStore(state => state.pomodoroSessions || [])
 
   // Journal states
   const [showAddHabitModal, setShowAddHabitModal] = useState(false)
@@ -58,48 +44,29 @@ export function MyDayPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
 
-  // Health data
-  const {
-    trend,
-    todayCalories,
-    targetCalories,
-    filteredWeightEntries,
-    filteredMealEntries,
-    weightEntries,
-    mealEntries,
-    handleAddWeight,
-    handleAddMeal,
-    deleteWeightEntry,
-    deleteMealEntry
-  } = useHealthData()
-
-  // Health modal states
-  const [showWeightModal, setShowWeightModal] = useState(false)
-  const [showMealModal, setShowMealModal] = useState(false)
-  const [showProfileModal, setShowProfileModal] = useState(false)
-  const [healthDeleteConfirm, setHealthDeleteConfirm] = useState<{ type: 'weight' | 'meal'; id: string } | null>(null)
-  const [undoData, setUndoData] = useState<{ type: 'weight' | 'meal'; data: any } | null>(null)
-  const [showUndo, setShowUndo] = useState(false)
-
   const today = useMemo(() => new Date().toISOString().split('T')[0], [])
   const todayEntry = getTodayEntry(journalEntries)
-  const todayMeals = useMemo(() => filteredMealEntries.filter(m => m.date === today), [filteredMealEntries, today])
-
-  const todayMacros = useMemo(() => ({
-    protein: todayMeals.reduce((sum, m) => sum + (m.protein || 0), 0),
-    carbs: todayMeals.reduce((sum, m) => sum + (m.carbs || 0), 0),
-    fat: todayMeals.reduce((sum, m) => sum + (m.fat || 0), 0)
-  }), [todayMeals])
 
   const habitsStats = useHabitsStats()
 
   // Hook personnalisé pour gérer l'entrée de journal
-  const { intention, setIntention, mood, setMood, canSave, hasChanges } = useJournalEntry(todayEntry)
+  const {
+    intention, setIntention,
+    mood, setMood,
+    tags, setTags,
+    gratitudeText, setGratitudeText,
+    learningText, setLearningText,
+    victoryText, setVictoryText,
+    canSave, hasChanges
+  } = useJournalEntry(todayEntry)
+
+  // Timestamp de dernière sauvegarde (pour l'indicateur auto-save)
+  const [lastSavedAt, setLastSavedAt] = useState<number | undefined>(undefined)
 
   const handleSave = useCallback(() => {
     if (!canSave) return
     setIsSaving(true)
-    
+
     const entryData = {
       date: today,
       intention: intention.trim(),
@@ -107,6 +74,11 @@ export function MyDayPage() {
       moodEmoji: mood,
       mainGoal: intention.trim(),
       reflection: intention.trim(),
+      tags,
+      // Sections structurées
+      gratitudeText: gratitudeText.trim() || undefined,
+      learningText: learningText.trim() || undefined,
+      victoryText: victoryText.trim() || undefined,
     }
 
     if (todayEntry) {
@@ -117,7 +89,8 @@ export function MyDayPage() {
       addToast('Entrée sauvegardée', 'success')
     }
     setIsSaving(false)
-  }, [intention, mood, today, todayEntry, canSave, addJournalEntry, updateJournalEntry, addToast])
+    setLastSavedAt(Date.now())
+  }, [intention, mood, tags, gratitudeText, learningText, victoryText, today, todayEntry, canSave, addJournalEntry, updateJournalEntry, addToast])
 
   // Auto-save avec hook personnalisé
   useAutoSave(handleSave, [intention, mood], hasChanges && canSave, 3000)
@@ -177,131 +150,7 @@ export function MyDayPage() {
     }
   }
 
-  // Health handlers
-  const handleWeightSubmit = useCallback((data: { weight: number; date: string; note?: string }) => {
-    const result = handleAddWeight(data)
-    if (result.success) addToast('Poids ajouté', 'success')
-    return result
-  }, [handleAddWeight, addToast])
-
-  const handleMealSubmit = useCallback((data: any) => {
-    const result = handleAddMeal(data)
-    if (result.success) addToast('Repas ajouté', 'success')
-    return result
-  }, [handleAddMeal, addToast])
-
-  const handleDeleteWeight = useCallback((id: string) => {
-    setHealthDeleteConfirm({ type: 'weight', id })
-  }, [])
-
-  const handleDeleteMeal = useCallback((id: string) => {
-    setHealthDeleteConfirm({ type: 'meal', id })
-  }, [])
-
-  const handleDuplicateMeal = useCallback((meal: any) => {
-    const result = handleAddMeal({
-      ...meal,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().slice(0, 5)
-    })
-    if (result.success) addToast('Repas dupliqué', 'success')
-  }, [handleAddMeal, addToast])
-
-  const confirmHealthDelete = useCallback(() => {
-    if (!healthDeleteConfirm) return
-    
-    if (healthDeleteConfirm.type === 'weight') {
-      const entry = filteredWeightEntries.find(e => e.id === healthDeleteConfirm.id)
-      if (entry) {
-        setUndoData({ type: 'weight', data: entry })
-        deleteWeightEntry(healthDeleteConfirm.id)
-        setShowUndo(true)
-        setTimeout(() => setShowUndo(false), 5000)
-      }
-    } else {
-      const entry = filteredMealEntries.find(e => e.id === healthDeleteConfirm.id)
-      if (entry) {
-        setUndoData({ type: 'meal', data: entry })
-        deleteMealEntry(healthDeleteConfirm.id)
-        setShowUndo(true)
-        setTimeout(() => setShowUndo(false), 5000)
-      }
-    }
-    setHealthDeleteConfirm(null)
-  }, [healthDeleteConfirm, filteredWeightEntries, filteredMealEntries, deleteWeightEntry, deleteMealEntry])
-
-  const handleUndo = useCallback(() => {
-    if (!undoData) return
-    if (undoData.type === 'weight') handleAddWeight(undoData.data)
-    else handleAddMeal(undoData.data)
-    setUndoData(null)
-    setShowUndo(false)
-  }, [undoData, handleAddWeight, handleAddMeal])
-
-  const priorityTask = getPriorityTask()
   const { todayCompleted } = habitsStats
-
-  // Tâches accomplies aujourd'hui
-  const tasksCompletedToday = useMemo(() => {
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
-    return tasks.filter(t => 
-      t.completed && 
-      t.createdAt >= todayStart.getTime()
-    )
-  }, [tasks])
-
-  // Compter les repas d'aujourd'hui
-  const todayMealsCount = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0]
-    return mealEntries.filter(m => m.date === today).length
-  }, [mealEntries])
-
-  // Poids le plus récent pour MealModal
-  const latestWeightEntry = useMemo(() => {
-    if (weightEntries.length === 0) return undefined
-    return {
-      weight: weightEntries[weightEntries.length - 1].weight,
-      date: weightEntries[weightEntries.length - 1].date
-    }
-  }, [weightEntries])
-
-  // Objectif calorique pour MealModal
-  const caloriesGoal = useMemo(() => {
-    const { healthGoals } = useStore.getState()
-    return healthGoals.find(g => g.type === 'calories' && g.active)
-  }, [])
-
-  // Objectif utilisateur pour MealModal
-  const userGoal = useMemo(() => {
-    const { userProfile } = useStore.getState()
-    return userProfile.goal || 'maintain'
-  }, [])
-
-  // Poids cible et prédiction pour WeightChart
-  const targetWeight = useMemo(() => {
-    const { userProfile } = useStore.getState()
-    return userProfile.targetWeight
-  }, [])
-
-  const predictedWeeks = useMemo(() => {
-    if (!targetWeight || weightEntries.length < 2) return undefined
-    
-    const latestWeight = weightEntries[weightEntries.length - 1]?.weight || 0
-    const remainingKg = Math.abs(targetWeight - latestWeight)
-    
-    // Utiliser la tendance hebdomadaire
-    const weeklyChange = Math.abs(trend.weeklyChange)
-    
-    if (weeklyChange === 0) return Infinity
-    
-    return Math.ceil(remainingKg / weeklyChange)
-  }, [targetWeight, weightEntries, trend.weeklyChange])
-
-  const TABS: { id: PageTab; label: string; icon: typeof Feather }[] = [
-    { id: 'journal', label: 'Journal', icon: Feather },
-    { id: 'sante', label: 'Santé', icon: Heart }
-  ]
 
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden bg-black">
@@ -314,95 +163,49 @@ export function MyDayPage() {
           >
             <ArrowLeft className="w-[18px] h-[18px]" />
           </button>
-          <div>
-            <h1 className="font-serif text-base font-semibold text-zinc-100 tracking-tight">
-              Ma Journée
-            </h1>
-          </div>
+          <h1 className="font-serif text-base font-semibold text-zinc-100 tracking-tight">
+            Ma Journée
+          </h1>
         </div>
 
-        {/* Tabs à droite */}
-        <div className="flex items-center gap-2">
-          {/* Streak badge */}
-          {habitsStats.globalStreak > 0 && activeTab === 'journal' && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-xs font-medium text-amber-300">{habitsStats.globalStreak} jours</span>
-            </div>
-          )}
-          
-          {/* Tabs */}
-          <div className="flex items-center gap-1 bg-zinc-800/40 rounded-lg p-0.5">
-            {TABS.map((tab) => {
-              const Icon = tab.icon
-              const badgeCount = tab.id === 'journal' ? tasksCompletedToday.length : todayMealsCount
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all ${
-                    activeTab === tab.id 
-                      ? 'bg-zinc-700/60 text-zinc-100' 
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                  {badgeCount > 0 && (
-                    <span className="w-5 h-5 flex items-center justify-center text-xs bg-emerald-500/20 text-emerald-400 rounded-full font-medium">
-                      {badgeCount}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
+        {/* Streak badge */}
+        {habitsStats.globalStreak > 0 && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-xs font-medium text-amber-300">{habitsStats.globalStreak} jours</span>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Content */}
       <div className="relative flex-1 overflow-y-auto">
-        {activeTab === 'journal' && (
-          <JournalTab
-            intention={intention}
-            setIntention={setIntention}
-            mood={mood}
-            setMood={setMood}
-            handleSave={handleSave}
-            canSave={canSave}
-            isSaving={isSaving}
-            hasChanges={hasChanges}
-            setShowHistoryModal={setShowHistoryModal}
-            habits={habits}
-            tasks={tasks}
-            today={today}
-            todayCompleted={todayCompleted}
-            pomodoroSessions={pomodoroSessions}
-            handleToggleHabit={handleToggleHabit}
-            setShowAddHabitModal={setShowAddHabitModal}
-          />
-        )}
-
-        {activeTab === 'sante' && (
-          <HealthTab
-            setShowMealModal={setShowMealModal}
-            setShowWeightModal={setShowWeightModal}
-            setShowProfileModal={setShowProfileModal}
-            mealEntries={mealEntries}
-            weightEntries={weightEntries}
-            filteredMealEntries={filteredMealEntries}
-            filteredWeightEntries={filteredWeightEntries}
-            todayCalories={todayCalories}
-            targetCalories={targetCalories}
-            todayMacros={todayMacros}
-            trend={trend}
-            targetWeight={targetWeight}
-            predictedWeeks={predictedWeeks}
-            handleDeleteMeal={handleDeleteMeal}
-            handleDeleteWeight={handleDeleteWeight}
-            handleDuplicateMeal={handleDuplicateMeal}
-          />
-        )}
+        <JournalTab
+          intention={intention}
+          setIntention={setIntention}
+          mood={mood}
+          setMood={setMood}
+          tags={tags}
+          setTags={setTags}
+          gratitudeText={gratitudeText}
+          setGratitudeText={setGratitudeText}
+          learningText={learningText}
+          setLearningText={setLearningText}
+          victoryText={victoryText}
+          setVictoryText={setVictoryText}
+          handleSave={handleSave}
+          canSave={canSave}
+          isSaving={isSaving}
+          hasChanges={hasChanges}
+          setShowHistoryModal={setShowHistoryModal}
+          lastSavedAt={lastSavedAt}
+          habits={habits}
+          tasks={tasks}
+          today={today}
+          todayCompleted={todayCompleted}
+          pomodoroSessions={pomodoroSessions}
+          handleToggleHabit={handleToggleHabit}
+          setShowAddHabitModal={setShowAddHabitModal}
+        />
       </div>
 
       {/* Modals */}
@@ -421,43 +224,6 @@ export function MyDayPage() {
         confirmText="Supprimer"
         cancelText="Annuler"
         variant="warning"
-      />
-
-      <WeightModal
-        isOpen={showWeightModal}
-        onClose={() => setShowWeightModal(false)}
-        onSubmit={handleWeightSubmit}
-      />
-
-      <MealModal
-        isOpen={showMealModal}
-        onClose={() => setShowMealModal(false)}
-        onSubmit={handleMealSubmit}
-        latestWeight={latestWeightEntry}
-        targetCalories={caloriesGoal?.target}
-        userGoal={userGoal as 'lose' | 'maintain' | 'gain'}
-      />
-
-      <ProfileSetupModal
-        isOpen={showProfileModal}
-        onClose={() => setShowProfileModal(false)}
-      />
-
-      <ConfirmDialog
-        isOpen={!!healthDeleteConfirm}
-        onClose={() => setHealthDeleteConfirm(null)}
-        onConfirm={confirmHealthDelete}
-        title="Supprimer ?"
-        message={`Supprimer ${healthDeleteConfirm?.type === 'weight' ? 'cette entrée de poids' : 'ce repas'} ?`}
-        confirmText="Supprimer"
-        cancelText="Annuler"
-        variant="warning"
-      />
-
-      <UndoToast
-        message={`${undoData?.type === 'weight' ? 'Poids' : 'Repas'} supprimé`}
-        onUndo={handleUndo}
-        isVisible={showUndo}
       />
 
       <JournalHistoryModal

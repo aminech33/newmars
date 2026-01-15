@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { Clock, Check, Calendar } from 'lucide-react'
 import { Task, useStore } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
@@ -33,7 +33,7 @@ const postItColors = {
   }
 }
 
-export function PostItTaskCard({ task, index, onClick }: PostItTaskCardProps) {
+function PostItTaskCardComponent({ task, index, onClick }: PostItTaskCardProps) {
   const { toggleTask, projects, updateTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
   const colors = postItColors[task.priority]
@@ -276,4 +276,17 @@ export function PostItTaskCard({ task, index, onClick }: PostItTaskCardProps) {
   )
 }
 
-
+// React.memo avec comparaison personnalisée pour éviter les re-renders inutiles
+export const PostItTaskCard = memo(PostItTaskCardComponent, (prev, next) => {
+  return (
+    prev.task.id === next.task.id &&
+    prev.task.title === next.task.title &&
+    prev.task.completed === next.task.completed &&
+    prev.task.priority === next.task.priority &&
+    prev.task.dueDate === next.task.dueDate &&
+    prev.task.projectId === next.task.projectId &&
+    prev.task.subtasks?.length === next.task.subtasks?.length &&
+    prev.task.tags?.length === next.task.tags?.length &&
+    prev.index === next.index
+  )
+})

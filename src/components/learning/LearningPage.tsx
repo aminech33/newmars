@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useStore } from '../../store/useStore'
 import { useLearningData } from '../../hooks/useLearningData'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { CourseModal } from './CourseModal'
@@ -6,6 +7,9 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Toast, ToastType } from '../ui/Toast'
 import { CreateCourseData, Course } from '../../types/learning'
 import { CoursesTab } from './CoursesTab'
+
+// URL du backend (configurable via env)
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
 // Hook local pour les toasts (sans Provider)
 function useLocalToast() {
@@ -23,6 +27,7 @@ function useLocalToast() {
 }
 
 export function LearningPage() {
+  const { addLearningMessage } = useStore()
   const learningData = useLearningData()
   const {
     filteredCourses,
@@ -103,20 +108,21 @@ export function LearningPage() {
         terminalContext
       )
       
-      // Ajouter la réponse IA au store
+      // Ajouter la réponse IA au store via l'action Zustand
       const aiMessage = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         role: 'assistant' as const,
         content: fullResponse,
         timestamp: Date.now()
       }
-      
-      learningData.courses.find(c => c.id === activeCourse.id)?.messages.push(aiMessage)
-      
+
+      // ✅ Utiliser l'action du store au lieu de mutation directe
+      addLearningMessage(activeCourse.id, aiMessage)
+
       // 🧠 V1.9.0: Tracking automatique de l'usage des concepts
       // Détecte l'utilisation active de concepts pour mettre à jour leur mastery
       try {
-        await fetch('http://localhost:8000/api/knowledge/track-usage', {
+        await fetch(`${API_BASE_URL}/api/knowledge/track-usage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -136,7 +142,7 @@ export function LearningPage() {
     } finally {
       setIsTyping(false)
     }
-  }, [activeCourse, sendMessage, sendMessageWithStreaming, setIsTyping, showToast, learningData.courses])
+  }, [activeCourse, sendMessage, sendMessageWithStreaming, setIsTyping, showToast, addLearningMessage])
 
   const handleCopyMessage = useCallback(() => {
     showToast('Message copié !', 'success')

@@ -1,5 +1,5 @@
 /**
- * 🏥 HealthTab - Onglet Santé de Ma Journée (Version optimisée)
+ * 🏥 HealthTab - Onglet Santé de Ma Journée (Version formulaires inline)
  */
 
 import { useState } from 'react'
@@ -8,17 +8,16 @@ import { WeightChart } from '../health/WeightChart'
 import { WeightList } from '../health/WeightList'
 import { MealList } from '../health/MealList'
 import { BodyCompositionDisplay } from '../health/BodyCompositionDisplay'
-import { WeightEntry, MealEntry } from '../../types/health'
+import { InlineMealForm } from '../health/InlineMealForm'
+import { InlineWeightForm } from '../health/InlineWeightForm'
+import { InlineProfileForm } from '../health/InlineProfileForm'
+import { WeightEntry, MealEntry, FoodPortion } from '../../types/health'
+import { UserGoal } from '../../utils/simpleMealGenerator'
 
 type HealthSection = 'nutrition' | 'weight'
 type PeriodFilter = '7d' | '30d' | '90d' | 'all'
 
 interface HealthTabProps {
-  // Modals
-  setShowMealModal: (show: boolean) => void
-  setShowWeightModal: (show: boolean) => void
-  setShowProfileModal: (show: boolean) => void
-  
   // Data
   mealEntries: MealEntry[]
   weightEntries: WeightEntry[]
@@ -34,17 +33,29 @@ interface HealthTabProps {
   }
   targetWeight?: number
   predictedWeeks?: number
-  
+  latestWeight?: { weight: number; date: string }
+  userGoal?: UserGoal
+
   // Handlers
   handleDeleteMeal: (id: string) => void
   handleDeleteWeight: (id: string) => void
   handleDuplicateMeal: (meal: MealEntry) => void
+  handleAddMeal: (data: {
+    name: string
+    calories: number
+    protein: number
+    carbs: number
+    fat: number
+    fiber?: number
+    foods: FoodPortion[]
+    date: string
+    time: string
+    type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+  }) => { success: boolean; error?: string }
+  handleAddWeight: (data: { weight: number; date: string; note?: string }) => { success: boolean; error?: string }
 }
 
 export function HealthTab({
-  setShowMealModal,
-  setShowWeightModal,
-  setShowProfileModal,
   mealEntries,
   weightEntries,
   filteredMealEntries,
@@ -55,19 +66,28 @@ export function HealthTab({
   trend,
   targetWeight,
   predictedWeeks,
+  latestWeight,
+  userGoal = 'maintain',
   handleDeleteMeal,
   handleDeleteWeight,
-  handleDuplicateMeal
+  handleDuplicateMeal,
+  handleAddMeal,
+  handleAddWeight
 }: HealthTabProps) {
   const [activeSection, setActiveSection] = useState<HealthSection>('nutrition')
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('30d')
-  
+
+  // États pour les formulaires inline
+  const [showMealForm, setShowMealForm] = useState(false)
+  const [showWeightForm, setShowWeightForm] = useState(false)
+  const [showProfileForm, setShowProfileForm] = useState(false)
+
   // Filtrer les entrées de poids selon la période
   const filteredWeightByPeriod = weightEntries.filter(entry => {
     const entryDate = new Date(entry.date)
     const now = new Date()
     const daysDiff = Math.floor((now.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24))
-    
+
     switch (periodFilter) {
       case '7d': return daysDiff <= 7
       case '30d': return daysDiff <= 30
@@ -76,10 +96,15 @@ export function HealthTab({
       default: return true
     }
   })
-  
+
+  // Dernier poids pour le formulaire
+  const lastWeightValue = weightEntries.length > 0
+    ? weightEntries[weightEntries.length - 1].weight
+    : undefined
+
   return (
     <div className="h-full overflow-y-auto p-6">
-      
+
       {/* Tabs mobile */}
       <div className="flex lg:hidden gap-2 mb-6">
         <button
@@ -108,10 +133,10 @@ export function HealthTab({
       <div className="max-w-6xl mx-auto">
         {/* Layout 2 colonnes : Nutrition (60%) + Poids (40%) */}
         <div className={`grid gap-4 ${activeSection === 'nutrition' ? 'grid-cols-1' : 'grid-cols-1'} lg:grid-cols-5`}>
-        
+
         {/* ===== NUTRITION (3/5) ===== */}
-        <section 
-          className={`lg:col-span-3 space-y-3 ${activeSection === 'weight' ? 'hidden lg:block' : ''}`} 
+        <section
+          className={`lg:col-span-3 space-y-3 ${activeSection === 'weight' ? 'hidden lg:block' : ''}`}
           aria-label="Nutrition aujourd'hui"
         >
           <div className="flex items-center justify-between">
@@ -119,36 +144,49 @@ export function HealthTab({
               <Apple className="w-5 h-5 text-emerald-400" aria-hidden="true" />
               Nutrition
             </h3>
-            
+
             {/* Bouton Ajouter repas */}
-            <button
-              onClick={() => setShowMealModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg transition-all text-sm font-medium"
-              aria-label="Ajouter un repas"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Repas</span>
-            </button>
+            {!showMealForm && (
+              <button
+                onClick={() => setShowMealForm(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg transition-all text-sm font-medium"
+                aria-label="Ajouter un repas"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Repas</span>
+              </button>
+            )}
           </div>
 
-          {mealEntries.length === 0 ? (
+          {/* Formulaire inline pour ajouter un repas */}
+          {showMealForm && (
+            <InlineMealForm
+              onSubmit={handleAddMeal}
+              onCancel={() => setShowMealForm(false)}
+              latestWeight={latestWeight}
+              targetCalories={targetCalories}
+              userGoal={userGoal}
+            />
+          )}
+
+          {mealEntries.length === 0 && !showMealForm ? (
             <div className="flex items-center justify-center py-20" role="status" aria-label="Aucun repas enregistré">
               <div className="text-center">
                 <div className="text-6xl mb-4">🍽️</div>
                 <p className="text-xl font-semibold text-zinc-300 mb-2">Aucun repas</p>
                 <p className="text-sm text-zinc-600 mb-6">Commencez à tracker</p>
                 <button
-                  onClick={() => setShowMealModal(true)}
+                  onClick={() => setShowMealForm(true)}
                   className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-all"
                 >
                   Ajouter un repas
                 </button>
               </div>
             </div>
-          ) : (
+          ) : mealEntries.length > 0 && (
             <div className="space-y-3">
               {/* Calories & Macros combinés (minimaliste) */}
-              <div 
+              <div
                 className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800"
                 role="region"
                 aria-label={`Calories consommées: ${todayCalories} sur ${targetCalories} kilocalories`}
@@ -165,23 +203,23 @@ export function HealthTab({
                     </span>
                     <span className="text-base text-zinc-600">/ {targetCalories} kcal</span>
                   </div>
-                  
+
                   {/* Barre de progression (colorée dynamiquement) */}
                   <div className="h-2 bg-zinc-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow={todayCalories} aria-valuemin={0} aria-valuemax={targetCalories}>
-                    <div 
+                    <div
                       className={`h-full transition-all duration-500 ${
                         todayCalories > targetCalories ? 'bg-rose-500' :
                         todayCalories > targetCalories * 0.8 ? 'bg-gradient-to-r from-emerald-500 to-teal-500' :
                         'bg-zinc-600'
                       }`}
-                      style={{ width: `${Math.min(100, (todayCalories / targetCalories) * 100)}%` }} 
+                      style={{ width: `${Math.min(100, (todayCalories / targetCalories) * 100)}%` }}
                     />
                   </div>
-                  
+
                   {/* Message contextuel */}
                   {todayCalories > 0 && (
                     <p className="text-xs text-zinc-500 mt-2">
-                      {todayCalories > targetCalories 
+                      {todayCalories > targetCalories
                         ? `+${todayCalories - targetCalories} kcal au-dessus de l'objectif`
                         : todayCalories > targetCalories * 0.8
                           ? `Reste ${targetCalories - todayCalories} kcal`
@@ -190,7 +228,7 @@ export function HealthTab({
                     </p>
                   )}
                 </div>
-                
+
                 {/* Macros (grid 3 colonnes, plus compact) */}
                 <div className="grid grid-cols-3 gap-3 pt-3 border-t border-zinc-800/50">
                   <div className="text-center">
@@ -215,7 +253,7 @@ export function HealthTab({
               </div>
 
               {/* Liste des repas avec objectifs macros */}
-              <div 
+              <div
                 className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800"
                 role="region"
                 aria-label="Historique des repas"
@@ -224,12 +262,12 @@ export function HealthTab({
                   <p className="text-xs text-zinc-500">Historique</p>
                   <p className="text-xs text-zinc-500">{filteredMealEntries.length} repas</p>
                 </div>
-                <MealList 
-                  entries={filteredMealEntries} 
-                  onDelete={handleDeleteMeal} 
+                <MealList
+                  entries={filteredMealEntries}
+                  onDelete={handleDeleteMeal}
                   onDuplicate={handleDuplicateMeal}
                   targetCalories={targetCalories}
-                  compact 
+                  compact
                 />
               </div>
             </div>
@@ -237,8 +275,8 @@ export function HealthTab({
         </section>
 
         {/* ===== POIDS (2/5) ===== */}
-        <section 
-          className={`lg:col-span-2 space-y-3 ${activeSection === 'nutrition' ? 'hidden lg:block' : ''}`} 
+        <section
+          className={`lg:col-span-2 space-y-3 ${activeSection === 'nutrition' ? 'hidden lg:block' : ''}`}
           aria-label="Suivi du poids"
         >
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -246,7 +284,7 @@ export function HealthTab({
               <Scale className="w-5 h-5 text-rose-400" aria-hidden="true" />
               Poids
             </h3>
-            
+
             <div className="flex items-center gap-2">
               {/* Sélecteur de période */}
               {weightEntries.length > 0 && (
@@ -266,43 +304,66 @@ export function HealthTab({
                   ))}
                 </div>
               )}
-              
+
               {/* Boutons d'action */}
-              <button
-                onClick={() => setShowWeightModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg transition-all text-sm font-medium"
-                aria-label="Ajouter une pesée"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Pesée</span>
-              </button>
-              
-              <button
-                onClick={() => setShowProfileModal(true)}
-                className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 rounded-lg transition-all"
-                aria-label="Configurer le profil"
-                title="Configurer le profil"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
+              {!showWeightForm && (
+                <button
+                  onClick={() => setShowWeightForm(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg transition-all text-sm font-medium"
+                  aria-label="Ajouter une pesée"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Pesée</span>
+                </button>
+              )}
+
+              {!showProfileForm && (
+                <button
+                  onClick={() => setShowProfileForm(true)}
+                  className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 rounded-lg transition-all"
+                  aria-label="Configurer le profil"
+                  title="Configurer le profil"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
-          {weightEntries.length === 0 ? (
+          {/* Formulaire inline pour ajouter un poids */}
+          {showWeightForm && (
+            <InlineWeightForm
+              onSubmit={handleAddWeight}
+              onCancel={() => setShowWeightForm(false)}
+              lastWeight={lastWeightValue}
+              targetWeight={targetWeight}
+            />
+          )}
+
+          {/* Formulaire inline pour configurer le profil */}
+          {showProfileForm && (
+            <InlineProfileForm
+              onClose={() => setShowProfileForm(false)}
+              currentWeight={lastWeightValue || 0}
+              weightEntries={weightEntries}
+            />
+          )}
+
+          {weightEntries.length === 0 && !showWeightForm && !showProfileForm ? (
             <div className="flex items-center justify-center py-20" role="status" aria-label="Aucune pesée enregistrée">
               <div className="text-center">
                 <div className="text-6xl mb-4">⚖️</div>
                 <p className="text-xl font-semibold text-zinc-300 mb-2">Aucune pesée</p>
                 <p className="text-sm text-zinc-600 mb-6">Commencez à tracker</p>
                 <button
-                  onClick={() => setShowWeightModal(true)}
+                  onClick={() => setShowWeightForm(true)}
                   className="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium transition-all"
                 >
                   Ajouter une pesée
                 </button>
               </div>
             </div>
-          ) : (
+          ) : weightEntries.length > 0 && (
             <div className="space-y-3">
               {/* Composition corporelle (si données Withings) - Toujours visible */}
               {weightEntries[weightEntries.length - 1]?.fatMassPercent && (
@@ -314,9 +375,9 @@ export function HealthTab({
                   <BodyCompositionDisplay latestEntry={weightEntries[weightEntries.length - 1]} />
                 </div>
               )}
-              
+
               {/* Poids actuel + Graphique combinés */}
-              <div 
+              <div
                 className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800"
                 role="region"
                 aria-label="Suivi du poids"
@@ -329,10 +390,10 @@ export function HealthTab({
                         {filteredWeightEntries[filteredWeightEntries.length - 1].weight} kg
                       </div>
                       <p className="text-xs text-zinc-500 mt-0.5">
-                        {new Date(filteredWeightEntries[filteredWeightEntries.length - 1].date).toLocaleDateString('fr-FR', { 
-                          weekday: 'short', 
-                          day: 'numeric', 
-                          month: 'short' 
+                        {new Date(filteredWeightEntries[filteredWeightEntries.length - 1].date).toLocaleDateString('fr-FR', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short'
                         })}
                       </p>
                     </div>
@@ -352,13 +413,13 @@ export function HealthTab({
                     </div>
                   </div>
                 )}
-                
+
                 {/* Graphique agrandi */}
                 <p className="text-xs text-zinc-500 mb-2.5">Évolution ({periodFilter === 'all' ? 'Tout' : periodFilter})</p>
                 <div className="h-[280px] lg:h-[320px]">
-                  <WeightChart 
-                    entries={filteredWeightByPeriod} 
-                    trend={trend} 
+                  <WeightChart
+                    entries={filteredWeightByPeriod}
+                    trend={trend}
                     compact={true}
                     targetWeight={targetWeight}
                     predictedWeeks={predictedWeeks}
@@ -367,7 +428,7 @@ export function HealthTab({
               </div>
 
               {/* Liste */}
-              <div 
+              <div
                 className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800"
                 role="region"
                 aria-label="Historique des pesées"
@@ -383,4 +444,3 @@ export function HealthTab({
     </div>
   )
 }
-

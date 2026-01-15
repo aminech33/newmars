@@ -189,15 +189,14 @@ export const formatMonthYear = (date: Date): string => {
 
 // Vérifier si une entrée est éditable (aujourd'hui ou hier seulement)
 export const isEntryEditable = (entryDate: string): boolean => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  const entry = new Date(entryDate)
-  entry.setHours(0, 0, 0, 0)
-  
-  const diffTime = today.getTime() - entry.getTime()
+  // Utiliser UTC pour éviter les problèmes de fuseau horaire
+  const today = new Date().toISOString().split('T')[0]
+  const todayDate = new Date(today + 'T00:00:00Z')
+  const entryDateObj = new Date(entryDate + 'T00:00:00Z')
+
+  const diffTime = todayDate.getTime() - entryDateObj.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-  
+
   // Éditable si aujourd'hui (0) ou hier (1)
-  return diffDays <= 1
+  return diffDays >= 0 && diffDays <= 1
 }

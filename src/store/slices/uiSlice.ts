@@ -136,7 +136,7 @@ export const createUISlice: StateCreator<
   setSelectedBookId: (id) => set({ selectedBookId: id }),
 
   // User
-  userName: 'Alexandre',
+  userName: 'Amine',
   setUserName: (name) => set({ userName: name }),
 
   // Theme

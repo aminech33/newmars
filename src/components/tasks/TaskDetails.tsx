@@ -2,6 +2,7 @@ import { X, CheckSquare, Plus, Trash2, Flag, MoveRight, Check, FolderKanban, Lin
 import { useState, useEffect } from 'react'
 import { Task, TaskPriority, useStore } from '../../store/useStore'
 import { Collapsible } from '../ui/Collapsible'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 interface TaskDetailsProps {
   task: Task
@@ -16,12 +17,14 @@ const priorities: { value: TaskPriority; label: string; color: string }[] = [
 ]
 
 export function TaskDetails({ task, onClose }: TaskDetailsProps) {
-  const { updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, addEvent, events, projects } = useStore()
+  const { updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, projects } = useStore()
   const [newSubtask, setNewSubtask] = useState('')
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [description, setDescription] = useState(task.description || '')
   const [showSaved, setShowSaved] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showBlockTimeConfirm, setShowBlockTimeConfirm] = useState(false)
 
   // Auto-save feedback
   useEffect(() => {
@@ -65,41 +68,26 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
   }
   
   const handleDelete = () => {
-    if (confirm('Supprimer cette tâche ?')) {
-      deleteTask(task.id)
-      onClose()
-    }
+    setShowDeleteConfirm(true)
   }
 
+  const confirmDelete = () => {
+    deleteTask(task.id)
+    setShowDeleteConfirm(false)
+    onClose()
+  }
+
+  // TODO: Fonctionnalité "Bloquer du temps" désactivée - nécessite addEvent/events dans le store
   const handleBlockTime = () => {
-    if (confirm('Bloquer du temps dans le calendrier pour cette tâche ?')) {
-      const startDate = task.dueDate || new Date().toISOString().split('T')[0]
-      const duration = task.estimatedTime || 60
-      const startTime = '09:00' // Default start time
-      const [hours, minutes] = startTime.split(':').map(Number)
-      const endMinutes = hours * 60 + minutes + duration
-      const endHours = Math.floor(endMinutes / 60)
-      const endMins = endMinutes % 60
-      const endTime = `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`
-
-      addEvent({
-        title: `⏱️ ${task.title}`,
-        description: task.description,
-        startDate,
-        startTime,
-        endTime,
-        type: 'custom',
-        category: task.category === 'dev' || task.category === 'design' ? 'work' : task.category === 'personal' ? 'personal' : 'work',
-        priority: task.priority,
-        isRecurring: false,
-        completed: false,
-        linkedTaskId: task.id,
-      })
-    }
+    // setShowBlockTimeConfirm(true)
   }
 
-  // Find linked event
-  const linkedEvent = events.find(e => e.linkedTaskId === task.id)
+  const confirmBlockTime = () => {
+    setShowBlockTimeConfirm(false)
+  }
+
+  // Événement lié désactivé pour l'instant
+  const linkedEvent = null
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -373,6 +361,27 @@ export function TaskDetails({ task, onClose }: TaskDetailsProps) {
           </div>
         </div>
       </div>
+
+      {/* Dialogs de confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDelete}
+        title="Supprimer cette tâche ?"
+        message={`La tâche "${task.title}" sera définitivement supprimée.`}
+        confirmText="Supprimer"
+        variant="danger"
+      />
+
+      <ConfirmDialog
+        isOpen={showBlockTimeConfirm}
+        onClose={() => setShowBlockTimeConfirm(false)}
+        onConfirm={confirmBlockTime}
+        title="Bloquer du temps ?"
+        message={`Un événement sera créé dans le calendrier pour la tâche "${task.title}".`}
+        confirmText="Bloquer"
+        variant="info"
+      />
     </div>
   )
 }

@@ -129,12 +129,15 @@ export function UnifiedFilters({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Rechercher..."
+            aria-label="Rechercher des tâches"
             className="flex-1 min-w-0 bg-white/5 text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none px-3 py-1.5 rounded-lg"
           />
 
           {/* Advanced toggle */}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
+            aria-expanded={showAdvanced}
+            aria-label={`Filtres avancés${activeCount > 0 ? ` (${activeCount} actifs)` : ''}`}
             className={`
               flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors
               ${showAdvanced || activeCount > 0
@@ -143,23 +146,23 @@ export function UnifiedFilters({
               }
             `}
           >
-            <Filter className="w-3.5 h-3.5" />
+            <Filter className="w-3.5 h-3.5" aria-hidden="true" />
             {activeCount > 0 && (
-              <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-full min-w-[18px]">
+              <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded-full min-w-[18px]" aria-hidden="true">
                 {activeCount}
               </span>
             )}
-            <ChevronDown className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} aria-hidden="true" />
           </button>
 
           {/* Reset */}
           {activeCount > 0 && (
             <button
               onClick={onReset}
+              aria-label="Réinitialiser les filtres"
               className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 rounded-lg transition-colors"
-              title="Réinitialiser"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
         </div>

@@ -7,6 +7,7 @@ import { useStore } from './store/useStore'
 const HubV2 = lazy(() => import('./components/HubV2').then(m => ({ default: m.HubV2 })))
 const TasksPage = lazy(() => import('./components/tasks/TasksPage').then(m => ({ default: m.TasksPage })))
 const MyDayPage = lazy(() => import('./components/myday/MyDayPage').then(m => ({ default: m.MyDayPage })))
+const HealthPage = lazy(() => import('./components/health/HealthPage').then(m => ({ default: m.HealthPage })))
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const LibraryPage = lazy(() => import('./components/LibraryPage').then(m => ({ default: m.LibraryPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
@@ -17,6 +18,7 @@ import { SearchWidget } from './components/SearchWidget'
 import { ToastContainer } from './components/ToastContainer'
 import { Confetti } from './components/Confetti'
 import { OfflineIndicator } from './components/OfflineIndicator'
+import { SyncIndicator } from './components/SyncIndicator'
 import { useAutoBackup } from './hooks/useAutoBackup'
 
 function AppContent() {
@@ -71,7 +73,7 @@ function AppContent() {
           {currentView === 'hub' && <HubV2 />}
           {currentView === 'tasks' && <TasksPage />}
           {currentView === 'myday' && <MyDayPage />}
-          {currentView === 'health' && <MyDayPage />}
+          {currentView === 'health' && <HealthPage />}
           {currentView === 'learning' && <LearningPage />}
           {currentView === 'library' && <LibraryPage />}
           {currentView === 'settings' && <SettingsPage />}
@@ -85,6 +87,10 @@ function AppContent() {
       <Confetti trigger={showConfetti} />
       <OfflineIndicator />
 
+      {/* Indicateur de sync backend (position fixe en bas à droite) */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <SyncIndicator />
+      </div>
     </div>
   )
 }

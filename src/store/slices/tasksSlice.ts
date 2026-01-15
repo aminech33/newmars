@@ -175,6 +175,11 @@ export const createTasksSlice: StateCreator<
   },
 
   addSubtask: (taskId, subtaskTitle) => {
+    const task = get().tasks.find(t => t.id === taskId)
+    if (!task) {
+      console.warn(`[addSubtask] Tâche ${taskId} non trouvée`)
+      return
+    }
     set((s) => ({
       tasks: s.tasks.map((t) =>
         t.id === taskId

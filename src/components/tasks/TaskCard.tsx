@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { Check, Calendar, ListChecks, Star } from 'lucide-react'
 import { Task, useStore } from '../../store/useStore'
 import { Draggable } from '@hello-pangea/dnd'
@@ -17,7 +17,7 @@ const priorityColors = {
   urgent: '#f43f5e'    // rose-500
 }
 
-export function TaskCard({ task, index, onClick }: TaskCardProps) {
+function TaskCardComponent({ task, index, onClick }: TaskCardProps) {
   const { projects, toggleTask, updateTask, setPriorityTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
   
@@ -266,3 +266,18 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
     </Draggable>
   )
 }
+
+// React.memo avec comparaison personnalisée pour éviter les re-renders inutiles
+export const TaskCard = memo(TaskCardComponent, (prev, next) => {
+  return (
+    prev.task.id === next.task.id &&
+    prev.task.title === next.task.title &&
+    prev.task.completed === next.task.completed &&
+    prev.task.priority === next.task.priority &&
+    prev.task.isPriority === next.task.isPriority &&
+    prev.task.dueDate === next.task.dueDate &&
+    prev.task.projectId === next.task.projectId &&
+    prev.task.subtasks?.length === next.task.subtasks?.length &&
+    prev.index === next.index
+  )
+})

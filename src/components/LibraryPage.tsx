@@ -6,8 +6,7 @@ import { useState, useMemo } from 'react'
 import { useStore } from '../store/useStore'
 import { Book as BookIcon, Plus, Search, Star, BookOpen, Clock } from 'lucide-react'
 import { Book } from '../types/library'
-import { AddBookModal } from './library/AddBookModal'
-import { BookDetailModal } from './library/BookDetailModal'
+import { AddBookModal, BookDetailModal } from './library/components'
 
 export function LibraryPage() {
   const { books, addBook, updateBook, deleteBook } = useStore()

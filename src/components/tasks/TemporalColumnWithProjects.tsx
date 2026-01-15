@@ -200,17 +200,25 @@ export function TemporalColumnWithProjects({
                 </div>
               ) : (
                 <>
-                  {tasksByProject.map(({ project, tasks }) => (
-                    <ProjectTasksSection
-                      key={project?.id || 'no-project'}
-                      project={project}
-                      tasks={tasks}
-                      columnId={column}
-                      onTaskClick={onTaskClick}
-                      onTaskToggle={onTaskToggle}
-                      onFocus={onFocus}
-                    />
-                  ))}
+                  {(() => {
+                    let runningIndex = 0
+                    return tasksByProject.map(({ project, tasks }) => {
+                      const startIndex = runningIndex
+                      runningIndex += tasks.length
+                      return (
+                        <ProjectTasksSection
+                          key={project?.id || 'no-project'}
+                          project={project}
+                          tasks={tasks}
+                          columnId={column}
+                          startIndex={startIndex}
+                          onTaskClick={onTaskClick}
+                          onTaskToggle={onTaskToggle}
+                          onFocus={onFocus}
+                        />
+                      )
+                    })
+                  })()}
                 </>
               )}
               {provided.placeholder}

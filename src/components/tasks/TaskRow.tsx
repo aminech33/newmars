@@ -1,9 +1,10 @@
 /**
- * 📋 TaskRow - Ligne de tâche draggable
+ * 📋 TaskRow - Ligne de tâche (rendu uniquement, sans Draggable)
+ *
+ * Note: Le Draggable est géré par ProjectTasksSection
  */
 
 import { useState } from 'react'
-import { Draggable } from '@hello-pangea/dnd'
 import { Check, Star, Timer } from 'lucide-react'
 import { useStore, Task, type TemporalColumn } from '../../store/useStore'
 import { fontStack } from './taskUtils'
@@ -15,15 +16,17 @@ interface TaskRowProps {
   onClick: () => void
   onToggle: () => void
   onFocus?: (task: Task) => void
+  isDragging?: boolean  // Passé depuis le parent Draggable
 }
 
-export function TaskRow({ 
-  task, 
+export function TaskRow({
+  task,
   column,
-  index,
+  index: _index,
   onClick,
   onToggle,
-  onFocus
+  onFocus,
+  isDragging = false
 }: TaskRowProps) {
   const { projects, setPriorityTask, updateTask } = useStore()
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null
@@ -129,112 +132,122 @@ export function TaskRow({
     )
   }
 
+  // Accessibilité clavier
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onClick()
+    }
+  }
+
   return (
-    <Draggable draggableId={task.id} index={index} isDragDisabled={task.completed}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          onClick={onClick}
-          className={`
-            group flex items-center gap-3 h-12 px-3.5 rounded-xl cursor-pointer
-            transition-all duration-150 ease-out relative
-            ${config.row} ${config.rowHover} ${config.opacity}
-            ${task.isPriority && !task.completed && !isDistant ? 'ring-1 ring-amber-500/20 bg-amber-500/[0.04]' : ''}
-            ${task.completed ? 'opacity-45' : ''}
-            ${isChecking ? 'scale-[0.99]' : ''}
-            ${snapshot.isDragging ? 'shadow-2xl shadow-black/50 scale-105 rotate-2 ring-2 ring-indigo-500/50' : ''}
-            ${task.isValidation && !task.completed ? 'ring-1 ring-emerald-500/30' : ''}
-          `}
-        >
-          {/* Badge VALIDATION */}
-          {task.isValidation && !task.completed && (
-            <div className="absolute -top-1.5 -right-1.5 px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-bold rounded-md shadow-lg flex items-center gap-0.5">
-              <Check className="w-2.5 h-2.5" strokeWidth={3} />
-              VALIDATION
-            </div>
-          )}
-          
-          <Checkbox />
-          
-          {/* Project indicator */}
-          {project && (
-            <div 
-              className={`w-1 h-5 rounded-full flex-shrink-0 transition-opacity duration-150
-                ${isDistant ? 'opacity-40' : isUpcoming ? 'opacity-60' : 'opacity-80'}
-              `}
-              style={{ backgroundColor: project.color }}
-            />
-          )}
-          
-          {/* Title */}
-          <span className={`
-            flex-1 min-w-0 text-[17px] leading-normal truncate
-            transition-all duration-200 ${fontStack}
-            ${task.completed ? 'line-through opacity-70' : ''} 
-            ${config.text}
-            ${isDistant && !task.completed ? 'blur-[0.6px] group-hover:blur-0' : ''}
-          `}>
-            {task.title}
-          </span>
-          
-          {/* Date badge */}
-          {task.dueDate && !task.completed && (
-            <span className={`
-              flex-shrink-0 text-[13px] leading-none tabular-nums px-2.5 py-1 rounded-md
-              transition-all duration-150 ${fontStack}
-              ${isOverdue ? 'text-rose-400 bg-rose-500/15 font-medium' : config.dateBadge}
-              ${isDistant ? 'opacity-60 group-hover:opacity-90' : ''}
-            `}>
-              {formatDate(task.dueDate)}
-            </span>
-          )}
-          
-          {/* Priority star */}
-          {!isDistant && !task.completed && !snapshot.isDragging && (
-            <button
-              onClick={handlePriority}
-              className={`
-                flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
-                transition-all duration-150
-                ${task.isPriority ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-                hover:bg-white/10 active:scale-90
-              `}
-            >
-              <Star 
-                className={`w-3.5 h-3.5 transition-all duration-150 ${
-                  task.isPriority 
-                    ? 'text-amber-400 fill-amber-400' 
-                    : 'text-zinc-500 group-hover:text-zinc-400'
-                }`}
-              />
-            </button>
-          )}
-          
-          {/* Focus button (Aujourd'hui only) */}
-          {isToday && !task.completed && !snapshot.isDragging && onFocus && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onFocus(task)
-              }}
-              className={`
-                flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
-                transition-all duration-150
-                opacity-0 group-hover:opacity-100
-                hover:bg-red-500/10 active:scale-90
-              `}
-              title="Démarrer un Pomodoro"
-            >
-              <Timer 
-                className="w-3.5 h-3.5 text-red-400 group-hover:text-red-300"
-              />
-            </button>
-          )}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      aria-label={`${task.completed ? 'Tâche terminée: ' : ''}${task.title}${task.dueDate ? `, échéance ${formatDate(task.dueDate)}` : ''}`}
+      className={`
+        group flex items-center gap-3 h-12 px-3.5 rounded-xl cursor-pointer
+        transition-all duration-150 ease-out relative
+        ${config.row} ${config.rowHover} ${config.opacity}
+        ${task.isPriority && !task.completed && !isDistant ? 'ring-1 ring-amber-500/20 bg-amber-500/[0.04]' : ''}
+        ${task.completed ? 'opacity-45' : ''}
+        ${isChecking ? 'scale-[0.99]' : ''}
+        ${isDragging ? 'shadow-2xl shadow-black/50 scale-105 rotate-2 ring-2 ring-indigo-500/50' : ''}
+        ${task.isValidation && !task.completed ? 'ring-1 ring-emerald-500/30' : ''}
+        focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:ring-offset-1 focus:ring-offset-zinc-900
+      `}
+    >
+      {/* Badge VALIDATION */}
+      {task.isValidation && !task.completed && (
+        <div className="absolute -top-1.5 -right-1.5 px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-bold rounded-md shadow-lg flex items-center gap-0.5">
+          <Check className="w-2.5 h-2.5" strokeWidth={3} />
+          VALIDATION
         </div>
       )}
-    </Draggable>
+
+      <Checkbox />
+
+      {/* Project indicator */}
+      {project && (
+        <div
+          className={`w-1 h-5 rounded-full flex-shrink-0 transition-opacity duration-150
+            ${isDistant ? 'opacity-40' : isUpcoming ? 'opacity-60' : 'opacity-80'}
+          `}
+          style={{ backgroundColor: project.color }}
+        />
+      )}
+
+      {/* Title */}
+      <span className={`
+        flex-1 min-w-0 text-[17px] leading-normal truncate
+        transition-all duration-200 ${fontStack}
+        ${task.completed ? 'line-through opacity-70' : ''}
+        ${config.text}
+        ${isDistant && !task.completed ? 'blur-[0.6px] group-hover:blur-0' : ''}
+      `}>
+        {task.title}
+      </span>
+
+      {/* Date badge */}
+      {task.dueDate && !task.completed && (
+        <span className={`
+          flex-shrink-0 text-[13px] leading-none tabular-nums px-2.5 py-1 rounded-md
+          transition-all duration-150 ${fontStack}
+          ${isOverdue ? 'text-rose-400 bg-rose-500/15 font-medium' : config.dateBadge}
+          ${isDistant ? 'opacity-60 group-hover:opacity-90' : ''}
+        `}>
+          {formatDate(task.dueDate)}
+        </span>
+      )}
+
+      {/* Priority star */}
+      {!isDistant && !task.completed && !isDragging && (
+        <button
+          onClick={handlePriority}
+          aria-label={task.isPriority ? 'Retirer la priorité' : 'Marquer comme prioritaire'}
+          aria-pressed={task.isPriority}
+          className={`
+            flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
+            transition-all duration-150
+            ${task.isPriority ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+            hover:bg-white/10 active:scale-90
+          `}
+        >
+          <Star
+            className={`w-3.5 h-3.5 transition-all duration-150 ${
+              task.isPriority
+                ? 'text-amber-400 fill-amber-400'
+                : 'text-zinc-500 group-hover:text-zinc-400'
+            }`}
+            aria-hidden="true"
+          />
+        </button>
+      )}
+
+      {/* Focus button (Aujourd'hui only) */}
+      {isToday && !task.completed && !isDragging && onFocus && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onFocus(task)
+          }}
+          aria-label="Démarrer un Pomodoro"
+          className={`
+            flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center
+            transition-all duration-150
+            opacity-0 group-hover:opacity-100
+            hover:bg-red-500/10 active:scale-90
+          `}
+        >
+          <Timer
+            className="w-3.5 h-3.5 text-red-400 group-hover:text-red-300"
+            aria-hidden="true"
+          />
+        </button>
+      )}
+    </div>
   )
 }
 

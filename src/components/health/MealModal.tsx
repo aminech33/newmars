@@ -177,8 +177,8 @@ export function MealModal({
 
       <ErrorBanner error={error} />
 
-      {/* MODE GÉNÉRATEUR (par défaut) */}
-      {!showManualMode && latestWeight && targetCalories && (
+      {/* MODE GÉNÉRATEUR (par défaut) - seulement si profil configuré */}
+      {!showManualMode && latestWeight && targetCalories ? (
         <div className="space-y-5">
           {/* Banner premium */}
           <div className="p-4 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-xl">
@@ -264,9 +264,77 @@ export function MealModal({
             </button>
           </div>
         </div>
-      )}
+      ) : !showManualMode && (!latestWeight || !targetCalories) ? (
+        /* MODE MANUEL PAR DÉFAUT - si pas de profil configuré */
+        <div className="space-y-4">
+          {/* Message d'info pour configurer le profil */}
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <p className="text-xs text-amber-300">
+              💡 Configurez votre profil (⚙️) pour accéder au générateur de repas intelligent
+            </p>
+          </div>
 
-      {/* MODE MANUEL */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              ref={inputRef}
+              label="Nom du repas"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Mon petit-déjeuner protéiné"
+              required
+              maxLength={100}
+              hint="Ex: Petit-déj post-training, Déjeuner léger..."
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+              />
+              <Input
+                label="Heure"
+                type="time"
+                value={time}
+                onChange={(e) => handleTimeChange(e.target.value)}
+              />
+            </div>
+
+            {/* Type de repas - Auto-détecté */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">
+                Type détecté : {MEAL_TYPES.find(t => t.value === type)?.emoji} {MEAL_TYPES.find(t => t.value === type)?.label}
+              </label>
+            </div>
+
+            {/* FoodSelector */}
+            <div className="border-t border-zinc-800/50 pt-4">
+              <FoodSelector
+                selectedFoods={selectedFoods}
+                onChange={setSelectedFoods}
+              />
+            </div>
+
+            {/* Boutons */}
+            <div className="flex gap-3 pt-2">
+              <Button variant="secondary" onClick={onClose} type="button">
+                Annuler
+              </Button>
+              <Button
+                variant="success"
+                type="submit"
+                disabled={!name.trim() || selectedFoods.length === 0}
+              >
+                Ajouter le repas
+              </Button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {/* MODE MANUEL (après génération ou clic sur le lien) */}
       {showManualMode && (
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Bouton retour au générateur */}

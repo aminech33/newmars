@@ -15,6 +15,7 @@ interface ProjectTasksSectionProps {
   project: Project | null  // null = tâches sans projet
   tasks: Task[]
   columnId: string
+  startIndex: number  // Index global de la première tâche dans la colonne
   onTaskClick: (task: Task) => void
   onTaskToggle: (id: string) => void
   onFocus?: (task: Task) => void
@@ -24,6 +25,7 @@ export function ProjectTasksSection({
   project,
   tasks,
   columnId,
+  startIndex,
   onTaskClick,
   onTaskToggle,
   onFocus
@@ -46,26 +48,35 @@ export function ProjectTasksSection({
       {/* Liste des tâches (si déplié) */}
       {isExpanded && (
         <div className="space-y-1 pl-1">
-          {tasks.map((task, index) => (
-            <Draggable key={task.id} draggableId={task.id} index={index}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.draggableProps}
-                  {...provided.dragHandleProps}
-                >
-                  <TaskRow
-                    task={task}
-                    column={columnId as any}
-                    index={index}
-                    onClick={() => onTaskClick(task)}
-                    onToggle={() => onTaskToggle(task.id)}
-                    onFocus={onFocus}
-                  />
-                </div>
-              )}
-            </Draggable>
-          ))}
+          {tasks.map((task, localIndex) => {
+            const globalIndex = startIndex + localIndex
+            return (
+              <Draggable
+                key={task.id}
+                draggableId={task.id}
+                index={globalIndex}
+                isDragDisabled={task.completed}
+              >
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                  >
+                    <TaskRow
+                      task={task}
+                      column={columnId as any}
+                      index={globalIndex}
+                      onClick={() => onTaskClick(task)}
+                      onToggle={() => onTaskToggle(task.id)}
+                      onFocus={onFocus}
+                      isDragging={snapshot.isDragging}
+                    />
+                  </div>
+                )}
+              </Draggable>
+            )
+          })}
         </div>
       )}
     </div>

@@ -7,7 +7,7 @@
  * - Drag & drop entre colonnes
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { DragDropContext, DropResult } from '@hello-pangea/dnd'
 
 import { useStore, Task, TaskCategory, type TemporalColumn, Project } from '../../store/useStore'
@@ -75,6 +75,9 @@ export function TasksPage() {
   const [planningStep, setPlanningStep] = useState<PlanningStep>('none')
   const [planningContext, setPlanningContext] = useState<PlanningContext | null>(null)
   const [lastCurrentPhase, setLastCurrentPhase] = useState(0)
+
+  // Optimistic update pour drag & drop fluide
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, Partial<Task>>>(new Map())
   
   // ═══════════════════════════════════════════════════════════════
   // GESTION DE LA PLANIFICATION IA
@@ -164,19 +167,90 @@ export function TasksPage() {
   }, [selectedTaskId, tasks, setSelectedTaskId])
   
   // ═══════════════════════════════════════════════════════════════
+  // TÂCHES AVEC OPTIMISTIC UPDATES APPLIQUÉS
+  // ═══════════════════════════════════════════════════════════════
+  const effectiveTasks = useMemo(() => {
+    if (optimisticUpdates.size === 0) return tasks
+    return tasks.map(task => {
+      const update = optimisticUpdates.get(task.id)
+      return update ? { ...task, ...update } : task
+    })
+  }, [tasks, optimisticUpdates])
+
+  // Nettoyer les optimistic updates quand les tâches sont synchronisées
+  useEffect(() => {
+    if (optimisticUpdates.size === 0) return
+
+    // Vérifier si les updates sont maintenant reflétés dans le store
+    const updatesToRemove: string[] = []
+    optimisticUpdates.forEach((update, taskId) => {
+      const task = tasks.find(t => t.id === taskId)
+      if (task) {
+        const isSynced = Object.entries(update).every(
+          ([key, value]) => task[key as keyof Task] === value
+        )
+        if (isSynced) updatesToRemove.push(taskId)
+      }
+    })
+
+    if (updatesToRemove.length > 0) {
+      setOptimisticUpdates(prev => {
+        const next = new Map(prev)
+        updatesToRemove.forEach(id => next.delete(id))
+        return next
+      })
+    }
+  }, [tasks, optimisticUpdates])
+
+  // ═══════════════════════════════════════════════════════════════
   // DRAG & DROP HANDLER
   // ═══════════════════════════════════════════════════════════════
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = useCallback((result: DropResult) => {
     const { destination, source, draggableId } = result
-    
+
     if (!destination) return
     if (destination.droppableId === source.droppableId && destination.index === source.index) {
       return
     }
-    
-    const newColumn = destination.droppableId as TemporalColumn
-    updateTask(draggableId, { temporalColumn: newColumn })
-  }
+
+    const destColumn = destination.droppableId as TemporalColumn
+
+    // Utiliser effectiveTasks pour inclure les updates en cours
+    const destColumnTasks = effectiveTasks
+      .filter(t => categorizeTask(t, effectiveTasks) === destColumn && !t.completed && t.id !== draggableId)
+      .sort((a, b) => (a.manualOrder ?? Infinity) - (b.manualOrder ?? Infinity))
+
+    // Calculer le nouvel ordre
+    const destIndex = destination.index
+    let newOrder: number
+
+    if (destColumnTasks.length === 0) {
+      newOrder = 0
+    } else if (destIndex === 0) {
+      const firstOrder = destColumnTasks[0]?.manualOrder ?? 0
+      newOrder = firstOrder - 1
+    } else if (destIndex >= destColumnTasks.length) {
+      const lastOrder = destColumnTasks[destColumnTasks.length - 1]?.manualOrder ?? destColumnTasks.length
+      newOrder = lastOrder + 1
+    } else {
+      const prevTask = destColumnTasks[destIndex - 1]
+      const nextTask = destColumnTasks[destIndex]
+      const prevOrder = prevTask?.manualOrder ?? destIndex - 1
+      const nextOrder = nextTask?.manualOrder ?? destIndex
+      newOrder = (prevOrder + nextOrder) / 2
+    }
+
+    const updates = {
+      temporalColumn: destColumn,
+      manualOrder: newOrder
+    }
+
+    // 1. Optimistic update immédiat (UI instantanée)
+    setOptimisticUpdates(prev => new Map(prev).set(draggableId, updates))
+
+    // 2. Mettre à jour le store (persistance)
+    updateTask(draggableId, updates)
+  }, [effectiveTasks, updateTask])
   
   // ═══════════════════════════════════════════════════════════════
   // ORGANISATION DES TÂCHES PAR COLONNE ET PAR PROJET
@@ -187,21 +261,33 @@ export function TasksPage() {
       upcoming: [],
       distant: []
     }
-    
-    // Grouper les tâches par colonne d'abord
+
+    // Grouper les tâches par colonne d'abord (utilise effectiveTasks pour optimistic UI)
     const tasksByColumn: Record<TemporalColumn, Task[]> = {
       today: [],
       upcoming: [],
       distant: []
     }
-    
-    tasks.forEach(task => {
-      tasksByColumn[categorizeTask(task, tasks)].push(task)
+
+    effectiveTasks.forEach(task => {
+      tasksByColumn[categorizeTask(task, effectiveTasks)].push(task)
     })
     
-    // Tri intelligent basé sur Smart Score pour chaque colonne
+    // Tri : respecter l'ordre manuel si défini, sinon tri intelligent
     Object.keys(tasksByColumn).forEach(key => {
-      tasksByColumn[key as TemporalColumn] = sortTasksForColumn(tasksByColumn[key as TemporalColumn])
+      const column = key as TemporalColumn
+      const columnTasks = tasksByColumn[column]
+
+      // Séparer tâches avec ordre manuel vs sans
+      const withManualOrder = columnTasks.filter(t => t.manualOrder !== undefined)
+      const withoutManualOrder = columnTasks.filter(t => t.manualOrder === undefined)
+
+      // Trier chaque groupe
+      withManualOrder.sort((a, b) => (a.manualOrder ?? 0) - (b.manualOrder ?? 0))
+      const sortedWithoutOrder = sortTasksForColumn(withoutManualOrder)
+
+      // Combiner : tâches avec ordre manuel d'abord, puis les autres
+      tasksByColumn[column] = [...withManualOrder, ...sortedWithoutOrder]
     })
     
     // Grouper par projet dans chaque colonne
@@ -249,7 +335,7 @@ export function TasksPage() {
     })
     
     return result
-  }, [tasks, projects])
+  }, [effectiveTasks, projects])
   
   // ═══════════════════════════════════════════════════════════════
   // RACCOURCIS CLAVIER
@@ -369,7 +455,7 @@ export function TasksPage() {
                   key={config.id}
                   config={config}
                   tasksByProject={tasksByColumnAndProject[config.id]}
-                  allTasks={tasks}
+                  allTasks={effectiveTasks}
                   onTaskClick={setSelectedTask}
                   onTaskToggle={toggleTask}
                   onFocus={setFocusTask}

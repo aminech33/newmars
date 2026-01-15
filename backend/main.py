@@ -12,6 +12,9 @@ from routes.knowledge import router as knowledge_router
 from routes.languages import router as languages_router
 from routes.code_execution import router as code_router
 from routes.withings import router as withings_router
+from routes.chat import router as chat_router
+from routes.health import router as health_router
+from routes.tasks_persistence import router as tasks_db_router
 
 app = FastAPI(
     title="Adaptive Learning API",
@@ -37,6 +40,9 @@ app.include_router(knowledge_router)  # Prefix déjà défini dans le router
 app.include_router(languages_router)  # Prefix déjà défini dans le router
 app.include_router(code_router)       # Prefix déjà défini (/api/code)
 app.include_router(withings_router, prefix="/api/withings", tags=["Withings"])
+app.include_router(chat_router)       # Prefix déjà défini (/api/chat)
+app.include_router(health_router)     # Prefix déjà défini (/api/health)
+app.include_router(tasks_db_router)   # Prefix déjà défini (/api/tasks-db)
 
 
 @app.get("/")

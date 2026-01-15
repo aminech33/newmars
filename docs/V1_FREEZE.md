@@ -1,9 +1,9 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
-> **Date de gel** : 20 décembre 2024  
-> **Dernière mise à jour** : 3 janvier 2026 (V1.9.0 - Mastery System Complete 🧠)  
-> **Version** : 1.9.0  
-> **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes  
+> **Date de gel** : 20 décembre 2024
+> **Dernière mise à jour** : 15 janvier 2026 (V1.10.0 - Backend Sync & Journal Pro 🔄)
+> **Version** : 1.10.0
+> **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
 ---
@@ -32,6 +32,9 @@
 - ✅ **Health Intelligence V1.7.0** : Recalcul auto TDEE (7j), détection anomalies, prédictions, suggestions actionnables 🧠
 - ✅ **Mastery System V1.9.0** : Tracking RÉEL de la maîtrise, decay Ebbinghaus, usage automatique, persistence SQLite 🎯
 - ✅ **8 Backends Connectés V1.9.0** : learning, knowledge, languages, code, tasks, skills, terminal, withings (44 routes API)
+- ✅ **Backend Sync V1.10.0** : Synchronisation automatique localStorage ↔ SQLite, indicateur visuel, mode hors-ligne 🔄
+- ✅ **Journal Pro V1.10.0** : Templates (travail, weekend, voyage, réflexion), export PDF, stats avancées (mood chart, tag cloud) 📔
+- ✅ **Dev Experience V1.10.0** : Commande unique `npm run tauri:dev` lance backend + frontend automatiquement 🚀
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -53,11 +56,11 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.9.0 COMPLET** — Mastery System 100% Opérationnel, Score global 10/10 🎯
+**Statut** : ✅ **V1.10.0 COMPLET** — Backend Sync + Journal Pro, Score global 10/10 🔄
 
 ---
 
-## 📊 Métriques V1.9.0
+## 📊 Métriques V1.10.0
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
@@ -102,6 +105,18 @@ Database tables        : 5 (concepts, messages, vocabulary, exercises)
 Migration script       : migrate_sqlite_v1_9_0.py (backup auto)
 Mastery tracking       : 3 sources (quiz, usage, decay)
 Documentation V1.9.0   : 1,036 lignes (AUDIT, MASTERY_SYSTEM, LANGUAGE_EXERCISES_AI)
+
+NOUVEAU V1.10.0 ⭐ :
+Backend Sync           : Synchronisation auto localStorage ↔ SQLite
+API Client             : src/services/api.ts (tasksApi, healthApi)
+Sync Hook              : src/hooks/useBackendSync.ts (fullSync, loadFromBackend)
+Sync Indicator         : src/components/SyncIndicator.tsx (UI visuelle)
+Journal Templates      : 4 templates (travail, weekend, voyage, réflexion)
+Journal Export PDF     : exportJournalForPrint() avec CSS print
+Journal Stats          : Mood chart 7 jours, Tag cloud
+Dev Commands           : npm run dev:full, npm run tauri:dev (backend inclus)
+Database renamed       : learning.db → database.db
+Tables SQLite          : 22 tables (tasks, projects, weight_entries, meals, etc.)
 
 
 NOUVEAU V1.2.6 ⭐ :

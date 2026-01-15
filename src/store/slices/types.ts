@@ -65,6 +65,8 @@ export interface Task {
   effort?: 'XS' | 'S' | 'M' | 'L'
   phaseIndex?: number
   isValidation?: boolean
+  // Ordre manuel dans chaque colonne (pour drag & drop)
+  manualOrder?: number
 }
 
 export interface AIGeneratedPlan {
