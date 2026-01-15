@@ -59,8 +59,77 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check"""
-    return {"status": "healthy", "gemini": "connected"}
+    """Health check avec vérification des APIs"""
+    import os
+
+    # Vérifier si la clé OpenAI est configurée
+    openai_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+    ai_status = "connected" if openai_key else "not_configured"
+
+    return {
+        "status": "healthy",
+        "ai": ai_status,
+        # Rétrocompatibilité avec le frontend qui cherche "gemini"
+        "gemini": ai_status
+    }
+
+
+@app.get("/health/databases")
+async def databases_health():
+    """Vérifie l'état de chaque module de la base de données"""
+    from database import db
+    import sqlite3
+
+    status = {
+        "connected": False,
+        "modules": {
+            "tasks": {"ok": False, "count": 0},
+            "health": {"ok": False, "count": 0},
+            "learning": {"ok": False, "count": 0},
+        }
+    }
+
+    try:
+        conn = db._get_connection()
+        cursor = conn.cursor()
+        status["connected"] = True
+
+        # Vérifier module Tasks (tasks + projects)
+        try:
+            cursor.execute("SELECT COUNT(*) FROM tasks")
+            tasks_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM projects")
+            projects_count = cursor.fetchone()[0]
+            status["modules"]["tasks"] = {"ok": True, "count": tasks_count + projects_count}
+        except:
+            pass
+
+        # Vérifier module Health (weight_entries + meals)
+        try:
+            cursor.execute("SELECT COUNT(*) FROM weight_entries")
+            weight_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM meals")
+            meals_count = cursor.fetchone()[0]
+            status["modules"]["health"] = {"ok": True, "count": weight_count + meals_count}
+        except:
+            pass
+
+        # Vérifier module Learning (concepts + vocabulary)
+        try:
+            cursor.execute("SELECT COUNT(*) FROM concepts")
+            concepts_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM vocabulary")
+            vocab_count = cursor.fetchone()[0]
+            status["modules"]["learning"] = {"ok": True, "count": concepts_count + vocab_count}
+        except:
+            pass
+
+        conn.close()
+
+    except Exception as e:
+        status["error"] = str(e)
+
+    return status
 
 
 if __name__ == "__main__":

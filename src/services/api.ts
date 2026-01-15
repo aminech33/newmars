@@ -241,4 +241,31 @@ export async function checkBackendConnection(): Promise<boolean> {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// DATABASE HEALTH CHECK (pour affichage Hub)
+// ═══════════════════════════════════════════════════════════════
+
+export interface DbHealthStatus {
+  connected: boolean
+  modules: {
+    tasks: { ok: boolean; count: number }
+    health: { ok: boolean; count: number }
+    learning: { ok: boolean; count: number }
+  }
+  error?: string
+}
+
+export async function checkDatabasesHealth(): Promise<DbHealthStatus | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/health/databases`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) return null
+    return await response.json()
+  } catch {
+    return null
+  }
+}
+
 export { API_BASE_URL }

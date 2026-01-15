@@ -7,9 +7,10 @@
 import { useStore } from '../store/useStore'
 import { motion } from 'framer-motion'
 import { useMemo, useEffect, useState } from 'react'
-import { Settings, Clock } from 'lucide-react'
+import { Settings, Clock, Database, CloudOff, CheckCircle2, XCircle } from 'lucide-react'
+import { checkDatabasesHealth, DbHealthStatus } from '../services/api'
 
-type View = 'tasks' | 'myday' | 'health' | 'library' | 'learning' | 'settings'
+type View = 'tasks' | 'myday' | 'health' | 'library' | 'learning' | 'connections' | 'settings'
 
 interface Module {
   id: View
@@ -31,9 +32,27 @@ export function HubV2() {
   // Heure en temps réel
   const [currentTime, setCurrentTime] = useState(new Date())
 
+  // État de connexion backend + status des bases
+  const [dbHealth, setDbHealth] = useState<DbHealthStatus | null>(null)
+  const [isChecking, setIsChecking] = useState(true)
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(timer)
+  }, [])
+
+  // Vérifier la connexion backend et l'état des bases
+  useEffect(() => {
+    const checkBackend = async () => {
+      setIsChecking(true)
+      const health = await checkDatabasesHealth()
+      setDbHealth(health)
+      setIsChecking(false)
+    }
+    checkBackend()
+    // Re-vérifier toutes les 30 secondes
+    const interval = setInterval(checkBackend, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   // Mémoïser la date pour éviter recalculs
@@ -128,6 +147,13 @@ export function HubV2() {
         getCount: () => (learningCourses?.filter(c => c.status === 'active').length || 0) + (languageCourses?.length || 0),
         priority: 5
       },
+      {
+        id: 'connections',
+        label: 'Connexions',
+        shortcut: '6',
+        getCount: () => 0,
+        priority: 6
+      },
     ]
   }, [tasks, journalEntries, books, learningCourses, languageCourses, today])
 
@@ -146,7 +172,7 @@ export function HubV2() {
         return
       }
 
-      if (e.key >= '1' && e.key <= '5') {
+      if (e.key >= '1' && e.key <= '6') {
         e.preventDefault()
         const index = parseInt(e.key) - 1
         if (index < MODULES.length) {
@@ -193,6 +219,41 @@ export function HubV2() {
             <Clock className="w-4 h-4 md:w-5 md:h-5" />
             {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
           </p>
+          <span className="text-zinc-600">·</span>
+          <button
+            onClick={() => setView('connections')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            title="Voir toutes les connexions"
+          >
+            {isChecking ? (
+              <span className="text-zinc-500 flex items-center gap-2 text-sm md:text-base">
+                <Database className="w-4 h-4 animate-pulse" />
+              </span>
+            ) : dbHealth?.connected ? (
+              <span className="flex items-center gap-3 text-sm md:text-base">
+                {/* Tasks */}
+                <span className={`flex items-center gap-1 ${dbHealth.modules.tasks.ok ? 'text-emerald-500' : 'text-red-400'}`}>
+                  {dbHealth.modules.tasks.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                  <span className="text-zinc-400">Tasks</span>
+                </span>
+                {/* Health */}
+                <span className={`flex items-center gap-1 ${dbHealth.modules.health.ok ? 'text-emerald-500' : 'text-red-400'}`}>
+                  {dbHealth.modules.health.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                  <span className="text-zinc-400">Health</span>
+                </span>
+                {/* Learning */}
+                <span className={`flex items-center gap-1 ${dbHealth.modules.learning.ok ? 'text-emerald-500' : 'text-red-400'}`}>
+                  {dbHealth.modules.learning.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                  <span className="text-zinc-400">Learn</span>
+                </span>
+              </span>
+            ) : (
+              <span className="text-zinc-500 flex items-center gap-2 text-sm md:text-base">
+                <CloudOff className="w-4 h-4" />
+                <span>Hors-ligne</span>
+              </span>
+            )}
+          </button>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-['Allura'] tracking-wide" style={{ textShadow: '0 0 40px rgba(255, 255, 255, 0.08)' }}>
           {greeting}, Amine
@@ -256,6 +317,8 @@ export function HubV2() {
               case 'learning':
                 if (count && count > 0) return { text: `${count} cours actif${count > 1 ? 's' : ''}`, color: 'text-purple-400/70' }
                 return { text: 'Explorer' }
+              case 'connections':
+                return { text: 'APIs & intégrations', color: 'text-amber-400/70' }
               default:
                 return { text: '' }
             }
@@ -316,9 +379,10 @@ export function HubV2() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        <span className="hidden sm:inline">1-5 pour naviguer · S pour paramètres</span>
-        <span className="sm:hidden">Appuie 1-5 ou S</span>
+        <span className="hidden sm:inline">1-6 pour naviguer · S pour paramètres</span>
+        <span className="sm:hidden">Appuie 1-6 ou S</span>
       </motion.p>
+
 
     </div>
   )

@@ -11,6 +11,7 @@ const HealthPage = lazy(() => import('./components/health/HealthPage').then(m =>
 const LearningPage = lazy(() => import('./components/learning/LearningPage').then(m => ({ default: m.LearningPage })))
 const LibraryPage = lazy(() => import('./components/LibraryPage').then(m => ({ default: m.LibraryPage })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const ConnectionsPage = lazy(() => import('./components/ConnectionsPage').then(m => ({ default: m.ConnectionsPage })))
 
 // Composants légers chargés directement
 import { KeyboardShortcuts } from './components/KeyboardShortcuts'
@@ -77,6 +78,7 @@ function AppContent() {
           {currentView === 'learning' && <LearningPage />}
           {currentView === 'library' && <LibraryPage />}
           {currentView === 'settings' && <SettingsPage />}
+          {currentView === 'connections' && <ConnectionsPage />}
         </>
       </Suspense>
 

@@ -25,7 +25,7 @@ export type TaskCategory = string
 export type TaskStatus = 'todo' | 'in-progress' | 'done'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type TemporalColumn = 'today' | 'upcoming' | 'distant'
-export type View = 'hub' | 'tasks' | 'projects' | 'health' | 'myday' | 'learning' | 'library' | 'settings' | 'docs' | 'documentation' | 'architecture'
+export type View = 'hub' | 'tasks' | 'projects' | 'health' | 'myday' | 'learning' | 'library' | 'settings' | 'docs' | 'documentation' | 'architecture' | 'connections'
 export type AccentTheme = 'indigo' | 'cyan' | 'emerald' | 'rose' | 'violet' | 'amber'
 
 // Interfaces
