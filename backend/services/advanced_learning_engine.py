@@ -1,5 +1,5 @@
 """
-🧠 ADVANCED LEARNING ENGINE
+🧠 ADVANCED LEARNING ENGINE v2.0
 Intègre tous les algorithmes avancés dans un service unifié.
 
 Ce service connecte:
@@ -9,6 +9,7 @@ Ce service connecte:
 - Forgetting Curve
 - Pre-sleep Scheduling
 - Variation Practice
+- 🆕 Optimal Difficulty System v2.0 (5 niveaux, calibration, confiance)
 
 Utilisation:
     from services.advanced_learning_engine import learning_engine
@@ -16,8 +17,8 @@ Utilisation:
     # Pour une nouvelle question
     result = learning_engine.get_next_question_params(user_id, topic_id, session_data)
 
-    # Après une réponse
-    update = learning_engine.process_answer(user_id, topic_id, is_correct, response_time, difficulty)
+    # Après une réponse (avec confiance optionnelle)
+    update = learning_engine.process_answer(user_id, topic_id, is_correct, response_time, difficulty, confidence=0.8)
 """
 
 import logging
@@ -33,14 +34,25 @@ from utils.forgetting_curve import PersonalizedForgettingCurve, UserMemoryProfil
 from utils.presleep_scheduling import PreSleepScheduler, SleepSchedule
 from utils.variation_practice import VariationPracticeEngine, VariationType
 
+# 🆕 Nouveau système de difficulté optimal
+from utils.optimal_difficulty import (
+    OptimalDifficultyEngine,
+    DifficultyLevel,
+    LEVEL_TO_LEGACY,
+    XP_BY_LEVEL,
+    calculate_xp_v2,
+    optimal_difficulty_engine
+)
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class QuestionParams:
     """Paramètres pour la génération de question"""
-    difficulty: str  # "easy", "medium", "hard"
-    difficulty_level: int  # 1-4
+    difficulty: str  # "easy", "medium", "hard" (legacy)
+    difficulty_level: int  # 1-5 (nouveau système)
+    difficulty_name: str  # "VERY_EASY", "EASY", "MEDIUM", "HARD", "EXPERT"
     topic_id: str
     should_use_variation: bool
     variation_type: Optional[str]
@@ -50,6 +62,9 @@ class QuestionParams:
     break_suggestion: Optional[str]
     fsrs_interval: float
     retrievability: float
+    # 🆕 Métadonnées du nouveau système
+    difficulty_adjustments: List[str]  # Raisons des ajustements
+    desirable_difficulty_applied: bool  # Si Bjork's DD a été appliqué
 
 
 @dataclass
@@ -64,12 +79,23 @@ class AnswerResult:
     next_review_days: float
     learning_efficiency: float
     transfer_applied: bool
+    # 🆕 Nouveau système
+    xp_earned: int
+    confidence_feedback: Optional[str]
+    confidence_impact: float  # Multiplicateur basé sur confiance
+    calibration_updated: bool  # Si la calibration utilisateur a été mise à jour
 
 
 class AdvancedLearningEngine:
     """
-    Moteur d'apprentissage avancé unifié.
+    Moteur d'apprentissage avancé unifié v2.0.
     Gère l'état de tous les algorithmes par utilisateur.
+
+    Nouveautés v2.0:
+    - 5 niveaux de difficulté (au lieu de 3)
+    - Calibration personnalisée des seuils
+    - Desirable Difficulty (Bjork, 2011)
+    - Tracking de la confiance subjective
     """
 
     def __init__(self):
@@ -77,10 +103,13 @@ class AdvancedLearningEngine:
         self.fsrs = FSRS()
         self.variation_engine = VariationPracticeEngine()
 
+        # 🆕 Moteur de difficulté optimal
+        self.difficulty_engine = optimal_difficulty_engine
+
         # État par utilisateur (en mémoire - à persister en DB en prod)
         self._user_states: Dict[str, Dict[str, Any]] = {}
 
-        logger.info("🧠 Advanced Learning Engine initialized")
+        logger.info("🧠 Advanced Learning Engine v2.0 initialized")
 
     def _get_user_state(self, user_id: str) -> Dict[str, Any]:
         """Récupère ou crée l'état d'un utilisateur"""
@@ -158,36 +187,49 @@ class AdvancedLearningEngine:
                 encoding_method="active_recall"
             )
 
-        # 5. CALCULER LA DIFFICULTÉ OPTIMALE
-        # Combine: maîtrise actuelle + transfer bonus + cognitive load + retrievability
+        # 5. 🆕 CALCULER LA DIFFICULTÉ OPTIMALE (nouveau système v2.0)
+        # Combine: maîtrise calibrée + cognitive load + retrievability + desirable difficulty
         effective_mastery = min(100, current_mastery + int(transfer_bonus * 20))
 
-        # Réduire difficulté si fatigue cognitive
-        difficulty_reduction = 0
-        if cognitive_load == "elevated":
-            difficulty_reduction = 1
-        elif cognitive_load in ["high", "overload"]:
-            difficulty_reduction = 2
+        # Calculer le streak récent
+        recent_responses = state["session_responses"][-10:]
+        recent_streak = 0
+        for r in reversed(recent_responses):
+            if r.get("is_correct"):
+                recent_streak += 1
+            else:
+                recent_streak -= 1
+                break
 
-        # Calculer le niveau de difficulté (1-4)
-        if effective_mastery < 25:
-            base_difficulty = 1
-        elif effective_mastery < 50:
-            base_difficulty = 2
-        elif effective_mastery < 75:
-            base_difficulty = 3
+        # Déterminer l'heure du jour
+        hour = datetime.now().hour
+        if 5 <= hour < 12:
+            time_of_day = "morning"
+        elif 12 <= hour < 18:
+            time_of_day = "afternoon"
+        elif 18 <= hour < 22:
+            time_of_day = "evening"
         else:
-            base_difficulty = 4
+            time_of_day = "night"
 
-        # Ajuster selon retrievability (si faible = question plus facile pour renforcer)
-        if retrievability < 0.5:
-            base_difficulty = max(1, base_difficulty - 1)
+        # Utiliser le nouveau moteur de difficulté
+        difficulty_level_enum, diff_metadata = self.difficulty_engine.determine_optimal_level(
+            user_id=user_id,
+            mastery=effective_mastery,
+            retrievability=retrievability,
+            cognitive_load=cognitive_load,
+            recent_streak=recent_streak,
+            time_of_day=time_of_day,
+            session_length=len(state["session_responses"])
+        )
 
-        final_difficulty = max(1, base_difficulty - difficulty_reduction)
+        final_difficulty = difficulty_level_enum.value
+        difficulty_str = diff_metadata["legacy_difficulty"]
+        difficulty_name = diff_metadata["level_name"]
+        adjustments = diff_metadata.get("adjustments", [])
+        desirable_difficulty_applied = "Desirable difficulty" in " ".join(adjustments)
 
-        # Convertir en string
-        difficulty_map = {1: "easy", 2: "medium", 3: "hard", 4: "hard"}
-        difficulty_str = difficulty_map[final_difficulty]
+        logger.info(f"🎯 Difficulty for {user_id}: {difficulty_name} (level {final_difficulty}) - {adjustments}")
 
         # 6. VARIATION PRACTICE - Décider si utiliser une variation
         should_use_variation = False
@@ -207,6 +249,7 @@ class AdvancedLearningEngine:
         return QuestionParams(
             difficulty=difficulty_str,
             difficulty_level=final_difficulty,
+            difficulty_name=difficulty_name,
             topic_id=topic_id,
             should_use_variation=should_use_variation,
             variation_type=variation_type,
@@ -215,7 +258,9 @@ class AdvancedLearningEngine:
             should_take_break=should_take_break,
             break_suggestion=break_suggestion,
             fsrs_interval=fsrs_interval,
-            retrievability=retrievability
+            retrievability=retrievability,
+            difficulty_adjustments=adjustments,
+            desirable_difficulty_applied=desirable_difficulty_applied
         )
 
     def process_answer(
@@ -225,7 +270,9 @@ class AdvancedLearningEngine:
         is_correct: bool,
         response_time: float,
         difficulty: str,
-        current_mastery: int
+        current_mastery: int,
+        confidence: Optional[float] = None,  # 🆕 Confiance subjective (0-1)
+        difficulty_level: int = 2  # 🆕 Niveau 1-5
     ) -> AnswerResult:
         """
         Traite une réponse et met à jour tous les algorithmes.
@@ -235,8 +282,10 @@ class AdvancedLearningEngine:
             topic_id: ID topic
             is_correct: Réponse correcte?
             response_time: Temps de réponse en secondes
-            difficulty: "easy", "medium", "hard"
+            difficulty: "easy", "medium", "hard" (legacy)
             current_mastery: Maîtrise actuelle
+            confidence: 🆕 Niveau de confiance de l'utilisateur (0-1)
+            difficulty_level: 🆕 Niveau de difficulté (1-5)
 
         Returns:
             AnswerResult avec tous les résultats
@@ -279,9 +328,22 @@ class AdvancedLearningEngine:
                 response_time=response_time
             )
 
-        # 4. CALCULER LE CHANGEMENT DE MAÎTRISE (style FSRS)
-        # Plus sophistiqué que SM-2++
-        difficulty_multiplier = {"easy": 0.8, "medium": 1.0, "hard": 1.3}.get(difficulty, 1.0)
+        # 4. 🆕 TRAITEMENT CONFIANCE + CALIBRATION
+        confidence_result = self.difficulty_engine.process_answer(
+            user_id=user_id,
+            level=DifficultyLevel(difficulty_level),
+            is_correct=is_correct,
+            response_time=response_time,
+            confidence=confidence
+        )
+
+        confidence_impact = confidence_result.get("impact_multiplier", 1.0)
+        confidence_feedback = confidence_result.get("confidence_feedback")
+        calibration_updated = confidence_result.get("calibration_updated", False)
+
+        # 5. CALCULER LE CHANGEMENT DE MAÎTRISE (avec impact confiance)
+        # Multiplicateur par niveau (5 niveaux)
+        level_multiplier = {1: 0.6, 2: 0.8, 3: 1.0, 4: 1.3, 5: 1.6}.get(difficulty_level, 1.0)
 
         if is_correct:
             # Base gain
@@ -293,8 +355,11 @@ class AdvancedLearningEngine:
             elif response_time < 30:
                 base_gain += 1
 
-            # Bonus difficulté
-            base_gain = int(base_gain * difficulty_multiplier)
+            # Bonus niveau
+            base_gain = int(base_gain * level_multiplier)
+
+            # 🆕 Impact confiance (hypercorrection effect inversé - si sûr et correct, gain normal)
+            base_gain = int(base_gain * confidence_impact)
 
             # Réduction si proche de 100
             if current_mastery >= 90:
@@ -305,15 +370,19 @@ class AdvancedLearningEngine:
             # Perte
             base_loss = -3
 
-            # Perte plus grande si question facile ratée
-            if difficulty == "easy":
+            # Perte plus grande si niveau facile raté
+            if difficulty_level <= 2:
                 base_loss = -5
-            elif difficulty == "hard":
+            elif difficulty_level >= 4:
                 base_loss = -2
+
+            # 🆕 Impact confiance (hypercorrection - si très sûr et faux, perte plus grande mais apprentissage meilleur)
+            # Note: On augmente la perte mais c'est bon pour l'apprentissage (hypercorrection effect)
+            base_loss = int(base_loss * confidence_impact)
 
             mastery_change = base_loss
 
-        # 5. TRANSFER LEARNING - Vérifier si appliqué
+        # 6. TRANSFER LEARNING - Vérifier si appliqué
         transfer_applied = False
         bonus = state["transfer_detector"].calculate_transfer_bonus(topic_id)
         if bonus and bonus.bonus_percent > 0:
@@ -321,16 +390,26 @@ class AdvancedLearningEngine:
             if is_correct:
                 mastery_change = int(mastery_change * (1 + bonus.bonus_percent / 100))
 
-        # 6. EFFICACITÉ D'APPRENTISSAGE
-        # Calculée sur les dernières réponses
+        # 7. EFFICACITÉ D'APPRENTISSAGE
         recent_correct = sum(1 for r in state["session_responses"][-10:] if r.get("is_correct", False))
         learning_efficiency = recent_correct / max(1, len(state["session_responses"][-10:]))
+
+        # 8. 🆕 CALCUL XP (nouveau système)
+        streak = sum(1 for r in reversed(state["session_responses"][-10:]) if r.get("is_correct", True))
+        xp_earned = calculate_xp_v2(
+            level=DifficultyLevel(difficulty_level),
+            is_correct=is_correct,
+            streak=streak,
+            confidence_multiplier=confidence_impact if is_correct else 1.0
+        )
 
         # Stocker la réponse
         state["session_responses"].append({
             "is_correct": is_correct,
             "response_time": response_time,
             "difficulty": difficulty,
+            "difficulty_level": difficulty_level,
+            "confidence": confidence,
             "timestamp": datetime.now()
         })
 
@@ -356,7 +435,12 @@ class AdvancedLearningEngine:
             break_reason=cognitive_assessment.recommendation if cognitive_assessment.should_pause else None,
             next_review_days=interval,
             learning_efficiency=learning_efficiency,
-            transfer_applied=transfer_applied
+            transfer_applied=transfer_applied,
+            # 🆕 Nouveaux champs
+            xp_earned=xp_earned,
+            confidence_feedback=confidence_feedback,
+            confidence_impact=confidence_impact,
+            calibration_updated=calibration_updated
         )
 
     def get_presleep_recommendation(self, user_id: str) -> Dict[str, Any]:
@@ -422,6 +506,87 @@ class AdvancedLearningEngine:
             "topics_mastery": state["topics_mastery"],
             "session_responses": len(state["session_responses"]),
             "learning_efficiency": sum(1 for r in state["session_responses"][-20:] if r.get("is_correct", False)) / max(1, len(state["session_responses"][-20:]))
+        }
+
+    def get_difficulty_profile(self, user_id: str) -> Dict[str, Any]:
+        """
+        🆕 Récupère le profil de difficulté personnalisé de l'utilisateur.
+
+        Inclut:
+        - Seuils calibrés
+        - Style d'apprentissage détecté
+        - Biais de confiance
+        - Performance par niveau
+        """
+        return self.difficulty_engine.get_user_profile(user_id)
+
+    def get_difficulty_levels_info(self) -> Dict[str, Any]:
+        """
+        🆕 Retourne les informations sur les 5 niveaux de difficulté.
+        Utile pour le frontend.
+        """
+        return {
+            "levels": [
+                {
+                    "level": 1,
+                    "name": "VERY_EASY",
+                    "display_name": "Très Facile",
+                    "description": "Révision pure, rappel immédiat",
+                    "xp": 5,
+                    "time_estimate": "10-20 sec",
+                    "color": "#4CAF50"  # Vert
+                },
+                {
+                    "level": 2,
+                    "name": "EASY",
+                    "display_name": "Facile",
+                    "description": "Concepts de base, 1 étape de raisonnement",
+                    "xp": 10,
+                    "time_estimate": "20-45 sec",
+                    "color": "#8BC34A"  # Vert clair
+                },
+                {
+                    "level": 3,
+                    "name": "MEDIUM",
+                    "display_name": "Moyen",
+                    "description": "Application pratique, 2-3 étapes",
+                    "xp": 20,
+                    "time_estimate": "45-90 sec",
+                    "color": "#FFC107"  # Jaune
+                },
+                {
+                    "level": 4,
+                    "name": "HARD",
+                    "display_name": "Difficile",
+                    "description": "Analyse et synthèse de concepts",
+                    "xp": 35,
+                    "time_estimate": "90-150 sec",
+                    "color": "#FF9800"  # Orange
+                },
+                {
+                    "level": 5,
+                    "name": "EXPERT",
+                    "display_name": "Expert",
+                    "description": "Création, évaluation critique, cas complexes",
+                    "xp": 50,
+                    "time_estimate": "150-300 sec",
+                    "color": "#F44336"  # Rouge
+                }
+            ],
+            "target_success_rates": {
+                1: {"min": 0.85, "max": 0.95, "description": "Confiance building"},
+                2: {"min": 0.75, "max": 0.85, "description": "Apprentissage confortable"},
+                3: {"min": 0.65, "max": 0.75, "description": "Zone optimale (ZDP)"},
+                4: {"min": 0.55, "max": 0.65, "description": "Challenge productif"},
+                5: {"min": 0.45, "max": 0.55, "description": "Maîtrise avancée"}
+            },
+            "features": [
+                "Calibration personnalisée des seuils",
+                "Desirable Difficulty (Bjork, 2011)",
+                "Tracking de la confiance subjective",
+                "Hypercorrection effect",
+                "Ajustement cognitif en temps réel"
+            ]
         }
 
 
