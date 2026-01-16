@@ -76,60 +76,112 @@ async def health_check():
 
 @app.get("/health/databases")
 async def databases_health():
-    """Vérifie l'état de chaque module de la base de données"""
-    from database import db
-    import sqlite3
+    """Vérifie l'état de chaque base de données isolée"""
+    from databases import tasks_db, health_db, learning_db
 
-    status = {
-        "connected": False,
-        "modules": {
-            "tasks": {"ok": False, "count": 0},
-            "health": {"ok": False, "count": 0},
-            "learning": {"ok": False, "count": 0},
+    return {
+        "connected": True,
+        "databases": {
+            "tasks": tasks_db.get_health_check(),
+            "health": health_db.get_health_check(),
+            "learning": learning_db.get_health_check(),
         }
     }
 
+
+@app.get("/health/ai")
+async def ai_health():
+    """Vérifie l'état du dispatcher AI avec détails et stats"""
+    from services.ai_dispatcher import ai_dispatcher
+
+    # Récupérer le status du dispatcher
+    dispatcher_status = ai_dispatcher.get_health_status()
+
+    return {
+        **dispatcher_status,
+        "provider": "openai",
+        "dispatcher": "ai_dispatcher",
+        "version": "1.0.0"
+    }
+
+
+@app.get("/health/ai/stats")
+async def ai_stats():
+    """Stats de session du dispatcher AI"""
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_session_stats()
+
+
+@app.get("/health/ai/estimate")
+async def ai_estimate_cost(task_type: str = "quiz", tokens: int = 1000):
+    """Estime le coût pour une tâche donnée"""
+    from services.ai_dispatcher import ai_dispatcher, TaskType
+
     try:
-        conn = db._get_connection()
-        cursor = conn.cursor()
-        status["connected"] = True
+        task = TaskType(task_type)
+    except ValueError:
+        return {
+            "error": f"Type de tâche invalide: {task_type}",
+            "valid_types": [t.value for t in TaskType]
+        }
 
-        # Vérifier module Tasks (tasks + projects)
-        try:
-            cursor.execute("SELECT COUNT(*) FROM tasks")
-            tasks_count = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM projects")
-            projects_count = cursor.fetchone()[0]
-            status["modules"]["tasks"] = {"ok": True, "count": tasks_count + projects_count}
-        except:
-            pass
+    return ai_dispatcher.estimate_cost(task, tokens)
 
-        # Vérifier module Health (weight_entries + meals)
-        try:
-            cursor.execute("SELECT COUNT(*) FROM weight_entries")
-            weight_count = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM meals")
-            meals_count = cursor.fetchone()[0]
-            status["modules"]["health"] = {"ok": True, "count": weight_count + meals_count}
-        except:
-            pass
 
-        # Vérifier module Learning (concepts + vocabulary)
-        try:
-            cursor.execute("SELECT COUNT(*) FROM concepts")
-            concepts_count = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM vocabulary")
-            vocab_count = cursor.fetchone()[0]
-            status["modules"]["learning"] = {"ok": True, "count": concepts_count + vocab_count}
-        except:
-            pass
+# ═══════════════════════════════════════════════════════════════
+# STATS AI HISTORIQUES (persistées en base)
+# ═══════════════════════════════════════════════════════════════
 
-        conn.close()
+@app.get("/health/ai/history")
+async def ai_history():
+    """
+    Stats complètes AI : session + aujourd'hui + semaine + mois + all-time.
+    Endpoint principal pour l'UI ConnectionsPage.
+    """
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_complete_stats()
 
-    except Exception as e:
-        status["error"] = str(e)
 
-    return status
+@app.get("/health/ai/today")
+async def ai_usage_today():
+    """Stats AI d'aujourd'hui"""
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_usage_today()
+
+
+@app.get("/health/ai/week")
+async def ai_usage_week():
+    """Stats AI de la semaine en cours"""
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_usage_this_week()
+
+
+@app.get("/health/ai/month")
+async def ai_usage_month():
+    """Stats AI du mois en cours"""
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_usage_this_month()
+
+
+@app.get("/health/ai/all-time")
+async def ai_usage_all_time():
+    """Stats AI depuis le début (toutes périodes confondues)"""
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_usage_all_time()
+
+
+@app.get("/health/ai/by-task")
+async def ai_usage_by_task(days: int = 30):
+    """Répartition des coûts par type de tâche sur les N derniers jours"""
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_usage_by_task_type(days)
+
+
+@app.get("/health/ai/recent")
+async def ai_recent_calls(limit: int = 50):
+    """Derniers appels AI (pour debug/monitoring)"""
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_recent_calls(limit)
 
 
 if __name__ == "__main__":

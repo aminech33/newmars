@@ -3,7 +3,14 @@ Routes API pour l'apprentissage adaptatif
 """
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
-from services.gemini_service import gemini_service
+import logging
+from services.ai_dispatcher import ai_dispatcher
+from databases import learning_db
+
+logger = logging.getLogger(__name__)
+
+# Alias pour compatibilité
+db = learning_db
 from utils.sm2_algorithm import (
     calculate_next_review,
     calculate_mastery_change,
@@ -95,9 +102,9 @@ async def get_next_question(session_id: str):
         skip_days=0  # Pas de skip pour demo
     )
     
-    # Générer la question avec Gemini
+    # Générer la question avec le dispatcher intelligent
     try:
-        question = await gemini_service.generate_question(
+        question = await ai_dispatcher.generate_question(
             topic_name=f"Topic {topic_id}",  # À remplacer par le vrai nom
             difficulty=difficulty,
             mastery_level=mastery_data["mastery_level"],
@@ -253,9 +260,9 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
     mastery_data["interval"] = new_interval
     mastery_data["repetitions"] += 1 if is_correct else 0
     
-    # Générer encouragement avec Gemini
+    # Générer encouragement avec le dispatcher
     try:
-        encouragement = await gemini_service.generate_encouragement(
+        encouragement = await ai_dispatcher.generate_encouragement(
             is_correct=is_correct,
             streak=streak,
             mastery_change=mastery_change

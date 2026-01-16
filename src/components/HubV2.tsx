@@ -229,21 +229,21 @@ export function HubV2() {
               <span className="text-zinc-500 flex items-center gap-2 text-sm md:text-base">
                 <Database className="w-4 h-4 animate-pulse" />
               </span>
-            ) : dbHealth?.connected ? (
+            ) : dbHealth?.connected && dbHealth.databases ? (
               <span className="flex items-center gap-3 text-sm md:text-base">
                 {/* Tasks */}
-                <span className={`flex items-center gap-1 ${dbHealth.modules.tasks.ok ? 'text-emerald-500' : 'text-red-400'}`}>
-                  {dbHealth.modules.tasks.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                <span className={`flex items-center gap-1 ${dbHealth.databases.tasks?.ok ? 'text-emerald-500' : 'text-red-400'}`}>
+                  {dbHealth.databases.tasks?.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                   <span className="text-zinc-400">Tasks</span>
                 </span>
                 {/* Health */}
-                <span className={`flex items-center gap-1 ${dbHealth.modules.health.ok ? 'text-emerald-500' : 'text-red-400'}`}>
-                  {dbHealth.modules.health.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                <span className={`flex items-center gap-1 ${dbHealth.databases.health?.ok ? 'text-emerald-500' : 'text-red-400'}`}>
+                  {dbHealth.databases.health?.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                   <span className="text-zinc-400">Health</span>
                 </span>
                 {/* Learning */}
-                <span className={`flex items-center gap-1 ${dbHealth.modules.learning.ok ? 'text-emerald-500' : 'text-red-400'}`}>
-                  {dbHealth.modules.learning.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                <span className={`flex items-center gap-1 ${dbHealth.databases.learning?.ok ? 'text-emerald-500' : 'text-red-400'}`}>
+                  {dbHealth.databases.learning?.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                   <span className="text-zinc-400">Learn</span>
                 </span>
               </span>

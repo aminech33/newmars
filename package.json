@@ -18,7 +18,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "tauri": "tauri",
-    "tauri:dev": "concurrently \"npm run backend\" \"tauri dev\"",
+    "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:build:fast": "tauri build --no-bundle",
     "validate": "node scripts/validate-files.js",

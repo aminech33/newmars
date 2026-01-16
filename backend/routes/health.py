@@ -7,9 +7,12 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 import logging
-from database import db
+from databases import health_db
 
 logger = logging.getLogger(__name__)
+
+# Alias pour compatibilité
+db = health_db
 router = APIRouter(prefix="/api/health", tags=["Health"])
 
 

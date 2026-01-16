@@ -335,6 +335,61 @@ export function useBackendSync() {
     return () => clearTimeout(timeout)
   }, [checkConnection, syncTasksToBackend, syncHealthToBackend])
 
+  // ═══════════════════════════════════════════════════════════════
+  // PERIODIC SYNC (every 30 seconds)
+  // ═══════════════════════════════════════════════════════════════
+
+  useEffect(() => {
+    const SYNC_INTERVAL = 30000 // 30 secondes
+
+    const periodicSync = async () => {
+      if (!status.isConnected || status.syncInProgress) return
+
+      console.log('[Sync] Sync périodique...')
+      await syncTasksToBackend()
+      await syncHealthToBackend()
+    }
+
+    const interval = setInterval(periodicSync, SYNC_INTERVAL)
+    return () => clearInterval(interval)
+  }, [status.isConnected, status.syncInProgress, syncTasksToBackend, syncHealthToBackend])
+
+  // ═══════════════════════════════════════════════════════════════
+  // SYNC ON PAGE CLOSE / VISIBILITY CHANGE
+  // ═══════════════════════════════════════════════════════════════
+
+  useEffect(() => {
+    const syncBeforeUnload = () => {
+      if (!status.isConnected) return
+
+      // Utiliser sendBeacon pour une sync fiable avant fermeture
+      const data = JSON.stringify({
+        tasks: toSnakeCase(tasks),
+        projects: toSnakeCase(projects),
+      })
+
+      navigator.sendBeacon?.('/api/tasks-db/sync-beacon', data)
+      console.log('[Sync] Sync avant fermeture')
+    }
+
+    const handleVisibilityChange = async () => {
+      // Sync quand l'utilisateur quitte l'onglet
+      if (document.visibilityState === 'hidden' && status.isConnected) {
+        await syncTasksToBackend()
+        await syncHealthToBackend()
+        console.log('[Sync] Sync sur changement de visibilité')
+      }
+    }
+
+    window.addEventListener('beforeunload', syncBeforeUnload)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('beforeunload', syncBeforeUnload)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [status.isConnected, tasks, projects, syncTasksToBackend, syncHealthToBackend])
+
   return {
     status,
     checkConnection,

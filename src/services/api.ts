@@ -245,14 +245,31 @@ export async function checkBackendConnection(): Promise<boolean> {
 // DATABASE HEALTH CHECK (pour affichage Hub)
 // ═══════════════════════════════════════════════════════════════
 
+// Types pour les nouvelles bases de données isolées
+interface DbInfo {
+  ok: boolean
+  path: string
+  error?: string | null
+  size_kb: number
+  last_modified: string | null
+  // Tasks DB
+  tasks?: number
+  projects?: number
+  // Health DB
+  weight_entries?: number
+  meals?: number
+  // Learning DB
+  concepts?: number
+  vocabulary?: number
+}
+
 export interface DbHealthStatus {
   connected: boolean
-  modules: {
-    tasks: { ok: boolean; count: number }
-    health: { ok: boolean; count: number }
-    learning: { ok: boolean; count: number }
+  databases: {
+    tasks: DbInfo
+    health: DbInfo
+    learning: DbInfo
   }
-  error?: string
 }
 
 export async function checkDatabasesHealth(): Promise<DbHealthStatus | null> {
