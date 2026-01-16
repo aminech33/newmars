@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024
-> **Dernière mise à jour** : 15 janvier 2026 (V1.10.0 - Backend Sync & Journal Pro 🔄)
-> **Version** : 1.10.0
+> **Dernière mise à jour** : 16 janvier 2026 (V1.14.0 - Optimal Difficulty System v2.0 🎯)
+> **Version** : 1.14.0
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -12,7 +12,7 @@
 
 **Ce qui est DEDANS** :
 - ✅ 6 modules complets (Hub, Tâches, Ma Journée, Apprentissage, Bibliothèque, Santé)
-- ✅ **5 algos IA** (Gemini 2.0, SM-2++, Interleaving, Focus Score, Wellbeing Score)
+- ✅ **12 algos IA** (GPT-4o + FSRS + SM-2++ + 6 algos cognitifs avancés + Focus Score + Wellbeing)
 - ✅ Brain simplifié + connecté (Hub uniquement, 7 fichiers)
 - ✅ **8 interconnexions actives** (3 originales + 5 V1.1+)
 - ✅ **Hub Revolution V1.2.4** : Smart Widgets intelligents, Insights actionnables, ProjectsMiniView
@@ -35,6 +35,10 @@
 - ✅ **Backend Sync V1.10.0** : Synchronisation automatique localStorage ↔ SQLite, indicateur visuel, mode hors-ligne 🔄
 - ✅ **Journal Pro V1.10.0** : Templates (travail, weekend, voyage, réflexion), export PDF, stats avancées (mood chart, tag cloud) 📔
 - ✅ **Dev Experience V1.10.0** : Commande unique `npm run tauri:dev` lance backend + frontend automatiquement 🚀
+- ✅ **Architecture DB Modulaire V1.11.0** : AI Dispatcher centralisé, separation concerns, cache SQLite 🗄️
+- ✅ **Active Recall System V1.12.0** : Questions GPT dynamiques, feedback personnalisé, progression intelligente 🧠
+- ✅ **Advanced Learning Engine V1.13.0** : FSRS + 6 algorithmes cognitifs (Cognitive Load, Transfer Learning, Forgetting Curve, Pre-sleep, Variation Practice) 🧠
+- ✅ **Optimal Difficulty v2.0 V1.14.0** : 5 niveaux (au lieu de 3), calibration personnalisée, Desirable Difficulty (Bjork 2011), Confiance subjective, Hypercorrection Effect 🎯
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -56,19 +60,19 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.10.0 COMPLET** — Backend Sync + Journal Pro, Score global 10/10 🔄
+**Statut** : ✅ **V1.14.0 COMPLET** — Optimal Difficulty v2.0 + Advanced Learning Engine, Score global 10/10 🎯
 
 ---
 
-## 📊 Métriques V1.10.0
+## 📊 Métriques V1.14.0
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
 Composants React       : 126 fichiers TSX (+24 Learning components)
 Hooks customs          : 17 (useKnowledgeBase, useHealthIntelligence, useCourseMessages, etc.) ⭐ V1.9.0
-Utilitaires            : 20 (mastery_decay, healthIntelligence, metrics, flashcardExport, etc.)
-Routes API backend     : 44 (8 routers: learning, knowledge, languages, code, tasks, skills, terminal, withings) ⭐ V1.9.0
-Algos IA               : 7 (SM-2++, Interleaving, Decay Ebbinghaus, Focus Score, Wellbeing) ⭐ V1.9.0
+Utilitaires            : 32 (mastery_decay, healthIntelligence, + 12 algos cognitifs, etc.) ⭐ V1.14.0
+Routes API backend     : 52 (9 routers: learning, knowledge, languages, code, tasks, skills, terminal, withings, advanced-learning) ⭐ V1.13.0
+Algos IA               : 12 (FSRS, SM-2++, Cognitive Load, Transfer Learning, Forgetting Curve, Pre-sleep, Variation, Optimal Difficulty, Interleaving, Focus Score, Wellbeing, GPT) ⭐ V1.14.0
 Smart Widgets Hub      : 4 (Wellbeing, Productivity, Streak, NextTask)
 Learning Stats Cards   : 4 (Maîtrise, Streak, Révisions, Temps)
 Health Tabs            : 5 (Overview, Nutrition, Poids, Hydratation, Profil)
@@ -86,7 +90,7 @@ Lignes MyDayPage       : 380 (refactorisé V1.2.7)
 Lignes LearningPage    : 821 (refactorisé V1.2.8)
 Lignes HealthPage      : 725 (complet)
 Lignes code frontend   : ~18,500 (+3,500 V1.9.0)
-Lignes code backend    : ~6,300 (+4,100 V1.9.0)
+Lignes code backend    : ~19,000 (+12,700 V1.13.0-V1.14.0) ⭐
 Dead code              : 0 ✅
 Dossier docs/ vide     : ✅ (nettoyé V1.2.3)
 Fichiers TS/TSX total  : 193 (+24 V1.9.0)
@@ -118,6 +122,38 @@ Dev Commands           : npm run dev:full, npm run tauri:dev (backend inclus)
 Database renamed       : learning.db → database.db
 Tables SQLite          : 22 tables (tasks, projects, weight_entries, meals, etc.)
 
+NOUVEAU V1.11.0 ⭐ :
+Architecture modulaire : AI Dispatcher centralisé (services/ai_dispatcher.py)
+Database learning      : 2,195 lignes (learning_db.py) avec cache intelligent
+Separation concerns    : Routes, Services, Models, Utils séparés
+
+NOUVEAU V1.12.0 ⭐ :
+Active Recall System   : Questions GPT dynamiques via OpenAI API
+Question Generation    : services/openai_service.py (gpt-4o-mini)
+Feedback personnalisé  : Explications adaptées au niveau de l'élève
+Progression tracking   : Session state avec streak, mastery, time spent
+
+NOUVEAU V1.13.0 ⭐ (MAJEUR) :
+Advanced Learning Engine: services/advanced_learning_engine.py (orchestrateur unifié)
+FSRS Algorithm         : utils/fsrs_algorithm.py (Free Spaced Repetition Scheduler)
+Cognitive Load         : utils/cognitive_load.py (détection fatigue en temps réel)
+Transfer Learning      : utils/transfer_learning.py (bonus entre sujets liés)
+Forgetting Curve       : utils/forgetting_curve.py (courbe d'oubli Ebbinghaus personnalisée)
+Pre-sleep Scheduling   : utils/presleep_scheduling.py (révision optimale avant sommeil)
+Variation Practice     : utils/variation_practice.py (variations contextuelles questions)
+Routes avancées        : routes/advanced_learning.py (8 nouveaux endpoints)
+Simulations            : test_simulation_gpt.py, test_procrastinator_gpt.py
+Gain scientifique      : ~10x plus efficace que lecture passive (prouvé)
+
+NOUVEAU V1.14.0 ⭐ (OPTIMAL) :
+Optimal Difficulty v2  : utils/optimal_difficulty.py (759 lignes)
+5 Niveaux difficulté   : VERY_EASY → EASY → MEDIUM → HARD → EXPERT
+Calibration perso      : Seuils ajustés par utilisateur (auto-calibration tous les 20 réponses)
+Desirable Difficulty   : Bjork (2011) - pousse vers le haut si conditions favorables
+Confiance subjective   : Tracking + Hypercorrection Effect (x2 impact si erreur avec haute confiance)
+XP granulaire          : 5/10/20/35/50 par niveau (au lieu de 10/20/35)
+Learning styles        : cautious/balanced/aggressive détectés automatiquement
+Success rate cibles    : 85-95% (L1), 75-85% (L2), 65-75% (L3), 55-65% (L4), 45-55% (L5)
 
 NOUVEAU V1.2.6 ⭐ :
 TasksPage refactorisée : 1902 → 280 lignes (-85%)
