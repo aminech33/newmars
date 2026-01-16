@@ -10,10 +10,11 @@
 import { useEffect, useCallback, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { Message } from '../types/learning'
+import { API_URLS } from '../services/api'
 
 const MAX_MESSAGES_ACTIVE = 50  // Seuil avant archivage
 const ARCHIVE_CHECK_INTERVAL = 5 * 60 * 1000  // 5 minutes
-const API_BASE_URL = 'http://localhost:8000/api/learning'
+const API_BASE_URL = API_URLS.LEARNING
 
 interface ArchiveStats {
   total: number

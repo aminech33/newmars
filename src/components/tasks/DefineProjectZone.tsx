@@ -5,6 +5,7 @@
 import { useState } from 'react'
 import { Loader2, ChevronDown, ChevronRight, X, Check, Sparkles } from 'lucide-react'
 import { fontStack, levelStyles } from './taskUtils'
+import { API_URLS } from '../../services/api'
 
 interface Skill {
   name: string
@@ -56,7 +57,7 @@ export function DefineProjectZone({
     const timeoutId = setTimeout(() => controller.abort(), 45000)
     
     try {
-      const response = await fetch('http://localhost:8000/api/skills/generate-domain-map', {
+      const response = await fetch(`${API_URLS.SKILLS}/generate-domain-map`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: domain.trim() }),

@@ -7,9 +7,10 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Toast, ToastType } from '../ui/Toast'
 import { CreateCourseData, Course } from '../../types/learning'
 import { CoursesTab } from './CoursesTab'
+import { API_URLS } from '../../services/api'
 
-// URL du backend (configurable via env)
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+// URL du backend (centralisé)
+const API_BASE_URL = API_URLS.BASE
 
 // Hook local pour les toasts (sans Provider)
 function useLocalToast() {

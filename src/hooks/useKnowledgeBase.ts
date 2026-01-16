@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { API_URLS } from '../services/api'
 
 export interface Concept {
   id: number
@@ -42,7 +43,7 @@ interface UseKnowledgeBaseReturn {
   refreshStats: (courseId: string) => Promise<void>
 }
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = API_URLS.BASE
 
 export function useKnowledgeBase(): UseKnowledgeBaseReturn {
   const [concepts, setConcepts] = useState<Concept[]>([])

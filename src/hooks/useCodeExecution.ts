@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { useStore } from '../store/useStore'
+import { API_URLS } from '../services/api'
 
 interface ExecutionResult {
   stdout: string
@@ -56,7 +57,7 @@ export function useCodeExecution() {
     abortControllerRef.current = new AbortController()
 
     try {
-      const response = await fetch('http://localhost:8000/api/code/execute/stream', {
+      const response = await fetch(`${API_URLS.CODE}/execute/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

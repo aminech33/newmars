@@ -1,13 +1,14 @@
 /**
  * Hook pour gérer le vocabulaire avec Spaced Repetition (SM-2)
- * 
+ *
  * Permet de réviser le vocabulaire de manière optimale
  */
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { VocabularyWord } from '../types/languages'
+import { API_URLS } from '../services/api'
 
-const API_BASE_URL = 'http://localhost:8000/api/languages'
+const API_BASE_URL = API_URLS.LANGUAGES
 
 interface VocabularyStats {
   total: number
@@ -22,7 +23,7 @@ interface UseVocabularyReviewReturn {
   dueWords: VocabularyWord[]
   stats: VocabularyStats | null
   isLoading: boolean
-  
+
   // Actions
   loadVocabulary: () => Promise<void>
   loadDueWords: () => Promise<void>
@@ -39,53 +40,56 @@ export function useVocabularyReview(
   const [dueWords, setDueWords] = useState<VocabularyWord[]>([])
   const [stats, setStats] = useState<VocabularyStats | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  
+
+  // AbortController pour annuler les requêtes en cours lors du démontage
+  const abortControllerRef = useRef<AbortController | null>(null)
+
   /**
    * Charge tout le vocabulaire du cours
    */
-  const loadVocabulary = useCallback(async () => {
-    setIsLoading(true)
-    
+  const loadVocabulary = useCallback(async (signal?: AbortSignal) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/vocabulary/${courseId}?user_id=${userId}`
+        `${API_BASE_URL}/vocabulary/${courseId}?user_id=${userId}`,
+        { signal }
       )
-      
+
       if (!response.ok) {
         throw new Error('Erreur lors du chargement du vocabulaire')
       }
-      
+
       const result = await response.json()
       setVocabulary(result.words || [])
-      
+
       console.log(`✅ Chargé ${result.words?.length || 0} mots pour ${courseId}`)
-      
+
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
       console.error('❌ Erreur chargement vocabulaire:', error)
-    } finally {
-      setIsLoading(false)
     }
   }, [courseId, userId])
-  
+
   /**
    * Charge les mots à réviser aujourd'hui
    */
-  const loadDueWords = useCallback(async () => {
+  const loadDueWords = useCallback(async (signal?: AbortSignal) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/vocabulary/due-for-review/${courseId}?user_id=${userId}`
+        `${API_BASE_URL}/vocabulary/due-for-review/${courseId}?user_id=${userId}`,
+        { signal }
       )
-      
+
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des mots à réviser')
       }
-      
+
       const result = await response.json()
       setDueWords(result.words || [])
-      
+
       console.log(`✅ ${result.words?.length || 0} mots à réviser aujourd'hui`)
-      
+
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
       console.error('❌ Erreur chargement mots à réviser:', error)
     }
   }, [courseId, userId])
@@ -162,33 +166,36 @@ export function useVocabularyReview(
         throw new Error('Erreur lors de la soumission de la révision')
       }
       
-      // Recharger les mots à réviser et les stats
-      await loadDueWords()
-      await loadVocabulary()
-      await refreshStats()
-      
+      // Recharger les mots à réviser et les stats en parallèle
+      await Promise.all([
+        loadDueWords(),
+        loadVocabulary(),
+        refreshStats()
+      ])
+
       console.log(`✅ Révision soumise: quality=${quality}`)
       return true
-      
+
     } catch (error) {
       console.error('❌ Erreur soumission révision:', error)
       return false
     }
-  }, [loadDueWords, loadVocabulary])
+  }, [loadDueWords, loadVocabulary, refreshStats])
   
   /**
    * Rafraîchit les statistiques
    */
-  const refreshStats = useCallback(async () => {
+  const refreshStats = useCallback(async (signal?: AbortSignal) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/vocabulary/stats/${courseId}?user_id=${userId}`
+        `${API_BASE_URL}/vocabulary/stats/${courseId}?user_id=${userId}`,
+        { signal }
       )
-      
+
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des stats')
       }
-      
+
       const result = await response.json()
       setStats({
         total: result.total,
@@ -197,20 +204,48 @@ export function useVocabularyReview(
         mastered: result.mastered,
         dueToday: result.dueToday
       })
-      
+
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
       console.error('❌ Erreur chargement stats:', error)
     }
   }, [courseId, userId])
-  
+
   /**
-   * Charger données initiales
+   * Charger données initiales (en parallèle avec Promise.all)
    */
   useEffect(() => {
-    loadVocabulary()
-    loadDueWords()
-    refreshStats()
-  }, [loadVocabulary, loadDueWords, refreshStats])
+    // Annuler les requêtes précédentes
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    const loadInitialData = async () => {
+      setIsLoading(true)
+      try {
+        // Charger les 3 endpoints en parallèle
+        await Promise.all([
+          loadVocabulary(controller.signal),
+          loadDueWords(controller.signal),
+          refreshStats(controller.signal)
+        ])
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadInitialData()
+
+    // Cleanup: annuler les requêtes si le composant se démonte
+    return () => {
+      controller.abort()
+    }
+  }, [courseId, userId, loadVocabulary, loadDueWords, refreshStats])
   
   return {
     vocabulary,

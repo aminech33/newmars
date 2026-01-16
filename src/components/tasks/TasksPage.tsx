@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { DragDropContext, DropResult } from '@hello-pangea/dnd'
+import { API_URLS } from '../../services/api'
 
 import { useStore, Task, TaskCategory, type TemporalColumn, Project } from '../../store/useStore'
 import { TaskDetails } from './TaskDetails'
@@ -89,7 +90,7 @@ export function TasksPage() {
     const timeoutId = setTimeout(() => controller.abort(), 45000)
     
     try {
-      const response = await fetch('http://localhost:8000/api/skills/generate-domain-map', {
+      const response = await fetch(`${API_URLS.SKILLS}/generate-domain-map`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: domain.trim() }),

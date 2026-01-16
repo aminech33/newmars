@@ -7,7 +7,24 @@
  * - Sessions Pomodoro
  */
 
+// ═══════════════════════════════════════════════════════════════
+// CONFIGURATION CENTRALISÉE DES URLs API
+// ═══════════════════════════════════════════════════════════════
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+// URLs dérivées pour les différents modules
+export const API_URLS = {
+  BASE: API_BASE_URL,
+  TASKS: `${API_BASE_URL}/api/tasks`,
+  TASKS_DB: `${API_BASE_URL}/api/tasks-db`,
+  SKILLS: `${API_BASE_URL}/api/skills`,
+  LEARNING: `${API_BASE_URL}/api/learning`,
+  LANGUAGES: `${API_BASE_URL}/api/languages`,
+  CODE: `${API_BASE_URL}/api/code`,
+  HEALTH: `${API_BASE_URL}/health`,
+  TERMINAL_WS: `ws://${API_BASE_URL.replace(/^https?:\/\//, '')}/api/terminal/ws`
+} as const
 
 interface ApiResponse<T> {
   success: boolean

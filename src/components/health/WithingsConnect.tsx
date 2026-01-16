@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Zap, Check, RefreshCw, X } from 'lucide-react'
 import { useStore } from '../../store/useStore'
 import { getWithingsTokens, saveWithingsTokens, clearSecureData } from '../../utils/secureStorage'
+import { API_URLS } from '../../services/api'
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const API_URL = API_URLS.BASE
 const WITHINGS_API_URL = `${API_URL}/api/withings`
 
 export function WithingsConnect() {

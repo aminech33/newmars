@@ -5,14 +5,15 @@
 import { useState, useEffect } from 'react'
 import { Loader2, ChevronDown, ChevronRight, X, Check, Sparkles } from 'lucide-react'
 import { useStore } from '../../store/useStore'
-import { 
-  fontStack, 
-  ProjectPlan, 
-  EditableTask, 
-  EFFORT_COLORS, 
-  getLevelLabel 
+import {
+  fontStack,
+  ProjectPlan,
+  EditableTask,
+  EFFORT_COLORS,
+  getLevelLabel
 } from './taskUtils'
 import { PlanFeedbackModal } from './PlanFeedbackModal'
+import { API_URLS } from '../../services/api'
 
 interface PlanningZoneProps {
   onProjectCreated: () => void
@@ -99,7 +100,7 @@ export function PlanningZone({
       
       if (hasPreselection) {
         response = await fetchWithRetry(
-          'http://localhost:8000/api/tasks/generate-skill-based-plan',
+          `${API_URLS.TASKS}/generate-skill-based-plan`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -112,7 +113,7 @@ export function PlanningZone({
         )
       } else {
         response = await fetchWithRetry(
-          'http://localhost:8000/api/tasks/generate-project-plan',
+          `${API_URLS.TASKS}/generate-project-plan`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

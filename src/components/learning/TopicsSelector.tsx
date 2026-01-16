@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { Check, Zap, Play, Info } from 'lucide-react'
 import type { CourseTopic } from '../../types/learning'
+import { API_URLS } from '../../services/api'
 
 interface TopicsSelectorProps {
   courseId: string
@@ -13,7 +14,7 @@ interface TopicsSelectorProps {
   onStartSession: (selectedTopics: string[], useInterleaving: boolean) => Promise<void>
 }
 
-const API_BASE = 'http://localhost:8000/api/learning'
+const API_BASE = API_URLS.LEARNING
 
 export function TopicsSelector({ courseId, topics, onStartSession }: TopicsSelectorProps) {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])

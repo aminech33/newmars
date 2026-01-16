@@ -22,6 +22,7 @@ import {
   Clock,
   Target
 } from 'lucide-react';
+import { API_URLS } from '../../services/api';
 
 interface ActiveRecallQuestion {
   id: string;
@@ -122,7 +123,7 @@ export default function ActiveRecallQuiz({ sessionId, onComplete }: Props) {
   const loadNextQuestion = async () => {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/learning/active-recall/question/${sessionId}`
+        `${API_URLS.LEARNING}/active-recall/question/${sessionId}`
       );
       const data = await response.json();
 
@@ -159,7 +160,7 @@ export default function ActiveRecallQuiz({ sessionId, onComplete }: Props) {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/learning/active-recall/evaluate`,
+        `${API_URLS.LEARNING}/active-recall/evaluate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { Brain, CheckCircle, XCircle, ArrowRight, Trophy, Loader2 } from 'lucide-react'
+import { API_URLS } from '../../services/api'
 
 interface Question {
   question: string
@@ -20,7 +21,7 @@ interface QuizPanelProps {
   onComplete?: () => void
 }
 
-const API_BASE = 'http://localhost:8000/api/learning'
+const API_BASE = API_URLS.LEARNING
 
 export function QuizPanel({ sessionId, onComplete }: QuizPanelProps) {
   const [question, setQuestion] = useState<Question | null>(null)

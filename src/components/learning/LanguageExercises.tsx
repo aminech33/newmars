@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, ArrowRight, RefreshCw, Award, Loader2 } from 'lucide-react'
+import { API_URLS } from '../../services/api'
 
 interface Exercise {
   id: string
@@ -23,7 +24,7 @@ interface LanguageExercisesProps {
   userId?: string
 }
 
-const API_BASE = 'http://localhost:8000/api/languages'
+const API_BASE = API_URLS.LANGUAGES
 
 export function LanguageExercises({ 
   courseId, 

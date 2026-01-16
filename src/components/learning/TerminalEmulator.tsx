@@ -4,6 +4,7 @@ import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
 import { XTERM_OPTIONS } from '../../constants/xtermTheme'
 import { TerminalSuggester } from './TerminalSuggester'
+import { API_URLS } from '../../services/api'
 
 interface TerminalEmulatorProps {
   sessionId: string
@@ -40,7 +41,7 @@ export function TerminalEmulator({ sessionId, onCommand, onOutputCapture }: Term
     fitAddonRef.current = fitAddon
 
     // Connecter au WebSocket backend
-    const wsUrl = `ws://localhost:8000/api/terminal/ws/terminal/${sessionId}`
+    const wsUrl = `${API_URLS.TERMINAL_WS}/terminal/${sessionId}`
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 

@@ -7,10 +7,11 @@
 import { useEffect, useCallback, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { LanguageMessage } from '../types/languages'
+import { API_URLS } from '../services/api'
 
 const MAX_MESSAGES_ACTIVE = 50
 const ARCHIVE_CHECK_INTERVAL = 5 * 60 * 1000  // 5 minutes
-const API_BASE_URL = 'http://localhost:8000/api/languages'
+const API_BASE_URL = API_URLS.LANGUAGES
 
 interface ArchiveStats {
   total: number

@@ -1,9 +1,10 @@
 import { useCallback } from 'react'
 import { useStore } from '../store/useStore'
 import { Message } from '../types/learning'
+import { API_URLS } from '../services/api'
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const API_BASE_URL = API_URLS.BASE
 
 /**
  * Hook pour la gestion des messages et interaction IA

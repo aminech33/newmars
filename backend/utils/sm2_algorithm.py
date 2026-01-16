@@ -70,9 +70,9 @@ def calculate_next_review(
         forgiveness_factor = max(0.5, forgiveness_factor)  # Max -50%
         new_interval = int(new_interval * forgiveness_factor)
     
-    # Minimum 1 jour
-    new_interval = max(1, new_interval)
-    
+    # Minimum 1 jour, Maximum 365 jours (évite overflow)
+    new_interval = max(1, min(365, new_interval))
+
     # Date de prochaine révision
     next_review = datetime.now() + timedelta(days=new_interval)
     
@@ -167,21 +167,30 @@ def determine_difficulty(
         easy_sr = success_by_difficulty.get("easy", 0)
         medium_sr = success_by_difficulty.get("medium", 0)
         hard_sr = success_by_difficulty.get("hard", 0)
-        
+
+        # PRIORITÉ 1: Forcer le passage à hard si maîtrise très haute (>85%) et bon success rate
+        # Même si medium_sr < 85%, on doit challenger l'élève expert
+        if mastery_level >= 85 and medium_sr >= 0.70:
+            return "hard"
+
         # Si on réussit trop facilement à medium (>85%), passer à hard
         if medium_sr > 0.85 and mastery_level >= 40:
             return "hard"
-        
+
         # Si on galère sur medium (<50%), rester sur easy
         if medium_sr > 0 and medium_sr < 0.5 and easy_sr >= 0.65:
             return "easy"
-        
+
         # Si on réussit bien easy (>80%) et que mastery >= 30, essayer medium
         if easy_sr > 0.8 and mastery_level >= 30:
             return "medium"
-        
+
         # Si on galère sur hard (<40%) mais ok sur medium (>60%), rester medium
         if hard_sr > 0 and hard_sr < 0.4 and medium_sr > 0.6:
+            return "medium"
+
+        # Si on a assez de données hard et qu'on galère trop (<30%), redescendre
+        if hard_sr > 0 and hard_sr < 0.3:
             return "medium"
     
     # Logique classique (fallback si pas assez de données)

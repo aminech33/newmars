@@ -5,7 +5,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
-from database import db
+from databases import learning_db as db  # Utiliser la nouvelle DB modulaire
 import logging
 import uuid
 
@@ -491,14 +491,15 @@ Réponds UNIQUEMENT avec un objet JSON valide:
             }
             
         except json.JSONDecodeError as e:
-            logger.error(f"❌ Failed to parse AI correction response")
-            # Fallback: vérification simple par égalité
-            # Note: En production, stocker la bonne réponse avec l'exercice généré
+            logger.error(f"❌ Failed to parse AI correction response: {e}")
+            # Fallback SÉCURISÉ: ne pas valider automatiquement
+            # Retourne un score neutre et demande à l'utilisateur de réessayer
             return {
-                'is_correct': True,  # Placeholder - améliorer avec cache
-                'score': 100,
-                'feedback': 'Réponse enregistrée',
-                'completed_id': str(uuid.uuid4())
+                'is_correct': False,
+                'score': 0,
+                'feedback': 'Impossible de vérifier ta réponse automatiquement. Réessaie ou passe à l\'exercice suivant.',
+                'corrections': '',
+                'completed_id': None  # Pas d'ID = non comptabilisé
             }
         
     except Exception as e:

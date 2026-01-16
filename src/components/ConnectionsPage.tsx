@@ -20,7 +20,7 @@ import {
   HardDrive,
   Cpu
 } from 'lucide-react'
-import { checkDatabasesHealth, DbHealthStatus } from '../services/api'
+import { checkDatabasesHealth, DbHealthStatus, API_URLS } from '../services/api'
 
 // Type pour l'API AI (dispatcher)
 interface AiHealthStatus {
@@ -110,7 +110,7 @@ export function ConnectionsPage() {
 
     // 3. OpenAI
     try {
-      const response = await fetch('http://localhost:8000/health/ai')
+      const response = await fetch(`${API_URLS.HEALTH}/ai`)
       const data: AiHealthStatus = await response.json()
       setAiHealth(data)
     } catch {
@@ -119,7 +119,7 @@ export function ConnectionsPage() {
 
     // 4. Stats historiques AI
     try {
-      const response = await fetch('http://localhost:8000/health/ai/history')
+      const response = await fetch(`${API_URLS.HEALTH}/ai/history`)
       const data: AiHistoryStats = await response.json()
       setAiHistory(data)
     } catch {
