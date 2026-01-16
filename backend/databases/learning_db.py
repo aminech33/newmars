@@ -828,6 +828,65 @@ class LearningDatabase:
 
         return [dict(row) for row in rows]
 
+    def recalculate_all_costs(self, prices: Dict[str, Dict[str, float]]) -> Dict[str, Any]:
+        """
+        Recalcule tous les coûts historiques avec les nouveaux prix.
+
+        Args:
+            prices: Dict des prix par modèle, ex:
+                {
+                    "gpt-4o-mini": {"input": 0.15, "output": 0.60},
+                    "gpt-4o": {"input": 2.50, "output": 10.0}
+                }
+
+        Returns:
+            Stats du recalcul (rows updated, old total, new total)
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        # Récupérer l'ancien total
+        cursor.execute("SELECT COALESCE(SUM(cost_usd), 0) FROM ai_usage")
+        old_total = cursor.fetchone()[0]
+
+        updated_count = 0
+
+        for model_name, model_prices in prices.items():
+            cursor.execute("""
+                UPDATE ai_usage
+                SET cost_usd = (tokens_input * ? + tokens_output * ?) / 1000000.0
+                WHERE model = ?
+            """, (model_prices["input"], model_prices["output"], model_name))
+            updated_count += cursor.rowcount
+
+        # Recalculer les résumés quotidiens
+        cursor.execute("""
+            UPDATE ai_daily_summary
+            SET total_cost_usd = (
+                SELECT COALESCE(SUM(cost_usd), 0)
+                FROM ai_usage
+                WHERE date = ai_daily_summary.date
+            ),
+            updated_at = CURRENT_TIMESTAMP
+        """)
+
+        conn.commit()
+
+        # Récupérer le nouveau total
+        cursor.execute("SELECT COALESCE(SUM(cost_usd), 0) FROM ai_usage")
+        new_total = cursor.fetchone()[0]
+
+        conn.close()
+
+        logger.info(f"💰 Coûts recalculés: {updated_count} lignes, ${old_total:.4f} → ${new_total:.4f}")
+
+        return {
+            "rows_updated": updated_count,
+            "old_total_usd": old_total,
+            "new_total_usd": new_total,
+            "difference_usd": new_total - old_total
+        }
+
     # ═══════════════════════════════════════════════════════════════
     # HEALTH CHECK
     # ═══════════════════════════════════════════════════════════════

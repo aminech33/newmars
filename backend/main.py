@@ -184,6 +184,23 @@ async def ai_recent_calls(limit: int = 50):
     return ai_dispatcher.get_recent_calls(limit)
 
 
+@app.get("/health/ai/prices")
+async def ai_current_prices():
+    """Retourne les prix actuels configurés pour chaque modèle"""
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.get_current_prices()
+
+
+@app.post("/health/ai/recalculate")
+async def ai_recalculate_costs():
+    """
+    Recalcule tous les coûts historiques avec les prix actuels.
+    À appeler après modification des prix dans MODELS.
+    """
+    from services.ai_dispatcher import ai_dispatcher
+    return ai_dispatcher.recalculate_costs()
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

@@ -902,6 +902,34 @@ Génère UNIQUEMENT le JSON."""
             "by_task_type": learning_db.get_ai_usage_by_task_type(30),
         }
 
+    def recalculate_costs(self) -> Dict[str, Any]:
+        """
+        Recalcule tous les coûts historiques avec les prix actuels de MODELS.
+        À appeler après avoir modifié les prix dans MODELS.
+
+        Returns:
+            Stats du recalcul
+        """
+        # Construire le dict de prix depuis MODELS
+        prices = {
+            config.name: {"input": config.cost_input, "output": config.cost_output}
+            for config in MODELS.values()
+        }
+
+        logger.info(f"🔄 Recalcul des coûts avec prix: {prices}")
+        return learning_db.recalculate_all_costs(prices)
+
+    def get_current_prices(self) -> Dict[str, Dict[str, float]]:
+        """Retourne les prix actuels configurés."""
+        return {
+            config.name: {
+                "input": config.cost_input,
+                "output": config.cost_output,
+                "tier": tier.value
+            }
+            for tier, config in MODELS.items()
+        }
+
 
 # Instance globale
 ai_dispatcher = AIDispatcher()

@@ -4,7 +4,7 @@ Routes API pour l'apprentissage adaptatif
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 import logging
-from services.ai_dispatcher import ai_dispatcher
+from services.ai_dispatcher import ai_dispatcher, TaskType
 from databases import learning_db
 
 logger = logging.getLogger(__name__)
@@ -355,3 +355,316 @@ async def get_demo_stats():
             for user_id, topics in user_mastery.items()
         }
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ACTIVE RECALL - Apprentissage par récupération active
+# Principe: Le cerveau encode ce qui lui coûte (difficulté désirable)
+# ═══════════════════════════════════════════════════════════════════════════
+
+from pydantic import BaseModel
+from typing import List, Optional
+
+
+class ActiveRecallSubmission(BaseModel):
+    """Soumission d'une réponse libre pour évaluation"""
+    session_id: str
+    question_id: str
+    user_answer: str
+    hints_used: int = 0
+    retry_count: int = 0
+    thinking_time: int = 0      # Temps de réflexion en secondes
+    writing_time: int = 0       # Temps d'écriture en secondes
+    previous_answers: List[str] = []
+
+
+@router.get("/active-recall/question/{session_id}")
+async def get_active_recall_question(session_id: str):
+    """
+    Génère une question ouverte pour récupération active.
+    Pas de QCM - l'apprenant doit formuler sa réponse.
+    """
+    if session_id not in sessions:
+        # Créer une session à la volée pour la démo
+        sessions[session_id] = {
+            "id": session_id,
+            "course_id": "demo-course",
+            "topic_id": "demo-topic",
+            "topic_name": "Concepts Fondamentaux",
+            "started_at": datetime.now().isoformat(),
+            "questions_answered": 0,
+            "correct_answers": 0,
+            "xp_earned": 0,
+            "user_id": "demo-user"
+        }
+
+    session = sessions[session_id]
+    topic_id = session["topic_id"]
+    user_id = session["user_id"]
+
+    # Initialiser mastery si nécessaire
+    if user_id not in user_mastery:
+        user_mastery[user_id] = {}
+    if topic_id not in user_mastery[user_id]:
+        user_mastery[user_id][topic_id] = {
+            "mastery_level": 0,
+            "ease_factor": 2.5,
+            "interval": 1,
+            "repetitions": 0,
+            "success_rate": 0.0,
+            "total_attempts": 0,
+            "correct_attempts": 0
+        }
+
+    mastery_data = user_mastery[user_id][topic_id]
+    difficulty = determine_difficulty(
+        mastery_data["mastery_level"],
+        mastery_data["success_rate"],
+        skip_days=0
+    )
+
+    # Générer une question ouverte via l'IA
+    try:
+        result = ai_dispatcher.dispatch(
+            task_type=TaskType.QUIZ,
+            prompt=f"""Génère une question OUVERTE (pas de QCM) sur le topic: {session.get('topic_name', topic_id)}
+
+NIVEAU: {difficulty}
+MAÎTRISE ACTUELLE: {mastery_data['mastery_level']}%
+
+La question doit:
+1. Demander une EXPLICATION (pas juste une définition)
+2. Forcer l'apprenant à PRODUIRE du contenu
+3. Avoir plusieurs points clés attendus dans la réponse
+
+FORMAT JSON:
+{{
+    "question": "La question ouverte",
+    "hints": [
+        "Premier indice (général)",
+        "Deuxième indice (plus précis)",
+        "Troisième indice (quasi-réponse)"
+    ],
+    "key_points": [
+        "Point clé 1 attendu dans la réponse",
+        "Point clé 2 attendu",
+        "Point clé 3 attendu"
+    ],
+    "example_good_answer": "Une réponse complète idéale"
+}}""",
+            system_prompt="Tu es un tuteur qui crée des questions pour la récupération active. Réponds UNIQUEMENT en JSON valide.",
+            difficulty=difficulty,
+            temperature=0.4
+        )
+
+        # Parser la réponse
+        import json
+        content = result.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+
+        question_data = json.loads(content.strip())
+
+        question_id = f"ar-{uuid.uuid4().hex[:8]}"
+
+        # Stocker dans la session
+        session["current_active_recall"] = {
+            "id": question_id,
+            "question": question_data["question"],
+            "hints": question_data.get("hints", []),
+            "key_points": question_data.get("key_points", []),
+            "example_answer": question_data.get("example_good_answer", ""),
+            "difficulty": difficulty,
+            "started_at": datetime.now().isoformat()
+        }
+
+        return {
+            "id": question_id,
+            "question": question_data["question"],
+            "topic": session.get("topic_name", topic_id),
+            "difficulty": difficulty,
+            "hints": question_data.get("hints", []),
+            "keyPoints": question_data.get("key_points", []),
+            "masteryLevel": mastery_data["mastery_level"]
+        }
+
+    except Exception as e:
+        logger.error(f"Erreur génération question active recall: {e}")
+        # Question de fallback
+        question_id = f"ar-fallback-{uuid.uuid4().hex[:8]}"
+        session["current_active_recall"] = {
+            "id": question_id,
+            "question": "Explique avec tes propres mots ce que tu as appris sur ce sujet.",
+            "hints": [
+                "Commence par les bases",
+                "Donne un exemple concret",
+                "Explique pourquoi c'est important"
+            ],
+            "key_points": ["Compréhension de base", "Exemple pratique", "Application"],
+            "example_answer": "",
+            "difficulty": difficulty,
+            "started_at": datetime.now().isoformat()
+        }
+
+        return {
+            "id": question_id,
+            "question": "Explique avec tes propres mots ce que tu as appris sur ce sujet.",
+            "topic": session.get("topic_name", topic_id),
+            "difficulty": difficulty,
+            "hints": ["Commence par les bases", "Donne un exemple concret", "Explique pourquoi c'est important"],
+            "keyPoints": ["Compréhension de base", "Exemple pratique", "Application"],
+            "masteryLevel": mastery_data["mastery_level"]
+        }
+
+
+@router.post("/active-recall/evaluate")
+async def evaluate_active_recall(submission: ActiveRecallSubmission):
+    """
+    Évalue une réponse libre avec l'IA.
+
+    L'évaluation est FORMATIVE (aide à apprendre) pas SOMMATIVE (juge).
+    - Identifie ce qui est bien compris
+    - Pointe ce qui manque
+    - Guide vers l'amélioration
+    """
+    session_id = submission.session_id
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+
+    session = sessions[session_id]
+
+    if "current_active_recall" not in session:
+        raise HTTPException(status_code=400, detail="Pas de question active")
+
+    question_data = session["current_active_recall"]
+    topic_id = session["topic_id"]
+    user_id = session["user_id"]
+    mastery_data = user_mastery[user_id][topic_id]
+
+    # Calculer le malus pour indices utilisés et retries
+    hint_penalty = submission.hints_used * 5   # -5% par indice
+    retry_penalty = submission.retry_count * 10  # -10% par retry
+
+    # Évaluer avec l'IA
+    try:
+        eval_prompt = f"""Évalue cette réponse d'un apprenant.
+
+QUESTION: {question_data['question']}
+
+RÉPONSE DE L'APPRENANT:
+{submission.user_answer}
+
+POINTS CLÉS ATTENDUS:
+{chr(10).join(f"- {p}" for p in question_data['key_points'])}
+
+CONTEXTE:
+- Indices utilisés: {submission.hints_used}
+- Tentatives: {submission.retry_count + 1}
+- Temps de réflexion: {submission.thinking_time}s
+- Temps d'écriture: {submission.writing_time}s
+
+ÉVALUE de manière FORMATIVE (pour aider, pas juger):
+
+FORMAT JSON:
+{{
+    "score": 0-100,
+    "correct_points": ["Ce que l'apprenant a bien compris"],
+    "missing_points": ["Ce qui manque dans sa réponse"],
+    "suggestion": "Une piste concrète pour améliorer (pas la réponse!)",
+    "can_retry": true/false,
+    "effort_quality": "L'apprenant a-t-il vraiment essayé?"
+}}"""
+
+        result = ai_dispatcher.dispatch(
+            task_type=TaskType.ANALYSIS,
+            prompt=eval_prompt,
+            system_prompt="Tu es un tuteur bienveillant mais exigeant. Tu évalues pour AIDER à apprendre, pas pour juger. Réponds UNIQUEMENT en JSON valide.",
+            temperature=0.3
+        )
+
+        # Parser l'évaluation
+        import json
+        content = result.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+
+        eval_data = json.loads(content.strip())
+
+        # Appliquer les pénalités
+        raw_score = eval_data.get("score", 50)
+        final_score = max(0, raw_score - hint_penalty - retry_penalty)
+
+        # Bonus si effort important (temps + pas d'indices)
+        if submission.thinking_time >= 30 and submission.hints_used == 0:
+            final_score = min(100, final_score + 5)  # Bonus effort
+
+        # Calculer le changement de maîtrise
+        # Plus exigeant que QCM: il faut 70%+ pour progresser
+        if final_score >= 70:
+            mastery_change = calculate_mastery_change(
+                is_correct=True,
+                difficulty=question_data["difficulty"],
+                current_mastery=mastery_data["mastery_level"],
+                response_time=submission.thinking_time + submission.writing_time,
+                expected_time=120  # 2 minutes attendues
+            )
+        elif final_score >= 40:
+            mastery_change = 0  # Neutre
+        else:
+            mastery_change = calculate_mastery_change(
+                is_correct=False,
+                difficulty=question_data["difficulty"],
+                current_mastery=mastery_data["mastery_level"],
+                response_time=submission.thinking_time + submission.writing_time,
+                expected_time=120
+            )
+
+        # Mettre à jour la maîtrise
+        new_mastery = max(0, min(100, mastery_data["mastery_level"] + mastery_change))
+        mastery_data["mastery_level"] = new_mastery
+        mastery_data["total_attempts"] += 1
+        if final_score >= 70:
+            mastery_data["correct_attempts"] += 1
+        mastery_data["success_rate"] = mastery_data["correct_attempts"] / mastery_data["total_attempts"]
+
+        # Permettre retry si score < 70 et pas déjà 2 retries
+        can_retry = final_score < 70 and submission.retry_count < 2
+
+        return {
+            "score": final_score,
+            "correctPoints": eval_data.get("correct_points", []),
+            "missingPoints": eval_data.get("missing_points", []),
+            "suggestion": eval_data.get("suggestion", "Continue à pratiquer!"),
+            "canRetry": can_retry,
+            "masteryChange": mastery_change,
+            "effortQuality": eval_data.get("effort_quality", "Bon effort"),
+            "penalties": {
+                "hints": hint_penalty,
+                "retries": retry_penalty
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Erreur évaluation active recall: {e}")
+        # Évaluation de fallback basée sur la longueur
+        word_count = len(submission.user_answer.split())
+        fallback_score = min(60, word_count * 3)  # ~3 points par mot, max 60
+
+        return {
+            "score": fallback_score,
+            "correctPoints": ["Tentative de réponse"] if word_count > 5 else [],
+            "missingPoints": ["Réponse trop courte"] if word_count < 10 else ["Détails manquants"],
+            "suggestion": "Essaie de développer davantage ta réponse.",
+            "canRetry": True,
+            "masteryChange": 0,
+            "effortQuality": "À améliorer" if word_count < 10 else "Correct"
+        }
