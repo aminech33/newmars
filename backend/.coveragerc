@@ -1,0 +1,35 @@
+[run]
+# Coverage configuration
+source = .
+branch = True
+omit =
+    tests/*
+    */__pycache__/*
+    */migrations/*
+    setup.py
+    conftest.py
+    test_*.py
+
+[report]
+# Reporting
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+show_missing = True
+precision = 2
+
+# Fail under threshold (disabled - use per-module checks)
+fail_under = 0
+
+[html]
+directory = htmlcov
+title = Mars Backend Coverage Report
+
+[xml]
+output = coverage.xml
