@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024
-> **Dernière mise à jour** : 16 janvier 2026 (V1.14.0 - Optimal Difficulty System v2.0 🎯)
-> **Version** : 1.14.0
+> **Dernière mise à jour** : 17 janvier 2026 (V1.15.0 - E2E Framework v4.1 Modular 🧪)
+> **Version** : 1.15.0
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -39,6 +39,7 @@
 - ✅ **Active Recall System V1.12.0** : Questions GPT dynamiques, feedback personnalisé, progression intelligente 🧠
 - ✅ **Advanced Learning Engine V1.13.0** : FSRS + 6 algorithmes cognitifs (Cognitive Load, Transfer Learning, Forgetting Curve, Pre-sleep, Variation Practice) 🧠
 - ✅ **Optimal Difficulty v2.0 V1.14.0** : 5 niveaux (au lieu de 3), calibration personnalisée, Desirable Difficulty (Bjork 2011), Confiance subjective, Hypercorrection Effect 🎯
+- ✅ **E2E Framework v4.1 V1.15.0** : Architecture modulaire (9 modules), CleanupRegistry auto, retry mechanism, UserSimulator 5 profils, 29 tests (93% pass) 🧪
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -60,11 +61,11 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.14.0 COMPLET** — Optimal Difficulty v2.0 + Advanced Learning Engine, Score global 10/10 🎯
+**Statut** : ✅ **V1.15.0 COMPLET** — E2E Framework v4.1 Modular + pytest CI/CD, Score global 10/10 🧪
 
 ---
 
-## 📊 Métriques V1.14.0
+## 📊 Métriques V1.15.0
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
@@ -90,7 +91,7 @@ Lignes MyDayPage       : 380 (refactorisé V1.2.7)
 Lignes LearningPage    : 821 (refactorisé V1.2.8)
 Lignes HealthPage      : 725 (complet)
 Lignes code frontend   : ~18,500 (+3,500 V1.9.0)
-Lignes code backend    : ~19,000 (+12,700 V1.13.0-V1.14.0) ⭐
+Lignes code backend    : ~21,800 (+2,800 E2E v4.1) ⭐
 Dead code              : 0 ✅
 Dossier docs/ vide     : ✅ (nettoyé V1.2.3)
 Fichiers TS/TSX total  : 193 (+24 V1.9.0)
@@ -154,6 +155,17 @@ Confiance subjective   : Tracking + Hypercorrection Effect (x2 impact si erreur 
 XP granulaire          : 5/10/20/35/50 par niveau (au lieu de 10/20/35)
 Learning styles        : cautious/balanced/aggressive détectés automatiquement
 Success rate cibles    : 85-95% (L1), 75-85% (L2), 65-75% (L3), 55-65% (L4), 45-55% (L5)
+
+NOUVEAU V1.15.0 ⭐ (E2E v4.1) :
+E2E Framework          : 9 modules (base, adapter, simulator, learning, tasks, health, navigation, cli)
+Tests E2E              : 29 tests (93% pass rate)
+CleanupRegistry        : Nettoyage automatique des ressources de test
+Retry mechanism        : 3 retries par défaut pour tests flaky
+UserSimulator          : 5 profils (motivated, average, irregular, struggling, expert)
+BehaviorProfile        : Accuracy, response time, fatigue, frustration simulés
+CLI complet            : --scenario, --simulate, --discover, --json, --quiet
+Makefile commands      : make e2e-*, make sim-* (12 nouvelles commandes)
+Lignes ajoutées        : +2,782 lignes Python
 
 NOUVEAU V1.2.6 ⭐ :
 TasksPage refactorisée : 1902 → 280 lignes (-85%)
