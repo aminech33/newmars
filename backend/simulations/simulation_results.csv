@@ -1,0 +1,31 @@
+Profil,Méthode,Succès (%),Dropout (%),Échec (%),Jours Moy,Jours Std,Jours Min,Jours Max,Jours P25,Jours P50,Jours P75,Heures Moy,Heures Std,Maîtrise Moy,Maîtrise Std,Maîtrise Échec,Rétention Moy,Rétention Std,Écart Dunning-Kruger
+Marie (Déterminée),Système Adaptatif (NewMars),100.0,0.0,0.0,20.1,1.8,18,24,19.0,20.0,21.2,30.7,2.5,71.7,1.1,0.0,63.1,1.0,-10.9
+Marie (Déterminée),MOOC Linéaire (Coursera),25.0,70.0,5.0,125.4,21.3,107,160,109.0,123.0,128.0,114.1,16.7,71.0,0.3,33.1,46.1,0.2,22.4
+Marie (Déterminée),Bootcamp Intensif (2 sem),95.0,5.0,0.0,14.0,0.0,14,14,14.0,14.0,14.0,112.0,0.0,91.2,0.2,70.9,36.5,0.1,-9.1
+Marie (Déterminée),Autodidacte (YouTube),55.0,40.0,5.0,94.7,32.8,55,163,73.5,87.0,110.0,97.1,28.5,71.1,1.1,41.3,39.1,0.6,2.3
+Marie (Déterminée),Cours Universitaire,0.0,10.0,90.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,38.0,0.0,0.0,24.1
+Marie (Déterminée),Spaced Repetition (Anki),80.0,20.0,0.0,34.7,8.2,18,49,29.5,34.5,38.8,36.6,4.7,72.5,1.2,42.5,66.7,1.1,-8.1
+Salim (Moyen),Système Adaptatif (NewMars),95.0,5.0,0.0,56.3,9.5,43,82,50.0,55.0,58.5,56.8,8.7,70.6,0.5,7.7,62.1,0.4,-5.5
+Salim (Moyen),MOOC Linéaire (Coursera),0.0,50.0,50.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,12.8,0.0,0.0,56.6
+Salim (Moyen),Bootcamp Intensif (2 sem),95.0,5.0,0.0,14.0,0.0,14,14,14.0,14.0,14.0,112.0,0.0,85.8,0.8,62.0,34.3,0.3,-9.1
+Salim (Moyen),Autodidacte (YouTube),0.0,60.0,40.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,22.8,0.0,0.0,45.3
+Salim (Moyen),Cours Universitaire,0.0,10.0,90.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,24.4,0.0,0.0,46.0
+Salim (Moyen),Spaced Repetition (Anki),10.0,40.0,50.0,177.0,4.2,174,180,175.5,177.0,178.5,118.0,0.9,71.1,1.2,42.5,65.4,1.1,10.1
+Emma (Irrégulière),Système Adaptatif (NewMars),0.0,0.0,100.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,47.4,0.0,0.0,0.1
+Emma (Irrégulière),MOOC Linéaire (Coursera),0.0,85.0,15.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,4.9,0.0,0.0,49.6
+Emma (Irrégulière),Bootcamp Intensif (2 sem),95.0,5.0,0.0,14.0,0.0,14,14,14.0,14.0,14.0,112.0,0.0,88.5,0.6,66.0,35.4,0.2,-9.1
+Emma (Irrégulière),Autodidacte (YouTube),0.0,70.0,30.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,10.1,0.0,0.0,53.9
+Emma (Irrégulière),Cours Universitaire,0.0,40.0,60.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,29.5,0.0,0.0,41.3
+Emma (Irrégulière),Spaced Repetition (Anki),0.0,40.0,60.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,11.4,0.0,0.0,57.5
+Tom (En difficulté),Système Adaptatif (NewMars),85.0,5.0,10.0,103.4,23.5,77,149,86.0,93.0,113.0,109.3,24.4,70.4,0.3,46.5,62.0,0.2,-4.8
+Tom (En difficulté),MOOC Linéaire (Coursera),0.0,60.0,40.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,10.3,0.0,0.0,57.5
+Tom (En difficulté),Bootcamp Intensif (2 sem),0.0,5.0,95.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,66.8,0.0,0.0,-8.1
+Tom (En difficulté),Autodidacte (YouTube),0.0,55.0,45.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,20.9,0.0,0.0,48.9
+Tom (En difficulté),Cours Universitaire,0.0,15.0,85.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,17.0,0.0,0.0,54.9
+Tom (En difficulté),Spaced Repetition (Anki),0.0,45.0,55.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,35.5,0.0,0.0,25.8
+Amine (Procrastinateur),Système Adaptatif (NewMars),70.0,5.0,25.0,110.5,28.7,70,168,89.2,104.0,122.5,103.2,25.2,70.6,0.4,51.0,62.1,0.3,-5.9
+Amine (Procrastinateur),MOOC Linéaire (Coursera),0.0,65.0,35.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,5.9,0.0,0.0,46.3
+Amine (Procrastinateur),Bootcamp Intensif (2 sem),95.0,5.0,0.0,14.0,0.0,14,14,14.0,14.0,14.0,112.0,0.0,88.5,0.7,65.9,35.4,0.3,-9.1
+Amine (Procrastinateur),Autodidacte (YouTube),0.0,70.0,30.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,9.6,0.0,0.0,54.1
+Amine (Procrastinateur),Cours Universitaire,5.0,30.0,65.0,167.0,0.0,167,167,167.0,167.0,167.0,152.4,0.0,70.0,0.0,27.0,50.4,0.0,41.0
+Amine (Procrastinateur),Spaced Repetition (Anki),0.0,35.0,65.0,0.0,0.0,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,11.2,0.0,0.0,56.1

@@ -1,0 +1,73 @@
+Profil,Méthode,Raison,Nombre
+Marie (Déterminée),MOOC Linéaire (Coursera),lack_of_time,3
+Marie (Déterminée),MOOC Linéaire (Coursera),lost_interest,4
+Marie (Déterminée),MOOC Linéaire (Coursera),no_feedback,2
+Marie (Déterminée),MOOC Linéaire (Coursera),too_difficult,5
+Marie (Déterminée),Bootcamp Intensif (2 sem),too_difficult,1
+Marie (Déterminée),Autodidacte (YouTube),lost_motivation,6
+Marie (Déterminée),Autodidacte (YouTube),lack_of_time,2
+Marie (Déterminée),Cours Universitaire,changed_major,1
+Marie (Déterminée),Cours Universitaire,too_difficult,1
+Marie (Déterminée),Spaced Repetition (Anki),lack_of_discipline,2
+Marie (Déterminée),Spaced Repetition (Anki),boring,2
+Salim (Moyen),Système Adaptatif (NewMars),achieved_goal,1
+Salim (Moyen),MOOC Linéaire (Coursera),lost_interest,5
+Salim (Moyen),MOOC Linéaire (Coursera),lack_of_time,3
+Salim (Moyen),MOOC Linéaire (Coursera),isolation,1
+Salim (Moyen),MOOC Linéaire (Coursera),too_difficult,1
+Salim (Moyen),Bootcamp Intensif (2 sem),too_difficult,1
+Salim (Moyen),Autodidacte (YouTube),lack_of_time,6
+Salim (Moyen),Autodidacte (YouTube),lost_motivation,2
+Salim (Moyen),Autodidacte (YouTube),stuck_on_problem,4
+Salim (Moyen),Cours Universitaire,too_difficult,2
+Salim (Moyen),Spaced Repetition (Anki),boring,3
+Salim (Moyen),Spaced Repetition (Anki),backlog_overwhelming,2
+Salim (Moyen),Spaced Repetition (Anki),lack_of_discipline,3
+Emma (Irrégulière),MOOC Linéaire (Coursera),too_difficult,4
+Emma (Irrégulière),MOOC Linéaire (Coursera),lack_of_time,5
+Emma (Irrégulière),MOOC Linéaire (Coursera),lost_interest,7
+Emma (Irrégulière),MOOC Linéaire (Coursera),isolation,1
+Emma (Irrégulière),Bootcamp Intensif (2 sem),too_difficult,1
+Emma (Irrégulière),Autodidacte (YouTube),lack_of_time,6
+Emma (Irrégulière),Autodidacte (YouTube),found_alternative,2
+Emma (Irrégulière),Autodidacte (YouTube),lost_motivation,4
+Emma (Irrégulière),Autodidacte (YouTube),stuck_on_problem,2
+Emma (Irrégulière),Cours Universitaire,failed_exam,3
+Emma (Irrégulière),Cours Universitaire,schedule_conflict,1
+Emma (Irrégulière),Cours Universitaire,too_difficult,4
+Emma (Irrégulière),Spaced Repetition (Anki),boring,4
+Emma (Irrégulière),Spaced Repetition (Anki),backlog_overwhelming,1
+Emma (Irrégulière),Spaced Repetition (Anki),lack_of_discipline,2
+Emma (Irrégulière),Spaced Repetition (Anki),found_alternative,1
+Tom (En difficulté),Système Adaptatif (NewMars),achieved_goal,1
+Tom (En difficulté),MOOC Linéaire (Coursera),too_difficult,4
+Tom (En difficulté),MOOC Linéaire (Coursera),lost_interest,3
+Tom (En difficulté),MOOC Linéaire (Coursera),lack_of_time,3
+Tom (En difficulté),MOOC Linéaire (Coursera),no_feedback,1
+Tom (En difficulté),MOOC Linéaire (Coursera),isolation,1
+Tom (En difficulté),Bootcamp Intensif (2 sem),too_difficult,1
+Tom (En difficulté),Autodidacte (YouTube),lack_of_time,5
+Tom (En difficulté),Autodidacte (YouTube),lost_motivation,2
+Tom (En difficulté),Autodidacte (YouTube),stuck_on_problem,4
+Tom (En difficulté),Cours Universitaire,schedule_conflict,1
+Tom (En difficulté),Cours Universitaire,too_difficult,2
+Tom (En difficulté),Spaced Repetition (Anki),boring,3
+Tom (En difficulté),Spaced Repetition (Anki),backlog_overwhelming,2
+Tom (En difficulté),Spaced Repetition (Anki),lack_of_discipline,4
+Amine (Procrastinateur),Système Adaptatif (NewMars),lost_interest,1
+Amine (Procrastinateur),MOOC Linéaire (Coursera),lack_of_time,4
+Amine (Procrastinateur),MOOC Linéaire (Coursera),lost_interest,5
+Amine (Procrastinateur),MOOC Linéaire (Coursera),isolation,1
+Amine (Procrastinateur),MOOC Linéaire (Coursera),too_difficult,3
+Amine (Procrastinateur),Bootcamp Intensif (2 sem),too_difficult,1
+Amine (Procrastinateur),Autodidacte (YouTube),lack_of_time,6
+Amine (Procrastinateur),Autodidacte (YouTube),lost_motivation,5
+Amine (Procrastinateur),Autodidacte (YouTube),found_alternative,2
+Amine (Procrastinateur),Autodidacte (YouTube),stuck_on_problem,1
+Amine (Procrastinateur),Cours Universitaire,failed_exam,1
+Amine (Procrastinateur),Cours Universitaire,schedule_conflict,2
+Amine (Procrastinateur),Cours Universitaire,too_difficult,3
+Amine (Procrastinateur),Spaced Repetition (Anki),boring,2
+Amine (Procrastinateur),Spaced Repetition (Anki),backlog_overwhelming,1
+Amine (Procrastinateur),Spaced Repetition (Anki),lack_of_discipline,3
+Amine (Procrastinateur),Spaced Repetition (Anki),found_alternative,1

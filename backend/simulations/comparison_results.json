@@ -1,0 +1,143 @@
+{
+  "Procrastinateur Motiv\u00e9": {
+    "Syst\u00e8me Adaptatif (NewMars)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 276.7,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "MOOC Lin\u00e9aire (Coursera/Udemy)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 35.1,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Bootcamp Intensif": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 32.0,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Autodidacte (YouTube/Docs)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 15.3,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Anki + Exercices": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 83.9,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    }
+  },
+  "D\u00e9butant Motiv\u00e9": {
+    "Syst\u00e8me Adaptatif (NewMars)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 499.8,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "MOOC Lin\u00e9aire (Coursera/Udemy)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 37.0,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Bootcamp Intensif": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 32.0,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Autodidacte (YouTube/Docs)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 15.2,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Anki + Exercices": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 134.7,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    }
+  },
+  "Professionnel Occup\u00e9": {
+    "Syst\u00e8me Adaptatif (NewMars)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 161.1,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "MOOC Lin\u00e9aire (Coursera/Udemy)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 34.5,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Bootcamp Intensif": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 32.0,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Autodidacte (YouTube/Docs)": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 10.7,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    },
+    "Anki + Exercices": {
+      "success_rate": 0.0,
+      "dropout_rate": 100.0,
+      "avg_days_to_mastery": "N/A",
+      "avg_hours": 64.2,
+      "avg_retention_30d": 0,
+      "n_successful": 0,
+      "n_dropout": 20
+    }
+  }
+}

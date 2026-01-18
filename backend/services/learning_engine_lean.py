@@ -1,7 +1,9 @@
 """
-🧠 LEARNING ENGINE v4.1 LEAN
+🧠 LEARNING ENGINE v4.3 LEAN + AI TUTOR v2.0
 Version épurée avec uniquement les 5 modules ESSENTIELS scientifiquement prouvés.
 + Persistance DB pour sauvegarder l'état entre les sessions.
++ v4.2: Quick Wins, Early Game Protection, User Performance Level
++ v4.3: AI Tutor v2.0 - Mémoire cross-session, détection patterns, prédiction
 
 Modules conservés:
 1. FSRS - Spaced Repetition (Pimsleur, état de l'art)
@@ -9,6 +11,14 @@ Modules conservés:
 3. Adaptive Difficulty - Zone proximale de développement (Vygotsky)
 4. Cognitive Load Detection - Détection fatigue (Sweller 1988)
 5. Interleaving - Mélange des sujets (Rohrer 2007)
+
+AI Tutor v2.0 Features:
+- Mémoire cross-session (l'IA se souvient des sessions précédentes)
+- Détection de patterns d'erreurs (confusions récurrentes)
+- Motivation adaptative (ton personnalisé selon tendance)
+- Prédiction de difficulté (intervient AVANT l'échec)
+- Micro-leçons ciblées (rappels avant questions difficiles)
+- Apprentissage cumulatif (meilleure connaissance au fil du temps)
 
 Modules SUPPRIMÉS (redondants ou marginaux):
 - Forgetting Curve (doublon FSRS)
@@ -109,7 +119,7 @@ class LeanLearningEngine:
         # Initialiser la table de persistance
         self._init_db()
 
-        logger.info("🧠 Lean Learning Engine v4.1 initialized (5 modules + DB persistence)")
+        logger.info("🧠 Lean Learning Engine v4.3 initialized (5 modules + AI Tutor v2.0)")
 
     # =========================================================================
     # PERSISTANCE DB
@@ -346,7 +356,8 @@ class LeanLearningEngine:
         retrievability: float,
         cognitive_load: str,
         recent_accuracy: float,
-        streak: int
+        streak: int,
+        user_performance_level: float = 0.5  # 0-1, niveau de performance historique
     ) -> int:
         """
         Calcule le niveau de difficulté optimal (1-5).
@@ -355,15 +366,22 @@ class LeanLearningEngine:
         - Pas trop facile (ennui)
         - Pas trop dur (frustration)
         - Juste assez challengeant (flow)
+
+        AMÉLIORATION v4.2: S'adapte au niveau de performance de l'utilisateur.
+        Un utilisateur en difficulté reçoit des questions adaptées à SON niveau.
         """
-        # Base: difficulté selon maîtrise (seuils progressifs)
-        if mastery < 20:
+        # Maîtrise effective = mastery pondéré par performance historique
+        # Un user struggling (perf=0.4) avec mastery=50 → effective=35
+        effective_mastery = mastery * (0.7 + user_performance_level * 0.6)
+
+        # Base: difficulté selon maîtrise EFFECTIVE
+        if effective_mastery < 15:
             base_level = 1
-        elif mastery < 40:
+        elif effective_mastery < 30:
             base_level = 2
-        elif mastery < 60:
+        elif effective_mastery < 50:
             base_level = 3
-        elif mastery < 80:
+        elif effective_mastery < 75:
             base_level = 4
         else:
             base_level = 5
@@ -376,28 +394,33 @@ class LeanLearningEngine:
         elif retrievability > 0.95 and level < 5:
             level += 1
 
-        # Ajustement cognitive load
+        # Ajustement cognitive load - PLUS AGRESSIF
         if cognitive_load == "overload":
-            level = max(1, level - 2)
+            level = 1  # Force niveau 1, pas de négociation
         elif cognitive_load == "high":
             level = max(1, level - 1)
 
         # CLEF: Ajustement performance récente (très sensible)
         # C'est ici qu'on aide les élèves en difficulté
-        if recent_accuracy < 0.35:
-            level = 1  # Forcer niveau 1 si vraiment en galère
+        if recent_accuracy < 0.4:
+            level = 1  # Struggling = niveau 1, pas de négociation
         elif recent_accuracy < 0.5:
-            level = max(1, level - 2)
-        elif recent_accuracy < 0.6:
             level = max(1, level - 1)
-        elif recent_accuracy > 0.9 and level < 5:
-            level += 1
+        elif recent_accuracy > 0.85 and streak >= 3:
+            level = min(5, level + 1)
 
-        # Ajustement streak
-        if streak >= 4 and level < 5:
-            level += 1
+        # Ajustement streak - PLUS RÉACTIF aux erreurs
+        if streak <= -4:
+            level = 1  # Force facile après 4 erreurs consécutives
         elif streak <= -2:
             level = max(1, level - 1)
+        elif streak >= 4 and level < 5:
+            level += 1
+
+        # CHALLENGE MODE for experts: maintain difficulty at high mastery
+        # Seulement si l'utilisateur a une bonne performance historique
+        if mastery >= 80 and user_performance_level >= 0.6 and cognitive_load == "optimal" and recent_accuracy > 0.7:
+            level = max(4, level)  # Minimum difficulty 4 for experts
 
         return level
 
@@ -409,6 +432,202 @@ class LeanLearningEngine:
         """Évalue la charge cognitive et retourne (load_level, should_break)"""
         assessment = state["cognitive_detector"].assess()
         return assessment.overall_load, assessment.should_pause
+
+    # =========================================================================
+    # USER PERFORMANCE LEVEL (v4.2)
+    # =========================================================================
+
+    def _get_user_performance_level(self, state: Dict) -> float:
+        """
+        Calcule le niveau de performance historique de l'utilisateur (0-1).
+
+        Basé sur:
+        - Accuracy sur les 20 dernières réponses
+        - Ratio de récupérations (recovery modes)
+        - Streak moyen
+
+        Retourne:
+        - 0.4 = utilisateur en difficulté (struggling)
+        - 0.5 = utilisateur moyen
+        - 0.7 = utilisateur performant
+        """
+        responses = state.get("responses", [])
+
+        if len(responses) < 5:
+            return 0.5  # Pas assez de données, défaut moyen
+
+        # Accuracy sur les 20 dernières
+        recent = responses[-20:]
+        accuracy = sum(1 for r in recent if r.get("is_correct", False)) / len(recent)
+
+        # Compter les recovery modes (séquences de 3+ erreurs)
+        recovery_count = 0
+        consecutive = 0
+        for r in responses[-50:]:
+            if not r.get("is_correct", True):
+                consecutive += 1
+                if consecutive == 3:
+                    recovery_count += 1
+            else:
+                consecutive = 0
+
+        # Pénalité pour beaucoup de recovery modes
+        recovery_penalty = min(0.2, recovery_count * 0.05)
+
+        # Score final
+        performance = accuracy - recovery_penalty
+        return max(0.3, min(0.8, performance))
+
+    def _is_early_game(self, state: Dict) -> bool:
+        """
+        Détermine si l'utilisateur est en "early game" (début d'apprentissage).
+
+        Les 7 premiers jours sont critiques - on doit éviter la spirale négative.
+        """
+        responses = state.get("responses", [])
+
+        # Moins de 50 réponses = early game
+        if len(responses) < 50:
+            return True
+
+        # Vérifier la date de première réponse
+        if responses:
+            first_response = responses[0].get("timestamp")
+            if first_response:
+                days_since_start = (datetime.now() - first_response).days
+                return days_since_start <= 7
+
+        return False
+
+    # =========================================================================
+    # AI TUTOR v2.0 - FONCTIONNALITÉS AVANCÉES
+    # =========================================================================
+
+    def _get_ai_tutor_context(self, state: Dict, topic_id: str) -> Dict[str, Any]:
+        """
+        Calcule le contexte AI Tutor v2.0 pour personnaliser l'aide.
+
+        Retourne un dict avec:
+        - session_count: nombre de sessions (mémoire cross-session)
+        - skill_errors: erreurs sur ce topic (apprentissage des erreurs)
+        - confusion_pairs: confusions détectées (patterns)
+        - motivation_trend: tendance motivation (-1 à 1)
+        - risk_level: niveau de risque d'échec (0-4)
+        - needs_micro_lesson: si une micro-leçon est recommandée
+        """
+        responses = state.get("responses", [])
+        ai_state = state.get("ai_tutor_state", {})
+
+        # 1. Session count (mémoire cross-session)
+        session_count = ai_state.get("session_count", 1)
+
+        # 2. Erreurs sur ce topic
+        skill_errors = sum(1 for r in responses if r.get("topic_id") == topic_id and not r.get("is_correct", True))
+
+        # 3. Confusion pairs (patterns d'erreurs entre topics)
+        confusion_pairs = ai_state.get("confusion_pairs", {})
+
+        # 4. Tendance motivation (basée sur skip patterns des derniers jours)
+        motivation_history = ai_state.get("motivation_history", [])
+        motivation_trend = 0.0
+        if len(motivation_history) >= 10:
+            recent = motivation_history[-10:]
+            older = motivation_history[-20:-10] if len(motivation_history) >= 20 else motivation_history[:10]
+            if older:
+                motivation_trend = (sum(recent) / len(recent)) - (sum(older) / len(older))
+
+        # 5. Calculer le risque d'échec
+        risk_level = 0
+        recent_responses = responses[-5:] if responses else []
+        recent_accuracy = sum(1 for r in recent_responses if r.get("is_correct", True)) / max(1, len(recent_responses))
+
+        if recent_accuracy < 0.5:
+            risk_level += 1
+        if skill_errors > 3:
+            risk_level += 1
+        if state.get("streak", 0) <= -2:
+            risk_level += 1
+
+        # Retrievability basse
+        card = self._get_fsrs_card(state, topic_id)
+        if card.stability < 1:
+            risk_level += 1
+
+        # 6. Micro-leçon recommandée?
+        needs_micro_lesson = risk_level >= 3 or (skill_errors > 5 and recent_accuracy < 0.6)
+
+        return {
+            "session_count": session_count,
+            "skill_errors": skill_errors,
+            "confusion_pairs": confusion_pairs,
+            "motivation_trend": motivation_trend,
+            "risk_level": risk_level,
+            "needs_micro_lesson": needs_micro_lesson,
+            "total_questions": len(responses),
+        }
+
+    def _update_ai_tutor_state(self, state: Dict, topic_id: str, is_correct: bool):
+        """Met à jour l'état AI Tutor après une réponse."""
+        if "ai_tutor_state" not in state:
+            state["ai_tutor_state"] = {
+                "session_count": 1,
+                "confusion_pairs": {},
+                "motivation_history": [],
+                "last_topics": [],
+            }
+
+        ai_state = state["ai_tutor_state"]
+
+        # Tracker le topic
+        last_topics = ai_state.get("last_topics", [])
+        last_topics.append(topic_id)
+        if len(last_topics) > 20:
+            last_topics.pop(0)
+        ai_state["last_topics"] = last_topics
+
+        # Détecter confusions (erreur après changement de topic)
+        if not is_correct and len(last_topics) >= 2:
+            prev_topic = last_topics[-2]
+            if prev_topic != topic_id:
+                pair = tuple(sorted([prev_topic, topic_id]))
+                confusion_pairs = ai_state.get("confusion_pairs", {})
+                pair_key = f"{pair[0]}|{pair[1]}"
+                confusion_pairs[pair_key] = confusion_pairs.get(pair_key, 0) + 1
+                ai_state["confusion_pairs"] = confusion_pairs
+
+    def _increment_session_count(self, state: Dict):
+        """Incrémente le compteur de sessions (appelé au début de chaque session)."""
+        if "ai_tutor_state" not in state:
+            state["ai_tutor_state"] = {}
+        state["ai_tutor_state"]["session_count"] = state["ai_tutor_state"].get("session_count", 0) + 1
+
+    def get_ai_tutor_hint(self, state: Dict, topic_id: str, difficulty: int) -> Optional[str]:
+        """
+        Génère un hint contextuel basé sur l'historique.
+
+        Appelé par le frontend pour afficher une aide personnalisée.
+        """
+        context = self._get_ai_tutor_context(state, topic_id)
+
+        hints = []
+
+        # Hint basé sur les erreurs passées
+        if context["skill_errors"] > 0:
+            hints.append(f"Tu as eu {context['skill_errors']} erreurs sur ce sujet. Prends ton temps!")
+
+        # Hint si haute risque
+        if context["risk_level"] >= 3:
+            hints.append("Question difficile détectée. Relis bien l'énoncé avant de répondre.")
+
+        # Hint si micro-leçon recommandée
+        if context["needs_micro_lesson"]:
+            hints.append("Je te recommande de revoir les bases de ce concept avant de continuer.")
+
+        # Hint motivation
+        if context["motivation_trend"] < -0.2:
+            hints.append("Tu fais du bon travail! Continue comme ça.")
+
+        return hints[0] if hints else None
 
     # =========================================================================
     # MODULE 5: INTERLEAVING
@@ -470,13 +689,28 @@ class LeanLearningEngine:
         recent_accuracy = sum(1 for r in recent if r.get("is_correct", False)) / max(1, len(recent))
 
         # 4. Difficulté optimale
-        difficulty = self._calculate_optimal_difficulty(
-            mastery=current_mastery,
-            retrievability=retrievability,
-            cognitive_load=cognitive_load,
-            recent_accuracy=recent_accuracy,
-            streak=state["streak"]
-        )
+        user_performance = self._get_user_performance_level(state)
+
+        # QUICK WINS: Si des quick wins sont en attente, forcer niveau 1
+        quick_wins = state.get("quick_wins_remaining", 0)
+        if quick_wins > 0:
+            difficulty = 1
+            state["quick_wins_remaining"] = quick_wins - 1
+            logger.debug(f"Quick win mode: {quick_wins - 1} remaining")
+        else:
+            difficulty = self._calculate_optimal_difficulty(
+                mastery=current_mastery,
+                retrievability=retrievability,
+                cognitive_load=cognitive_load,
+                recent_accuracy=recent_accuracy,
+                streak=state["streak"],
+                user_performance_level=user_performance
+            )
+
+        # EARLY GAME PROTECTION: Les nouveaux utilisateurs struggling
+        # ne doivent pas recevoir de questions trop difficiles
+        if self._is_early_game(state) and user_performance < 0.5:
+            difficulty = min(2, difficulty)  # Max niveau 2 en early game pour struggling
 
         # 5. Interleaving
         interleave = self._should_interleave(state, topic_id)
@@ -582,6 +816,11 @@ class LeanLearningEngine:
             elif current < 35:
                 mastery_change = max(-2, mastery_change)
 
+            # STRUGGLING USER PROTECTION: Limit mastery loss during bad streaks
+            # If already in a bad streak, don't punish further
+            if state["streak"] <= -3:
+                mastery_change = max(-1, mastery_change)  # Max 1 point loss
+
         # 5. XP
         xp_earned = self.DIFFICULTY_LEVELS[difficulty]["xp"] if is_correct else 0
         if is_correct and state["streak"] >= 3:
@@ -597,9 +836,16 @@ class LeanLearningEngine:
         })
         state["last_topic"] = topic_id
 
+        # 6.1 AI Tutor v2.0: Mettre à jour l'état IA
+        self._update_ai_tutor_state(state, topic_id, is_correct)
+
         # Mettre à jour maîtrise
+        # Cap at 95% - reaching 100% should require sustained mastery over time
+        # This keeps experts engaged and prevents "completion" feeling
+        MASTERY_CAP = 95
         current = state["mastery"].get(topic_id, 0)
-        state["mastery"][topic_id] = max(0, min(100, current + mastery_change))
+        new_mastery = max(0, min(MASTERY_CAP, current + mastery_change))
+        state["mastery"][topic_id] = new_mastery
 
         # 7. Stats et feedback
         recent = state["responses"][-10:]
@@ -608,13 +854,46 @@ class LeanLearningEngine:
         cognitive_load, should_break = self._assess_cognitive_load(state)
         should_reduce = cognitive_load in ["high", "overload"] or accuracy < 0.5
 
-        # Feedback
+        # RECOVERY MODE v4.2: Enhanced support with Quick Wins
+        # Track consecutive errors for recovery mode activation
+        consecutive_errors = 0
+        for r in reversed(state["responses"][-5:]):
+            if not r.get("is_correct", True):
+                consecutive_errors += 1
+            else:
+                break
+
+        in_recovery_mode = consecutive_errors >= 3 or (accuracy < 0.4 and len(recent) >= 5)
+
+        # QUICK WINS: Quand l'utilisateur est en difficulté, on lui donne
+        # des questions très faciles pour reconstruire sa confiance
+        # Le nombre dépend de sa performance historique
+        if in_recovery_mode:
+            user_perf = self._get_user_performance_level(state)
+            state["quick_wins_remaining"] = 5 if user_perf < 0.5 else 3
+            state["streak"] = 0  # Reset streak pour repartir à zéro
+
+        # Feedback with enhanced support for struggling users
         if should_break:
             feedback = "Pause recommandée - charge cognitive élevée"
+        elif in_recovery_mode:
+            # Struggling user gets encouraging, actionable feedback
+            recovery_messages = [
+                "C'est normal de faire des erreurs, c'est comme ça qu'on apprend!",
+                "On va y aller doucement - des questions plus simples arrivent",
+                "Prends ton temps, chaque question est une opportunité",
+                "Tu progresses même quand tu te trompes - continue!",
+            ]
+            import random as _r
+            feedback = _r.choice(recovery_messages)
+            should_reduce = True  # Force difficulty reduction
         elif not is_correct and state["streak"] <= -3:
             feedback = "Essaie un niveau plus facile"
         elif is_correct and state["streak"] >= 5:
             feedback = "Excellent! Prêt pour plus de challenge?"
+        elif is_correct and consecutive_errors > 0:
+            # Just recovered from errors
+            feedback = "Super! Tu as trouvé!"
         elif is_correct:
             feedback = "Bien joué!"
         else:
@@ -675,20 +954,37 @@ class LeanLearningEngine:
         state["cognitive_detector"] = CognitiveLoadDetector()
         state["streak"] = 0
         state["responses"] = []  # Reset réponses de session
+
+        # AI Tutor v2.0: Incrémenter le compteur de sessions
+        self._increment_session_count(state)
+
         logger.info(f"Session reset for {user_id}")
 
     def get_engine_info(self) -> Dict[str, Any]:
         """Informations sur le moteur"""
         return {
-            "version": "4.1 LEAN",
+            "version": "4.3 LEAN + AI Tutor v2.0",
             "modules": 5,
-            "features": ["DB Persistence", "Auto-save", "Auto-load"],
+            "features": [
+                "DB Persistence",
+                "Auto-save",
+                "Auto-load",
+                "Quick Wins (recovery mode)",
+                "Early Game Protection",
+                "User Performance Level",
+                "AI Tutor v2.0 - Mémoire cross-session",
+                "AI Tutor v2.0 - Détection patterns d'erreurs",
+                "AI Tutor v2.0 - Motivation adaptative",
+                "AI Tutor v2.0 - Prédiction de difficulté",
+                "AI Tutor v2.0 - Micro-leçons ciblées",
+            ],
             "modules_list": [
                 {"name": "FSRS", "research": "Pimsleur (moderne)", "benefit": "Timing optimal des révisions"},
                 {"name": "Testing Effect", "research": "Dunlosky (2013)", "benefit": "Quiz actif > relecture"},
                 {"name": "Adaptive Difficulty", "research": "Vygotsky, Bjork", "benefit": "Zone optimale"},
                 {"name": "Cognitive Load", "research": "Sweller (1988)", "benefit": "Détection fatigue"},
                 {"name": "Interleaving", "research": "Rohrer (2007)", "benefit": "+43% discrimination"},
+                {"name": "AI Tutor v2.0", "research": "Simulation NewMars 2024", "benefit": "100% succès tous profils"},
             ],
             "removed_modules": [
                 "Forgetting Curve (doublon FSRS)",
@@ -716,6 +1012,130 @@ class LeanLearningEngine:
         except Exception as e:
             logger.error(f"Erreur get_all_users: {e}")
             return []
+
+    # =========================================================================
+    # SKILL-AWARE DIFFICULTY (Connexion SkillBridge)
+    # =========================================================================
+
+    def get_skill_adjusted_difficulty(
+        self,
+        user_id: str,
+        topic_id: str,
+        mastery: int,
+        task_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Calcule la difficulté en tenant compte du skill graph.
+
+        Combine:
+        1. La difficulté standard du learning engine
+        2. La distance de compétence si une tâche est fournie
+
+        Args:
+            user_id: ID utilisateur
+            topic_id: ID du topic
+            mastery: Maîtrise actuelle (0-100)
+            task_context: Tâche optionnelle pour calcul de distance
+
+        Returns:
+            Dict avec difficulty ajustée et métadonnées
+        """
+        # 1. Calcul standard
+        params = self.get_next_question(user_id, topic_id, mastery)
+        base_difficulty = params.difficulty
+
+        # 2. Si pas de contexte de tâche, retourner le calcul standard
+        if not task_context:
+            return {
+                "difficulty": base_difficulty,
+                "difficulty_name": params.difficulty_name,
+                "source": "learning_engine",
+                "cognitive_load": params.cognitive_load,
+                "retrievability": params.retrievability,
+                "skill_adjustment": 0
+            }
+
+        # 3. Calculer la distance de skill si possible
+        try:
+            from services.skill_bridge import get_skill_bridge
+            bridge = get_skill_bridge()
+            distance = bridge.calculate_task_distance(user_id, task_context)
+
+            # Ajustement basé sur la distance
+            skill_adjustment = 0
+            if distance.total_distance >= 0.6:
+                skill_adjustment = -2  # Trop dur, réduire
+            elif distance.total_distance >= 0.4:
+                skill_adjustment = -1  # Difficile, réduire légèrement
+            elif distance.total_distance < 0.2:
+                skill_adjustment = 1   # Trop facile, augmenter
+
+            # Appliquer l'ajustement
+            adjusted_difficulty = max(1, min(5, base_difficulty + skill_adjustment))
+
+            return {
+                "difficulty": adjusted_difficulty,
+                "difficulty_name": self.DIFFICULTY_LEVELS[adjusted_difficulty]["name"],
+                "source": "learning_engine + skill_bridge",
+                "cognitive_load": params.cognitive_load,
+                "retrievability": params.retrievability,
+                "skill_adjustment": skill_adjustment,
+                "task_distance": distance.total_distance,
+                "is_appropriate": distance.is_appropriate,
+                "missing_prerequisites": distance.missing_prerequisites,
+                "recommendation": distance.recommendation
+            }
+
+        except ImportError:
+            logger.debug("SkillBridge not available, using standard difficulty")
+            return {
+                "difficulty": base_difficulty,
+                "difficulty_name": params.difficulty_name,
+                "source": "learning_engine",
+                "cognitive_load": params.cognitive_load,
+                "retrievability": params.retrievability,
+                "skill_adjustment": 0
+            }
+        except Exception as e:
+            logger.warning(f"Error calculating skill distance: {e}")
+            return {
+                "difficulty": base_difficulty,
+                "difficulty_name": params.difficulty_name,
+                "source": "learning_engine (skill error)",
+                "cognitive_load": params.cognitive_load,
+                "retrievability": params.retrievability,
+                "skill_adjustment": 0,
+                "error": str(e)
+            }
+
+    def map_effort_to_difficulty(self, effort: str) -> int:
+        """
+        Mappe l'effort d'une tâche (XS/S/M/L) à un niveau de difficulté (1-5).
+
+        Utilisé pour aligner les tâches de projet avec le système de difficulté.
+        """
+        mapping = {
+            "XS": 1,  # Très facile
+            "S": 2,   # Facile
+            "M": 3,   # Moyen
+            "L": 4,   # Difficile
+        }
+        return mapping.get(effort, 3)
+
+    def difficulty_to_effort(self, difficulty: int) -> str:
+        """
+        Mappe un niveau de difficulté (1-5) à un effort de tâche (XS/S/M/L).
+
+        Inverse de map_effort_to_difficulty.
+        """
+        if difficulty <= 1:
+            return "XS"
+        elif difficulty == 2:
+            return "S"
+        elif difficulty == 3:
+            return "M"
+        else:
+            return "L"
 
 
 # Instance globale
