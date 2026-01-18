@@ -1,8 +1,8 @@
 # 🎯 NewMars V1 — VERSION FIGÉE
 
 > **Date de gel** : 20 décembre 2024
-> **Dernière mise à jour** : 18 janvier 2026 (V1.16.0 - Learning Engine v4.3 + AI Tutor v2.0 🤖)
-> **Version** : 1.16.0
+> **Dernière mise à jour** : 18 janvier 2026 (V1.17.0 - Simulateur connecté au moteur réel 🔗)
+> **Version** : 1.17.0
 > **Statut** : ✅ **FROZEN** — Ne plus toucher aux features existantes
 > **But** : Snapshot officiel de ce qui marche avant d'ajouter des trucs
 
@@ -41,6 +41,7 @@
 - ✅ **Optimal Difficulty v2.0 V1.14.0** : 5 niveaux (au lieu de 3), calibration personnalisée, Desirable Difficulty (Bjork 2011), Confiance subjective, Hypercorrection Effect 🎯
 - ✅ **E2E Framework v4.1 V1.15.0** : Architecture modulaire (9 modules), CleanupRegistry auto, retry mechanism, UserSimulator 5 profils, 29 tests (93% pass) 🧪
 - ✅ **Learning Engine v4.3 V1.16.0** : AI Tutor v2.0 intégré, 100% succès TOUS profils (même HARDCORE), simulation 180 jours validée 🤖
+- ✅ **Simulateur Connecté V1.17.0** : Teste le VRAI moteur (pas de code hardcodé), DB temporaire, détection divergences 🔗
 - ✅ **Flashcards UI complète** avec export 4 formats
 - ✅ **Focus Score V2 Lite** (simplifié, sans superflu)
 - ✅ **Tasks V2** : Drag & Drop, Progressive Unlocking, Pomodoro Inline, Projects Management
@@ -62,11 +63,11 @@
 - ❌ Dossier src/components/docs/ complet (vide depuis V1.2.3)
 - ❌ Anciens widgets (7 widgets remplacés par 4 Smart Widgets V1.2.4 - 1098 lignes)
 
-**Statut** : ✅ **V1.16.0 COMPLET** — Learning Engine v4.3 + AI Tutor v2.0 + Simulation HARDCORE 100% succès 🤖
+**Statut** : ✅ **V1.17.0 COMPLET** — Simulateur connecté au moteur réel + code hardcodé supprimé 🔗
 
 ---
 
-## 📊 Métriques V1.16.0
+## 📊 Métriques V1.17.0
 
 ```
 Modules principaux     : 6 (Hub + Tâches + Ma Journée + Apprentissage + Bibliothèque + Santé)
@@ -193,6 +194,65 @@ Journal Philosophy     : Prompts rotatifs, souvenirs "Il y a X ans", undo, valid
 Projects Management    : Recherche, tri (nom/progression/date), undo suppression, plein écran
 Minimalisme parfait    : Champ 'action' supprimé, bouton dupliqué enlevé, ID généré correctement
 ```
+
+---
+
+## 🎯 V1.17.0 — Simulateur connecté au moteur réel 🔗 (18 jan 2026)
+
+### Problème résolu
+
+Le simulateur était **hardcodé** : il réimplémentait les formules du moteur d'apprentissage au lieu de les utiliser directement. Conséquences :
+- Risque de divergence entre simulateur et moteur réel
+- Code dupliqué (~2000 lignes)
+- Tests ne reflétant pas le vrai comportement
+
+### Solution : Simulateur connecté
+
+Le simulateur utilise maintenant **directement** `LeanLearningEngine` avec une DB temporaire.
+
+### 📁 **STRUCTURE SIMPLIFIÉE**
+
+```
+backend/simulators/
+├── __init__.py      # Exports
+├── config.py        # Constantes (SKILLS, MASTERY_TARGET)
+├── profiles.py      # StudentProfile, PROFILES, PROFILES_HARDCORE
+└── connected.py     # simulate(), run() - utilise le VRAI moteur
+```
+
+**Fichiers supprimés** (code hardcodé inutile) :
+- `core.py` - formules dupliquées
+- `simulation.py` - ancien simulateur hardcodé
+- `fsrs.py` - FSRS dupliqué
+- `cognitive.py` - cognitive load dupliqué
+- `ai_tutor.py` - AI tutor dupliqué
+
+### 🔗 **FONCTIONNEMENT**
+
+```python
+from simulators import simulate, run, PROFILES
+
+# Simulation unique (utilise le VRAI LeanLearningEngine)
+result = simulate(PROFILES["average"], days_limit=60)
+
+# Batch de simulations
+results = run(n_runs=10)
+```
+
+Le simulateur :
+1. Crée une DB SQLite temporaire
+2. Instancie le vrai `LeanLearningEngine`
+3. Appelle `get_next_question()` et `process_answer()` du vrai moteur
+4. Supprime la DB après le test
+
+### ✅ **AVANTAGES**
+
+| Avant (hardcodé) | Après (connecté) |
+|------------------|------------------|
+| ~2000 lignes dupliquées | 0 duplication |
+| Risque de divergence | Toujours synchronisé |
+| Teste une copie | Teste le vrai code |
+| Maintenance double | Maintenance unique |
 
 ---
 
