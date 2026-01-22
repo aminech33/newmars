@@ -12,6 +12,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Mapping pour conversion effort <-> level
+EFFORT_TO_LEVEL = {"XS": 1, "S": 2, "M": 3, "L": 4, "XL": 5}
+LEVEL_TO_EFFORT = {1: "XS", 2: "S", 3: "M", 4: "L", 5: "XL"}
+
 DB_PATH = Path(__file__).parent.parent / "data" / "tasks.db"
 
 
@@ -66,6 +70,7 @@ class TasksDatabase:
                 category TEXT DEFAULT 'personal',
                 status TEXT DEFAULT 'todo',
                 priority TEXT DEFAULT 'medium',
+                level INTEGER DEFAULT 2,
                 effort TEXT DEFAULT 'S',
                 due_date TEXT,
                 estimated_time INTEGER,
@@ -84,6 +89,9 @@ class TasksDatabase:
                 FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
             )
         """)
+
+        # Migration: ajouter colonne level si elle n'existe pas
+        self._migrate_add_level_column(cursor)
 
         # Table: subtasks
         cursor.execute("""
@@ -149,6 +157,24 @@ class TasksDatabase:
         conn.commit()
         conn.close()
         logger.info(f"✅ Tasks DB initialized at {self.db_path}")
+
+    def _migrate_add_level_column(self, cursor):
+        """Migration: ajoute la colonne level et migre les données depuis effort"""
+        # Vérifier si la colonne existe déjà
+        cursor.execute("PRAGMA table_info(tasks)")
+        columns = [row[1] for row in cursor.fetchall()]
+
+        if "level" not in columns:
+            logger.info("🔄 Migration: ajout de la colonne 'level' à la table tasks...")
+            cursor.execute("ALTER TABLE tasks ADD COLUMN level INTEGER DEFAULT 2")
+
+            # Migrer les données effort → level
+            for effort, level in EFFORT_TO_LEVEL.items():
+                cursor.execute(
+                    "UPDATE tasks SET level = ? WHERE effort = ?",
+                    (level, effort)
+                )
+            logger.info("✅ Migration terminée: colonne 'level' ajoutée et données migrées")
 
     # ═══════════════════════════════════════════════════════════════
     # PROJECTS
@@ -374,14 +400,25 @@ class TasksDatabase:
         task_id = data.get('id') or f"task-{int(datetime.now().timestamp() * 1000)}"
         tags = json.dumps(data.get('tags', [])) if data.get('tags') else None
 
+        # Gestion niveau unifié: priorité à level, fallback sur effort
+        level = data.get('level')
+        effort = data.get('effort')
+        if level is None and effort:
+            level = EFFORT_TO_LEVEL.get(effort, 2)
+        elif level is None:
+            level = 2
+        # Garder effort synchro pour rétrocompatibilité
+        if effort is None:
+            effort = LEVEL_TO_EFFORT.get(level, 'S')
+
         try:
             cursor.execute("""
                 INSERT INTO tasks
                 (id, user_id, project_id, title, description, category, status,
-                 priority, effort, due_date, estimated_time, actual_time,
+                 priority, level, effort, due_date, estimated_time, actual_time,
                  completed, is_visible, is_priority, temporal_column,
                  phase_index, is_validation, focus_score, tags)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 task_id,
                 user_id,
@@ -391,7 +428,8 @@ class TasksDatabase:
                 data.get('category', 'personal'),
                 data.get('status', 'todo'),
                 data.get('priority', 'medium'),
-                data.get('effort', 'S'),
+                level,
+                effort,
                 data.get('due_date'),
                 data.get('estimated_time'),
                 data.get('actual_time'),
@@ -431,8 +469,14 @@ class TasksDatabase:
             fields = []
             values = []
 
+            # Synchroniser level et effort si l'un est fourni
+            if 'level' in data and 'effort' not in data:
+                data['effort'] = LEVEL_TO_EFFORT.get(data['level'], 'S')
+            elif 'effort' in data and 'level' not in data:
+                data['level'] = EFFORT_TO_LEVEL.get(data['effort'], 2)
+
             for key in ['project_id', 'title', 'description', 'category', 'status',
-                        'priority', 'effort', 'due_date', 'estimated_time', 'actual_time',
+                        'priority', 'level', 'effort', 'due_date', 'estimated_time', 'actual_time',
                         'completed', 'completed_at', 'is_visible', 'is_priority',
                         'temporal_column', 'phase_index', 'is_validation', 'focus_score']:
                 if key in data:

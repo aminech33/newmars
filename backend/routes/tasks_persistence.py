@@ -34,7 +34,8 @@ class TaskRequest(BaseModel):
     category: Optional[str] = "personal"
     status: Optional[str] = "todo"
     priority: Optional[str] = "medium"
-    effort: Optional[str] = "S"
+    level: Optional[int] = None  # Niveau 1-5 (nouveau système unifié)
+    effort: Optional[str] = None  # Legacy (XS/S/M/L/XL), converti en level
     due_date: Optional[str] = None
     estimated_time: Optional[int] = None
     actual_time: Optional[int] = None
@@ -56,7 +57,8 @@ class TaskUpdateRequest(BaseModel):
     category: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[str] = None
-    effort: Optional[str] = None
+    level: Optional[int] = None  # Niveau 1-5 (nouveau système unifié)
+    effort: Optional[str] = None  # Legacy (XS/S/M/L/XL), converti en level
     due_date: Optional[str] = None
     estimated_time: Optional[int] = None
     actual_time: Optional[int] = None

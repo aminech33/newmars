@@ -29,13 +29,51 @@ class PlanningInput(BaseModel):
     excludedSkills: Optional[List[str]] = None  # Compétences explicitement exclues
 
 
+# Mapping effort legacy → level (pour rétrocompatibilité)
+EFFORT_TO_LEVEL = {"XS": 1, "S": 2, "M": 3, "L": 4, "XL": 5}
+LEVEL_TO_EFFORT = {1: "XS", 2: "S", 3: "M", 4: "L", 5: "XL"}
+
+
 class TaskPlan(BaseModel):
-    """Tâche dans le plan avec métadonnées pédagogiques"""
+    """
+    Tâche dans le plan avec métadonnées pédagogiques.
+
+    Système de niveaux unifié (1-5):
+        1 = Très facile (15 min) - Setup, micro-tâches
+        2 = Facile (30 min) - Exercices simples
+        3 = Intermédiaire (1h) - Travail principal
+        4 = Difficile (2h) - Validation, challenges
+        5 = Expert (3h+) - Projets complexes
+    """
     title: str
-    effort: Optional[Literal["XS", "S", "M", "L"]] = "S"
-    covers: Optional[List[str]] = None  # Dimensions couvertes par cette tâche
+    level: Optional[int] = None  # Niveau 1-5 (recommandé)
+    effort: Optional[Literal["XS", "S", "M", "L", "XL"]] = None  # DEPRECATED - utiliser level
+    covers: Optional[List[str]] = None  # Compétences couvertes par cette tâche
     isValidation: Optional[bool] = False  # Tâche de validation de phase
     unlockAfter: Optional[str] = None  # Phase ou tâche prérequise
+
+    def __init__(self, **data):
+        """Convertit automatiquement effort → level si effort fourni sans level."""
+        # Si effort fourni mais pas level, convertir avec warning
+        if data.get("effort") and not data.get("level"):
+            effort = data["effort"]
+            data["level"] = EFFORT_TO_LEVEL.get(effort, 2)
+            logger.debug(f"[DEPRECATED] Conversion effort '{effort}' → level {data['level']}")
+        super().__init__(**data)
+
+    def get_level(self) -> int:
+        """Retourne le niveau normalisé (1-5)."""
+        if self.level is not None:
+            return max(1, min(5, self.level))
+        # Rétrocompatibilité effort legacy
+        if self.effort:
+            return EFFORT_TO_LEVEL.get(self.effort, 2)
+        return 2  # Défaut: niveau 2 (Facile)
+
+    def get_effort(self) -> str:
+        """Retourne l'effort legacy pour rétrocompatibilité API."""
+        level = self.get_level()
+        return LEVEL_TO_EFFORT.get(level, "S")
 
 
 class PhasePlan(BaseModel):
@@ -102,22 +140,23 @@ CONTRAINTES DE VOLUME (OBLIGATOIRES — RESPECTER STRICTEMENT)
 • EXACTEMENT 7 PHASES (ni plus, ni moins)
 • 7 à 8 TÂCHES par phase (ni plus, ni moins)
 • EXACTEMENT 49-56 TÂCHES au total
-• Chaque tâche : 15 à 90 minutes
+• Chaque tâche : 15 min à 3h selon le niveau
 
 Structure de chaque phase (OBLIGATOIRE) :
-  - 1 tâche XS (setup/découverte de début de phase)
-  - 3-4 tâches S (exercices simples, manipulation)
-  - 2-3 tâches M (travail principal, exercice conséquent)
-  - 1 tâche L (validation de fin de phase uniquement)
+  - 1 tâche niveau 1 (setup/découverte de début de phase)
+  - 3-4 tâches niveau 2 (exercices simples, manipulation)
+  - 2-3 tâches niveau 3 (travail principal, exercice conséquent)
+  - 1 tâche niveau 4 (validation de fin de phase uniquement)
+  - Occasionnellement niveau 5 (expert, projets avancés - rare)
 
 Distribution cible par phase de 8 tâches :
-XS=1 | S=4 | M=2 | L=1
+Niveau 1=1 | Niveau 2=4 | Niveau 3=2 | Niveau 4=1
 
 ⚠️ REJET AUTOMATIQUE si :
   - <45 tâches totales
   - <6 tâches dans une phase
-  - <10 tâches S au total
-  - >8 tâches L au total
+  - <10 tâches niveau 2 au total
+  - >8 tâches niveau 4+ au total
 
 ═══════════════════════════════════════════════════════════════
 DÉFINITION D'UNE PHASE
@@ -194,14 +233,14 @@ FORMAT JSON
             "tasks": [
                 {{
                     "title": "Verbe + action concrète",
-                    "effort": "M",
+                    "level": 3,
                     "covers": ["Domaine"],
                     "isValidation": false,
                     "unlockAfter": null
                 }},
                 {{
                     "title": "VALIDATION : mini-projet ou défi",
-                    "effort": "L",
+                    "level": 4,
                     "covers": ["Domaine"],
                     "isValidation": true,
                     "unlockAfter": null
@@ -213,37 +252,41 @@ FORMAT JSON
 }}
 
 ═══════════════════════════════════════════════════════════════
-CALIBRAGE DES EFFORTS (important)
+CALIBRAGE DES NIVEAUX (important)
 ═══════════════════════════════════════════════════════════════
 
-Chaque tâche doit avoir un effort réaliste :
+Chaque tâche doit avoir un niveau de difficulté (1-5) :
 
-• XS (15min) : installation, setup rapide, configuration simple
+• Niveau 1 - Très facile (15min) : installation, setup rapide, configuration simple
   Ex: "Installer Python", "Créer un dossier projet", "Ouvrir VS Code"
 
-• S (30min) : manipulation simple, exercice court, test rapide, découverte
+• Niveau 2 - Facile (30min) : manipulation simple, exercice court, test rapide
   Ex: "Écrire un hello world", "Tester 3 commandes de base", "Créer une variable"
   Ex: "Afficher une liste dans le terminal", "Lire les 5 premières lignes d'un fichier"
-  Ex: "Modifier une variable et observer le résultat", "Tester print() avec 3 formats"
 
-• M (1h) : script complet, exercice conséquent, fonctionnalité entière
+• Niveau 3 - Intermédiaire (1h) : script complet, exercice conséquent
   Ex: "Écrire un script de calcul complet", "Implémenter 3 fonctions avec paramètres"
   Ex: "Créer un script qui lit et transforme un fichier CSV"
 
-• L (2h+) : projet, validation de phase, défi complexe, intégration
+• Niveau 4 - Difficile (2h) : projet, validation de phase, défi complexe
   Ex: "Construire un mini-projet complet", "Créer une application CLI fonctionnelle"
 
+• Niveau 5 - Expert (3h+) : architecture complexe, optimisation avancée
+  Ex: "Concevoir un système distribué", "Optimiser les performances d'une app"
+  (Rare - réservé aux projets avancés)
+
 ⚠️ DISTRIBUTION CIBLE (sur 50 tâches) :
-• XS : 7-10 tâches (14-20%) — setup, config, micro-tâches
-• S : 18-22 tâches (36-44%) — exercices courts ← LE PLUS GROS VOLUME
-• M : 14-18 tâches (28-36%) — travail principal
-• L : 6-8 tâches (12-16%) — validations uniquement
+• Niveau 1 : 7-10 tâches (14-20%) — setup, config, micro-tâches
+• Niveau 2 : 18-22 tâches (36-44%) — exercices courts ← LE PLUS GROS VOLUME
+• Niveau 3 : 14-18 tâches (28-36%) — travail principal
+• Niveau 4 : 6-8 tâches (12-16%) — validations uniquement
+• Niveau 5 : 0-2 tâches (0-4%) — projets experts (optionnel)
 
-❌ REJET si S < 35% (il faut BEAUCOUP de petits exercices)
-❌ REJET si L > 16% (les L sont RARES, réservés aux validations)
-❌ REJET si M > 40% (le plan serait trop dense)
+❌ REJET si niveau 2 < 35% (il faut BEAUCOUP de petits exercices)
+❌ REJET si niveau 4+ > 16% (les niveaux élevés sont RARES)
+❌ REJET si niveau 3 > 40% (le plan serait trop dense)
 
-RÈGLE D'OR : Chaque phase commence FACILE (XS/S) et finit DIFFICILE (M/L)
+RÈGLE D'OR : Chaque phase commence FACILE (1-2) et finit DIFFICILE (3-4)
 
 ═══════════════════════════════════════════════════════════════
 RAPPEL FINAL
@@ -256,10 +299,10 @@ CHECKLIST FINALE (tout doit être vrai) :
 ☐ 7 phases exactement
 ☐ 49-56 tâches au total
 ☐ 7-8 tâches par phase
-☐ S ≥ 35% du total (au moins 18 tâches S)
-☐ L ≤ 16% du total (max 8 tâches L, 1 par phase)
+☐ Niveau 2 ≥ 35% du total (au moins 18 tâches niveau 2)
+☐ Niveau 4+ ≤ 16% du total (max 8 tâches niveau 4, 1 par phase)
 ☐ Chaque phase finit par une validation (isValidation: true)
-☐ Progression XS → S → M → L dans chaque phase
+☐ Progression niveau 1 → 2 → 3 → 4 dans chaque phase
 
 Génère UNIQUEMENT le JSON."""
 
@@ -285,28 +328,34 @@ Génère UNIQUEMENT le JSON."""
             for phase_data in plan_data["phases"]:
                 phase_tasks = []
                 for task_data in phase_data.get("tasks", []):
+                    # Nouveau format: level (1-5), fallback sur effort legacy
+                    level = task_data.get("level")
+                    effort = task_data.get("effort")
+
                     task = TaskPlan(
                         title=task_data["title"],
-                        effort=task_data.get("effort", "S"),
+                        level=level,
+                        effort=effort,
                         covers=task_data.get("covers", []),
                         isValidation=task_data.get("isValidation", False),
                         unlockAfter=task_data.get("unlockAfter")
                     )
                     phase_tasks.append(task)
                     all_tasks.append(task)
-                
+
                 phases.append(PhasePlan(
                     name=phase_data["name"],
                     objective=phase_data.get("objective", ""),
                     tasks=phase_tasks
                 ))
-        
+
         # Fallback si pas de phases
         if not phases and "tasks" in plan_data:
             all_tasks = [
                 TaskPlan(
                     title=t["title"],
-                    effort=t.get("effort", "S"),
+                    level=t.get("level"),
+                    effort=t.get("effort"),
                     covers=t.get("covers", []),
                     isValidation=t.get("isValidation", False),
                     unlockAfter=t.get("unlockAfter")
@@ -319,14 +368,14 @@ Génère UNIQUEMENT le JSON."""
         # ═══════════════════════════════════════════════════════════════
         
         # ═══════════════════════════════════════════════════════════════
-        # SEUILS STRICTS V4
+        # SEUILS STRICTS V4 (Niveaux 1-5)
         # ═══════════════════════════════════════════════════════════════
         MIN_TASKS = 42  # Minimum strict
         MIN_PHASES = 6  # Minimum strict
         MIN_TASKS_PER_PHASE = 6  # Minimum par phase
-        MIN_S_RATIO = 0.30  # Au moins 30% de S
-        MAX_L_RATIO = 0.20  # Max 20% de L
-        MAX_M_RATIO = 0.45  # Max 45% de M
+        MIN_LEVEL_2_RATIO = 0.30  # Au moins 30% niveau 2 (facile)
+        MAX_LEVEL_4_RATIO = 0.20  # Max 20% niveau 4+ (difficile/expert)
+        MAX_LEVEL_3_RATIO = 0.45  # Max 45% niveau 3 (intermédiaire)
         
         # Validation volume
         if len(all_tasks) < MIN_TASKS:
@@ -364,31 +413,32 @@ Génère UNIQUEMENT le JSON."""
         print(f"📊 Validations: {validation_count} tâches, {phases_with_validation}/{len(phases)} phases couvertes")
         
         # ═══════════════════════════════════════════════════════════════
-        # VALIDATION DISTRIBUTION EFFORTS (STRICT)
+        # VALIDATION DISTRIBUTION NIVEAUX (STRICT)
         # ═══════════════════════════════════════════════════════════════
-        effort_counts = {'XS': 0, 'S': 0, 'M': 0, 'L': 0}
+        level_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
         for t in all_tasks:
-            effort_counts[t.effort or 'S'] += 1
-        
+            level = t.get_level()  # Utilise la méthode qui gère level et effort
+            level_counts[level] += 1
+
         total = len(all_tasks)
-        s_ratio = effort_counts['S'] / total
-        m_ratio = effort_counts['M'] / total
-        l_ratio = effort_counts['L'] / total
-        
-        print(f"📊 Distribution: XS={effort_counts['XS']} ({int(effort_counts['XS']/total*100)}%) | S={effort_counts['S']} ({int(s_ratio*100)}%) | M={effort_counts['M']} ({int(m_ratio*100)}%) | L={effort_counts['L']} ({int(l_ratio*100)}%)")
-        
+        level2_ratio = level_counts[2] / total
+        level3_ratio = level_counts[3] / total
+        level4_ratio = (level_counts[4] + level_counts[5]) / total  # 4 et 5 ensemble
+
+        print(f"📊 Distribution niveaux: 1={level_counts[1]} | 2={level_counts[2]} ({int(level2_ratio*100)}%) | 3={level_counts[3]} ({int(level3_ratio*100)}%) | 4={level_counts[4]} | 5={level_counts[5]}")
+
         # Validation distribution (STRICT)
-        if s_ratio < MIN_S_RATIO:
-            print(f"❌ REJET: S={int(s_ratio*100)}% (min: {int(MIN_S_RATIO*100)}%)")
-            raise ValueError(f"Pas assez de tâches S: {int(s_ratio*100)}% (minimum: {int(MIN_S_RATIO*100)}%). Ajoutez plus d'exercices simples.")
-        
-        if l_ratio > MAX_L_RATIO:
-            print(f"❌ REJET: L={int(l_ratio*100)}% (max: {int(MAX_L_RATIO*100)}%)")
-            raise ValueError(f"Trop de tâches L: {int(l_ratio*100)}% (maximum: {int(MAX_L_RATIO*100)}%). Les L sont réservés aux validations.")
-        
-        if m_ratio > MAX_M_RATIO:
-            print(f"❌ REJET: M={int(m_ratio*100)}% (max: {int(MAX_M_RATIO*100)}%)")
-            raise ValueError(f"Trop de tâches M: {int(m_ratio*100)}% (maximum: {int(MAX_M_RATIO*100)}%). Ajoutez plus de tâches XS/S.")
+        if level2_ratio < MIN_LEVEL_2_RATIO:
+            print(f"❌ REJET: Niveau 2={int(level2_ratio*100)}% (min: {int(MIN_LEVEL_2_RATIO*100)}%)")
+            raise ValueError(f"Pas assez de tâches niveau 2: {int(level2_ratio*100)}% (minimum: {int(MIN_LEVEL_2_RATIO*100)}%). Ajoutez plus d'exercices simples.")
+
+        if level4_ratio > MAX_LEVEL_4_RATIO:
+            print(f"❌ REJET: Niveau 4+={int(level4_ratio*100)}% (max: {int(MAX_LEVEL_4_RATIO*100)}%)")
+            raise ValueError(f"Trop de tâches niveau 4+: {int(level4_ratio*100)}% (maximum: {int(MAX_LEVEL_4_RATIO*100)}%). Les niveaux élevés sont réservés aux validations.")
+
+        if level3_ratio > MAX_LEVEL_3_RATIO:
+            print(f"❌ REJET: Niveau 3={int(level3_ratio*100)}% (max: {int(MAX_LEVEL_3_RATIO*100)}%)")
+            raise ValueError(f"Trop de tâches niveau 3: {int(level3_ratio*100)}% (maximum: {int(MAX_LEVEL_3_RATIO*100)}%). Ajoutez plus de tâches niveau 1-2.")
         
         project_plan = ProjectPlan(
             projectName=plan_data["projectName"],
@@ -513,13 +563,14 @@ RÈGLES STRICTES
    • Verbes : créer, écrire, implémenter, tester, construire, configurer
    • Pas de théorie, pas de "comprendre", pas de "apprendre"
 
-4. DISTRIBUTION DES EFFORTS
-   • XS (15min) : 1 par phase (démarrage)
-   • S (30min) : 3-4 par phase (exercices)
-   • M (1h) : 2 par phase (travail principal)
-   • L (2h+) : 1 par phase (validation finale)
+4. DISTRIBUTION DES NIVEAUX (1-5)
+   • Niveau 1 (15min) : 1 par phase (setup, démarrage)
+   • Niveau 2 (30min) : 3-4 par phase (exercices simples)
+   • Niveau 3 (1h) : 2 par phase (travail principal)
+   • Niveau 4 (2h) : 1 par phase (validation finale)
 
 5. CHAQUE TÂCHE DOIT SPÉCIFIER
+   • "level": niveau de difficulté 1-5
    • "covers": liste des compétences couvertes (1-2 max)
    • Ces compétences DOIVENT être dans la liste ci-dessus
 
@@ -538,7 +589,7 @@ FORMAT JSON ATTENDU
             "tasks": [
                 {{
                     "title": "Action concrète",
-                    "effort": "S",
+                    "level": 2,
                     "covers": ["Compétence 1"],
                     "isValidation": false,
                     "unlockAfter": null
@@ -577,7 +628,8 @@ Génère UNIQUEMENT le JSON, sans explication."""
                 phase_tasks = [
                     TaskPlan(
                         title=t["title"],
-                        effort=t.get("effort", "S"),
+                        level=t.get("level"),  # Nouveau format 1-5
+                        effort=t.get("effort"),  # Legacy fallback
                         covers=t.get("covers"),
                         isValidation=t.get("isValidation", False),
                         unlockAfter=t.get("unlockAfter")
@@ -642,3 +694,142 @@ Génère UNIQUEMENT le JSON, sans explication."""
     except Exception as e:
         logger.error(f"❌ Erreur skill-based: {type(e).__name__}: {e}", exc_info=True)
         raise HTTPException(500, "Erreur de génération. Réessayez.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NOUVEAU ENDPOINT : Plan enrichi avec analyse des compétences utilisateur
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AdaptivePlanInput(BaseModel):
+    """Input pour un plan adaptatif basé sur le profil utilisateur."""
+    user_id: str  # ID de l'utilisateur pour l'analyse
+    idea: Optional[str] = None  # Mode idée libre
+    projectTitle: Optional[str] = None  # Mode skill-based
+    domain: Optional[str] = None
+    selectedSkills: Optional[List[str]] = None
+    excludedSkills: Optional[List[str]] = None
+    adapt_difficulty: bool = True  # Ajuster selon le niveau de l'utilisateur
+
+
+class AdaptivePlanResponse(BaseModel):
+    """Réponse enrichie avec analyse des compétences."""
+    plan: ProjectPlan
+    skill_analysis: dict  # Analyse des compétences détectées
+    readiness: dict  # Niveau de préparation de l'utilisateur
+    suggestions: List[dict]  # Suggestions d'apprentissage
+    difficulty_adjusted: bool
+    adjustment_reason: Optional[str] = None
+
+
+@router.post("/generate-adaptive-plan")
+async def generate_adaptive_plan(input_data: AdaptivePlanInput) -> AdaptivePlanResponse:
+    """
+    Génère un plan de projet adapté au profil de compétences de l'utilisateur.
+
+    Ce endpoint combine:
+    1. La génération de plan (idée ou skill-based)
+    2. L'analyse des compétences requises vs acquises
+    3. L'ajustement de difficulté si nécessaire
+    4. Des suggestions d'apprentissage pour les lacunes
+
+    Args:
+        input_data: Paramètres incluant user_id pour l'adaptation
+
+    Returns:
+        Plan enrichi avec analyse et suggestions
+    """
+    from services.skill_bridge import get_skill_bridge
+
+    # Déterminer le mode de génération
+    if input_data.selectedSkills and len(input_data.selectedSkills) > 0:
+        # Mode skill-based
+        planning_input = PlanningInput(
+            projectTitle=input_data.projectTitle or "Projet",
+            domain=input_data.domain or "Général",
+            selectedSkills=input_data.selectedSkills,
+            excludedSkills=input_data.excludedSkills
+        )
+        base_plan = await generate_skill_based_plan(planning_input)
+    elif input_data.idea:
+        # Mode idée libre
+        idea_input = IdeaInput(idea=input_data.idea)
+        base_plan = await generate_project_plan(idea_input)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Fournissez soit 'idea' soit 'selectedSkills'"
+        )
+
+    # Analyser les compétences du plan
+    bridge = get_skill_bridge()
+
+    # Convertir les tâches pour l'analyse
+    tasks_for_analysis = [
+        {
+            "id": f"task_{i}",
+            "title": task.title,
+            "covers": task.covers or [],
+            "effort": task.effort,
+            "isValidation": task.isValidation
+        }
+        for i, task in enumerate(base_plan.tasks)
+    ]
+
+    # Analyse des compétences
+    analysis = bridge.analyze_project(
+        user_id=input_data.user_id,
+        tasks=tasks_for_analysis,
+        project_id=base_plan.projectName
+    )
+
+    # Préparer les réponses
+    skill_analysis = {
+        "detected_skills": [
+            {
+                "id": d.skill.id,
+                "name": d.skill.name,
+                "confidence": round(d.confidence, 2)
+            }
+            for d in analysis.detected_skills
+        ],
+        "total_detected": len(analysis.detected_skills)
+    }
+
+    readiness = {
+        "score": round(analysis.ready_percentage, 1),
+        "status": (
+            "ready" if analysis.ready_percentage >= 70
+            else "partial" if analysis.ready_percentage >= 40
+            else "needs_preparation"
+        ),
+        "gaps_count": len(analysis.skill_gaps)
+    }
+
+    suggestions = analysis.learning_suggestions
+
+    # Ajustement de difficulté si demandé et nécessaire
+    adjusted = False
+    adjustment_reason = None
+    final_plan = base_plan
+
+    if input_data.adapt_difficulty and analysis.difficulty_adjustment != 0:
+        # Adapter le plan
+        plan_dict = base_plan.model_dump()
+        adjusted_plan_dict = bridge.adapt_plan_difficulty(analysis, plan_dict)
+
+        if adjusted_plan_dict.get("difficulty_adjusted"):
+            adjusted = True
+            adjustment_reason = adjusted_plan_dict.get("adjustment_reason")
+
+            # Reconstruire le plan avec les modifications
+            # (les tâches de scaffolding sont ajoutées dans adapt_plan_difficulty)
+            logger.info(f"📊 Plan adapté pour {input_data.user_id}: adjustment={analysis.difficulty_adjustment}")
+
+    return AdaptivePlanResponse(
+        plan=final_plan,
+        skill_analysis=skill_analysis,
+        readiness=readiness,
+        suggestions=suggestions,
+        difficulty_adjusted=adjusted,
+        adjustment_reason=adjustment_reason
+    )

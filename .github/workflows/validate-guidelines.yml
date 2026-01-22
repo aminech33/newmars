@@ -1,0 +1,35 @@
+name: Validate Guidelines
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate:
+    name: Validate Code Guidelines
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Validate guidelines
+        run: |
+          echo "🔍 Validation des guidelines NewMars..."
+          python3 scripts/validate-guidelines.py
+
+      - name: Upload validation report
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: validation-report
+          path: |
+            **/*.py
+          retention-days: 7

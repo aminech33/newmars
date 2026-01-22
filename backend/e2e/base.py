@@ -364,8 +364,8 @@ class E2ERunner:
                 tests.run_all()
 
             elif scenario == "simulation":
-                from .simulator import run_simulation_tests
-                run_simulation_tests(self)
+                # Simulation now handled via CLI --user option
+                pass
 
             elif scenario == "navigation":
                 from .navigation import NavigationTests

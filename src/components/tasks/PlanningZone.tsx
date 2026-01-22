@@ -9,9 +9,12 @@ import {
   fontStack,
   ProjectPlan,
   EditableTask,
-  EFFORT_COLORS,
+  LEVEL_COLORS,
+  LEVEL_LABELS,
+  EFFORT_TO_LEVEL,
   getLevelLabel
 } from './taskUtils'
+import type { TaskLevel } from '../../store/useStore'
 import { PlanFeedbackModal } from './PlanFeedbackModal'
 import { API_URLS } from '../../services/api'
 
@@ -129,9 +132,11 @@ export function PlanningZone({
       if (plan.phases && plan.phases.length > 0) {
         plan.phases.forEach((phase, phaseIndex) => {
           phase.tasks.forEach(task => {
+            // Convertir effort legacy → level si nécessaire
+            const level: TaskLevel = task.level || (task.effort ? EFFORT_TO_LEVEL[task.effort] : 2) || 2
             tasks.push({
               title: task.title,
-              effort: task.effort || 'S',
+              level,
               phase: phase.name,
               phaseIndex,
               covers: task.covers || [],
@@ -142,9 +147,10 @@ export function PlanningZone({
         setExpandedPhases(new Set([plan.phases[0].name]))
       } else {
         plan.tasks.forEach(task => {
+          const level: TaskLevel = task.level || (task.effort ? EFFORT_TO_LEVEL[task.effort] : 2) || 2
           tasks.push({
             title: task.title,
-            effort: task.effort || 'S',
+            level,
             phase: 'Tâches',
             phaseIndex: 0,
             covers: task.covers || [],
@@ -231,7 +237,7 @@ export function PlanningZone({
           completed: false,
           status: 'todo',
           temporalColumn,
-          effort: task.effort,
+          level: task.level,
           phaseIndex: task.phaseIndex
         })
       }
@@ -543,11 +549,11 @@ export function PlanningZone({
                                   </div>
                                   
                                   <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
-                                    isValidation 
-                                      ? 'bg-emerald-500/20 text-emerald-400' 
-                                      : EFFORT_COLORS[task.effort]
+                                    isValidation
+                                      ? 'bg-emerald-500/20 text-emerald-400'
+                                      : LEVEL_COLORS[task.level]
                                   } ${fontStack}`}>
-                                    {task.effort}
+                                    {LEVEL_LABELS[task.level]}
                                   </span>
                                 </div>
                                 

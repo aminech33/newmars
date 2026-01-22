@@ -2,15 +2,68 @@
  * 📋 Tasks Utils - Utilitaires et types partagés pour les tâches
  */
 
-import { Task, type TemporalColumn } from '../../store/useStore'
+import { Task, type TemporalColumn, type TaskLevel } from '../../store/useStore'
 
 // Typography: Inter / SF Pro for optimal dark mode readability
 export const fontStack = 'font-[Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,SF_Pro_Display,Segoe_UI,Roboto,sans-serif]'
 
+// ═══════════════════════════════════════════════════════════════
+// SYSTÈME DE NIVEAUX UNIFIÉ (1-5)
+// ═══════════════════════════════════════════════════════════════
+
+// Mapping effort legacy → level
+export const EFFORT_TO_LEVEL: Record<string, TaskLevel> = {
+  XS: 1, S: 2, M: 3, L: 4, XL: 5
+}
+
+// Mapping level → effort legacy
+export const LEVEL_TO_EFFORT: Record<TaskLevel, string> = {
+  1: 'XS', 2: 'S', 3: 'M', 4: 'L', 5: 'XL'
+}
+
+// Labels des niveaux
+export const LEVEL_LABELS: Record<TaskLevel, string> = {
+  1: 'Très facile',
+  2: 'Facile',
+  3: 'Intermédiaire',
+  4: 'Difficile',
+  5: 'Expert'
+}
+
+// Durées estimées par niveau
+export const LEVEL_DURATIONS: Record<TaskLevel, string> = {
+  1: '15 min',
+  2: '30 min',
+  3: '1h',
+  4: '2h',
+  5: '3h+'
+}
+
+// Couleurs des niveaux (1-5)
+export const LEVEL_COLORS: Record<TaskLevel, string> = {
+  1: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  2: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  3: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  4: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+  5: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+}
+
+// Fonction helper pour obtenir le niveau d'une tâche (supporte level et effort legacy)
+export function getTaskLevel(task: { level?: TaskLevel; effort?: string }): TaskLevel {
+  if (task.level !== undefined && task.level >= 1 && task.level <= 5) {
+    return task.level as TaskLevel
+  }
+  if (task.effort) {
+    return EFFORT_TO_LEVEL[task.effort] || 2
+  }
+  return 2 // Défaut: Facile
+}
+
 // Types pour la planification intégrée
 export interface TaskPlan {
   title: string
-  effort?: 'XS' | 'S' | 'M' | 'L'
+  level?: TaskLevel       // Nouveau système (1-5)
+  effort?: 'XS' | 'S' | 'M' | 'L' | 'XL'  // Legacy
   covers?: string[]
   isValidation?: boolean
 }
@@ -30,18 +83,21 @@ export interface ProjectPlan {
 
 export interface EditableTask {
   title: string
-  effort: 'XS' | 'S' | 'M' | 'L'
+  level: TaskLevel        // Nouveau système (1-5)
+  effort?: string         // Legacy pour rétrocompatibilité
   phase: string
   phaseIndex: number
   covers?: string[]
   isValidation?: boolean
 }
 
+// Legacy: EFFORT_COLORS (conservé pour rétrocompatibilité)
 export const EFFORT_COLORS: Record<string, string> = {
   XS: 'bg-emerald-500/20 text-emerald-400',
   S: 'bg-blue-500/20 text-blue-400',
   M: 'bg-amber-500/20 text-amber-400',
   L: 'bg-rose-500/20 text-rose-400',
+  XL: 'bg-purple-500/20 text-purple-400',
 }
 
 export interface ColumnConfig {

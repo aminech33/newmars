@@ -42,6 +42,9 @@ export interface SubTask {
   completed: boolean
 }
 
+// Système de niveaux unifié (1-5)
+export type TaskLevel = 1 | 2 | 3 | 4 | 5
+
 export interface Task {
   id: string
   title: string
@@ -62,7 +65,8 @@ export interface Task {
   isVisible?: boolean
   isPriority?: boolean
   temporalColumn?: TemporalColumn
-  effort?: 'XS' | 'S' | 'M' | 'L'
+  level?: TaskLevel  // Niveau 1-5 (nouveau système unifié)
+  effort?: 'XS' | 'S' | 'M' | 'L' | 'XL'  // Legacy, mappé vers level
   phaseIndex?: number
   isValidation?: boolean
   // Ordre manuel dans chaque colonne (pour drag & drop)
@@ -76,14 +80,16 @@ export interface AIGeneratedPlan {
     objective: string
     tasks: Array<{
       title: string
-      effort: string
+      level?: TaskLevel  // Nouveau système (1-5)
+      effort?: string    // Legacy (XS/S/M/L/XL)
       covers?: string[]
       isValidation?: boolean
     }>
   }>
   tasks: Array<{
     title: string
-    effort: string
+    level?: TaskLevel  // Nouveau système (1-5)
+    effort?: string    // Legacy (XS/S/M/L/XL)
     covers?: string[]
     isValidation?: boolean
   }>

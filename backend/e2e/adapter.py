@@ -1,122 +1,131 @@
 """
-UniversalAdapter - Routes requests to API or Direct Python calls.
+UniversalAdapter - Direct Python calls to backend modules.
+
+Simplified adapter for local testing without HTTP overhead.
 """
 
-import time
-import requests
-from typing import Dict, List, Optional, Any
-from .base import TestConfig, TestMode
+import json
+import random
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Any
+
+
+# AI Question Logger for quality analysis
+class AIQuestionLogger:
+    """
+    Logs a sample of AI-generated questions for quality analysis.
+
+    Saves questions to a JSONL file for later review.
+    Uses sampling to avoid logging every question (performance).
+    """
+
+    def __init__(self, log_dir: str = None, sample_rate: float = 0.1):
+        """
+        Args:
+            log_dir: Directory for log files (default: e2e/logs/)
+            sample_rate: Fraction of questions to log (0.1 = 10%)
+        """
+        self.sample_rate = sample_rate
+        if log_dir is None:
+            log_dir = Path(__file__).parent / "logs"
+        self.log_dir = Path(log_dir)
+        self.log_dir.mkdir(exist_ok=True)
+
+        # Create dated log file
+        date_str = datetime.now().strftime("%Y%m%d")
+        self.log_file = self.log_dir / f"ai_questions_{date_str}.jsonl"
+        self._count = 0
+        self._logged = 0
+
+    def log(self, question_data: Dict, user_answer: Dict = None):
+        """
+        Log a question (with sampling).
+
+        Args:
+            question_data: The generated question
+            user_answer: Optional answer data (is_correct, response_time, etc.)
+        """
+        self._count += 1
+
+        # Sample: only log some questions
+        if random.random() > self.sample_rate:
+            return
+
+        self._logged += 1
+
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "question_id": self._count,
+            "topic": question_data.get("topic_id"),
+            "difficulty": question_data.get("difficulty"),
+            "question_text": question_data.get("question_text"),
+            "options": question_data.get("options"),
+            "correct_answer": question_data.get("correct_answer"),
+            "explanation": question_data.get("explanation"),
+            "success": question_data.get("success", True),
+        }
+
+        if user_answer:
+            entry["user_answer"] = {
+                "is_correct": user_answer.get("is_correct"),
+                "chosen": user_answer.get("chosen_answer"),
+                "response_time": user_answer.get("response_time"),
+            }
+
+        try:
+            with open(self.log_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception:
+            pass  # Don't fail on logging errors
+
+    @property
+    def stats(self) -> Dict:
+        """Get logging statistics"""
+        return {
+            "total_questions": self._count,
+            "logged_questions": self._logged,
+            "sample_rate": self.sample_rate,
+            "log_file": str(self.log_file) if self._logged > 0 else None,
+        }
+
+
+# Global logger instance
+_ai_logger = None
+
+def get_ai_logger() -> AIQuestionLogger:
+    """Get or create the global AI question logger"""
+    global _ai_logger
+    if _ai_logger is None:
+        _ai_logger = AIQuestionLogger(sample_rate=0.2)  # Log 20% of questions
+    return _ai_logger
 
 
 class UniversalAdapter:
     """
-    Universal adapter that routes to either HTTP API or direct Python calls.
+    Adapter for direct Python calls to backend modules.
 
     Usage:
-        adapter = UniversalAdapter(config)
-
-        # Generic calls
-        result = adapter.call("GET", "/api/health/weight")
-        result = adapter.call("POST", "/api/tasks-db/tasks", {"title": "Task"})
-
-        # Shortcuts
-        result = adapter.get("/api/health/weight")
+        adapter = UniversalAdapter()
         result = adapter.post("/api/tasks-db/tasks", {"title": "Task"})
-
-        # Auto-discovery
-        routes = adapter.discover_routes()
+        stats = adapter.get_user_stats(user_id)
     """
 
-    def __init__(self, config: TestConfig):
+    def __init__(self, config=None):
         self.config = config
-        self.session = requests.Session() if config.mode == TestMode.API else None
-        self._routes_cache: Optional[List[Dict]] = None
-        self._modules_cache: Dict[str, Any] = {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return False
 
     # =========================================================================
-    # GENERIC HTTP METHODS
+    # GENERIC HTTP-LIKE METHODS (all route to direct calls)
     # =========================================================================
 
     def call(self, method: str, path: str, data: Dict = None, params: Dict = None) -> Dict:
-        """
-        Call any route in the application.
-
-        Args:
-            method: GET, POST, PUT, DELETE, PATCH
-            path: Route path (e.g., "/api/health/weight")
-            data: Request body (for POST/PUT/PATCH)
-            params: Query string parameters
-
-        Returns:
-            JSON response or {"error": message}
-        """
-        if self.config.mode == TestMode.DIRECT:
-            return self._call_direct(method, path, data, params)
-        else:
-            return self._call_api(method, path, data, params)
-
-    def get(self, path: str, params: Dict = None) -> Dict:
-        return self.call("GET", path, params=params)
-
-    def post(self, path: str, data: Dict = None, params: Dict = None) -> Dict:
-        return self.call("POST", path, data=data, params=params)
-
-    def put(self, path: str, data: Dict = None, params: Dict = None) -> Dict:
-        return self.call("PUT", path, data=data, params=params)
-
-    def delete(self, path: str, params: Dict = None) -> Dict:
-        return self.call("DELETE", path, params=params)
-
-    def patch(self, path: str, data: Dict = None, params: Dict = None) -> Dict:
-        return self.call("PATCH", path, data=data, params=params)
-
-    # =========================================================================
-    # API MODE (HTTP)
-    # =========================================================================
-
-    def _call_api(self, method: str, path: str, data: Dict = None, params: Dict = None) -> Dict:
-        """HTTP call to API"""
-        url = f"{self.config.api_url}{path}"
-        method = method.upper()
-
-        try:
-            if method == "GET":
-                response = self.session.get(url, params=params, timeout=self.config.timeout_seconds)
-            elif method == "POST":
-                response = self.session.post(url, json=data, params=params, timeout=self.config.timeout_seconds)
-            elif method == "PUT":
-                response = self.session.put(url, json=data, params=params, timeout=self.config.timeout_seconds)
-            elif method == "DELETE":
-                response = self.session.delete(url, params=params, timeout=self.config.timeout_seconds)
-            elif method == "PATCH":
-                response = self.session.patch(url, json=data, params=params, timeout=self.config.timeout_seconds)
-            else:
-                return {"error": f"Unsupported HTTP method: {method}"}
-
-            try:
-                result = response.json()
-                result["_status_code"] = response.status_code
-                return result
-            except:
-                return {
-                    "_status_code": response.status_code,
-                    "_text": response.text[:500] if response.text else "",
-                    "success": 200 <= response.status_code < 300
-                }
-
-        except requests.exceptions.Timeout:
-            return {"error": "Timeout", "_status_code": 408}
-        except requests.exceptions.ConnectionError:
-            return {"error": "Connection refused", "_status_code": 503}
-        except Exception as e:
-            return {"error": str(e), "_status_code": 500}
-
-    # =========================================================================
-    # DIRECT MODE (Python calls)
-    # =========================================================================
-
-    def _call_direct(self, method: str, path: str, data: Dict = None, params: Dict = None) -> Dict:
-        """Direct Python call to application modules"""
+        """Call any route via direct Python calls"""
         path = path.rstrip("/")
 
         try:
@@ -131,17 +140,31 @@ class UniversalAdapter:
             elif path == "/health":
                 return {"status": "ok", "success": True}
             else:
-                return {"error": f"Route not mapped in direct mode: {path}", "success": False}
+                return {"error": f"Route not found: {path}", "success": False}
 
         except Exception as e:
             return {"error": str(e), "success": False}
+
+    def get(self, path: str, params: Dict = None) -> Dict:
+        return self.call("GET", path, params=params)
+
+    def post(self, path: str, data: Dict = None, params: Dict = None) -> Dict:
+        return self.call("POST", path, data=data, params=params)
+
+    def put(self, path: str, data: Dict = None, params: Dict = None) -> Dict:
+        return self.call("PUT", path, data=data, params=params)
+
+    def delete(self, path: str, params: Dict = None) -> Dict:
+        return self.call("DELETE", path, params=params)
+
+    # =========================================================================
+    # ROUTE HANDLERS
+    # =========================================================================
 
     def _route_tasks(self, method: str, path: str, data: Dict = None, params: Dict = None) -> Dict:
         """Route to tasks_db"""
         from databases import tasks_db
         from datetime import datetime
-
-        path = path.rstrip('/')
 
         # GET /api/tasks-db/dashboard
         if method == "GET" and path.endswith("/dashboard"):
@@ -207,8 +230,6 @@ class UniversalAdapter:
         from databases import health_db
         from datetime import datetime
 
-        path = path.rstrip('/')
-
         # POST /api/health/weight
         if method == "POST" and path.endswith("/weight"):
             entry_id = health_db.add_weight_entry(data or {})
@@ -257,8 +278,6 @@ class UniversalAdapter:
         """Route to knowledge_db"""
         from databases import knowledge_db
 
-        path = path.rstrip('/')
-
         # POST /api/knowledge/concepts
         if method == "POST" and path.endswith("/concepts"):
             concept_id = knowledge_db.add_concept(data or {})
@@ -278,8 +297,6 @@ class UniversalAdapter:
         """Route to learning engine"""
         from services.learning_engine_lean import lean_engine
 
-        path = path.rstrip('/')
-
         # GET /api/learning/engine-info
         if method == "GET" and path.endswith("/engine-info"):
             return lean_engine.get_engine_info()
@@ -287,7 +304,6 @@ class UniversalAdapter:
         # POST /api/learning/session/{user_id}
         elif method == "POST" and "/session/" in path:
             user_id = path.split("/session/")[-1]
-            topics = data.get("topics", ["conjugaison"]) if data else ["conjugaison"]
             lean_engine._get_user_state(user_id)
             return {"success": True, "user_id": user_id}
 
@@ -299,35 +315,102 @@ class UniversalAdapter:
         return {"error": f"Learning route not found: {method} {path}"}
 
     # =========================================================================
-    # LEARNING ENGINE SPECIFIC METHODS
+    # LEARNING ENGINE METHODS
     # =========================================================================
 
     def start_session(self, user_id: str, topics: List[str]) -> Dict:
         """Start a learning session"""
-        if self.config.mode == TestMode.DIRECT:
-            from services.learning_engine_lean import lean_engine
-            lean_engine._get_user_state(user_id)
-            return {"success": True, "user_id": user_id}
-        else:
-            return self.post(f"/api/learning/session/{user_id}", {"topics": topics})
+        from services.learning_engine_lean import lean_engine
+        lean_engine._get_user_state(user_id)
+        return {"success": True, "user_id": user_id}
 
     def get_next_question(self, user_id: str, topic_id: str, mastery: int) -> Dict:
-        """Get next question parameters"""
-        if self.config.mode == TestMode.DIRECT:
-            from services.learning_engine_lean import lean_engine
-            params = lean_engine.get_next_question(user_id, topic_id, mastery)
-            return {
-                "difficulty": params.difficulty,
-                "topic_id": params.topic_id,
-                "question_type": getattr(params, 'question_type', 'multiple_choice')
+        """Get next question parameters with ALL learning engine features"""
+        from services.learning_engine_lean import lean_engine
+        params = lean_engine.get_next_question(user_id, topic_id, mastery)
+        return {
+            "difficulty": params.difficulty,
+            "difficulty_name": params.difficulty_name,
+            "topic_id": params.topic_id,
+            "fsrs_interval": params.fsrs_interval,
+            "retrievability": params.retrievability,
+            "cognitive_load": params.cognitive_load,
+            "should_take_break": params.should_take_break,
+            "interleave_suggested": params.interleave_suggested,
+        }
+
+    def generate_ai_question(self, topic_id: str, difficulty: str, mastery: int) -> Dict:
+        """
+        Generate a REAL AI question using the AIDispatcher.
+
+        Returns:
+            Dict with question_text, options, correct_answer, explanation
+        """
+        import asyncio
+        from services.ai_dispatcher import ai_dispatcher
+
+        # Map difficulty int to string
+        diff_map = {1: "easy", 2: "easy", 3: "medium", 4: "hard", 5: "hard"}
+        diff_str = diff_map.get(difficulty, "medium") if isinstance(difficulty, int) else difficulty
+
+        try:
+            # Run async function synchronously
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                question = loop.run_until_complete(
+                    ai_dispatcher.generate_question(
+                        topic_name=topic_id,
+                        difficulty=diff_str,
+                        mastery_level=mastery,
+                        learning_style=None,
+                        weak_areas=[],
+                        context=None
+                    )
+                )
+            finally:
+                loop.close()
+
+            # Extract options
+            options = []
+            correct_idx = 0
+            for i, opt in enumerate(question.options):
+                options.append(opt.text)
+                if opt.is_correct:
+                    correct_idx = i
+
+            result = {
+                "success": True,
+                "question_text": question.question_text,
+                "options": options,
+                "correct_answer": question.correct_answer,
+                "correct_index": correct_idx,
+                "explanation": question.explanation,
+                "difficulty": diff_str,
+                "topic_id": topic_id,
             }
-        else:
-            response = self.session.get(
-                f"{self.config.api_url}/api/learning/next-question/{user_id}",
-                params={"topic_id": topic_id, "current_mastery": mastery},
-                timeout=self.config.timeout_seconds
-            )
-            return response.json() if response.status_code == 200 else {"difficulty": 2}
+
+            # Log question sample for quality analysis
+            get_ai_logger().log(result)
+            return result
+
+        except Exception as e:
+            # Fallback question if AI fails
+            result = {
+                "success": False,
+                "error": str(e),
+                "question_text": f"Question sur {topic_id}",
+                "options": ["Option A", "Option B", "Option C", "Option D"],
+                "correct_answer": "Option B",
+                "correct_index": 1,
+                "explanation": "Fallback question",
+                "difficulty": diff_str,
+                "topic_id": topic_id,
+            }
+
+            # Log failed generation too
+            get_ai_logger().log(result)
+            return result
 
     def submit_answer(
         self,
@@ -338,97 +421,214 @@ class UniversalAdapter:
         difficulty: int
     ) -> Dict:
         """Submit an answer"""
-        if self.config.mode == TestMode.DIRECT:
-            from services.learning_engine_lean import lean_engine
-            result = lean_engine.process_answer(user_id, topic_id, is_correct, response_time, difficulty)
-            return {
-                "is_correct": is_correct,
-                "xp_earned": result.xp_earned,
-                "next_review_days": result.next_review_days,
-                "mastery_change": result.mastery_change,
-                "feedback": result.feedback,
-                "should_take_break": result.should_take_break,
-                "should_reduce_difficulty": result.should_reduce_difficulty
-            }
-        else:
-            response = self.session.post(
-                f"{self.config.api_url}/api/learning/submit-answer/{user_id}",
-                json={
-                    "question_id": f"q_{topic_id}_{int(time.time())}",
-                    "user_answer": "A" if is_correct else "B",
-                    "time_taken": response_time,
-                    "confidence": 0.7
-                },
-                timeout=self.config.timeout_seconds
-            )
-            return response.json() if response.status_code == 200 else {"is_correct": is_correct, "xp_earned": 0}
+        from services.learning_engine_lean import lean_engine
+        result = lean_engine.process_answer(user_id, topic_id, is_correct, response_time, difficulty)
+        return {
+            "is_correct": is_correct,
+            "xp_earned": result.xp_earned,
+            "next_review_days": result.next_review_days,
+            "mastery_change": result.mastery_change,
+            "feedback": result.feedback,
+            "should_take_break": result.should_take_break,
+            "should_reduce_difficulty": result.should_reduce_difficulty
+        }
 
     def get_user_stats(self, user_id: str) -> Dict:
         """Get user statistics"""
-        if self.config.mode == TestMode.DIRECT:
-            from services.learning_engine_lean import lean_engine
-            return lean_engine.get_user_stats(user_id)
-        else:
-            response = self.session.get(
-                f"{self.config.api_url}/api/learning/progress/{user_id}",
-                timeout=self.config.timeout_seconds
-            )
-            return response.json() if response.status_code == 200 else {}
+        from services.learning_engine_lean import lean_engine
+        return lean_engine.get_user_stats(user_id)
 
     def health_check(self) -> bool:
-        """Check if backend is accessible"""
-        if self.config.mode == TestMode.DIRECT:
-            return True
-        try:
-            response = self.session.get(f"{self.config.api_url}/health", timeout=5)
-            return response.status_code == 200
-        except:
-            return False
+        """Always returns True for direct mode"""
+        return True
 
     # =========================================================================
-    # ROUTE DISCOVERY
+    # TUTORING METHODS (Socratic Tutor)
     # =========================================================================
+
+    def get_tutor(self):
+        """Get or create the Socratic Tutor instance with Learning Engine connection."""
+        if not hasattr(self, '_tutor'):
+            from services.socratic_tutor import create_socratic_tutor
+            from services.learning_engine_lean import lean_engine
+
+            try:
+                from services.openai_service import openai_service
+                self._tutor = create_socratic_tutor(openai_service, lean_engine)
+            except Exception:
+                self._tutor = create_socratic_tutor(None, lean_engine)
+        return self._tutor
+
+    def tutor_wrong_answer(
+        self,
+        user_id: str,
+        question_data: Dict,
+        user_answer: str,
+        response_time: float = None
+    ) -> Dict:
+        """
+        Process a wrong answer through the Socratic Tutor.
+
+        The tutor decides what to do:
+        - 1st attempt: Socratic question
+        - 2nd-4th attempt: Progressive hints
+        - 5th+ attempt: Reveal answer
+
+        Now includes response_time for adaptive profiling.
+
+        Args:
+            user_id: User ID
+            question_data: Dict with id, question_text, options, correct_answer, topic
+            user_answer: The wrong answer given
+            response_time: Time taken to answer (for adaptation)
+
+        Returns:
+            Dict with type, content, level, requires_response, encouragement, etc.
+        """
+        tutor = self.get_tutor()
+        response = tutor.process_wrong_answer(
+            question_data, user_answer, user_id,
+            response_time=response_time
+        )
+        return {
+            "type": response.type,
+            "content": response.content,
+            "level": response.level,
+            "requires_response": response.requires_response,
+            "encouragement": response.encouragement,
+            "next_action": response.next_action,
+            "cognitive_load": response.cognitive_load,
+        }
+
+    def tutor_get_hint(
+        self,
+        user_id: str,
+        question_data: Dict,
+        user_answer: str,
+        force_level: int = None
+    ) -> Dict:
+        """Get a progressive hint from the tutor."""
+        tutor = self.get_tutor()
+        topic = question_data.get("topic", "général")
+        question_id = question_data.get("id", "default")
+        context = tutor.get_context(user_id, topic, question_id)
+
+        response = tutor.get_hint(question_data, user_answer, context, force_level)
+        return {
+            "type": response.type,
+            "content": response.content,
+            "level": response.level,
+            "requires_response": response.requires_response,
+            "encouragement": response.encouragement,
+            "next_action": response.next_action,
+            "cognitive_load": response.cognitive_load,
+        }
+
+    def tutor_get_guidance(
+        self,
+        user_id: str,
+        question_data: Dict,
+        user_answer: str
+    ) -> Dict:
+        """Get a Socratic guidance question."""
+        tutor = self.get_tutor()
+        topic = question_data.get("topic", "général")
+        question_id = question_data.get("id", "default")
+        context = tutor.get_context(user_id, topic, question_id)
+
+        response = tutor.get_socratic_guidance(question_data, user_answer, context)
+        return {
+            "type": response.type,
+            "content": response.content,
+            "requires_response": response.requires_response,
+            "encouragement": response.encouragement,
+            "next_action": response.next_action,
+            "cognitive_load": response.cognitive_load,
+        }
+
+    def tutor_correct_answer(
+        self,
+        user_id: str,
+        question_data: Dict,
+        attempts: int,
+        response_time: float = None,
+        hint_level_used: int = 0
+    ) -> Dict:
+        """
+        Process a correct answer.
+
+        Now includes response_time and hint_level_used for adaptive profiling.
+
+        Args:
+            user_id: User ID
+            question_data: The question
+            attempts: Number of attempts
+            response_time: Time taken (for adaptation)
+            hint_level_used: Max hint level used before success
+
+        Returns:
+            Tutoring response dict
+        """
+        tutor = self.get_tutor()
+        response = tutor.process_correct_answer(
+            question_data, user_id, attempts,
+            response_time=response_time,
+            hint_level_used=hint_level_used
+        )
+        return {
+            "type": response.type,
+            "content": response.content,
+            "requires_response": response.requires_response,
+            "encouragement": response.encouragement,
+            "next_action": response.next_action,
+            "cognitive_load": response.cognitive_load,
+        }
+
+    def tutor_reset(self, user_id: str, topic: str = None, question_id: str = None):
+        """Reset tutoring context for a user."""
+        tutor = self.get_tutor()
+        tutor.reset_context(user_id, topic, question_id)
+
+    def tutor_get_profile(self, user_id: str) -> Dict:
+        """
+        Get the adaptive profile summary for a user.
+
+        Returns insights on:
+        - Optimal learning hours
+        - Learning style
+        - Emotional state
+        - Weak topics
+        - Active error patterns
+        """
+        tutor = self.get_tutor()
+        return tutor.get_profile_summary(user_id)
+
+    def tutor_should_break(self, user_id: str) -> Dict:
+        """Check if user should take a break."""
+        tutor = self.get_tutor()
+        should_break, message = tutor.should_suggest_break(user_id)
+        return {
+            "should_break": should_break,
+            "message": message
+        }
+
+    def tutor_optimal_hint_level(self, user_id: str) -> int:
+        """Get the optimal hint level for this user."""
+        tutor = self.get_tutor()
+        return tutor.get_optimal_hint_level(user_id)
 
     def discover_routes(self) -> List[Dict]:
-        """Discover all available FastAPI routes"""
-        if self._routes_cache:
-            return self._routes_cache
-
-        try:
-            if self.config.mode == TestMode.API:
-                response = self.session.get(f"{self.config.api_url}/openapi.json", timeout=10)
-                if response.status_code == 200:
-                    openapi = response.json()
-                    routes = []
-                    for path, methods in openapi.get("paths", {}).items():
-                        for method, details in methods.items():
-                            if method.upper() in ["GET", "POST", "PUT", "DELETE", "PATCH"]:
-                                routes.append({
-                                    "path": path,
-                                    "method": method.upper(),
-                                    "summary": details.get("summary", ""),
-                                    "tags": details.get("tags", [])
-                                })
-                    self._routes_cache = routes
-                    return routes
-            else:
-                # In direct mode, return known routes
-                return [
-                    {"path": "/api/learning/session/{user_id}", "method": "POST", "tags": ["learning"]},
-                    {"path": "/api/learning/next-question/{user_id}", "method": "GET", "tags": ["learning"]},
-                    {"path": "/api/learning/submit-answer/{user_id}", "method": "POST", "tags": ["learning"]},
-                    {"path": "/api/learning/progress/{user_id}", "method": "GET", "tags": ["learning"]},
-                    {"path": "/api/tasks-db/projects", "method": "GET", "tags": ["tasks"]},
-                    {"path": "/api/tasks-db/projects", "method": "POST", "tags": ["tasks"]},
-                    {"path": "/api/tasks-db/tasks", "method": "GET", "tags": ["tasks"]},
-                    {"path": "/api/tasks-db/tasks", "method": "POST", "tags": ["tasks"]},
-                    {"path": "/api/health/weight", "method": "GET", "tags": ["health"]},
-                    {"path": "/api/health/weight", "method": "POST", "tags": ["health"]},
-                    {"path": "/api/health/meals", "method": "GET", "tags": ["health"]},
-                    {"path": "/api/health/hydration", "method": "GET", "tags": ["health"]},
-                    {"path": "/api/knowledge/concepts", "method": "GET", "tags": ["knowledge"]},
-                ]
-        except Exception as e:
-            return [{"error": str(e)}]
-
-        return []
+        """List available routes"""
+        return [
+            {"path": "/api/learning/session/{user_id}", "method": "POST", "tags": ["learning"]},
+            {"path": "/api/learning/progress/{user_id}", "method": "GET", "tags": ["learning"]},
+            {"path": "/api/tasks-db/projects", "method": "GET", "tags": ["tasks"]},
+            {"path": "/api/tasks-db/projects", "method": "POST", "tags": ["tasks"]},
+            {"path": "/api/tasks-db/tasks", "method": "GET", "tags": ["tasks"]},
+            {"path": "/api/tasks-db/tasks", "method": "POST", "tags": ["tasks"]},
+            {"path": "/api/health/weight", "method": "GET", "tags": ["health"]},
+            {"path": "/api/health/weight", "method": "POST", "tags": ["health"]},
+            {"path": "/api/health/meals", "method": "GET", "tags": ["health"]},
+            {"path": "/api/health/hydration", "method": "GET", "tags": ["health"]},
+            {"path": "/api/knowledge/concepts", "method": "GET", "tags": ["knowledge"]},
+        ]

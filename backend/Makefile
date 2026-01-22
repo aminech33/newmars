@@ -25,11 +25,22 @@ help:
 	@echo "  make e2e-navigation Run navigation E2E tests"
 	@echo "  make e2e-discover   Discover all API routes"
 	@echo ""
-	@echo "  === USER SIMULATION ==="
+	@echo "  === USER SIMULATION (Learning only) ==="
 	@echo "  make sim-motivated  Simulate motivated user (7 days)"
 	@echo "  make sim-average    Simulate average user (7 days)"
 	@echo "  make sim-struggling Simulate struggling user (7 days)"
 	@echo "  make sim-all        Simulate all profiles"
+	@echo ""
+	@echo "  === AUTONOMOUS USER (Recommended) ==="
+	@echo "  make user           Realistic human simulation (7 days)"
+	@echo "  make user-motivated Autonomous user: motivated (7 days)"
+	@echo "  make user-expert    Autonomous user: expert (7 days)"
+	@echo "  make user-all       Autonomous user: all profiles"
+	@echo ""
+	@echo "  === FULL LIFE SIMULATION (Legacy) ==="
+	@echo "  make life-motivated Full life sim: motivated (7 days)"
+	@echo "  make life-average   Full life sim: average (7 days)"
+	@echo "  make life-expert    Full life sim: expert (7 days)"
 	@echo ""
 	@echo "  === CODE QUALITY ==="
 	@echo "  make lint           Run linting checks"
@@ -101,7 +112,7 @@ e2e-json:
 	python -m e2e --json
 
 # =============================================================================
-# USER SIMULATION
+# USER SIMULATION (Learning only)
 # =============================================================================
 
 sim-motivated:
@@ -122,6 +133,62 @@ sim-all:
 	@echo "=== AVERAGE ===" && python -m e2e --simulate average --days 7
 	@echo ""
 	@echo "=== STRUGGLING ===" && python -m e2e --simulate struggling --days 7
+
+# =============================================================================
+# AUTONOMOUS USER SIMULATION (Recommended - Unified)
+# =============================================================================
+
+# Default: realistic human with variable days
+user:
+	python -m e2e --user human --days 7
+
+user-human:
+	python -m e2e --user human --days 7
+
+user-motivated:
+	python -m e2e --user motivated --days 7
+
+user-average:
+	python -m e2e --user average --days 7
+
+user-struggling:
+	python -m e2e --user struggling --days 7
+
+user-expert:
+	python -m e2e --user expert --days 7
+
+user-irregular:
+	python -m e2e --user irregular --days 7
+
+user-all:
+	@echo "=== HUMAN (realistic) ===" && python -m e2e --user human --days 7
+	@echo ""
+	@echo "=== MOTIVATED ===" && python -m e2e --user motivated --days 7
+	@echo ""
+	@echo "=== STRUGGLING ===" && python -m e2e --user struggling --days 7
+
+# =============================================================================
+# FULL LIFE SIMULATION (Legacy - use user-* instead)
+# =============================================================================
+
+life-motivated:
+	python -m e2e --life motivated --days 7
+
+life-average:
+	python -m e2e --life average --days 7
+
+life-struggling:
+	python -m e2e --life struggling --days 7
+
+life-expert:
+	python -m e2e --life expert --days 7
+
+life-all:
+	@echo "=== MOTIVATED LIFE ===" && python -m e2e --life motivated --days 7
+	@echo ""
+	@echo "=== AVERAGE LIFE ===" && python -m e2e --life average --days 7
+	@echo ""
+	@echo "=== STRUGGLING LIFE ===" && python -m e2e --life struggling --days 7
 
 # =============================================================================
 # CODE QUALITY

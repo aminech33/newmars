@@ -15,7 +15,10 @@ from routes.withings import router as withings_router
 from routes.chat import router as chat_router
 from routes.health import router as health_router
 from routes.tasks_persistence import router as tasks_db_router
-from routes.advanced_learning import router as advanced_learning_router
+# routes.advanced_learning supprimé - fonctionnalités intégrées dans routes.learning
+from routes.tutoring import router as tutoring_router
+from routes.adaptive_content import router as adaptive_content_router
+from routes.skill_graph import router as skill_graph_router
 
 app = FastAPI(
     title="Adaptive Learning API",
@@ -44,7 +47,10 @@ app.include_router(withings_router, prefix="/api/withings", tags=["Withings"])
 app.include_router(chat_router)       # Prefix déjà défini (/api/chat)
 app.include_router(health_router)     # Prefix déjà défini (/api/health)
 app.include_router(tasks_db_router)   # Prefix déjà défini (/api/tasks-db)
-app.include_router(advanced_learning_router, prefix="/api/learning", tags=["Advanced Learning"])
+# advanced_learning_router supprimé - fonctionnalités dans learning_router
+app.include_router(tutoring_router, prefix="/api", tags=["Tutoring"])  # /api/tutoring/*
+app.include_router(adaptive_content_router, prefix="/api", tags=["Adaptive Content"])  # /api/content/*
+app.include_router(skill_graph_router, prefix="/api", tags=["Skill Graph"])  # /api/skill-graph/*
 
 
 @app.get("/")
@@ -87,7 +93,14 @@ async def health_check():
 @app.get("/health/databases")
 async def databases_health():
     """Vérifie l'état de chaque base de données isolée"""
-    from databases import tasks_db, health_db, learning_db
+    from databases import tasks_db, health_db, learning_db, skill_graph_db
+
+    # Skill graph health check
+    try:
+        skills_count = len(skill_graph_db.get_all_skills())
+        skill_graph_status = {"status": "healthy", "skills_count": skills_count}
+    except Exception as e:
+        skill_graph_status = {"status": "error", "error": str(e)}
 
     return {
         "connected": True,
@@ -95,6 +108,7 @@ async def databases_health():
             "tasks": tasks_db.get_health_check(),
             "health": health_db.get_health_check(),
             "learning": learning_db.get_health_check(),
+            "skill_graph": skill_graph_status,
         }
     }
 

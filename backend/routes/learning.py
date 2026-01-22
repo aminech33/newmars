@@ -17,8 +17,11 @@ from utils.sm2_algorithm import (
     determine_difficulty,
     calculate_xp_reward
 )
-# 🧠 Import du moteur d'apprentissage avancé (FSRS, Cognitive Load, Transfer Learning, etc.)
-from services.advanced_learning_engine import learning_engine
+# 🧠 Import du moteur d'apprentissage LEAN (FSRS, Cognitive Load, AI Tutor, etc.)
+from learning_engine.learning_engine_lean import LeanLearningEngine
+
+# Initialiser le moteur lean
+learning_engine = LeanLearningEngine()
 
 from models.learning import (
     SessionStartRequest,
@@ -119,12 +122,11 @@ async def get_next_question(session_id: str):
     # Récupérer ou créer la maîtrise du topic (persisté en DB)
     mastery_data = db.get_or_create_mastery(user_id, topic_id)
 
-    # 🧠 NOUVEAU: Utiliser le moteur d'apprentissage avancé
-    question_params = learning_engine.get_next_question_params(
+    # 🧠 Utiliser le moteur d'apprentissage LEAN
+    question_params = learning_engine.get_next_question(
         user_id=user_id,
         topic_id=topic_id,
-        current_mastery=mastery_data["mastery_level"],
-        session_data=session
+        current_mastery=mastery_data["mastery_level"]
     )
 
     # 🧠 Vérifier si l'utilisateur devrait faire une pause (cognitive load)
@@ -132,14 +134,14 @@ async def get_next_question(session_id: str):
         logger.info(f"⚠️ Cognitive load elevated for {user_id}: {question_params.cognitive_load}")
         # On continue mais on note la recommandation
 
-    # Utiliser la difficulté calculée par le moteur avancé
+    # Utiliser la difficulté calculée par le moteur lean
     difficulty = question_params.difficulty
 
-    # Log des paramètres avancés
-    logger.info(f"🧠 Advanced params: difficulty={difficulty}, "
-                f"transfer_bonus={question_params.transfer_bonus:.0%}, "
+    # Log des paramètres lean
+    logger.info(f"🧠 Lean params: difficulty={difficulty}, "
                 f"cognitive_load={question_params.cognitive_load}, "
-                f"retrievability={question_params.retrievability:.0%}")
+                f"retrievability={question_params.retrievability:.0%}, "
+                f"interleave={question_params.interleave_suggested}")
 
     # Générer la question avec le dispatcher intelligent
     try:
@@ -282,18 +284,17 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
             anomaly_flags.append("perfect_record")
             logger.info(f"📊 INFO: User {user_id} has 100% success rate after {mastery_data['total_attempts']} attempts (mastery={current_mastery}%)")
 
-    # 🧠 NOUVEAU: Traiter la réponse avec le moteur avancé (FSRS, Cognitive Load, Transfer)
-    advanced_result = learning_engine.process_answer(
+    # 🧠 Traiter la réponse avec le moteur LEAN (FSRS, Cognitive Load, AI Tutor)
+    lean_result = learning_engine.process_answer(
         user_id=user_id,
         topic_id=topic_id,
         is_correct=is_correct,
         response_time=submission.time_taken,
-        difficulty=current_q["difficulty"],
-        current_mastery=mastery_data["mastery_level"]
+        difficulty=current_q["difficulty"]
     )
 
-    # Utiliser le mastery_change du moteur avancé (FSRS-based)
-    mastery_change = advanced_result.mastery_change
+    # Utiliser le mastery_change du moteur lean (FSRS-based)
+    mastery_change = lean_result.mastery_change
 
     # 🚨 Appliquer pénalité d'anomalie si détectée
     if anomaly_penalty > 0 and mastery_change > 0:
@@ -301,11 +302,11 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
         mastery_change = int(mastery_change * (1 - anomaly_penalty))
         logger.info(f"🚨 Anomaly penalty applied: {original_change} → {mastery_change} (flags: {anomaly_flags})")
 
-    # Log des résultats avancés
-    logger.info(f"🧠 Advanced result: mastery_change={mastery_change}, "
-                f"cognitive={advanced_result.cognitive_assessment['level']}, "
-                f"transfer_applied={advanced_result.transfer_applied}, "
-                f"next_review={advanced_result.next_review_days:.1f}d")
+    # Log des résultats lean
+    logger.info(f"🧠 Lean result: mastery_change={mastery_change}, "
+                f"accuracy_recent={lean_result.accuracy_recent:.0%}, "
+                f"should_reduce_difficulty={lean_result.should_reduce_difficulty}, "
+                f"next_review={lean_result.next_review_days:.1f}d")
 
     # Mettre à jour la maîtrise
     new_mastery = max(0, min(100, mastery_data["mastery_level"] + mastery_change))
@@ -483,34 +484,21 @@ async def submit_answer(session_id: str, submission: AnswerSubmission):
             "suggestion": "Explore un topic connexe pour renforcer tes connaissances"
         }
 
-    # 🧠 Construire les métriques avancées
+    # 🧠 Construire les métriques avancées (utilise lean_result)
     advanced_metrics = {
-        "fsrs": {
-            "stability": advanced_result.new_fsrs_card["stability"],
-            "difficulty": advanced_result.new_fsrs_card["difficulty"],
-            "next_review_days": advanced_result.next_review_days,
-            "reps": advanced_result.new_fsrs_card["reps"]
-        },
-        "cognitive_load": {
-            "level": advanced_result.cognitive_assessment["level"],
-            "score": advanced_result.cognitive_assessment["score"],
-            "should_break": advanced_result.should_take_break,
-            "recommendation": advanced_result.break_reason
-        },
-        "transfer_learning": {
-            "applied": advanced_result.transfer_applied,
-            "bonus_applied": advanced_result.transfer_applied
-        },
-        "learning_efficiency": round(advanced_result.learning_efficiency * 100, 1)
+        "next_review_days": lean_result.next_review_days,
+        "accuracy_recent": round(lean_result.accuracy_recent * 100, 1),
+        "should_take_break": lean_result.should_take_break,
+        "should_reduce_difficulty": lean_result.should_reduce_difficulty
     }
 
     # Ajuster next_action si cognitive load suggère une pause
-    if advanced_result.should_take_break and next_action == "continue":
+    if lean_result.should_take_break and next_action == "continue":
         next_action = "suggest_break"
         if not interleaving_suggestion:
             interleaving_suggestion = {
                 "recommended": True,
-                "reason": advanced_result.break_reason or "Charge cognitive élevée détectée",
+                "reason": "Charge cognitive élevée détectée",
                 "suggestion": "Prends une pause de 5-10 minutes ou change de topic"
             }
 

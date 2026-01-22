@@ -256,7 +256,7 @@ export const selectIsQuotaFull = (state: AppState) => {
 // ═══════════════════════════════════════════════════════════════
 
 // Types
-export type { TaskCategory, TaskStatus, TaskPriority, TemporalColumn, View, AccentTheme } from './slices/types'
+export type { TaskCategory, TaskStatus, TaskPriority, TemporalColumn, View, AccentTheme, TaskLevel } from './slices/types'
 export type { Task, Project, SubTask, CustomCategory, Note, Toast, HistoryAction, PomodoroSession, DailyStats, ProjectStatus, Habit } from './slices/types'
 
 // Constants

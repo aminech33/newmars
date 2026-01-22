@@ -204,3 +204,140 @@ Génère UNIQUEMENT le JSON, sans explication."""
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de l'analyse du domaine")
+
+
+# ============================================================================
+# PERSISTANCE ET PROGRESSION DES CARTES DE DOMAINE
+# ============================================================================
+
+class SaveDomainMapRequest(BaseModel):
+    """Requête pour sauvegarder une carte de domaine."""
+    domain: str
+    title: str
+    user_id: str
+    levels: List[SkillLevel]
+
+
+class TierProgressResponse(BaseModel):
+    """Progression d'un tier."""
+    name: str
+    icon: str
+    progress: float
+    skills: int
+    mastered: int
+    unlocked: bool
+
+
+@router.post("/save-domain-map")
+async def save_domain_map_endpoint(request: SaveDomainMapRequest):
+    """
+    Sauvegarde une carte de domaine générée par IA.
+
+    Cette endpoint permet de persister la carte pour:
+    - Tracking de progression par tier (0-3)
+    - Déblocage progressif (tier N nécessite 80% du tier N-1)
+    - Recommandations personnalisées
+    """
+    from databases.skill_graph_db import save_domain_map
+
+    # Convertir les levels en dict {tier: [skills]}
+    skills_by_tier = {}
+    for level in request.levels:
+        tier = level.level  # 0-3
+        skills_by_tier[tier] = [
+            {"name": s.name, "description": s.description or ""}
+            for s in level.skills
+        ]
+
+    try:
+        domain_map_id = save_domain_map(
+            domain=request.domain,
+            title=request.title,
+            user_id=request.user_id,
+            skills_by_tier=skills_by_tier
+        )
+
+        return {
+            "success": True,
+            "domain_map_id": domain_map_id,
+            "domain": request.domain,
+            "total_skills": sum(len(s) for s in skills_by_tier.values()),
+            "tiers": {tier: len(skills) for tier, skills in skills_by_tier.items()}
+        }
+    except Exception as e:
+        print(f"❌ Erreur save_domain_map: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/domain-map/{domain}")
+async def get_domain_map_endpoint(domain: str, user_id: str):
+    """Récupère une carte de domaine sauvegardée."""
+    from databases.skill_graph_db import get_domain_map
+
+    domain_map = get_domain_map(domain, user_id)
+    if not domain_map:
+        raise HTTPException(status_code=404, detail=f"Carte '{domain}' non trouvée pour cet utilisateur")
+
+    return {
+        "success": True,
+        **domain_map
+    }
+
+
+@router.get("/domain-maps")
+async def list_domain_maps_endpoint(user_id: str):
+    """Liste toutes les cartes de domaine d'un utilisateur."""
+    from databases.skill_graph_db import get_user_domain_maps
+
+    maps = get_user_domain_maps(user_id)
+    return {
+        "success": True,
+        "count": len(maps),
+        "domain_maps": maps
+    }
+
+
+@router.get("/tier-progress/{domain}")
+async def get_tier_progress_endpoint(domain: str, user_id: str):
+    """
+    Récupère la progression par tier (0-3) pour un domaine.
+
+    Retourne pour chaque tier:
+    - name: Nom du tier (Fondations, Intermédiaire, Avancé, Expert)
+    - icon: Emoji (🎯, 🔵, 🟡, 🔴)
+    - progress: % de maîtrise (0-100)
+    - skills: Nombre de skills dans le tier
+    - mastered: Nombre de skills maîtrisées (≥80%)
+    - unlocked: Si le tier est accessible
+    """
+    from databases.skill_graph_db import get_tier_progress
+
+    progress = get_tier_progress(user_id, domain)
+    if not progress:
+        raise HTTPException(status_code=404, detail=f"Carte '{domain}' non trouvée")
+
+    return {
+        "success": True,
+        "domain": domain,
+        "tiers": progress
+    }
+
+
+@router.get("/next-skills/{domain}")
+async def get_next_skills_endpoint(domain: str, user_id: str, limit: int = 5):
+    """
+    Recommande les prochaines compétences à apprendre.
+
+    Priorité:
+    1. Skills du tier actuel non maîtrisées
+    2. Skills du tier suivant si débloqué (≥80% du tier précédent)
+    """
+    from databases.skill_graph_db import get_next_skills_to_learn
+
+    recommendations = get_next_skills_to_learn(user_id, domain, limit)
+
+    return {
+        "success": True,
+        "domain": domain,
+        "recommendations": recommendations
+    }
